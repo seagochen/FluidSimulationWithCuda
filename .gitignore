@@ -1,6 +1,7 @@
 *.opensdf
 *.sdf
 *.suo
+*.db
 templet.txt
 projectplan.txt
 /Debug
