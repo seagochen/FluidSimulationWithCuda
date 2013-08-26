@@ -93,9 +93,9 @@ namespace sge
 		DllExport inline HINSTANCE getInstance() { return hInstance; };
 
 	public:
-		DllExport int32 SetupRoutine(const LPCSTR title);
-		DllExport int32 WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-		DllExport int32 MainLoop();
+		int32 SetupRoutine(const LPCSTR title);
+		int32 WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+		int32 MainLoop();
 
 	public:
 		inline bool32 isFullScreen() { return isFullScreenMode; };
@@ -103,8 +103,6 @@ namespace sge
 
 		inline RECT *getWindowRect() { return &windowRect; };
 	};
-
-	extern LRESULT CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif
