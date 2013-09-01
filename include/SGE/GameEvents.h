@@ -29,9 +29,20 @@
 #ifndef _SEAGOSOFT_ENGINE_GAMEEVENT_H_
 #define _SEAGOSOFT_ENGINE_GAMEEVENT_H_
 
+#include "Auxiliaries.h"
+#include <Windows.h>
+#include <GL\glut.h>
+
 namespace sge {
 
-	enum SGKEYS
+	enum SG_KEY_STATUS
+	{
+		SG_KEY_DOWN = WM_KEYDOWN,  // key down
+		SG_KEY_UP   = WM_KEYUP,    // key up
+		SG_KEY_NONE = 0x00         // Unknow
+	};
+
+	enum SG_KEYS
 	{
 		// Key groups
 		SG_KEYS_CANCEL  = VK_CANCEL,   // Ctrl+Break or Ctrl+C
@@ -65,78 +76,50 @@ namespace sge {
 		SG_KEY_SCROLL     = VK_SCROLL,   // ScrollLock
 		
 		// 方向键
-		SG_KEY_LEFT       = VK_LEFT,  // Left Arrow
+		SG_KEY_ARRLEFT    = VK_LEFT,  // Left Arrow
 		SG_KEY_ARRUP      = VK_UP,    // Up Arrow
 		SG_KEY_ARRRIGHT   = VK_RIGHT, // Right Arrow
 		SG_KEY_ARRDOWN    = VK_DOWN,  // Down Arrow
 		
 		//定义数据字符0~9 
-		SG_KEY_0 = 0x30,   // num 0
-		SG_KEY_1 = 0x31,   // num 1
-		SG_KEY_2 = 0x32,   // num 2
-		SG_KEY_3 = 0x33,   // num 3
-		SG_KEY_4 = 0x34,   // num 4
-		SG_KEY_5 = 0x35,   // num 5
-		SG_KEY_6 = 0x36,   // num 6
-		SG_KEY_7 = 0x37,   // num 7
-		SG_KEY_8 = 0x38,   // num 8
-		SG_KEY_9 = 0x39,   // num 9
+		SG_KEY_0 = '0',   // num 0
+		SG_KEY_1 = '1',   // num 1
+		SG_KEY_2 = '2',   // num 2
+		SG_KEY_3 = '3',   // num 3
+		SG_KEY_4 = '4',   // num 4
+		SG_KEY_5 = '5',   // num 5
+		SG_KEY_6 = '6',   // num 6
+		SG_KEY_7 = '7',   // num 7
+		SG_KEY_8 = '8',   // num 8
+		SG_KEY_9 = '9',   // num 9
 		
 		//定义数据字符A~Z
-		SG_KEY_A = 0x41,   // A
-		SG_KEY_B = 0x42,   // B
-		SG_KEY_C = 0x43,   // C
-		SG_KEY_D = 0x44,   // D
-		SG_KEY_E = 0x45,   // E
-		SG_KEY_F = 0x46,   // F
-		SG_KEY_G = 0x47,   // G
-		SG_KEY_H = 0x48,   // H
-		SG_KEY_I = 0x49,   // I
-		SG_KEY_J = 0x4A,   // J
-		SG_KEY_K = 0x4B,   // K
-		SG_KEY_L = 0x4C,   // L
-		SG_KEY_M = 0x4D,   // M
-		SG_KEY_N = 0x4E,   // N
-		SG_KEY_O = 0x4F,   // O
-		SG_KEY_P = 0x50,   // P
-		SG_KEY_Q = 0x51,   // Q
-		SG_KEY_R = 0x52,   // R
-		SG_KEY_S = 0x53,   // S
-		SG_KEY_T = 0x54,   // T
-		SG_KEY_U = 0x55,   // U
-		SG_KEY_V = 0x56,   // V
-		SG_KEY_W = 0x57,   // W
-		SG_KEY_X = 0x58,   // X
-		SG_KEY_Y = 0x59,   // Y
-		SG_KEY_Z = 0x5A,   // Z
-		
-		//定义数据字符a~z  
-		SG_KEY_a = 0x61,   // a
-		SG_KEY_b = 0x62,   // b
-		SG_KEY_c = 0x63,   // c
-		SG_KEY_d = 0x64,   // d
-		SG_KEY_e = 0x65,   // e
-		SG_KEY_f = 0x66,   // f
-		SG_KEY_g = 0x67,   // g
-		SG_KEY_h = 0x68,   // h
-		SG_KEY_i = 0x69,   // i
-		SG_KEY_j = 0x6A,   // j
-		SG_KEY_k = 0x6B,   // k
-		SG_KEY_l = 0x6C,   // l
-		SG_KEY_m = 0x6D,   // m
-		SG_KEY_n = 0x6E,   // n
-		SG_KEY_o = 0x6F,   // o
-		SG_KEY_p = 0x70,   // p
-		SG_KEY_q = 0x71,   // k
-		SG_KEY_r = 0x72,   // r
-		SG_KEY_s = 0x73,   // s
-		SG_KEY_t = 0x74,   // t
-		SG_KEY_u = 0x75,   // u
-		SG_KEY_v = 0x76,   // v
-		SG_KEY_w = 0x77,   // w
-		SG_KEY_x = 0x78,   // x
-		SG_KEY_y = 0x79,   // y
-		SG_KEY_z = 0x7A,   // z
+		SG_KEY_A = 'A',   // A
+		SG_KEY_B = 'B',   // B
+		SG_KEY_C = 'C',   // C
+		SG_KEY_D = 'D',   // D
+		SG_KEY_E = 'E',   // E
+		SG_KEY_F = 'F',   // F
+		SG_KEY_G = 'G',   // G
+		SG_KEY_H = 'H',   // H
+		SG_KEY_I = 'I',   // I
+		SG_KEY_J = 'J',   // J
+		SG_KEY_K = 'K',   // K
+		SG_KEY_L = 'L',   // L
+		SG_KEY_M = 'M',   // M
+		SG_KEY_N = 'N',   // N
+		SG_KEY_O = 'O',   // O
+		SG_KEY_P = 'P',   // P
+		SG_KEY_Q = 'Q',   // Q
+		SG_KEY_R = 'R',   // R
+		SG_KEY_S = 'S',   // S
+		SG_KEY_T = 'T',   // T
+		SG_KEY_U = 'U',   // U
+		SG_KEY_V = 'V',   // V
+		SG_KEY_W = 'W',   // W
+		SG_KEY_X = 'X',   // X
+		SG_KEY_Y = 'Y',   // Y
+		SG_KEY_Z = 'Z',   // Z
 		
 		// F1~F12
 		SG_KEY_F1 = VK_F1,  // F1
@@ -153,14 +136,25 @@ namespace sge {
 		SG_KEY_F12 = VK_F12, // F12
 	};
 
-	enum SGMOUSE
+	enum SG_MOUSE
 	{
-		SG_MOUSE_L = VK_LBUTTON,  // 鼠标左键
-		SG_MOUSE_R = VK_RBUTTON,  // 鼠标右键
-		SG_MOUSE_M = VK_MBUTTON,  // 鼠标中键
+		SG_MOUSE_MOVE  = WM_MOUSEMOVE, // mouse is moving
+		SG_MOUSE_WHEEL = WM_MOUSEWHEEL, // mouse wheel
+
+		SG_MOUSE_L_BUTTON_DOWN = WM_LBUTTONDOWN, // left button down
+		SG_MOUSE_R_BUTTON_DOWN = WM_RBUTTONDOWN, // right button down
+		SG_MOUSE_M_BUTTON_DOWN = WM_MBUTTONDOWN, // middle button down
+
+		SG_MOUSE_L_BUTTON_UP = WM_LBUTTONUP, // left button up
+		SG_MOUSE_R_BUTTON_UP = WM_RBUTTONUP, // right button up
+		SG_MOUSE_M_BUTTON_UP = WM_MBUTTONUP, // middle button up
+
+		SG_MOUSE_L_BUTTON_DOUBLE_CLICK = WM_LBUTTONDBLCLK, // left button doble click
+		SG_MOUSE_R_BUTTON_DOUBLE_CLICK = WM_RBUTTONDBLCLK, // right button double click
+		SG_MOUSE_M_BUTTON_DOUBLE_CLICK = WM_MBUTTONDBLCLK, // middle button double click
 	};
 
-	enum SGPAD
+	enum SG_PAD
 	{
 		// Number pad
 		SG_PAD_LOCK = VK_NUMLOCK, // NumLock
@@ -175,32 +169,32 @@ namespace sge {
 		SG_PAD_N2  = VK_NUMPAD2, // pad 2
 		SG_PAD_N1  = VK_NUMPAD1, // pad 1
 	};
+	
+	struct SG_FUNCTIONS_HOLDER
+	{
+		void  (*hCreateFunc)(void);
+		void  (*hReshapeFunc)(unsigned width, unsigned height);
+		void  (*hKeyboardFunc)(SG_KEYS keyboard, SG_KEY_STATUS keystatus);
+		void  (*hMouseFunc)(SG_MOUSE mouse, unsigned xpos, unsigned ypos);
+		void  (*hDisplayFunc)(void);
+	};
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-	
-#include "Auxiliaries.h"
-
-#include <Windows.h>
-#include <GL\glut.h>
 
 // Create MFC window
-DllExport void OnCreate(HWND hWnd, HDC *hDC, HGLRC *hRC);
+_DLL void OnCreate(HWND hWnd, HDC *hDC, HGLRC *hRC);
 // Destroy MFC window
-DllExport void OnDestroy(HDC hDC, HGLRC hRC);
+_DLL void OnDestroy(HDC hDC, HGLRC hRC);
 // 當窗口大小發生改動時，對窗口重新繪製
-DllExport void OnReshapeWindow(LPARAM lParam, void (*func)(int, int));
-// 對指定的窗口進行繪圖工作的準備
-DllExport void OnPaint(HWND hWnd);
+_DLL void OnReshapeWindow(LPARAM lParam, void (*func)(unsigned width, unsigned height));
 // 對鍵盤事件進行反應
-DllExport void OnKeyDown(void (*func)(SGKEYS));
-// 對鍵盤事件進行反應
-DllExport void OnKeyUp(void (*func)(SGKEYS));
+_DLL void OnKeyboardEvents(
+	UINT msg, WPARAM wParam, void (*func)(SG_KEYS keyboard, SG_KEY_STATUS keystatus));
 // 對鼠標事件進行反應
-DllExport void OnMouseLeftDown();
-// 對鼠標事件進行反應
-DllExport void OnMouseLeftUp();
+_DLL void OnMouseEvents(
+	UINT msg, LPARAM lParam, void (*func)(SG_MOUSE mouse, unsigned xpos, unsigned ypos));
 // 繪製內容
-DllExport void OnDisplay(void (*func)(void));
+_DLL void OnDisplay(void (*func)(void));
 
 };
 

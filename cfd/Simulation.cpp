@@ -1,8 +1,8 @@
-#include "Header.h"
+#include "Headers.h"
 #include "Visualization.h"
 
-seago::Visualization::volume vbdata;
-extern seago::Visualization  visual;
+sge::_volumeData            vbdata;
+extern sge::Visualization   visual;
 
 DWORD simulation (LPVOID lpdwThreadParam )
 {
@@ -18,7 +18,7 @@ DWORD simulation (LPVOID lpdwThreadParam )
 
 	while( TRUE )
 	{
-		visual.sgLoadVolumeData(&vbdata);
+		visual.LoadVolumeData(&vbdata);
 		update();
 	}
 };

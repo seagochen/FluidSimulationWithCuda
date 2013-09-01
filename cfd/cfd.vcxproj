@@ -71,7 +71,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Header.h" />
+    <ClInclude Include="Headers.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Visualization.h" />
   </ItemGroup>
@@ -83,10 +83,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cfdmain.cpp" />
-    <ClCompile Include="glew.c" />
-    <ClCompile Include="routine.cpp" />
     <ClCompile Include="Simulation.cpp" />
     <ClCompile Include="Visualization.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="EHSMB.TTF" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

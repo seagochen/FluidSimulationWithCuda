@@ -21,49 +21,46 @@
 /**
 * <Author>      Orlando Chen
 * <Date>        8/25/2013
-* <File>        FileManager.h
+* <File>        SGUtils.h
 * <Specification>
-*	內含一個與文件操作相關的類
-*	目前擁有的功能有：
-*	- 從文本文件中讀取數據；
-*	- 將數據保存至文本文件中；
+*	Main header file of SGE
 */
 
-#ifndef _SEAGOSOFT_FILE_MANAGER_H_
-#define _SEAGOSOFT_FILE_MANAGER_H_
+#ifndef _SEAGOSOFT_SGUTILS_H_
+#define _SEAGOSOFT_SGUTILS_H_
+
+#if defined(_SEAGOSOFT_AUXILIARY_H_)
+#error Do not need include Auxiliaries.h when you already included SGUtils.h
+#endif
+#if defined(_SEAGOSOFT_FILE_MANAGER_H_)
+#error Do not need include Filemanager.h when you already included SGUtils.h
+#endif
+#if defined(_SEAGOSOFT_ENGINE_GAMEEVENT_H_)
+#error Do not need include GameEvents.h when you already included SGUtils.h
+#endif
+#if defined(_SEAGOSOFT_ENGINE_MAINACTIVITY_H_)
+#error Do not need include MainActivity.h when you already included SGUtils.h
+#endif
+#if defined(_SEAGOSOFT_FREETYPE_H_)
+#error Do not need include FreeType.h when you already included SGUtils.h
+#endif
+#if defined(_INCLUDES_NECESSARY_LIBS_)
+#error Do not need load those libraries when you already included SGUtils.h
+#endif
 
 #include "Auxiliaries.h"
+#include "FileManager.h"
+#include "GameEvents.h"
+#include "MainActivity.h"
+#include "FreeType.h"
 
-#include <string>
-#include <sstream>
-
-namespace sge
-{
-	/* 選擇文件的格式 */
-	enum SGFILEFORMAT
-	{
-		SG_FILE_FORMAT_XML = 0x0a,
-		SG_FILE_FORMAT_TXT = 0x0b,
-		SG_FILE_FORMAT_XF  = 0x0c,
-	};
-
-	/* 選擇創建的文件的打開方式 */
-	enum SGFILEOPENTYPE
-	{
-		SG_FILE_OPEN_DEFAULT,  // 打开并创建全新的文档方式
-		SG_FILE_OPEN_APPEND,   // 打开并添加数据至已有的文档方式
-	};
-
-	class FileManager
-	{
-	public:
-		// Load data from external file
-		_DLL std::string GetDataFromFile(const char *filename);
-		
-		// Save data to external file
-		_DLL void SetDataToFile(
-			std::string data, const char *filename, SGFILEOPENTYPE mode);
-	};
-}
+#ifndef _INCLUDES_NECESSARY_LIBS_
+#define _INCLUDES_NECESSARY_LIBS_
+#pragma once
+#pragma comment (lib, "sgeglt.lib")
+#pragma comment (lib, "sgeutil.lib")
+#pragma comment (lib, "glew32.lib")
+#pragma comment (lib, "freeglut.lib")
+#endif
 
 #endif

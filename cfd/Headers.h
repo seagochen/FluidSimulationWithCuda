@@ -15,8 +15,8 @@
 
 #include <gl\glew.h>
 #include <GL\glut.h>
-#include <SGE\Auxiliaries.h>
-#include <SGE\GameEvents.h>
-#include <SGE\MainActivity.h>
+#include <SGE\SGUtils.h>
+
+#include "Visualization.h"
 
 #endif

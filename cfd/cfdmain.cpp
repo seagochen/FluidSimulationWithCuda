@@ -1,46 +1,25 @@
-#pragma comment(lib, "freeglut.lib")
-#pragma comment(lib, "glew32.lib")
-#pragma comment(lib, "sgeutil.lib")
-
-#include "Header.h"
-#include "Visualization.h"
+#include "Headers.h"
 
 #define DISPLAY_WIDTH  800
 #define DISPLAY_HEIGHT 600
 
-using namespace seago;
 using namespace sge;
 
 Visualization visual;
-Visualization::window win;
 MainActivity *myact;
 
 extern DWORD simulation (LPVOID lpdwThreadParam );
-
-// 之所以这样写，是因为创建线程时所给予的函数地址与类中给予的
-// 函数地址并非一回事，所以需要创建这样一个代理函数，从而避开这样的错误
-void init(){ visual.sgInit(win.width, win.height); };
-void display(){ visual.sgDisplay(); };
-void reshape(int width, int height) { visual.sgResizeScreen(width, height); };
-//void keyboard(unsigned char key, int mousePositionX, int mousePositionY){visual.sgKeyboard(key, mousePositionX, mousePositionY);};
-void keyboard(sge::SGKEYS keys) { visual.sgKeyboard(keys); };
-void mouse(int button,int state,int x,int y) { visual.sgMouse(button, state, x, y); }
-void motion(int x, int y) { visual.sgMotion(x,y); };
-
-
-void setWindow()
+/*
+static Visualization::_mouse      *m_mouse;
+static Visualization::_fps        *m_fps;
+static Visualization::_volumeData *m_volume;
+static Visualization::_viewMatrix *m_view;
+static FreeType                   *m_font;
+*/
+void OnCreate()
 {
-	// Set window values
-	win.title = "Fluid Simulation Program, v2.00.00 alpha";
-	win.field_of_view_angle = 45;
-	win.z_near = 1.0f;
-	win.z_far = 500.0f;
-	win.width = DISPLAY_WIDTH;
-	win.height = DISPLAY_HEIGHT;
-
-	visual.sgSetWindowParam(&win);
+	visual.Init(DISPLAY_WIDTH, DISPLAY_HEIGHT);
 }
-
 
 /* 创建两个不同的子线程，一个负责计算并生成volume data，另一个则负责计算FPS */
 void subThreads()
@@ -55,34 +34,28 @@ void subThreads()
 		0, //Immediately run the thread
 		&dwThreadId ) == NULL) //Thread Id	
 		{
-			printf("Error in line %d: Couldn't creat sub-thread. Aborting.\n", __LINE__);
+			pterror("Error in line %d: Couldn't creat sub-thread. Aborting.\n");
 		}
 }
 
 
 int main()
 {
-	glewInit();
-	
-	// Initialize window parameters
-	setWindow();
-
 	// Creates sub threads
 	subThreads();
 	
 	// Set window size
-	myact = new MainActivity(win.width, win.height);
+	myact = new MainActivity(DISPLAY_WIDTH, DISPLAY_HEIGHT);
 	
 
 	// Register functions
-	myact->RegisterCreateFunc(init);
-	myact->RegisterDisplayFunc(display);
-	myact->RegisterKeyDownFunc(keyboard);
-	// TODO
-	// Register mouse function
+	myact->RegisterCreateFunc(OnCreate);
+	myact->RegisterDisplayFunc(visual.Display);
+	myact->RegisterKeyboardFunc(visual.Keyboard);
+	myact->RegisterMouseFunc(visual.Mouse);
 
 	// Setup MFC window
-	myact->SetupRoutine(win.title.c_str());
+	myact->SetupRoutine();
 
 	// Mainloop
 	myact->MainLoop();
