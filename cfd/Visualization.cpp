@@ -11,18 +11,22 @@ static _fps        *m_fps;
 static _volumeData *m_volume;
 static _viewMatrix *m_view;
 static FreeType    *m_font;
+static MainActivity *m_hAct;
 
-static UINT FPS = 0;
 #endif
 
+#define pstatus(str) {system("cls"); printf("Status: %s \n", str);}
 
-Visualization::Visualization()
+
+Visualization::Visualization(MainActivity *hActivity)
 {
 	m_mouse  = new _mouse;
 	m_fps    = new _fps;
 	m_volume = new _volumeData;
 	m_view   = new _viewMatrix;
 	m_font   = new FreeType;
+
+	m_hAct   = hActivity;
 };
 
 
@@ -35,6 +39,12 @@ Visualization::~Visualization()
 	SAFE_DELT_PTR(m_view);
 	m_font->Clean();
 	SAFE_DELT_PTR(m_font)
+};
+
+
+void Visualization::GetActivityHandler(MainActivity *hActivity)
+{
+	m_hAct = hActivity;
 };
 
 
@@ -56,13 +66,28 @@ void Visualization::InitFont()
 
 void Visualization::InitViewMatrix()
 {
+	// view matrix
 	m_view->field_of_view_angle    = 45.f;
+	// view radius
 	m_view->radius_of_view_matrix  = 2.f;
+	// eye
 	m_view->eye_at_x               = 0.f;
 	m_view->eye_at_y               = 0.f;
-	m_view->eye_at_z               = 5.f;
+	m_view->eye_at_z               = 25.f;
+	// look at
+	m_view->look_at_x              = 0.f;
+	m_view->look_at_y              = 0.f;
+	m_view->look_at_z              = -10.f;
+	// direct up
+	m_view->dx_up_x                = 0.f;
+	m_view->dx_up_y                = 1.f;
+	m_view->dx_up_z                = 0.f;
+	// near & far
 	m_view->z_far                  = 100.f;
 	m_view->z_near                 = 0.1f;
+	// forward
+	m_view->z_forward              = -5.f;
+	// rotation
 	m_view->rotate_of_x            = 0.f;
 	m_view->rotate_of_y            = 0.f;
 	m_view->rotate_of_z            = 0.f;
@@ -133,8 +158,14 @@ void Visualization::Init(GLuint width, GLuint height)
 		(GLfloat)width / (GLfloat)height, m_view->z_near, m_view->z_far);
 
 	// Changing matrix 
-	glMatrixMode(GL_MODELVIEW);	
+	glMatrixMode(GL_MODELVIEW);
 
+
+	// 通过移动Camera实现对模型的观察
+	gluLookAt(
+		m_view->eye_at_x,  m_view->eye_at_y,  m_view->eye_at_z,  // eye
+		m_view->look_at_x, m_view->look_at_y, m_view->look_at_z, // center
+		m_view->dx_up_x,   m_view->dx_up_y,   m_view->dx_up_z);  // Up
 }
 
 
@@ -161,27 +192,7 @@ void Visualization::Display()
 {
 	// Clear Screen and Depth Buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// 将数据实时显示在屏幕上，这里采用glTexSubImage3D而不是glTexImage3D，是为了降低频繁更新而带来的性能损耗
-	glTexSubImage3D(
-		GL_TEXTURE_3D,                 // GLenum target,
-		0,                             // GLint level,
-		0,                             // GLint xoffset,
-		0,                             // GLint yoffset,
-		0,                             // GLint zoffset,
-		m_volume->width,               // GLsizei width,
-		m_volume->height,              // GLsizei height,
-		m_volume->depth,               // GLsizei depth,
-		GL_RGB,                        // GLenum format,
-		GL_UNSIGNED_BYTE,              // GLenum type,
-		m_volume->data);               // const GLvoid * data
 	
-	// 通过移动Camera实现对模型的观察
-	gluLookAt(
-		m_view->eye_at_x, m_view->eye_at_y, m_view->eye_at_z, // eye
-		0, 0, 0,                                           // center
-		0, 1, 0);                                             // Up
-
 	// 放置代理幾何
 	glPushMatrix();
 	{
@@ -189,10 +200,7 @@ void Visualization::Display()
 		glLoadIdentity();
 		
 		// 移动代理几何
-		glTranslatef( m_view->rotate_of_x, m_view->rotate_of_y, m_view->rotate_of_z );
-		
-		// 根據鼠標動作及鍵盤操作旋轉或縮放代理幾何，或者其他操作
-		Motion();
+		glTranslatef( 0, 0, m_view->z_forward);
 
 		// 绘制代理几何
 		glEnable(GL_TEXTURE_3D);
@@ -209,6 +217,24 @@ void Visualization::Display()
 
 void Visualization::CreateAgentBox()
 {
+	// 将数据实时显示在屏幕上，这里采用glTexSubImage3D而不是glTexImage3D，是为了降低频繁更新而带来的性能损耗
+	// every 10 frames per second
+	if (m_fps->dwElapsedTime > 500)
+	{
+		glTexSubImage3D(
+			GL_TEXTURE_3D,                 // GLenum target,
+			0,                             // GLint level,
+			0,                             // GLint xoffset,
+			0,                             // GLint yoffset,
+			0,                             // GLint zoffset,
+			m_volume->width,               // GLsizei width,
+			m_volume->height,              // GLsizei height,
+			m_volume->depth,               // GLsizei depth,
+			GL_RGB,                        // GLenum format,
+			GL_UNSIGNED_BYTE,              // GLenum type,
+			m_volume->data);               // const GLvoid * data
+	}
+
 	// Draw 6 quadrilaterals
 	glBegin(GL_QUADS);
 	{
@@ -262,7 +288,7 @@ void Visualization::CountFPS( ) {
 	
 	if ( m_fps->dwElapsedTime >= 1000 )
 	{
-		FPS = m_fps->dwFrames * 1000.0 / m_fps->dwElapsedTime;
+		m_fps->FPS = m_fps->dwFrames * 1000.0 / m_fps->dwElapsedTime;
 		m_fps->dwFrames = 0;
 		m_fps->dwLastUpdateTime = m_fps->dwCurrentTime;
 	}
@@ -274,7 +300,7 @@ void Visualization::CountFPS( ) {
 		
 		// White Text
 		glColor3f(1.0f, 1.0f, 1.0f);
-		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", FPS);			
+		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", m_fps->FPS);			
 	}
 	glPopMatrix();
 
@@ -345,8 +371,19 @@ int Visualization::GetWindowParam(_viewMatrix *view_matrix_out)
 };
 
 
-void Visualization::Motion()
+void DragMotion(void)
 {
+	// button pressed
+	if (m_mouse->left_button_pressed)
+	{
+		int xDist = m_mouse->cur_cursor_x - m_mouse->pre_cursor_x;
+		int yDist = m_mouse->cur_cursor_y - m_mouse->pre_cursor_y;
+
+		printf("xDist: %d  yDist: %d\n", xDist, yDist);
+
+
+	}
+
 //	if (m_mouse.isLeftHold)
 //	{
 //		float xDis = x - m_mouse.preX;
@@ -371,33 +408,42 @@ void Visualization::Motion()
 
 void Visualization::Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 {
-	// 检查鼠标滚轮的状态
-//	if (state == GLUT_UP && button == MOUSE_WHEEL_UP)
-//	{
-//		m_view.nearZ += 0.1f;
-//		glutPostRedisplay();
-//	}
-//	if (state == GLUT_UP && button == MOUSE_WHEEL_DOWN)
-//	{
-//		m_view.nearZ -= 0.1f;
-//		glutPostRedisplay();
-//	}
+	// Forward or backward objects when wheeled
+	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_FORWARD)
+	{
+		pstatus("mouse wheel forward");
+		m_view->z_forward -= 0.1f;
+	}
+	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_BACKWARD)
+	{
+		pstatus("mouse wheel backward");
+		m_view->z_forward += 0.1f;
+	}
 
-	// 检查鼠标的状态
+	// Convert mouse position to OpenGL style
+	m_hAct->ConvertMFCPosition(&x_pos, &y_pos);
+
+	// Mouse events
 	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN)
 	{
+		pstatus("mouse left button down");
+		m_mouse->left_button_pressed = true;
 		m_mouse->pre_cursor_x = x_pos;
 		m_mouse->pre_cursor_y = y_pos;
-		m_mouse->left_button_pressed = true;
 	}
 	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP)
 	{
+		pstatus("mouse left button up");
 		m_mouse->left_button_pressed = false;
+		m_mouse->pre_cursor_x = x_pos;
+		m_mouse->pre_cursor_y = y_pos;
 	}
 	if (mouse == SG_MOUSE::SG_MOUSE_MOVE && m_mouse->left_button_pressed)
 	{
-		m_mouse->cur_cursor_x = x_pos - m_mouse->pre_cursor_x;
-		m_mouse->cur_cursor_y = y_pos - m_mouse->pre_cursor_y;
+		pstatus("mouse is moving");
+		m_mouse->cur_cursor_x = x_pos;
+		m_mouse->cur_cursor_y = y_pos;
+		DragMotion();
 	}
 };
 

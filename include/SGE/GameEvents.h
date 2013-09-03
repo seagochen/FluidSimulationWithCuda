@@ -29,9 +29,12 @@
 #ifndef _SEAGOSOFT_ENGINE_GAMEEVENT_H_
 #define _SEAGOSOFT_ENGINE_GAMEEVENT_H_
 
-#include "Auxiliaries.h"
 #include <Windows.h>
+
+#ifdef _In_Dll_File
+#include "Auxiliaries.h"
 #include <GL\glut.h>
+#endif
 
 namespace sge {
 
@@ -138,8 +141,9 @@ namespace sge {
 
 	enum SG_MOUSE
 	{
-		SG_MOUSE_MOVE  = WM_MOUSEMOVE, // mouse is moving
-		SG_MOUSE_WHEEL = WM_MOUSEWHEEL, // mouse wheel
+		SG_MOUSE_MOVE           = WM_MOUSEMOVE, // mouse is moving
+		SG_MOUSE_WHEEL_FORWARD  = 0x001,        // mouse wheeled forward
+		SG_MOUSE_WHEEL_BACKWARD = 0x000,        // mouse wheeled backward
 
 		SG_MOUSE_L_BUTTON_DOWN = WM_LBUTTONDOWN, // left button down
 		SG_MOUSE_R_BUTTON_DOWN = WM_RBUTTONDOWN, // right button down
@@ -149,9 +153,9 @@ namespace sge {
 		SG_MOUSE_R_BUTTON_UP = WM_RBUTTONUP, // right button up
 		SG_MOUSE_M_BUTTON_UP = WM_MBUTTONUP, // middle button up
 
-		SG_MOUSE_L_BUTTON_DOUBLE_CLICK = WM_LBUTTONDBLCLK, // left button doble click
-		SG_MOUSE_R_BUTTON_DOUBLE_CLICK = WM_RBUTTONDBLCLK, // right button double click
-		SG_MOUSE_M_BUTTON_DOUBLE_CLICK = WM_MBUTTONDBLCLK, // middle button double click
+//		SG_MOUSE_L_BUTTON_DOUBLE_CLICK = WM_LBUTTONDBLCLK, // left button doble click
+//		SG_MOUSE_R_BUTTON_DOUBLE_CLICK = WM_RBUTTONDBLCLK, // right button double click
+//		SG_MOUSE_M_BUTTON_DOUBLE_CLICK = WM_MBUTTONDBLCLK, // middle button double click
 	};
 
 	enum SG_PAD
@@ -189,10 +193,12 @@ _DLL void OnDestroy(HDC hDC, HGLRC hRC);
 _DLL void OnReshapeWindow(LPARAM lParam, void (*func)(unsigned width, unsigned height));
 // 對鍵盤事件進行反應
 _DLL void OnKeyboardEvents(
-	UINT msg, WPARAM wParam, void (*func)(SG_KEYS keyboard, SG_KEY_STATUS keystatus));
+	UINT msg, HWND hwnd, LPARAM lParam, WPARAM wParam,
+	void (*func)(SG_KEYS keyboard, SG_KEY_STATUS keystatus));
 // 對鼠標事件進行反應
 _DLL void OnMouseEvents(
-	UINT msg, LPARAM lParam, void (*func)(SG_MOUSE mouse, unsigned xpos, unsigned ypos));
+	UINT msg, HWND hwnd, LPARAM lParam, WPARAM wParam,
+	void (*func)(SG_MOUSE mouse, unsigned xpos, unsigned ypos));
 // 繪製內容
 _DLL void OnDisplay(void (*func)(void));
 

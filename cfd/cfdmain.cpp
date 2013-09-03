@@ -5,21 +5,12 @@
 
 using namespace sge;
 
-Visualization visual;
-MainActivity *myact;
+Visualization *visual;
+MainActivity  *myact;
 
 extern DWORD simulation (LPVOID lpdwThreadParam );
-/*
-static Visualization::_mouse      *m_mouse;
-static Visualization::_fps        *m_fps;
-static Visualization::_volumeData *m_volume;
-static Visualization::_viewMatrix *m_view;
-static FreeType                   *m_font;
-*/
-void OnCreate()
-{
-	visual.Init(DISPLAY_WIDTH, DISPLAY_HEIGHT);
-}
+
+void OnCreate() { visual->Init(DISPLAY_WIDTH, DISPLAY_HEIGHT); }
 
 /* 创建两个不同的子线程，一个负责计算并生成volume data，另一个则负责计算FPS */
 void subThreads()
@@ -45,14 +36,14 @@ int main()
 	subThreads();
 	
 	// Set window size
-	myact = new MainActivity(DISPLAY_WIDTH, DISPLAY_HEIGHT);
-	
+	myact  = new MainActivity(DISPLAY_WIDTH, DISPLAY_HEIGHT);
+	visual = new Visualization(myact);
 
 	// Register functions
 	myact->RegisterCreateFunc(OnCreate);
-	myact->RegisterDisplayFunc(visual.Display);
-	myact->RegisterKeyboardFunc(visual.Keyboard);
-	myact->RegisterMouseFunc(visual.Mouse);
+	myact->RegisterDisplayFunc(visual->Display);
+	myact->RegisterKeyboardFunc(visual->Keyboard);
+	myact->RegisterMouseFunc(visual->Mouse);
 
 	// Setup MFC window
 	myact->SetupRoutine();

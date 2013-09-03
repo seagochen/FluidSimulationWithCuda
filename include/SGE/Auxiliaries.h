@@ -66,7 +66,9 @@
 #define _DLL __declspec(dllimport)    // 当此头文件被其他工程中的源代码模块引用时定义  
 #endif  
 
+#ifdef _In_Dll_File
 #include <stdio.h>
+#endif
 
 #define pterror(str) { \
 	printf("Error> %s, check your code at line %d of file %s\n", \
@@ -88,7 +90,9 @@
 #define SG_FAIL   0
 #define SG_ERROR -1
 
+#ifdef _In_Dll_File
 #include <GL\glew.h>
 #include <GL\glut.h>
+#endif
 
 #endif

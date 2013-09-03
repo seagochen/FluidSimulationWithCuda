@@ -33,28 +33,19 @@
 
 #include <Windows.h>
 
+#ifdef _In_Dll_File
 #include "GameEvents.h"
+#endif
 
 namespace sge
 {
 	class MainActivity
 	{
 	public:
-		struct MainActivityResource
-		{
-			LPCWSTR szTitle;
-			LPCWSTR szAppClassName;
-			WORD    wIcon, wSmallIcon;
-		};
-
-	public:
 		// Default Constructor
 		_DLL MainActivity(bool isFull = false);
 		// Constructor with specified window's size
 		_DLL MainActivity(unsigned width, unsigned height, bool isFull = false);
-		// Constructor with windows'size and resource
-		_DLL MainActivity(unsigned width, unsigned height, 
-			const MainActivityResource *resource, bool isFull = false);
 
 	public:
 		// Register create (initialize) function
@@ -78,19 +69,21 @@ namespace sge
 		_DLL static int SetupRoutine(void);
 		// Display the app form and loop the message
 		_DLL static int MainLoop(void);
-		// Set resources
-		_DLL static void SetResource(const MainActivityResource *resource);
 
 	private:
 		_DLL static LRESULT CALLBACK WindowProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam);
 
 	public:
-		_DLL HDC       getHDC();
-		_DLL HINSTANCE getHInstance();
-		_DLL HGLRC     getHRC();
-		_DLL HWND      getHWND();
-	};
+		_DLL HDC       GetHDC();
+		_DLL HINSTANCE GetHInstance();
+		_DLL HGLRC     GetHRC();
+		_DLL HWND      GetHWND();
 
+	public:
+		_DLL void  SetApplicationTitle(LPCWSTR szTitle);
+		_DLL void  SetApplicationIcons(WORD wAppIcon, WORD wSmallIcon);
+		_DLL void  ConvertMFCPosition(unsigned *xpos_in_out, unsigned *ypos_in_out);
+	};
 };
 
 #endif

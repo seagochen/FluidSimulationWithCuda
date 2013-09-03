@@ -2,7 +2,7 @@
 #define _SEAGO_VISUALIZATION_H_
 #pragma once
 
-#include <SGE\SGUtils.h>
+#include "Headers.h"
 
 #define BYTES_PER_TEXEL 3
 
@@ -23,6 +23,7 @@ namespace sge
 		DWORD dwCurrentTime;
 		DWORD dwLastUpdateTime;
 		DWORD dwElapsedTime;
+		UINT  FPS;
 	}; // Frames per second
 
 	struct _volumeData
@@ -40,14 +41,17 @@ namespace sge
 		GLfloat rotate_of_y;
 		GLfloat rotate_of_z;
 		GLfloat eye_at_x, eye_at_y, eye_at_z;
+		GLfloat look_at_x, look_at_y, look_at_z;
+		GLfloat dx_up_x, dx_up_y, dx_up_z;
 		GLfloat radius_of_view_matrix;
+		GLfloat z_forward;
 	};
 		
 
 	class Visualization
 	{
 	public:
-		Visualization();
+		Visualization(MainActivity *hActivity);
 		~Visualization();
 
 	public:
@@ -59,8 +63,6 @@ namespace sge
 		static void Keyboard(SG_KEYS keys, SG_KEY_STATUS status);
 		// Mouse function
 		static void Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos);
-		// Mouse motion
-		static void Motion(void);
 		// Load volume data from external source
 		int LoadVolumeData(_volumeData const *data_in);
 		// Save volume data to external source
@@ -76,6 +78,7 @@ namespace sge
 		// Offset, 3-D
 		GLuint TEXEL3(GLuint s, GLuint t,  GLuint r);
 
+		void GetActivityHandler(MainActivity *hActivity);
 
 
 	private:

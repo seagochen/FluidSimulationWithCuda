@@ -11,6 +11,9 @@
 #include <sstream>
 #include <iostream>
 
+#include <GL\glew.h>
+#include <GL\glut.h>
+
 #include <Windows.h>
 
 #include <gl\glew.h>

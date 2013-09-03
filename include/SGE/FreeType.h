@@ -1,20 +1,22 @@
 #ifndef _SEAGOSOFT_FREETYPE_H_
 #define _SEAGOSOFT_FREETYPE_H_
 
-//OpenGL Headers 
 #include <windows.h>
-#include <GL\glew.h>
-#include <GL\glut.h>
-
 //Some STL headers
 #include <vector>
 #include <string>
 
+#ifdef _In_Dll_File
+//OpenGL Headers 
+#include <GL\glew.h>
+#include <GL\glut.h>
 //Using the STL exception library increases the
 //chances that someone else using our code will corretly
 //catch any exceptions that we throw.
 //#include <stdexcept>
 #include <SGE\Auxiliaries.h>
+
+#endif
 
 //MSVC will spit out all sorts of useless warnings if
 //you create vectors of strings, this pragma gets rid of them.

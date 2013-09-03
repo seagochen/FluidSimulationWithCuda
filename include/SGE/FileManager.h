@@ -32,10 +32,12 @@
 #ifndef _SEAGOSOFT_FILE_MANAGER_H_
 #define _SEAGOSOFT_FILE_MANAGER_H_
 
-#include "Auxiliaries.h"
-
 #include <string>
 #include <sstream>
+
+#ifdef _In_Dll_File
+#include "Auxiliaries.h"
+#endif
 
 namespace sge
 {

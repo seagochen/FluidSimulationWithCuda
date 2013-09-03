@@ -61,6 +61,7 @@
 #pragma comment (lib, "sgeutil.lib")
 #pragma comment (lib, "glew32.lib")
 #pragma comment (lib, "freeglut.lib")
+#pragma comment (lib, "GlU32.Lib")
 #endif
 
 #endif
