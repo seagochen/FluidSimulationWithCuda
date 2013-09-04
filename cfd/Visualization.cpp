@@ -159,13 +159,6 @@ void Visualization::Init(GLuint width, GLuint height)
 
 	// Changing matrix 
 	glMatrixMode(GL_MODELVIEW);
-
-
-	// 通过移动Camera实现对模型的观察
-	gluLookAt(
-		m_view->eye_at_x,  m_view->eye_at_y,  m_view->eye_at_z,  // eye
-		m_view->look_at_x, m_view->look_at_y, m_view->look_at_z, // center
-		m_view->dx_up_x,   m_view->dx_up_y,   m_view->dx_up_z);  // Up
 }
 
 
@@ -192,15 +185,19 @@ void Visualization::Display()
 {
 	// Clear Screen and Depth Buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glLoadIdentity();
+
+	// 通过移动Camera实现对模型的观察
+	gluLookAt(
+		m_view->eye_at_x,  m_view->eye_at_y,  m_view->eye_at_z,  // eye
+		m_view->look_at_x, m_view->look_at_y, m_view->look_at_z, // center
+		m_view->dx_up_x,   m_view->dx_up_y,   m_view->dx_up_z);  // Up
 	
 	// 放置代理幾何
 	glPushMatrix();
 	{
-		// Reset the view
 		glLoadIdentity();
-		
-		// 移动代理几何
-		glTranslatef( 0, 0, m_view->z_forward);
 
 		// 绘制代理几何
 		glEnable(GL_TEXTURE_3D);
@@ -371,38 +368,73 @@ int Visualization::GetWindowParam(_viewMatrix *view_matrix_out)
 };
 
 
-void DragMotion(void)
+#include <iostream>
+#include <Eigen/Dense>
+using Eigen::MatrixXd;
+
+void AwayObjects()
 {
-	// button pressed
-	if (m_mouse->left_button_pressed)
-	{
+};
+
+void AppObjects()
+{
+};
+
+void RotateObjects()
+{
 		int xDist = m_mouse->cur_cursor_x - m_mouse->pre_cursor_x;
 		int yDist = m_mouse->cur_cursor_y - m_mouse->pre_cursor_y;
 
+		  MatrixXd m(2,2);
+  m(0,0) = 3;
+  m(1,0) = 2.5;
+  m(0,1) = -1;
+  m(1,1) = m(1,0) + m(0,1);
+  std::cout << m << std::endl;
+
 		printf("xDist: %d  yDist: %d\n", xDist, yDist);
 
+		if (xDist >= 0)
+		{
+//			m_view->rotate_of_x = 0;
+			m_view->rotate_of_y += xDist / 100.f;
+		}
+		else if (xDist <= -0)
+		{
+//			m_view->rotate_of_x = 0;
+			m_view->rotate_of_y -= xDist / 100.f;
+		}
+		if (yDist >= 0)
+		{
+			m_view->rotate_of_x -= yDist / 100.f;
+//			m_view->rotate_of_y = 0;
+		}
+		else if (yDist <= -0)
+		{
+			m_view->rotate_of_x += yDist / 100.f;
+//			m_view->rotate_of_y = 0;
+		}
+};
 
+void MouseMotion(SG_MOUSE mouse)
+{
+	// Away from the object
+	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_FORWARD)
+	{
+		AwayObjects();
 	}
 
-//	if (m_mouse.isLeftHold)
-//	{
-//		float xDis = x - m_mouse.preX;
-//		float yDis = y - m_mouse.preY;
-//		m_mouse.preX = x;
-//		m_mouse.preY = y;
-		
-//		m_view.rotateX += xDis;
-//		m_view.rotateY += yDis;
+	//Approaching object
+	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_BACKWARD)
+	{
+		AppObjects();
+	}
 
-		// 计算摄像机空间坐标
-//		m_view.eyeX = cos ( m_view.rotateX / 15.f ) * m_view.radius;
-//		m_view.eyeZ = sin ( m_view.rotateX / 15.f ) * m_view.radius;
-//		m_view.eyeY = m_view.rotateY / 15.f;
-
-//		if ( m_view.eyeY > m_view.radius ) m_view.eyeY = m_view.radius;
-//		if ( m_view.eyeY <-m_view.radius ) m_view.eyeY =-m_view.radius;
-
-//	}
+	// button pressed
+	if (m_mouse->left_button_pressed && mouse == SG_MOUSE::SG_MOUSE_MOVE)
+	{
+		RotateObjects();
+	}
 };
 
 
@@ -412,12 +444,12 @@ void Visualization::Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_FORWARD)
 	{
 		pstatus("mouse wheel forward");
-		m_view->z_forward -= 0.1f;
+		MouseMotion(mouse);
 	}
 	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_BACKWARD)
 	{
 		pstatus("mouse wheel backward");
-		m_view->z_forward += 0.1f;
+		MouseMotion(mouse);
 	}
 
 	// Convert mouse position to OpenGL style
@@ -430,6 +462,7 @@ void Visualization::Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 		m_mouse->left_button_pressed = true;
 		m_mouse->pre_cursor_x = x_pos;
 		m_mouse->pre_cursor_y = y_pos;
+		MouseMotion(mouse);
 	}
 	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP)
 	{
@@ -437,13 +470,14 @@ void Visualization::Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 		m_mouse->left_button_pressed = false;
 		m_mouse->pre_cursor_x = x_pos;
 		m_mouse->pre_cursor_y = y_pos;
+		MouseMotion(mouse);
 	}
 	if (mouse == SG_MOUSE::SG_MOUSE_MOVE && m_mouse->left_button_pressed)
 	{
 		pstatus("mouse is moving");
 		m_mouse->cur_cursor_x = x_pos;
 		m_mouse->cur_cursor_y = y_pos;
-		DragMotion();
+		MouseMotion(mouse);
 	}
 };
 
