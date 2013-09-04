@@ -1,4 +1,7 @@
 #include "Visualization.h"
+#include <Eigen\Dense>
+#include <iostream>
+#include <Winuser.h>
 
 using namespace sge;
 
@@ -16,7 +19,7 @@ static MainActivity *m_hAct;
 #endif
 
 #define pstatus(str) {system("cls"); printf("Status: %s \n", str);}
-
+#define sqr(num) pow(num, 2)
 
 Visualization::Visualization(MainActivity *hActivity)
 {
@@ -73,11 +76,11 @@ void Visualization::InitViewMatrix()
 	// eye
 	m_view->eye_at_x               = 0.f;
 	m_view->eye_at_y               = 0.f;
-	m_view->eye_at_z               = 25.f;
+	m_view->eye_at_z               = 5.f;
 	// look at
 	m_view->look_at_x              = 0.f;
 	m_view->look_at_y              = 0.f;
-	m_view->look_at_z              = -10.f;
+	m_view->look_at_z              = 0.f;
 	// direct up
 	m_view->dx_up_x                = 0.f;
 	m_view->dx_up_y                = 1.f;
@@ -144,6 +147,9 @@ void Visualization::Init(GLuint width, GLuint height)
 	// Enable depth testing
 	glEnable(GL_DEPTH_TEST);
 
+	// Enable culll face
+	glEnable(GL_CULL_FACE);
+
 	// Enable smooth color shading
 	glShadeModel(GL_SMOOTH);
 
@@ -183,10 +189,9 @@ void Visualization::ResizeScreen(GLuint width, GLuint height)
 
 void Visualization::Display() 
 {
+	glLoadIdentity();
 	// Clear Screen and Depth Buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
 
 	// 通过移动Camera实现对模型的观察
 	gluLookAt(
@@ -197,8 +202,7 @@ void Visualization::Display()
 	// 放置代理幾何
 	glPushMatrix();
 	{
-		glLoadIdentity();
-
+		glRotatef(m_view->rotate_of_y += 0.01, 0, 1, 0);
 		// 绘制代理几何
 		glEnable(GL_TEXTURE_3D);
 		{
@@ -367,73 +371,52 @@ int Visualization::GetWindowParam(_viewMatrix *view_matrix_out)
 	return SG_OK;
 };
 
-
-#include <iostream>
-#include <Eigen/Dense>
-using Eigen::MatrixXd;
-
 void AwayObjects()
 {
+	Eigen::Vector3f v3Eyef(m_view->eye_at_x, m_view->eye_at_y, m_view->eye_at_z);
+	Eigen::Vector3f v3Orgf(0, 0, 0);
+	Eigen::Vector3f v3Dirf = v3Eyef - v3Orgf;
+	v3Dirf.normalize();
+	v3Dirf *= 0.1f;
+	v3Eyef += v3Dirf;
+
+	// Applied new position
+	m_view->eye_at_x = v3Eyef[0];
+	m_view->eye_at_y = v3Eyef[1];
+	m_view->eye_at_z = v3Eyef[2];
+
+	std::cout<< v3Eyef <<std::endl;
 };
 
-void AppObjects()
+void ApproachObjects()
 {
-};
+	Eigen::Vector3f v3Eyef(m_view->eye_at_x, m_view->eye_at_y, m_view->eye_at_z);
+	Eigen::Vector3f v3Orgf(0, 0, 0);
+	Eigen::Vector3f v3Dirf = v3Eyef - v3Orgf;
+	v3Dirf.normalize();
+	v3Dirf *= 0.1f;
+	v3Eyef -= v3Dirf;
 
-void RotateObjects()
-{
-		int xDist = m_mouse->cur_cursor_x - m_mouse->pre_cursor_x;
-		int yDist = m_mouse->cur_cursor_y - m_mouse->pre_cursor_y;
+	// Applied new position
+	m_view->eye_at_x = v3Eyef[0];
+	m_view->eye_at_y = v3Eyef[1];
+	m_view->eye_at_z = v3Eyef[2];
 
-		  MatrixXd m(2,2);
-  m(0,0) = 3;
-  m(1,0) = 2.5;
-  m(0,1) = -1;
-  m(1,1) = m(1,0) + m(0,1);
-  std::cout << m << std::endl;
-
-		printf("xDist: %d  yDist: %d\n", xDist, yDist);
-
-		if (xDist >= 0)
-		{
-//			m_view->rotate_of_x = 0;
-			m_view->rotate_of_y += xDist / 100.f;
-		}
-		else if (xDist <= -0)
-		{
-//			m_view->rotate_of_x = 0;
-			m_view->rotate_of_y -= xDist / 100.f;
-		}
-		if (yDist >= 0)
-		{
-			m_view->rotate_of_x -= yDist / 100.f;
-//			m_view->rotate_of_y = 0;
-		}
-		else if (yDist <= -0)
-		{
-			m_view->rotate_of_x += yDist / 100.f;
-//			m_view->rotate_of_y = 0;
-		}
+	std::cout<< v3Eyef <<std::endl;
 };
 
 void MouseMotion(SG_MOUSE mouse)
 {
 	// Away from the object
-	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_FORWARD)
+	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_BACKWARD)
 	{
 		AwayObjects();
 	}
 
-	//Approaching object
-	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_BACKWARD)
+	// Approaching object
+	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_FORWARD)
 	{
-		AppObjects();
-	}
-
-	// button pressed
-	if (m_mouse->left_button_pressed && mouse == SG_MOUSE::SG_MOUSE_MOVE)
-	{
-		RotateObjects();
+		ApproachObjects();
 	}
 };
 
