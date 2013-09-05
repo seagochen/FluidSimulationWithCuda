@@ -165,6 +165,9 @@ void Visualization::Init(GLuint width, GLuint height)
 
 	// Changing matrix 
 	glMatrixMode(GL_MODELVIEW);
+
+	m_mouse->left_button_pressed = false;
+	m_mouse->right_button_pressed = false;
 }
 
 
@@ -202,7 +205,7 @@ void Visualization::Display()
 	// 放置代理幾何
 	glPushMatrix();
 	{
-		glRotatef(m_view->rotate_of_y += 0.01, 0, 1, 0);
+//		glRotatef(m_view->rotate_of_y += 0.01, 0, 1, 0);
 		// 绘制代理几何
 		glEnable(GL_TEXTURE_3D);
 		{
@@ -371,6 +374,7 @@ int Visualization::GetWindowParam(_viewMatrix *view_matrix_out)
 	return SG_OK;
 };
 
+
 void AwayObjects()
 {
 	Eigen::Vector3f v3Eyef(m_view->eye_at_x, m_view->eye_at_y, m_view->eye_at_z);
@@ -387,6 +391,7 @@ void AwayObjects()
 
 	std::cout<< v3Eyef <<std::endl;
 };
+
 
 void ApproachObjects()
 {
@@ -405,7 +410,54 @@ void ApproachObjects()
 	std::cout<< v3Eyef <<std::endl;
 };
 
-void MouseMotion(SG_MOUSE mouse)
+
+void RotateObjects(unsigned x, unsigned y)
+{
+	if(m_mouse->left_button_pressed)
+	{
+		int xDist = x - m_mouse->pre_cursor_x;
+		int yDist = y - m_mouse->pre_cursor_y;
+
+#ifdef _DEBUG
+		std::cout<<x<<" - "<<m_mouse->pre_cursor_x<<" = "<<xDist<<std::endl;
+		std::cout<<y<<" - "<<m_mouse->pre_cursor_y<<" = "<<yDist<<std::endl;
+#endif
+
+		m_mouse->pre_cursor_x = x;
+		m_mouse->pre_cursor_y = y;
+		
+		if (xDist > 0)
+			m_view->rotate_of_x += 0.1f;
+		else if (xDist < 0)
+			m_view->rotate_of_x -= 0.1f;
+
+		if (yDist > 0)
+			m_view->rotate_of_y += 0.1f;
+		else if (xDist < 0)
+			m_view->rotate_of_y -= 0.1f;
+
+#ifdef _DEBUG
+		std::cout<<"X-axis"<<m_view->rotate_of_x * 0.1<<"'"<<std::endl;
+		std::cout<<"Y-axis"<<m_view->rotate_of_y * 0.1<<"'"<<std::endl;
+#endif
+
+		Eigen::Vector3f eye(m_view->eye_at_x, m_view->eye_at_y, m_view->eye_at_z);
+		float radius = sqr(eye[0]) + sqr(eye[1]) + sqr(eye[2]);
+		radius = sqrt(radius);
+		
+		m_view->eye_at_x = cos( m_view->rotate_of_x ) * radius;
+		m_view->eye_at_z = sin( m_view->rotate_of_x ) * radius;
+
+		eye[0] = m_view->eye_at_x;
+		eye[1] = m_view->eye_at_y;
+		eye[2] = m_view->eye_at_z;
+
+		std::cout<<eye<<std::endl;
+	}
+};
+
+
+void MouseMotion(SG_MOUSE mouse, unsigned x, unsigned y)
 {
 	// Away from the object
 	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_BACKWARD)
@@ -418,6 +470,31 @@ void MouseMotion(SG_MOUSE mouse)
 	{
 		ApproachObjects();
 	}
+	
+	// 检查鼠标左右键的状态
+	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN || mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN)
+	 {
+		 m_mouse->pre_cursor_x = x;
+		 m_mouse->pre_cursor_y = y;
+		 
+		 if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN)
+			 m_mouse->left_button_pressed = true;
+		 else if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN)
+			 m_mouse->right_button_pressed = true;
+	 }
+	 else if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP || mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP)
+	 {
+		 if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP) 
+			 m_mouse->left_button_pressed = false;
+		 else if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP)
+			 m_mouse->right_button_pressed = false;
+	 }
+
+	// 檢查鼠標移動狀態
+	if (mouse == SG_MOUSE::SG_MOUSE_MOVE)
+	{
+		RotateObjects(x, y);
+	}
 };
 
 
@@ -426,13 +503,17 @@ void Visualization::Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 	// Forward or backward objects when wheeled
 	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_FORWARD)
 	{
+#ifdef _DEBUG
 		pstatus("mouse wheel forward");
-		MouseMotion(mouse);
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
 	}
 	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_BACKWARD)
 	{
+#ifdef _DEBUG
 		pstatus("mouse wheel backward");
-		MouseMotion(mouse);
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
 	}
 
 	// Convert mouse position to OpenGL style
@@ -441,26 +522,38 @@ void Visualization::Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 	// Mouse events
 	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN)
 	{
+#ifdef _DEBUG
 		pstatus("mouse left button down");
-		m_mouse->left_button_pressed = true;
-		m_mouse->pre_cursor_x = x_pos;
-		m_mouse->pre_cursor_y = y_pos;
-		MouseMotion(mouse);
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
+	}
+	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN)
+	{
+#ifdef _DEBUG
+		pstatus("mouse right button down");
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
 	}
 	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP)
 	{
+#ifdef _DEBUG
 		pstatus("mouse left button up");
-		m_mouse->left_button_pressed = false;
-		m_mouse->pre_cursor_x = x_pos;
-		m_mouse->pre_cursor_y = y_pos;
-		MouseMotion(mouse);
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
 	}
-	if (mouse == SG_MOUSE::SG_MOUSE_MOVE && m_mouse->left_button_pressed)
+	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP)
 	{
+#ifdef _DEBUG
+		pstatus("mouse right button up");
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
+	}
+	if (mouse == SG_MOUSE::SG_MOUSE_MOVE)
+	{
+#ifdef _DEBUG
 		pstatus("mouse is moving");
-		m_mouse->cur_cursor_x = x_pos;
-		m_mouse->cur_cursor_y = y_pos;
-		MouseMotion(mouse);
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
 	}
 };
 
