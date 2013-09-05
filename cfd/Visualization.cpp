@@ -19,6 +19,7 @@ static MainActivity *m_hAct;
 #endif
 
 #define pstatus(str) {system("cls"); printf("Status: %s \n", str);}
+#define PI 3.14159
 #define sqr(num) pow(num, 2)
 
 Visualization::Visualization(MainActivity *hActivity)
@@ -389,7 +390,9 @@ void AwayObjects()
 	m_view->eye_at_y = v3Eyef[1];
 	m_view->eye_at_z = v3Eyef[2];
 
+#ifdef _DEBUG
 	std::cout<< v3Eyef <<std::endl;
+#endif
 };
 
 
@@ -407,7 +410,9 @@ void ApproachObjects()
 	m_view->eye_at_y = v3Eyef[1];
 	m_view->eye_at_z = v3Eyef[2];
 
+#ifdef _DEBUG
 	std::cout<< v3Eyef <<std::endl;
+#endif
 };
 
 
@@ -452,8 +457,26 @@ void RotateObjects(unsigned x, unsigned y)
 		eye[1] = m_view->eye_at_y;
 		eye[2] = m_view->eye_at_z;
 
+#ifdef _DEBUG
 		std::cout<<eye<<std::endl;
+#endif
 	}
+
+#ifdef __USING
+	// 標準的direction up right向量及其求法
+	// 之後進行3D觀察時可能會用到這段代碼
+	system("cls");
+	Eigen::Vector3f lookat(cos( m_view->rotate_of_x ), 0.f, sin( m_view->rotate_of_x ));
+	Eigen::Vector3f right(cos( m_view->rotate_of_x + PI/2), 0.f, sin( m_view->rotate_of_x + PI/2));
+//	Eigen::Vector3f lookat(0,0,-1);
+//	Eigen::Vector3f right(1,0, 0);
+	float result = lookat.dot(right);
+	Eigen::Vector3f up = right.cross(lookat);
+	std::cout<<result<<std::endl;
+	std::cout<<up<<std::endl;
+#endif 
+//	system("cls");
+//	std::cout<<sin(PI/2)<<std::endl;
 };
 
 
