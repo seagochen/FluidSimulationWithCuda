@@ -1,3 +1,0 @@
-sudo apt-get install lesstif2-dev
-sudo apt-get install libxt-dev
-sudo apt-get install libpng12-dev
