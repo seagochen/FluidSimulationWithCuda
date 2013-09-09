@@ -45,12 +45,8 @@
 #undef SAFE_DELT_ARR(ptr)
 #endif
 
-#ifdef DllImport
-#undef DllImport
-#endif
-
-#ifdef DllExport
-#undef DllExport
+#ifdef _DLL
+#undef _DLL
 #endif
 
 #ifdef pterror(str)
@@ -61,10 +57,18 @@
 #define SAFE_DELT_PTR(ptr)   { if( ptr ) delete ptr; ptr = NULL; }   // 安全的释放一般指针
 #define SAFE_DELT_ARR(ptr)   { if( ptr ) delete []ptr; ptr = NULL; } // 安全的释放指针数组
 
-#define DllImport   __declspec( dllimport )
-#define DllExport   __declspec( dllexport )
+//#define DllImport   __declspec( dllimport )
+//#define DllExport   __declspec( dllexport )
 
+#ifdef _In_Dll_File
+#define _DLL __declspec(dllexport)    // 当此头文件被DLL中的源代码模块引用时定义
+#else
+#define _DLL __declspec(dllimport)    // 当此头文件被其他工程中的源代码模块引用时定义  
+#endif  
+
+#ifdef _In_Dll_File
 #include <stdio.h>
+#endif
 
 #define pterror(str) { \
 	printf("Error> %s, check your code at line %d of file %s\n", \
@@ -86,15 +90,9 @@
 #define SG_FAIL   0
 #define SG_ERROR -1
 
+#ifdef _In_Dll_File
 #include <GL\glew.h>
 #include <GL\glut.h>
-
-typedef bool      bool32;
-typedef GLbyte    byte32;
-typedef GLubyte   ubyte32;
-typedef GLint     int32;
-typedef GLuint    uint32;
-typedef GLfloat   float32;
-typedef GLdouble  double32;
+#endif
 
 #endif

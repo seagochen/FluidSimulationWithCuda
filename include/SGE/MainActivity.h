@@ -33,75 +33,56 @@
 
 #include <Windows.h>
 
+#ifdef _In_Dll_File
 #include "GameEvents.h"
+#endif
 
 namespace sge
 {
 	class MainActivity
 	{
-		struct SGFUNCTIONSHANDLER
-		{
-			void  (*hCreateFunc)(void);
-			void  (*hReshapeFunc)(int width, int height);
-			void  (*hKeyDownFunc)(SGKEYS key);
-			void  (*hKeyUpFunc)(SGKEYS key);
-			void  (*hDisplayFunc)(void);
-		};
-
 	public:
-		SGFUNCTIONSHANDLER SG_FuncsHolder;
+		// Default Constructor
+		_DLL MainActivity(bool isFull = false);
+		// Constructor with specified window's size
+		_DLL MainActivity(unsigned width, unsigned height, bool isFull = false);
 
 	public:
 		// Register create (initialize) function
-		DllExport void RegisterCreateFunc(void  (*hCreateFunc)(void));
+		_DLL static void RegisterCreateFunc(
+			void (*hCreateFunc)(void));
 		// Register reshape function
-		DllExport void RegisterReshapeFunc(void  (*hReshapeFunc)(int width, int height));
-		// Register keyboard function, when key is be pressed down
-		DllExport void RegisterKeyDownFunc(void  (*hKeyFunc)(SGKEYS key));
-		// Register keyboard function, when key is be released
-		DllExport void RegisterKeyUpFunc(void  (*hKeyFunc)(SGKEYS key));
+		_DLL static void RegisterReshapeFunc(
+			void (*hReshapeFunc)(unsigned width, unsigned height));
+		// Register keyboard function
+		_DLL static void RegisterKeyboardFunc(
+			void (*hKeyboardFunc)(SG_KEYS keyboard, SG_KEY_STATUS keystate));
+		// Register mouse function
+		_DLL static void RegisterMouseFunc(
+			void (*hMouseFunc)(SG_MOUSE mouse, unsigned xpos, unsigned ypos));
 		// Register display function
-		DllExport void RegisterDisplayFunc(void  (*hDisplayFunc)(void));
+		_DLL static void RegisterDisplayFunc(
+			void (*hDisplayFunc)(void));
+
+	public:
+		// When functions registered call this function to create app form
+		_DLL static int SetupRoutine(void);
+		// Display the app form and loop the message
+		_DLL static int MainLoop(void);
 
 	private:
-		RECT         windowRect;
-		bool32       isFullScreenMode;
-		HINSTANCE    hInstance;
+		_DLL static LRESULT CALLBACK WindowProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam);
 
 	public:
-		// Default Constructor
-		DllExport MainActivity(bool32 isFull = false);
-		// Constructor with specified window's size
-		DllExport MainActivity(int32 width, int32 height, bool32 isFull = false);
-		// Constructor with windows'size and title
-		DllExport MainActivity(int32 width, int32 height, const LPCSTR title, bool32 isFull = false);
-
-	private:
-		HWND         hwnd;
-		HDC          hDC;
-		HGLRC        hRC;
+		_DLL HDC       GetHDC();
+		_DLL HINSTANCE GetHInstance();
+		_DLL HGLRC     GetHRC();
+		_DLL HWND      GetHWND();
 
 	public:
-		DllExport inline void setHWND(HWND hWND_in) { hwnd = hWND_in; };
-		DllExport inline void setHDC(HDC hDC_in) { hDC = hDC_in; };
-		DllExport inline void setHGLRC(HGLRC hRC_in) { hRC = hRC_in; };
-		DllExport inline void setHINSTANCE(HINSTANCE hInstance_in) { hInstance = hInstance_in; };
-
-		DllExport inline HWND getHWND(void) { return hwnd; };
-		DllExport inline HDC  getHDC(void) { return hDC; };
-		DllExport inline HGLRC getHGLRC(void) { return hRC; };
-		DllExport inline HINSTANCE getInstance() { return hInstance; };
-
-	public:
-		int32 SetupRoutine(const LPCSTR title);
-		int32 WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-		int32 MainLoop();
-
-	public:
-		inline bool32 isFullScreen() { return isFullScreenMode; };
-		inline void setFullScreen(bool32 mode) { isFullScreenMode = mode; };
-
-		inline RECT *getWindowRect() { return &windowRect; };
+		_DLL void  SetApplicationTitle(LPCWSTR szTitle);
+		_DLL void  SetApplicationIcons(WORD wAppIcon, WORD wSmallIcon);
+		_DLL void  ConvertMFCPosition(unsigned *xpos_in_out, unsigned *ypos_in_out);
 	};
 };
 

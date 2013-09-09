@@ -32,9 +32,12 @@
 #ifndef _SEAGOSOFT_FILE_MANAGER_H_
 #define _SEAGOSOFT_FILE_MANAGER_H_
 
-#include "Auxiliaries.h"
-
 #include <string>
+#include <sstream>
+
+#ifdef _In_Dll_File
+#include "Auxiliaries.h"
+#endif
 
 namespace sge
 {
@@ -56,14 +59,11 @@ namespace sge
 	class FileManager
 	{
 	public:
-		FileManager();
-		~FileManager();
-		
 		// Load data from external file
-		DllExport std::string GetDataFromFile(const char *filename);
+		_DLL std::string GetDataFromFile(const char *filename);
 		
 		// Save data to external file
-		DllExport void SetDataToFile(
+		_DLL void SetDataToFile(
 			std::string data, const char *filename, SGFILEOPENTYPE mode);
 	};
 }

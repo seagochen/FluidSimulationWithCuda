@@ -21,7 +21,7 @@
     <ClInclude Include="Visualization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Header.h">
+    <ClInclude Include="Headers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -39,17 +39,16 @@
     <ClCompile Include="cfdmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="routine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="glew.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Simulation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Visualization.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="EHSMB.TTF">
+      <Filter>Resource Files</Filter>
+    </Font>
   </ItemGroup>
 </Project>

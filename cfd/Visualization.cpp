@@ -1,105 +1,178 @@
-// 导入自定义头文件
-#include "Header.h"
 #include "Visualization.h"
+#include <Eigen\Dense>
+#include <iostream>
+#include <Winuser.h>
+
+using namespace sge;
 
 
-/* 获取有关OpenGL函数扩展地址，这些操作只需要在Windows平台中 */
-int seago::Visualization::loadFunc()
+#ifndef _SGE_DEFINED_VALUE_
+#define _SGE_DEFINED_VALUE_
+
+static _mouse      *m_mouse;
+static _fps        *m_fps;
+static _volumeData *m_volume;
+static _viewMatrix *m_view;
+static FreeType    *m_font;
+static MainActivity *m_hAct;
+
+#endif
+
+#define pstatus(str) {system("cls"); printf("Status: %s \n", str);}
+#define PI 3.14159
+#define sqr(num) pow(num, 2)
+
+Visualization::Visualization(MainActivity *hActivity)
 {
-	if ( (glTexImage3D = (PFNGLTEXIMAGE3DPROC) wglGetProcAddress("glTexImage3D")) == NULL )
-	{
-		printf("Error in line %d: Couldn't load glTexImage3D function. Aborting.\n", __LINE__);
-		return FAIL;
-	}
-	if ( (glTexSubImage3D = (PFNGLTEXSUBIMAGE3DPROC)wglGetProcAddress("glTexSubImage3D")) == NULL )
-	{
-		printf("Error in line %d: Couldn't load glTexSubImage3D function. Aborting.\n", __LINE__);
-		return FAIL;
-	}
+	m_mouse  = new _mouse;
+	m_fps    = new _fps;
+	m_volume = new _volumeData;
+	m_view   = new _viewMatrix;
+	m_font   = new FreeType;
 
-	return OK;
+	m_hAct   = hActivity;
 };
 
 
-/* Create and bind 3-D texture */
-int seago::Visualization::bindTexutre()
+Visualization::~Visualization()
 {
-	// 创建3D纹理
-	glGenTextures(1, &m_volume.textureID);
-	glBindTexture(GL_TEXTURE_3D, m_volume.textureID);
-
-	// 设定贴图参数
-	glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // scale nearest when image bigger than texture
-	glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // scale nearest when image smaller than texture
-
-	// 实现3D纹理相关函数
-	if (loadFunc() == FAIL) {
-		printf("Error in line %d: Couldn't load OpenGL 3-D functions. Aborting.\n", __LINE__);
-		return FAIL;
-	}
-
-	// 载入3D纹理，并设置相关参数
-	glTexImage3D(GL_TEXTURE_3D, // GLenum target
-		0,		       // GLint level,
-		GL_RGB,        // GLint internalFormat
-		m_volume.width,  // GLsizei width
-		m_volume.height, // GLsizei height
-		m_volume.depth,  // GLsizei depth
-		0,             // GLint border
-		GL_RGB,        // GLenum format
-		GL_UNSIGNED_BYTE, // GLenum type
-		m_volume.data);  // const GLvoid * data
-
-	return OK;
+	SAFE_DELT_PTR(m_mouse);
+	SAFE_DELT_PTR(m_fps);
+	SAFE_FREE_PTR(m_volume->data);
+	SAFE_DELT_PTR(m_volume);
+	SAFE_DELT_PTR(m_view);
+	m_font->Clean();
+	SAFE_DELT_PTR(m_font)
 };
 
 
-void seago::Visualization::initFPS()
+void Visualization::GetActivityHandler(MainActivity *hActivity)
+{
+	m_hAct = hActivity;
+};
+
+
+void Visualization::InitFPS()
 {
 	// Zero out the frames per second variables:
-	m_fps.dwFrames = 0;
-	m_fps.dwCurrentTime = 0;
-	m_fps.dwLastUpdateTime = 0;
-	m_fps.dwElapsedTime = 0;
+	m_fps->dwFrames = 0;
+	m_fps->dwCurrentTime = 0;
+	m_fps->dwLastUpdateTime = 0;
+	m_fps->dwElapsedTime = 0;
 };
 
 
-/* An OpenGL initialization function */
-void seago::Visualization::sgInit(int width, int height)
+void Visualization::InitFont()
 {
-	// Load the textures
-	if ( bindTexutre() == FAIL ) {
-		printf("Cannot initialize the program, exit...\n");
-		exit(0);
-	}
-	// Set clearing color
-	glClearColor(0.f, 0.f, 0.7f, 1.f);
-	// Enable clearing of the depth buffer
-	glClearDepth(1.f);
-	// Type of depth test to do
-	glDepthFunc(GL_LESS);
-	// Enable depth testing
-	glEnable(GL_DEPTH_TEST);
-	// Enable smooth color shading
-	glShadeModel(GL_SMOOTH);
-	// Changing matrix
-	glMatrixMode(GL_PROJECTION);
-	// Reset the projection matrix
-	glLoadIdentity();
-	// Calculate the aspect ratio of the window
-	gluPerspective(m_window.field_of_view_angle,
-		(GLfloat)width / (GLfloat)height, m_window.z_near, m_window.z_far);
-	// Changing matrix 
-	glMatrixMode(GL_MODELVIEW);	
-
-	// etc...
-	initFPS();
-	initViewMatrix();
+	m_font->Init("EHSMB.TTF", 12);
 }
 
 
-/* The function called when window is resized */
-void seago::Visualization::sgResizeScreen(int width, int height)
+void Visualization::InitViewMatrix()
+{
+	// view matrix
+	m_view->field_of_view_angle    = 45.f;
+	// view radius
+	m_view->radius_of_view_matrix  = 2.f;
+	// eye
+	m_view->eye_at_x               = 0.f;
+	m_view->eye_at_y               = 0.f;
+	m_view->eye_at_z               = 5.f;
+	// look at
+	m_view->look_at_x              = 0.f;
+	m_view->look_at_y              = 0.f;
+	m_view->look_at_z              = 0.f;
+	// direct up
+	m_view->dx_up_x                = 0.f;
+	m_view->dx_up_y                = 1.f;
+	m_view->dx_up_z                = 0.f;
+	// near & far
+	m_view->z_far                  = 100.f;
+	m_view->z_near                 = 0.1f;
+	// forward
+	m_view->z_forward              = -5.f;
+	// rotation
+	m_view->rotate_of_x            = 0.f;
+	m_view->rotate_of_y            = 0.f;
+	m_view->rotate_of_z            = 0.f;
+};
+
+
+void Visualization::Bind3DTexutre()
+{
+	// 创建3D纹理
+	glGenTextures(1, &m_volume->textureID);
+	glBindTexture(GL_TEXTURE_3D, m_volume->textureID);
+
+	// 设定贴图参数
+	glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	// 载入3D纹理，并设置相关参数
+	glTexImage3D(GL_TEXTURE_3D,          // GLenum target
+		0,		                         // GLint level,
+		GL_RGB,                          // GLint internalFormat
+		m_volume->width,                 // GLsizei width
+		m_volume->height,                // GLsizei height
+		m_volume->depth,                 // GLsizei depth
+		0,                               // GLint border
+		GL_RGB,                          // GLenum format
+		GL_UNSIGNED_BYTE,                // GLenum type
+		m_volume->data);                 // const GLvoid * data
+};
+
+
+void Visualization::Init(GLuint width, GLuint height)
+{
+	// Initialize
+	glewInit();
+	InitFont();
+	InitFPS();
+	InitViewMatrix();
+
+	// Load the textures
+	Bind3DTexutre();
+
+	// Set clearing color
+	glClearColor(0.f, 0.f, 0.0f, 1.f);
+
+	// Enable clearing of the depth buffer
+	glClearDepth(1.f);
+
+	// Type of depth test to do
+	//glDepthFunc(GL_LESS);
+	glDepthFunc(GL_LEQUAL);	
+
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+
+	// Enable depth testing
+	glEnable(GL_DEPTH_TEST);
+
+	// Enable culll face
+	glEnable(GL_CULL_FACE);
+
+	// Enable smooth color shading
+	glShadeModel(GL_SMOOTH);
+
+	// Changing matrix
+	glMatrixMode(GL_PROJECTION);
+
+	// Reset the projection matrix
+	glLoadIdentity();
+
+	// Calculate the aspect ratio of the window
+	gluPerspective(m_view->field_of_view_angle,
+		(GLfloat)width / (GLfloat)height, m_view->z_near, m_view->z_far);
+
+	// Changing matrix 
+	glMatrixMode(GL_MODELVIEW);
+
+	m_mouse->left_button_pressed = false;
+	m_mouse->right_button_pressed = false;
+}
+
+
+void Visualization::ResizeScreen(GLuint width, GLuint height)
 {
 	// Prevent a divide by zero if the window is too small
 	if (height == 0) height = 1;
@@ -108,229 +181,432 @@ void seago::Visualization::sgResizeScreen(int width, int height)
 
 	// Reset the current viewport and perspective transformation
 	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-
-	gluPerspective(m_window.field_of_view_angle,
-		(GLfloat)width / (GLfloat)height, m_window.z_near, m_window.z_far);
+	{
+		glLoadIdentity();
+		
+		gluPerspective(m_view->field_of_view_angle,
+			(GLfloat)width / (GLfloat)height, m_view->z_near, m_view->z_far);
+	}
 	glMatrixMode(GL_MODELVIEW);
 }
 
 
-/* Display CALLBACK function */
-void seago::Visualization::sgDisplay() 
+void Visualization::Display() 
 {
-	// 将数据实时显示在屏幕上，这里采用glTexSubImage3D而不是glTexImage3D，是为了降低频繁更新而带来的性能损耗
-	glTexSubImage3D(GL_TEXTURE_3D, // GLenum target,
-		0, // GLint level,
-		0, // GLint xoffset,
-		0, // GLint yoffset,
-		0, // GLint zoffset,
-		m_volume.width,  // GLsizei width,
-		m_volume.height, // GLsizei height,
-		m_volume.depth,  // GLsizei depth,
-		GL_RGB,        // GLenum format,
-		GL_UNSIGNED_BYTE, // GLenum type,
-		m_volume.data);  // const GLvoid * data
-
+	glLoadIdentity();
 	// Clear Screen and Depth Buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	// Reset the view
-	glLoadIdentity();
 
-	// 移动代理几何
-	glTranslatef(0.0f, 0.0f, m_view.nearZ);
-	
 	// 通过移动Camera实现对模型的观察
 	gluLookAt(
-		m_view.eyeX, m_view.eyeY, m_view.eyeZ, // eye
-		0, 0, 0, // center
-		0, 1, 0);// Up
+		m_view->eye_at_x,  m_view->eye_at_y,  m_view->eye_at_z,  // eye
+		m_view->look_at_x, m_view->look_at_y, m_view->look_at_z, // center
+		m_view->dx_up_x,   m_view->dx_up_y,   m_view->dx_up_z);  // Up
+	
+	// 放置代理幾何
+	glPushMatrix();
+	{
+//		glRotatef(m_view->rotate_of_y += 0.01, 0, 1, 0);
+		// 绘制代理几何
+		glEnable(GL_TEXTURE_3D);
+		{
+			CreateAgentBox();
+		}
+		glDisable(GL_TEXTURE_3D);
+	}
+	glPopMatrix();
 
-	// 绘制代理几何
-	glEnable(GL_TEXTURE_3D);
-	agentBox();
-	glDisable(GL_TEXTURE_3D);
-
-	// Update FPS
-	sgCountFPS();
-
-	// swap buffer and display image
-	//glutSwapBuffers();
+	CountFPS();
 }
 
 
-/* Draw an agent geometry for 3-D texture */
-void seago::Visualization::agentBox()
+void Visualization::CreateAgentBox()
 {
+	// 将数据实时显示在屏幕上，这里采用glTexSubImage3D而不是glTexImage3D，是为了降低频繁更新而带来的性能损耗
+	// every 10 frames per second
+	if (m_fps->dwElapsedTime > 500)
+	{
+		glTexSubImage3D(
+			GL_TEXTURE_3D,                 // GLenum target,
+			0,                             // GLint level,
+			0,                             // GLint xoffset,
+			0,                             // GLint yoffset,
+			0,                             // GLint zoffset,
+			m_volume->width,               // GLsizei width,
+			m_volume->height,              // GLsizei height,
+			m_volume->depth,               // GLsizei depth,
+			GL_RGB,                        // GLenum format,
+			GL_UNSIGNED_BYTE,              // GLenum type,
+			m_volume->data);               // const GLvoid * data
+	}
+
 	// Draw 6 quadrilaterals
 	glBegin(GL_QUADS);
-
-	// Front Face
-	glTexCoord3f(0.0f, 0.0f,1.0f); glVertex3f(-1.0f, -1.0f,  1.0f);	// Bottom Left Of The Texture and Quad
-	glTexCoord3f(1.0f, 0.0f,1.0f); glVertex3f( 1.0f, -1.0f,  1.0f);	// Bottom Right Of The Texture and Quad
-	glTexCoord3f(1.0f, 1.0f,1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);	// Top Right Of The Texture and Quad
-	glTexCoord3f(0.0f, 1.0f,1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);	// Top Left Of The Texture and Quad
+	{
+		// Front Face
+		glTexCoord3f(0.0f, 0.0f,1.0f); glVertex3f(-1.0f, -1.0f,  1.0f);	// Bottom Left Of The Texture and Quad
+		glTexCoord3f(1.0f, 0.0f,1.0f); glVertex3f( 1.0f, -1.0f,  1.0f);	// Bottom Right Of The Texture and Quad
+		glTexCoord3f(1.0f, 1.0f,1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);	// Top Right Of The Texture and Quad
+		glTexCoord3f(0.0f, 1.0f,1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);	// Top Left Of The Texture and Quad
+		
+		// Back Face
+		glTexCoord3f(0.0f, 0.0f,0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);	// Bottom Right Of The Texture and Quad
+		glTexCoord3f(0.0f, 1.0f,0.0f); glVertex3f(-1.0f,  1.0f, -1.0f);	// Top Right Of The Texture and Quad
+		glTexCoord3f(1.0f, 1.0f,0.0f); glVertex3f( 1.0f,  1.0f, -1.0f);	// Top Left Of The Texture and Quad
+		glTexCoord3f(1.0f, 0.0f,0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);	// Bottom Left Of The Texture and Quad
  
-	// Back Face
-	glTexCoord3f(0.0f, 0.0f,0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);	// Bottom Right Of The Texture and Quad
-	glTexCoord3f(0.0f, 1.0f,0.0f); glVertex3f(-1.0f,  1.0f, -1.0f);	// Top Right Of The Texture and Quad
-	glTexCoord3f(1.0f, 1.0f,0.0f); glVertex3f( 1.0f,  1.0f, -1.0f);	// Top Left Of The Texture and Quad
-	glTexCoord3f(1.0f, 0.0f,0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);	// Bottom Left Of The Texture and Quad
+		// Top Face
+		glTexCoord3f(0.0f, 1.0f,0.0f); glVertex3f(-1.0f,  1.0f, -1.0f);	// Top Left Of The Texture and Quad
+		glTexCoord3f(0.0f, 1.0f,1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);	// Bottom Left Of The Texture and Quad
+		glTexCoord3f(1.0f, 1.0f,1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);	// Bottom Right Of The Texture and Quad
+		glTexCoord3f(1.0f, 1.0f,0.0f); glVertex3f( 1.0f,  1.0f, -1.0f);	// Top Right Of The Texture and Quad
  
-	// Top Face
-	glTexCoord3f(0.0f, 1.0f,0.0f); glVertex3f(-1.0f,  1.0f, -1.0f);	// Top Left Of The Texture and Quad
-	glTexCoord3f(0.0f, 1.0f,1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);	// Bottom Left Of The Texture and Quad
-	glTexCoord3f(1.0f, 1.0f,1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);	// Bottom Right Of The Texture and Quad
-	glTexCoord3f(1.0f, 1.0f,0.0f); glVertex3f( 1.0f,  1.0f, -1.0f);	// Top Right Of The Texture and Quad
+		// Bottom Face
+		glTexCoord3f(0.0f, 0.0f,0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);	// Top Right Of The Texture and Quad
+		glTexCoord3f(1.0f, 0.0f,0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);	// Top Left Of The Texture and Quad
+		glTexCoord3f(1.0f, 0.0f,1.0f); glVertex3f( 1.0f, -1.0f,  1.0f);	// Bottom Left Of The Texture and Quad
+		glTexCoord3f(0.0f, 0.0f,1.0f); glVertex3f(-1.0f, -1.0f,  1.0f);	// Bottom Right Of The Texture and Quad
  
-	// Bottom Face
-	glTexCoord3f(0.0f, 0.0f,0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);	// Top Right Of The Texture and Quad
-	glTexCoord3f(1.0f, 0.0f,0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);	// Top Left Of The Texture and Quad
-	glTexCoord3f(1.0f, 0.0f,1.0f); glVertex3f( 1.0f, -1.0f,  1.0f);	// Bottom Left Of The Texture and Quad
-	glTexCoord3f(0.0f, 0.0f,1.0f); glVertex3f(-1.0f, -1.0f,  1.0f);	// Bottom Right Of The Texture and Quad
+		// Right face
+		glTexCoord3f(1.0f, 0.0f,0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);	// Bottom Right Of The Texture and Quad
+		glTexCoord3f(1.0f, 1.0f,0.0f); glVertex3f( 1.0f,  1.0f, -1.0f);	// Top Right Of The Texture and Quad
+		glTexCoord3f(1.0f, 1.0f,1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);	// Top Left Of The Texture and Quad
+		glTexCoord3f(1.0f, 0.0f,1.0f); glVertex3f( 1.0f, -1.0f,  1.0f);	// Bottom Left Of The Texture and Quad
  
-	// Right face
-	glTexCoord3f(1.0f, 0.0f,0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);	// Bottom Right Of The Texture and Quad
-	glTexCoord3f(1.0f, 1.0f,0.0f); glVertex3f( 1.0f,  1.0f, -1.0f);	// Top Right Of The Texture and Quad
-	glTexCoord3f(1.0f, 1.0f,1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);	// Top Left Of The Texture and Quad
-	glTexCoord3f(1.0f, 0.0f,1.0f); glVertex3f( 1.0f, -1.0f,  1.0f);	// Bottom Left Of The Texture and Quad
- 
-	// Left Face
-	glTexCoord3f(0.0f, 0.0f,0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);	// Bottom Left Of The Texture and Quad
-	glTexCoord3f(0.0f, 0.0f,1.0f); glVertex3f(-1.0f, -1.0f,  1.0f);	// Bottom Right Of The Texture and Quad
-	glTexCoord3f(0.0f, 1.0f,1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);	// Top Right Of The Texture and Quad
-	glTexCoord3f(0.0f, 1.0f,0.0f); glVertex3f(-1.0f,  1.0f, -1.0f);	// Top Left Of The Texture and Quad
-
+		// Left Face
+		glTexCoord3f(0.0f, 0.0f,0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);	// Bottom Left Of The Texture and Quad
+		glTexCoord3f(0.0f, 0.0f,1.0f); glVertex3f(-1.0f, -1.0f,  1.0f);	// Bottom Right Of The Texture and Quad
+		glTexCoord3f(0.0f, 1.0f,1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);	// Top Right Of The Texture and Quad
+		glTexCoord3f(0.0f, 1.0f,0.0f); glVertex3f(-1.0f,  1.0f, -1.0f);	// Top Left Of The Texture and Quad
+	}
 	glEnd();
 };
 
 
-/* FPS function */
-void seago::Visualization::sgCountFPS( ) {
-
-	std::stringstream buffer;
+void Visualization::CountFPS( ) {
 	
 	// Calculate the number of frames per one second:
-	m_fps.dwFrames++;
-	m_fps.dwCurrentTime = GetTickCount(); // Even better to use timeGetTime()
-	m_fps.dwElapsedTime = m_fps.dwCurrentTime - m_fps.dwLastUpdateTime;
+	m_fps->dwFrames++;
+	m_fps->dwCurrentTime = GetTickCount(); // Even better to use timeGetTime()
+	m_fps->dwElapsedTime = m_fps->dwCurrentTime - m_fps->dwLastUpdateTime;
 	
-	if( m_fps.dwElapsedTime >= 1000 )
+	
+	if ( m_fps->dwElapsedTime >= 1000 )
 	{
-		UINT FPS = m_fps.dwFrames * 1000.0 / m_fps.dwElapsedTime;
-		system("cls");
-		std::cout<<FPS<<std::endl;
-		//buffer<<" FPS: "<<std::to_string(FPS);
-		//std::cout<<buffer.str().c_str()<<std::endl;
-		//glutSetWindowTitle( buffer.str().c_str() );
-		m_fps.dwFrames = 0;
-		m_fps.dwLastUpdateTime = m_fps.dwCurrentTime;
+		m_fps->FPS = m_fps->dwFrames * 1000.0 / m_fps->dwElapsedTime;
+		m_fps->dwFrames = 0;
+		m_fps->dwLastUpdateTime = m_fps->dwCurrentTime;
 	}
+
+	glPushMatrix();
+	{
+		glLoadIdentity();									// Reset The Current Modelview Matrix
+		glTranslatef(0.0f,0.0f,-1.0f);						// Move One Unit Into The Screen
+		
+		// White Text
+		glColor3f(1.0f, 1.0f, 1.0f);
+		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", m_fps->FPS);			
+	}
+	glPopMatrix();
+
 }
 
 
-int seago::Visualization::sgLoadVolumeData(seago::Visualization::_volumeData const *data_in)
+int Visualization::LoadVolumeData(_volumeData const *data_in)
 {
-	m_volume.data = data_in->data;
-	m_volume.width = data_in->width;
-	m_volume.height = data_in->height;
-	m_volume.depth = data_in->depth;
-
-	if ( m_volume.data != NULL ) return OK;
-	
-	return FAIL;
-};
-
-
-// 设置窗口参数
-void seago::Visualization::sgSetWindowParam(seago::Visualization::_windowSets const *win_in)
-{
-	m_window.field_of_view_angle = win_in->field_of_view_angle;
-	m_window.title = win_in->title;
-	m_window.z_far = win_in->z_far;
-	m_window.z_near = win_in->z_near;
-	m_window.width = win_in->width;
-	m_window.height = win_in->height;
-};
-
-
-
-void seago::Visualization::sgMotion(int x,int y)
-{
-	if(m_mouse.isLeftHold)
+	if (data_in == NULL) 
 	{
-		float xDis = x - m_mouse.preX;
-		float yDis = y - m_mouse.preY;
-		m_mouse.preX = x;
-		m_mouse.preY = y;
+		pterror("Error you've passed an empty pointer");
+		return SG_FAIL;
+	}
+
+	memcpy(m_volume, data_in, sizeof(_volumeData));
+
+	if ( m_volume->data != NULL ) return SG_OK;
+	
+	return SG_FAIL;
+};
+
+
+int Visualization::SaveVolumeData(_volumeData *data_out)
+{
+	if (m_volume->data == NULL) 
+	{
+		pterror("Error you've tried access an empty pointer");
+		return SG_FAIL;
+	}
+
+	memcpy(data_out, m_volume, sizeof(_volumeData));
+
+	if ( data_out->data != NULL ) return SG_OK;
+	
+	return SG_FAIL;
+}
+
+
+int Visualization::SetWindowParam(_viewMatrix const *view_matrix_in)
+{
+	if (view_matrix_in == NULL)
+	{
+		pterror("Error you've passed an empty pointer");
+		return SG_FAIL;
+	}
+
+	memcpy(m_view, view_matrix_in, sizeof(_viewMatrix));
+
+	if (m_view == NULL) return SG_FAIL;
+
+	return SG_OK;
+};
+
+
+int Visualization::GetWindowParam(_viewMatrix *view_matrix_out)
+{
+	if (m_view == NULL) 
+	{
+		pterror("Error you've tried access an empty pointer");
+		return SG_FAIL;
+	}
+
+	memcpy(view_matrix_out, m_view, sizeof(_viewMatrix));
+
+	if (view_matrix_out == NULL) return SG_FAIL;
+
+	return SG_OK;
+};
+
+
+void AwayObjects()
+{
+	Eigen::Vector3f v3Eyef(m_view->eye_at_x, m_view->eye_at_y, m_view->eye_at_z);
+	Eigen::Vector3f v3Orgf(0, 0, 0);
+	Eigen::Vector3f v3Dirf = v3Eyef - v3Orgf;
+	v3Dirf.normalize();
+	v3Dirf *= 0.1f;
+	v3Eyef += v3Dirf;
+
+	// Applied new position
+	m_view->eye_at_x = v3Eyef[0];
+	m_view->eye_at_y = v3Eyef[1];
+	m_view->eye_at_z = v3Eyef[2];
+
+#ifdef _DEBUG
+	std::cout<< v3Eyef <<std::endl;
+#endif
+};
+
+
+void ApproachObjects()
+{
+	Eigen::Vector3f v3Eyef(m_view->eye_at_x, m_view->eye_at_y, m_view->eye_at_z);
+	Eigen::Vector3f v3Orgf(0, 0, 0);
+	Eigen::Vector3f v3Dirf = v3Eyef - v3Orgf;
+	v3Dirf.normalize();
+	v3Dirf *= 0.1f;
+	v3Eyef -= v3Dirf;
+
+	// Applied new position
+	m_view->eye_at_x = v3Eyef[0];
+	m_view->eye_at_y = v3Eyef[1];
+	m_view->eye_at_z = v3Eyef[2];
+
+#ifdef _DEBUG
+	std::cout<< v3Eyef <<std::endl;
+#endif
+};
+
+
+void RotateObjects(unsigned x, unsigned y)
+{
+	if(m_mouse->left_button_pressed)
+	{
+		int xDist = x - m_mouse->pre_cursor_x;
+		int yDist = y - m_mouse->pre_cursor_y;
+
+#ifdef _DEBUG
+		std::cout<<x<<" - "<<m_mouse->pre_cursor_x<<" = "<<xDist<<std::endl;
+		std::cout<<y<<" - "<<m_mouse->pre_cursor_y<<" = "<<yDist<<std::endl;
+#endif
+
+		m_mouse->pre_cursor_x = x;
+		m_mouse->pre_cursor_y = y;
 		
-		m_view.rotateX += xDis;
-		m_view.rotateY += yDis;
+		if (xDist > 0)
+			m_view->rotate_of_x += 0.1f;
+		else if (xDist < 0)
+			m_view->rotate_of_x -= 0.1f;
 
-		// 计算摄像机空间坐标
-		m_view.eyeX = cos ( m_view.rotateX / 15.f ) * m_view.radius;
-		m_view.eyeZ = sin ( m_view.rotateX / 15.f ) * m_view.radius;
-		m_view.eyeY = m_view.rotateY / 15.f;
+		if (yDist > 0)
+			m_view->rotate_of_y += 0.1f;
+		else if (xDist < 0)
+			m_view->rotate_of_y -= 0.1f;
 
-		if ( m_view.eyeY > m_view.radius ) m_view.eyeY = m_view.radius;
-		if ( m_view.eyeY <-m_view.radius ) m_view.eyeY =-m_view.radius;
+#ifdef _DEBUG
+		std::cout<<"X-axis"<<m_view->rotate_of_x * 0.1<<"'"<<std::endl;
+		std::cout<<"Y-axis"<<m_view->rotate_of_y * 0.1<<"'"<<std::endl;
+#endif
 
-		//glutPostRedisplay();
+		Eigen::Vector3f eye(m_view->eye_at_x, m_view->eye_at_y, m_view->eye_at_z);
+		float radius = sqr(eye[0]) + sqr(eye[1]) + sqr(eye[2]);
+		radius = sqrt(radius);
+		
+		m_view->eye_at_x = cos( m_view->rotate_of_x ) * radius;
+		m_view->eye_at_z = sin( m_view->rotate_of_x ) * radius;
+
+		eye[0] = m_view->eye_at_x;
+		eye[1] = m_view->eye_at_y;
+		eye[2] = m_view->eye_at_z;
+
+#ifdef _DEBUG
+		std::cout<<eye<<std::endl;
+#endif
+	}
+
+#ifdef __USING
+	// 標準的direction up right向量及其求法
+	// 之後進行3D觀察時可能會用到這段代碼
+	system("cls");
+	Eigen::Vector3f lookat(cos( m_view->rotate_of_x ), 0.f, sin( m_view->rotate_of_x ));
+	Eigen::Vector3f right(cos( m_view->rotate_of_x + PI/2), 0.f, sin( m_view->rotate_of_x + PI/2));
+//	Eigen::Vector3f lookat(0,0,-1);
+//	Eigen::Vector3f right(1,0, 0);
+	float result = lookat.dot(right);
+	Eigen::Vector3f up = right.cross(lookat);
+	std::cout<<result<<std::endl;
+	std::cout<<up<<std::endl;
+#endif 
+//	system("cls");
+//	std::cout<<sin(PI/2)<<std::endl;
+};
+
+
+void MouseMotion(SG_MOUSE mouse, unsigned x, unsigned y)
+{
+	// Away from the object
+	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_BACKWARD)
+	{
+		AwayObjects();
+	}
+
+	// Approaching object
+	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_FORWARD)
+	{
+		ApproachObjects();
+	}
+	
+	// 检查鼠标左右键的状态
+	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN || mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN)
+	 {
+		 m_mouse->pre_cursor_x = x;
+		 m_mouse->pre_cursor_y = y;
+		 
+		 if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN)
+			 m_mouse->left_button_pressed = true;
+		 else if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN)
+			 m_mouse->right_button_pressed = true;
+	 }
+	 else if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP || mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP)
+	 {
+		 if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP) 
+			 m_mouse->left_button_pressed = false;
+		 else if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP)
+			 m_mouse->right_button_pressed = false;
+	 }
+
+	// 檢查鼠標移動狀態
+	if (mouse == SG_MOUSE::SG_MOUSE_MOVE)
+	{
+		RotateObjects(x, y);
 	}
 };
 
 
-
-void seago::Visualization::sgMouse(int button,int state,int x,int y)
+void Visualization::Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 {
-	// 检查鼠标滚轮的状态
-//	if (state == GLUT_UP && button == MOUSE_WHEEL_UP)
-//	{
-//		m_view.nearZ += 0.1f;
-//		glutPostRedisplay();
-//	}
-//	if (state == GLUT_UP && button == MOUSE_WHEEL_DOWN)
-//	{
-//		m_view.nearZ -= 0.1f;
-//		glutPostRedisplay();
-//	}
-	// 检查鼠标左右键的状态
-//	 if (state == GLUT_DOWN)
-//	 {
-//		 m_mouse.preX = x;
-//		 m_mouse.preY = y;
-//		 
-//		 if (button==GLUT_LEFT_BUTTON) m_mouse.isLeftHold = true;
-//		 else if (button==GLUT_RIGHT_BUTTON) m_mouse.isRightHold = true;
-//	 }
-//	 else if (state == GLUT_UP)
-//	 {
-//		 if (button == GLUT_LEFT_BUTTON) m_mouse.isLeftHold = false;
-//		 else if (button==GLUT_RIGHT_BUTTON) m_mouse.isRightHold = false;
-//	 }
+	// Forward or backward objects when wheeled
+	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_FORWARD)
+	{
+#ifdef _DEBUG
+		pstatus("mouse wheel forward");
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
+	}
+	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_BACKWARD)
+	{
+#ifdef _DEBUG
+		pstatus("mouse wheel backward");
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
+	}
+
+	// Convert mouse position to OpenGL style
+	m_hAct->ConvertMFCPosition(&x_pos, &y_pos);
+
+	// Mouse events
+	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN)
+	{
+#ifdef _DEBUG
+		pstatus("mouse left button down");
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
+	}
+	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN)
+	{
+#ifdef _DEBUG
+		pstatus("mouse right button down");
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
+	}
+	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP)
+	{
+#ifdef _DEBUG
+		pstatus("mouse left button up");
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
+	}
+	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP)
+	{
+#ifdef _DEBUG
+		pstatus("mouse right button up");
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
+	}
+	if (mouse == SG_MOUSE::SG_MOUSE_MOVE)
+	{
+#ifdef _DEBUG
+		pstatus("mouse is moving");
+#endif
+		MouseMotion(mouse, x_pos, y_pos);
+	}
 };
 
 
-void seago::Visualization::initViewMatrix(void)
-{
-	m_view.eyeX = 0.0f;
-	m_view.eyeY = 0.0f;
-	m_view.eyeZ = 2.0f;
-	m_view.radius = 2.0f;
-	m_view.nearZ = -5.f;
-};
-
-
-/* Keyboard CALLBACK function */
-//void seago::Visualization::sgKeyboard ( unsigned char key, int mousePositionX, int mousePositionY )
-void seago::Visualization::sgKeyboard( sge::SGKEYS keys)
+void Visualization::Keyboard(SG_KEYS keys, SG_KEY_STATUS status)
 { 
-	using namespace sge;
-
 	switch ( keys )
 	{
-		// ESC default
+	case SG_KEYS::SG_KEY_R:
+		m_view->rotate_of_y += 0.3f;
+		break;
+
+	case SG_KEYS::SG_KEY_D:
+		m_view->rotate_of_x += 0.3f;
+		break;
+
+	case SG_KEYS::SG_KEY_Z:
+		m_view->rotate_of_x = 0.f;
+		m_view->rotate_of_y = 0.f;
+		break;
 	
 	default: break;
 	}
 }
+
+
+GLuint Visualization::TEXEL2(GLuint s, GLuint t) { return  BYTES_PER_TEXEL * (s * m_volume->width + t); };
+
+
+GLuint Visualization::TEXEL3(GLuint s, GLuint t,  GLuint r) { return  TEXEL2(s, t) + LAYER(r); };
+
+
+GLuint Visualization::LAYER(GLuint r) {return m_volume->width * m_volume->height * r * BYTES_PER_TEXEL;};
