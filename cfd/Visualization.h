@@ -4,7 +4,7 @@
 
 #include "Headers.h"
 
-#define BYTES_PER_TEXEL 4
+#define BYTES_PER_TEXEL 3
 
 namespace sge
 {
@@ -82,19 +82,24 @@ namespace sge
 
 
 	private:
-		// 创建并绑定3D纹理
-		void Bind3DTexutre(void);
-		// 绘制代理几何
-		static void CreateAgentBox(void);
-		// 初始化FPS有关操作及数据
+		// Create 2D/3D texture
+		void BindVolumeTexutre(void);
+		// Create agent
+		static void CreateAgent(void);
+		// Initialize FPS, font and etc.
 		void InitFPS(void), InitViewMatrix(void), InitFont(void);
-		// 计算layer
+		// Layer
 		GLuint LAYER(GLuint r);
 		// FPS function
 		static void CountFPS(void);
-
 	};
 
 };
 
+#define pstatus(str) {system("cls"); printf("Status: %s \n", str);}
+#define PI 3.14159
+#define sqr(num) pow(num, 2)
+
+//#define _USING_2D_TEXTURE
+#define _USING_3D_TEXTURE
 #endif

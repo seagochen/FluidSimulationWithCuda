@@ -9,7 +9,7 @@ using namespace sge;
 Visualization *visual;
 MainActivity  *myact;
 
-extern DWORD simulation (LPVOID lpdwThreadParam );
+extern DWORD simulation (LPVOID lpdwThreadParam);
 
 /* Encapsulate init function */
 void OnCreate() { visual->Init(DISPLAY_WIDTH, DISPLAY_HEIGHT); }

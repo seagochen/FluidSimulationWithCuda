@@ -18,10 +18,6 @@ static MainActivity *m_hAct;
 
 #endif
 
-#define pstatus(str) {system("cls"); printf("Status: %s \n", str);}
-#define PI 3.14159
-#define sqr(num) pow(num, 2)
-
 Visualization::Visualization(MainActivity *hActivity)
 {
 	m_mouse  = new _mouse;
@@ -42,9 +38,8 @@ Visualization::~Visualization()
 	SAFE_DELT_PTR(m_volume);
 	SAFE_DELT_PTR(m_view);
 	m_font->Clean();
-	SAFE_DELT_PTR(m_font)
+	SAFE_DELT_PTR(m_font);
 };
-
 
 void Visualization::GetActivityHandler(MainActivity *hActivity)
 {
@@ -73,16 +68,16 @@ void Visualization::InitViewMatrix()
 	// view matrix
 	m_view->field_of_view_angle    = 45.f;
 	// view radius
-	m_view->radius_of_view_matrix  = 2.f;
+	m_view->radius_of_view_matrix  = 5.f;
 	// eye
 	m_view->eye_at_x               = 0.f;
 	m_view->eye_at_y               = 0.f;
-	m_view->eye_at_z               = 5.f;
+	m_view->eye_at_z               = 3.f;
 	// look at
 	m_view->look_at_x              = 0.f;
 	m_view->look_at_y              = 0.f;
 	m_view->look_at_z              = 0.f;
-	// direct up
+	// up
 	m_view->dx_up_x                = 0.f;
 	m_view->dx_up_y                = 1.f;
 	m_view->dx_up_z                = 0.f;
@@ -97,43 +92,81 @@ void Visualization::InitViewMatrix()
 	m_view->rotate_of_z            = 0.f;
 };
 
-
-void Visualization::Bind3DTexutre()
+#ifdef _USING_3D_TEXTURE
+void Visualization::BindVolumeTexutre()
 {
-	// 创建3D纹理
+	// Create 3D image texture
 	glGenTextures(1, &m_volume->textureID);
 	glBindTexture(GL_TEXTURE_3D, m_volume->textureID);
 
-	// 设定贴图参数
+	// Set parameters
 	glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	// 载入3D纹理，并设置相关参数
+	// Load 3D texture
 	glTexImage3D(GL_TEXTURE_3D,          // GLenum target
 		0,		                         // GLint level,
-		GL_RGB,                          // GLint internalFormat
+		GL_RGB,                         // GLint internalFormat
 		m_volume->width,                 // GLsizei width
 		m_volume->height,                // GLsizei height
 		m_volume->depth,                 // GLsizei depth
 		0,                               // GLint border
-		GL_RGB,                          // GLenum format
+		GL_RGB,                         // GLenum format
 		GL_UNSIGNED_BYTE,                // GLenum type
 		m_volume->data);                 // const GLvoid * data
 };
+#endif
+#ifdef _USING_2D_TEXTURE
+void Visualization::BindVolumeTexutre(void)
+{
+	// Create 2D image texture
+	glGenTextures(1, &m_volume->textureID);
+	glBindTexture(GL_TEXTURE_2D, m_volume->textureID);
 
+	// Set parameters
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	// Load 2D texture
+	glTexImage2D(GL_TEXTURE_2D,          // GLenum target
+		0,		                         // GLint level,
+		GL_RGB,                          // GLint internalFormat
+		m_volume->width,                 // GLsizei width
+		m_volume->height,                // GLsizei height
+		0,                               // GLint border
+		GL_RGB,                          // GLenum format
+		GL_UNSIGNED_BYTE,                // GLenum type
+		m_volume->data);                 // const GLvoid * data
+}
+#endif
 
 void EnableFunc(void)
 {
 	// Enable blend effect
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_BLEND);
+//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//	glEnable(GL_BLEND);
 
 	// Enable depth testing
 	glEnable(GL_DEPTH_TEST);
 
+#ifdef _USING_3D_TEXTURE
 	// Enable culll face
 	glEnable(GL_CULL_FACE);
-}
+#endif
+
+	// Enable clearing of the depth buffer
+	glClearDepth(1.f);
+
+	// Type of depth test to do
+	glDepthFunc(GL_LEQUAL);	
+};
+
+
+void InitMouseStatus(void)
+{
+	m_mouse->left_button_pressed = false;
+	m_mouse->right_button_pressed = false;
+};
 
 
 void Visualization::Init(GLuint width, GLuint height)
@@ -148,17 +181,7 @@ void Visualization::Init(GLuint width, GLuint height)
 	EnableFunc();
 
 	// Load the textures
-	Bind3DTexutre();
-
-	// Set clearing color
-	glClearColor(0.f, 0.f, 0.0f, 1.f);
-
-	// Enable clearing of the depth buffer
-	glClearDepth(1.f);
-
-	// Type of depth test to do
-	//glDepthFunc(GL_LESS);
-	glDepthFunc(GL_LEQUAL);	
+	BindVolumeTexutre();
 
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
@@ -178,8 +201,10 @@ void Visualization::Init(GLuint width, GLuint height)
 	// Changing matrix 
 	glMatrixMode(GL_MODELVIEW);
 
-	m_mouse->left_button_pressed = false;
-	m_mouse->right_button_pressed = false;
+	// Set clearing color
+	glClearColor(0.f, 0.f, 0.0f, 1.f);
+
+	InitMouseStatus();
 }
 
 
@@ -208,21 +233,30 @@ void Visualization::Display()
 	// Clear Screen and Depth Buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// 通过移动Camera实现对模型的观察
+	// Set camera
 	gluLookAt(
 		m_view->eye_at_x,  m_view->eye_at_y,  m_view->eye_at_z,  // eye
 		m_view->look_at_x, m_view->look_at_y, m_view->look_at_z, // center
 		m_view->dx_up_x,   m_view->dx_up_y,   m_view->dx_up_z);  // Up
 	
-	// 放置代理幾何
+	// Draw agent
 	glPushMatrix();
 	{
-		// 绘制代理几何
+#ifdef _USING_3D_TEXTURE
 		glEnable(GL_TEXTURE_3D);
+#endif
+#ifdef _USING_2D_TEXTURE
+		glEnable(GL_TEXTURE_2D);
+#endif
 		{
-			CreateAgentBox();
+			CreateAgent();
 		}
+#ifdef _USING_2D_TEXTURE
+		glDisable(GL_TEXTURE_2D);
+#endif
+#ifdef _USING_3D_TEXTURE
 		glDisable(GL_TEXTURE_3D);
+#endif
 	}
 	glPopMatrix();
 
@@ -230,12 +264,12 @@ void Visualization::Display()
 }
 
 
-void Visualization::CreateAgentBox()
+void Visualization::CreateAgent()
 {
-	// 将数据实时显示在屏幕上，这里采用glTexSubImage3D而不是glTexImage3D，是为了降低频繁更新而带来的性能损耗
 	// every 10 frames per second
 	if (m_fps->dwElapsedTime > 500)
 	{
+#ifdef _USING_3D_TEXTURE
 		glTexSubImage3D(
 			GL_TEXTURE_3D,                 // GLenum target,
 			0,                             // GLint level,
@@ -248,8 +282,22 @@ void Visualization::CreateAgentBox()
 			GL_RGB,                        // GLenum format,
 			GL_UNSIGNED_BYTE,              // GLenum type,
 			m_volume->data);               // const GLvoid * data
+#endif
+#ifdef _USING_2D_TEXTURE
+		glTexSubImage2D(
+			GL_TEXTURE_2D,                  // GLenum target
+			0,                              // GLint level
+			0,                              // GLint xoffset
+			0,                              // GLint yoffset
+			m_volume->width,                // GLsizei width
+			m_volume->height,               // GLsizei height
+			GL_RGB,                         // GLenum format
+			GL_UNSIGNED_BYTE,               // GLenum type
+			m_volume->data);                // const GLvoid * data;
+#endif
 	}
 
+#ifdef _USING_3D_TEXTURE
 	// Draw 6 quadrilaterals
 	glBegin(GL_QUADS);
 	{
@@ -290,6 +338,18 @@ void Visualization::CreateAgentBox()
 		glTexCoord3f(0.0f, 1.0f,0.0f); glVertex3f(-1.0f,  1.0f, -1.0f);	// Top Left Of The Texture and Quad
 	}
 	glEnd();
+#endif
+#ifdef _USING_2D_TEXTURE
+	glBegin(GL_QUADS);
+	{
+		// Front Face
+		glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);	// Bottom Left Of The Texture and Quad
+		glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f, -1.0f);	// Bottom Right Of The Texture and Quad
+		glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f,  1.0f);	// Top Right Of The Texture and Quad
+		glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  1.0f);	// Top Left Of The Texture and Quad
+	}
+	glEnd();
+#endif
 };
 
 
@@ -315,7 +375,7 @@ void Visualization::CountFPS( ) {
 		
 		// White Text
 		glColor3f(1.0f, 1.0f, 1.0f);
-		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", m_fps->FPS);			
+		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", m_fps->FPS);
 	}
 	glPopMatrix();
 
@@ -525,6 +585,7 @@ void MouseMotion(SG_MOUSE mouse, unsigned x, unsigned y)
 
 void Visualization::Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 {
+#ifndef _USING_2D_TEXTURE
 	// Forward or backward objects when wheeled
 	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_FORWARD)
 	{
@@ -580,28 +641,13 @@ void Visualization::Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 #endif
 		MouseMotion(mouse, x_pos, y_pos);
 	}
+#endif
 };
 
 
 void Visualization::Keyboard(SG_KEYS keys, SG_KEY_STATUS status)
 { 
-	switch ( keys )
-	{
-	case SG_KEYS::SG_KEY_R:
-		m_view->rotate_of_y += 0.3f;
-		break;
 
-	case SG_KEYS::SG_KEY_D:
-		m_view->rotate_of_x += 0.3f;
-		break;
-
-	case SG_KEYS::SG_KEY_Z:
-		m_view->rotate_of_x = 0.f;
-		m_view->rotate_of_y = 0.f;
-		break;
-	
-	default: break;
-	}
 }
 
 
