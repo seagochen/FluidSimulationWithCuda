@@ -122,6 +122,20 @@ void Visualization::Bind3DTexutre()
 };
 
 
+void EnableFunc(void)
+{
+	// Enable blend effect
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+
+	// Enable depth testing
+	glEnable(GL_DEPTH_TEST);
+
+	// Enable culll face
+	glEnable(GL_CULL_FACE);
+}
+
+
 void Visualization::Init(GLuint width, GLuint height)
 {
 	// Initialize
@@ -129,6 +143,9 @@ void Visualization::Init(GLuint width, GLuint height)
 	InitFont();
 	InitFPS();
 	InitViewMatrix();
+
+	// Enable
+	EnableFunc();
 
 	// Load the textures
 	Bind3DTexutre();
@@ -144,12 +161,6 @@ void Visualization::Init(GLuint width, GLuint height)
 	glDepthFunc(GL_LEQUAL);	
 
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-
-	// Enable depth testing
-	glEnable(GL_DEPTH_TEST);
-
-	// Enable culll face
-	glEnable(GL_CULL_FACE);
 
 	// Enable smooth color shading
 	glShadeModel(GL_SMOOTH);
@@ -206,7 +217,6 @@ void Visualization::Display()
 	// 放置代理幾何
 	glPushMatrix();
 	{
-//		glRotatef(m_view->rotate_of_y += 0.01, 0, 1, 0);
 		// 绘制代理几何
 		glEnable(GL_TEXTURE_3D);
 		{
@@ -290,7 +300,7 @@ void Visualization::CountFPS( ) {
 	m_fps->dwCurrentTime = GetTickCount(); // Even better to use timeGetTime()
 	m_fps->dwElapsedTime = m_fps->dwCurrentTime - m_fps->dwLastUpdateTime;
 	
-	
+	// Already 1s
 	if ( m_fps->dwElapsedTime >= 1000 )
 	{
 		m_fps->FPS = m_fps->dwFrames * 1000.0 / m_fps->dwElapsedTime;
@@ -463,20 +473,12 @@ void RotateObjects(unsigned x, unsigned y)
 	}
 
 #ifdef __USING
-	// 標準的direction up right向量及其求法
-	// 之後進行3D觀察時可能會用到這段代碼
+	// Get vectors of direction up right
 	system("cls");
 	Eigen::Vector3f lookat(cos( m_view->rotate_of_x ), 0.f, sin( m_view->rotate_of_x ));
 	Eigen::Vector3f right(cos( m_view->rotate_of_x + PI/2), 0.f, sin( m_view->rotate_of_x + PI/2));
-//	Eigen::Vector3f lookat(0,0,-1);
-//	Eigen::Vector3f right(1,0, 0);
-	float result = lookat.dot(right);
 	Eigen::Vector3f up = right.cross(lookat);
-	std::cout<<result<<std::endl;
-	std::cout<<up<<std::endl;
 #endif 
-//	system("cls");
-//	std::cout<<sin(PI/2)<<std::endl;
 };
 
 
@@ -494,7 +496,7 @@ void MouseMotion(SG_MOUSE mouse, unsigned x, unsigned y)
 		ApproachObjects();
 	}
 	
-	// 检查鼠标左右键的状态
+	// Mouse
 	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN || mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN)
 	 {
 		 m_mouse->pre_cursor_x = x;
@@ -513,7 +515,7 @@ void MouseMotion(SG_MOUSE mouse, unsigned x, unsigned y)
 			 m_mouse->right_button_pressed = false;
 	 }
 
-	// 檢查鼠標移動狀態
+	// Mouse motion
 	if (mouse == SG_MOUSE::SG_MOUSE_MOVE)
 	{
 		RotateObjects(x, y);

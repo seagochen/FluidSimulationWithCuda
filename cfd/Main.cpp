@@ -1,4 +1,5 @@
 #include "Headers.h"
+#include "resource.h"
 
 #define DISPLAY_WIDTH  800
 #define DISPLAY_HEIGHT 600
@@ -10,20 +11,22 @@ MainActivity  *myact;
 
 extern DWORD simulation (LPVOID lpdwThreadParam );
 
+/* Encapsulate init function */
 void OnCreate() { visual->Init(DISPLAY_WIDTH, DISPLAY_HEIGHT); }
 
-/* 创建两个不同的子线程，一个负责计算并生成volume data，另一个则负责计算FPS */
-void subThreads()
+
+/* Create a thread for computational fluid dynamic  */
+void CreateSubThread()
 {
 	DWORD dwThreadId;
 	
-	// 创建计算流体的线程
-	if ( CreateThread(NULL, //Choose default security
-		0, //Default stack size
-		(LPTHREAD_START_ROUTINE)&simulation, //Routine to execute
-		0, //Thread parameter
-		0, //Immediately run the thread
-		&dwThreadId ) == NULL) //Thread Id	
+	// Create thread in MFC
+	if ( CreateThread(NULL,                   //Choose default security
+		0,                                    //Default stack size
+		(LPTHREAD_START_ROUTINE)&simulation,  //Routine to execute
+		0,                                    //Thread parameter
+		0,                                    //Immediately run the thread
+		&dwThreadId ) == NULL)                //Thread Id	
 		{
 			pterror("Error in line %d: Couldn't creat sub-thread. Aborting.\n");
 		}
@@ -32,12 +35,15 @@ void subThreads()
 
 int main()
 {
-	// Creates sub threads
-	subThreads();
+	// Create thread
+	CreateSubThread();
 	
 	// Set window size
 	myact  = new MainActivity(DISPLAY_WIDTH, DISPLAY_HEIGHT);
 	visual = new Visualization(myact);
+
+	// Set app icons
+	myact->SetApplicationIcons(IDI_ICON1, IDI_ICON1);
 
 	// Register functions
 	myact->RegisterCreateFunc(OnCreate);
@@ -51,6 +57,9 @@ int main()
 	// Mainloop
 	myact->MainLoop();
 
+	// Release all resource
+	SAFE_DELT_PTR(visual);
 	SAFE_DELT_PTR(myact);
+
 	return 0;
 }

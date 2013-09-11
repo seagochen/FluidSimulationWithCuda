@@ -4,7 +4,7 @@
 
 #include "Headers.h"
 
-#define BYTES_PER_TEXEL 3
+#define BYTES_PER_TEXEL 4
 
 namespace sge
 {
