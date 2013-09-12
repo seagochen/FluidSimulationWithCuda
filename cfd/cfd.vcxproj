@@ -71,6 +71,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="FluidSim.h" />
     <ClInclude Include="Headers.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Visualization.h" />
@@ -82,8 +83,8 @@
     <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cfdmain.cpp" />
-    <ClCompile Include="Simulation.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="FluidSim.cpp" />
     <ClCompile Include="Visualization.cpp" />
   </ItemGroup>
   <ItemGroup>
