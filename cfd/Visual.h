@@ -66,7 +66,7 @@ namespace sge
 
 	struct _viewMatrix
 	{
-		GLfloat field_of_view_angle;
+		GLfloat view_angle;
 		GLfloat z_near, z_far;
 		GLfloat eye_x, eye_y, eye_z;
 		GLfloat look_x, look_y, look_z;
@@ -92,9 +92,11 @@ namespace sge
 		void UploadVolumeData(_volume3D const *data_in);
 
 	public:
-		int Texel2D(int s, int t);
-		int Texel3D(int s, int t, int r);
+		int Volume2D(int i, int j);
+		int Volume3D(int i, int j, int k);
 	};
 };
+
+#define BYTES_PER_TEXEL 3
 
 #endif
