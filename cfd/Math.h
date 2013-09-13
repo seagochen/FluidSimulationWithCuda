@@ -1,7 +1,6 @@
 /**
-* ------------------------------------the MIT License--------------------------------------------------
 *
-* Copyright (C) year 2013 Orlando Chen <seagochen@gmail.com>
+* Copyright (C) <2013> <Orlando Chen>
 * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 * associated documentation files (the "Software"), to deal in the Software without restriction, 
 * including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
@@ -18,55 +17,65 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 /**
 * <Author>      Orlando Chen
-* <Date>        8/25/2013
-* <File>        FileManager.h
-* <Specification>
-*	內含一個與文件操作相關的類
-*	目前擁有的功能有：
-*	- 從文本文件中讀取數據；
-*	- 將數據保存至文本文件中；
+* <Date>        Sep 13, 2013
+* <File>        Math.h
 */
 
-#ifndef _SEAGOSOFT_FILE_MANAGER_H_
-#define _SEAGOSOFT_FILE_MANAGER_H_
+#ifndef _SEAGOSOFT_MATH_H_
+#define _SEAGOSOFT_MATH_H_
 
-#include <string>
-#include <sstream>
-
-#ifdef _In_Dll_File
-#include "Auxiliaries.h"
-#endif
+#include <Eigen\Dense>
 
 namespace sge
 {
-	/* 選擇文件的格式 */
-	enum SGFILEFORMAT
-	{
-		SG_FILE_FORMAT_XML = 0x0a,
-		SG_FILE_FORMAT_TXT = 0x0b,
-		SG_FILE_FORMAT_XF  = 0x0c,
-	};
+	using Eigen::Vector2f;
+	using Eigen::Vector3f;
+	using Eigen::Vector4f;
 
-	/* 選擇創建的文件的打開方式 */
-	enum SGFILEOPENTYPE
-	{
-		SG_FILE_OPEN_DEFAULT,  // 打开并创建全新的文档方式
-		SG_FILE_OPEN_APPEND,   // 打开并添加数据至已有的文档方式
-	};
-
-	class FileManager
+	class float2
 	{
 	public:
-		// Load data from external file
-		_DLL std::string GetDataFromFile(const char *filename);
-		
-		// Save data to external file
-		_DLL void SetDataToFile(
-			std::string data, const char *filename, SGFILEOPENTYPE mode);
+		float x, y;
+
+	public:
+		float2() : x(0), y(0) {};
+		float2(float x_in, float y_in) : 
+			x(x_in), y(y_in) {};
 	};
-}
+
+	class float3
+	{
+	public:
+		float x, y, z;
+
+	public:
+		float3() : x(0), y(0), z(0) {};
+		float3(float2 const *data_in, float z_in) :
+			x(data_in->x), y(data_in->y), z(z_in) {};
+		float3(float x_in, float y_in, float z_in) : 
+			x(x_in), y(y_in), z(z_in) {};
+	};
+
+	class float4
+	{
+	public:
+		float x, y, z, w;
+
+	public:
+		float4() : x(0), y(0), z(0), w(0) {};
+		float4(float2 const *data_in, float z_in, float w_in) :
+			x(data_in->x), y(data_in->y), z(z_in), w(w_in) {};
+		float4(float3 const *data_in, float w_in) :
+			x(data_in->x), y(data_in->y), z(data_in->z), w(w_in) {};
+		float4(float x_in, float y_in, float z_in, float w_in) : 
+			x(x_in), y(y_in), z(z_in), w(w_in) {};
+	};
+
+	Vector2f *ToVector(float2 const *in);
+	Vector3f *ToVector(float3 const *in);
+	Vector4f *ToVector(float4 const *in);
+};
 
 #endif
