@@ -55,6 +55,7 @@ namespace sge
 		GLubyte *data;
 		unsigned texture_id;
 		int width, height, depth;
+		unsigned size;
 	};
 
 	struct _volume2D
@@ -62,6 +63,7 @@ namespace sge
 		GLubyte *data;
 		unsigned texture_id;
 		int width, height;
+		unsigned size;
 	};
 
 	struct _viewMatrix
@@ -86,17 +88,19 @@ namespace sge
 		static void OnDisplay();
 		static void OnKeyboard(SG_KEYS keys, SG_KEY_STATUS status);
 		static void OnMouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos);
+		static void OnDestroy();
 
 	public:
 		void UploadVolumeData(_volume2D const *data_in);
 		void UploadVolumeData(_volume3D const *data_in);
 
 	public:
-		int Volume2D(int i, int j);
-		int Volume3D(int i, int j, int k);
+		int Texel2D(int i, int j);
+		int Texel3D(int i, int j, int k);
 	};
 };
 
 #define BYTES_PER_TEXEL 3
+#define PrintStatus(str) {system("cls"); printf("%s");}
 
 #endif

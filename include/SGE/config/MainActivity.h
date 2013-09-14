@@ -56,8 +56,9 @@ namespace sge
 		_DLL static void RegisterMouseFunc(
 			void (*hMouseFunc)(SG_MOUSE mouse, unsigned xpos, unsigned ypos));
 		// Register display function
-		_DLL static void RegisterDisplayFunc(
-			void (*hDisplayFunc)(void));
+		_DLL static void RegisterDisplayFunc(void (*hDisplayFunc)(void));
+		// Register destory function
+		_DLL static void RegisterDestoryFunc(void (*hDestoryFunc)(void));
 
 	public:
 		// When functions registered call this function to create app form

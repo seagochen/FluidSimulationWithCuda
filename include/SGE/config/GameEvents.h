@@ -176,14 +176,15 @@ namespace sge {
 		void  (*hKeyboardFunc)(SG_KEYS keyboard, SG_KEY_STATUS keystatus);
 		void  (*hMouseFunc)(SG_MOUSE mouse, unsigned xpos, unsigned ypos);
 		void  (*hDisplayFunc)(void);
+		void  (*hDestoryFunc)(void);
 	};
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 // Create MFC window
-_DLL void OnCreate(HWND hWnd, HDC *hDC, HGLRC *hRC);
+_DLL void OnCreate(HWND hWnd, HDC *hDC, HGLRC *hRC, void (*func)(void));
 // Destroy MFC window
-_DLL void OnDestroy(HDC hDC, HGLRC hRC);
+_DLL void OnDestroy(HDC hDC, HGLRC hRC, void (*func)(void));
 // Reshape window
 _DLL void OnReshapeWindow(LPARAM lParam, void (*func)(unsigned width, unsigned height));
 // Keyboard events

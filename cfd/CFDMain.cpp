@@ -46,6 +46,7 @@ int main()
 	activity->RegisterDisplayFunc(visual->OnDisplay);
 	activity->RegisterKeyboardFunc(visual->OnKeyboard);
 	activity->RegisterMouseFunc(visual->OnMouse);
+//	activity->RegisterDestoryFunc(visual->OnDestroy);
 
 	// Setup MFC window
 	activity->SetupRoutine();

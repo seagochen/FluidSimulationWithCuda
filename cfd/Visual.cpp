@@ -24,20 +24,15 @@ Visual::Visual(GLuint width, GLuint height, MainActivity *hActivity)
 
 	m_width    = width;
 	m_height   = height;
+
+	m_volume2D->size = 0;
+	m_volume3D->size = 0;
 };
 
 
 Visual::~Visual(void)
 {
-	SAFE_DELT_PTR(m_mouse);
-	SAFE_DELT_PTR(m_fps);
-	SAFE_FREE_PTR(m_volume2D->data);
-	SAFE_DELT_PTR(m_volume2D);
-	SAFE_FREE_PTR(m_volume3D->data);
-	SAFE_DELT_PTR(m_volume3D);
-	SAFE_DELT_PTR(m_view);
-	m_font->Clean();
-	SAFE_DELT_PTR(m_font);
+	OnDestroy();
 };
 
 
@@ -185,12 +180,12 @@ void DrawAgent2D()
 	glTexImage2D(GL_TEXTURE_2D,          // GLenum target
 		0,		                         // GLint level,
 		GL_RGB,                          // GLint internalFormat
-		m_volume2D->width,                 // GLsizei width
-		m_volume2D->height,                // GLsizei height
+		m_volume2D->width,               // GLsizei width
+		m_volume2D->height,              // GLsizei height
 		0,                               // GLint border
 		GL_RGB,                          // GLenum format
 		GL_UNSIGNED_BYTE,                // GLenum type
-		m_volume2D->data);                 // const GLvoid * data
+		m_volume2D->data);               // const GLvoid * data
 	
 	// Set texture parameters
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -198,6 +193,9 @@ void DrawAgent2D()
 
 	glPushMatrix(); // push the current matrix stack
 	{
+		// Rotated image first
+		//glRotated(90, 0, 0, 1);
+
 		glEnable(GL_TEXTURE_2D);  // Draw 2-D polygon agent and mapping texture onto it
 		{
 			glBegin(GL_QUADS);
@@ -268,9 +266,13 @@ void Visual::OnDisplay()
 };
 
 
-// TODO
 void Visual::OnKeyboard(SG_KEYS keys, SG_KEY_STATUS status)
 {
+	if (keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN)	
+	{
+		OnDestroy();
+		exit(0);
+	}
 };
 
 
@@ -280,19 +282,56 @@ void Visual::OnMouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 };
 
 
+void Visual::OnDestroy()
+{
+	SAFE_DELT_PTR(m_mouse);
+	SAFE_DELT_PTR(m_fps);
+	SAFE_DELT_PTR(m_view);
+
+	if (m_volume2D->size > 0) SAFE_FREE_PTR(m_volume2D->data);
+	if (m_volume3D->size > 0) SAFE_FREE_PTR(m_volume3D->data);
+
+	if (m_font != NULL)	m_font->Clean();
+	SAFE_DELT_PTR(m_font);
+
+#ifdef PRINT_STATUS
+	printf("Call OnDestroy, now resource released up!\n");
+#endif
+};
+
+
 void Visual::UploadVolumeData(_volume2D const *data_in)
 {
-	memcpy(m_volume2D, data_in, sizeof(_volume2D));
+	m_volume2D->width  = data_in->width;
+	m_volume2D->height = data_in->height;
+	m_volume2D->data   = data_in->data;
+
+	m_volume2D->size   = data_in->size;
+
+#ifdef PRINT_STATUS
+	system("cls");
+	printf("Upload volume data and try to rendering the result, size: %d\n", m_volume2D->size);
+#endif
 };
 
 
 void Visual::UploadVolumeData(_volume3D const *data_in)
 {
-	memcpy(m_volume3D, data_in, sizeof(_volume3D));
+	m_volume3D->width  = data_in->width;
+	m_volume3D->height = data_in->height;
+	m_volume3D->depth  = data_in->depth;
+	m_volume3D->data   = data_in->data;
+
+	m_volume3D->size   = data_in->size;
+
+#ifdef PRINT_STATUS
+	system("cls");
+	printf("Upload volume data and try to rendering the result, size: %d\n", m_volume3D->size);
+#endif
 };
 
 
-int Visual::Volume2D(int i, int j)
+int Visual::Texel2D(int i, int j)
 {
 	return  BYTES_PER_TEXEL * (i * m_volume2D->height + j);
 };
@@ -304,7 +343,7 @@ int Layer(int layer)
 };
 
 
-int Visual::Volume3D(int i, int j, int k)
+int Visual::Texel3D(int i, int j, int k)
 {
 	return BYTES_PER_TEXEL * (Layer(i) + m_volume3D->height * j + k);
 };

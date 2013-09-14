@@ -71,6 +71,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="MacroDefinition.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Visual.h" />
     <ClInclude Include="resource.h" />
