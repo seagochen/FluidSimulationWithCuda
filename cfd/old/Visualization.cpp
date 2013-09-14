@@ -18,10 +18,6 @@ static MainActivity *m_hAct;
 
 #endif
 
-#define pstatus(str) {system("cls"); printf("Status: %s \n", str);}
-#define PI 3.14159
-#define sqr(num) pow(num, 2)
-
 Visualization::Visualization(MainActivity *hActivity)
 {
 	m_mouse  = new _mouse;
@@ -42,9 +38,8 @@ Visualization::~Visualization()
 	SAFE_DELT_PTR(m_volume);
 	SAFE_DELT_PTR(m_view);
 	m_font->Clean();
-	SAFE_DELT_PTR(m_font)
+	SAFE_DELT_PTR(m_font);
 };
-
 
 void Visualization::GetActivityHandler(MainActivity *hActivity)
 {
@@ -73,16 +68,16 @@ void Visualization::InitViewMatrix()
 	// view matrix
 	m_view->field_of_view_angle    = 45.f;
 	// view radius
-	m_view->radius_of_view_matrix  = 2.f;
+	m_view->radius_of_view_matrix  = 5.f;
 	// eye
 	m_view->eye_at_x               = 0.f;
 	m_view->eye_at_y               = 0.f;
-	m_view->eye_at_z               = 5.f;
+	m_view->eye_at_z               = 3.f;
 	// look at
 	m_view->look_at_x              = 0.f;
 	m_view->look_at_y              = 0.f;
 	m_view->look_at_z              = 0.f;
-	// direct up
+	// up
 	m_view->dx_up_x                = 0.f;
 	m_view->dx_up_y                = 1.f;
 	m_view->dx_up_z                = 0.f;
@@ -97,28 +92,80 @@ void Visualization::InitViewMatrix()
 	m_view->rotate_of_z            = 0.f;
 };
 
-
-void Visualization::Bind3DTexutre()
+#ifdef _USING_3D_TEXTURE
+void Visualization::BindVolumeTexutre()
 {
-	// 创建3D纹理
+	// Create 3D image texture
 	glGenTextures(1, &m_volume->textureID);
 	glBindTexture(GL_TEXTURE_3D, m_volume->textureID);
 
-	// 设定贴图参数
+	// Set parameters
 	glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	// 载入3D纹理，并设置相关参数
+	// Load 3D texture
 	glTexImage3D(GL_TEXTURE_3D,          // GLenum target
 		0,		                         // GLint level,
-		GL_RGB,                          // GLint internalFormat
+		GL_RGB,                         // GLint internalFormat
 		m_volume->width,                 // GLsizei width
 		m_volume->height,                // GLsizei height
 		m_volume->depth,                 // GLsizei depth
 		0,                               // GLint border
+		GL_RGB,                         // GLenum format
+		GL_UNSIGNED_BYTE,                // GLenum type
+		m_volume->data);                 // const GLvoid * data
+};
+#endif
+#ifdef _USING_2D_TEXTURE
+void Visualization::BindVolumeTexutre(void)
+{
+	// Create 2D image texture
+	glGenTextures(1, &m_volume->textureID);
+	glBindTexture(GL_TEXTURE_2D, m_volume->textureID);
+
+	// Set parameters
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	// Load 2D texture
+	glTexImage2D(GL_TEXTURE_2D,          // GLenum target
+		0,		                         // GLint level,
+		GL_RGB,                          // GLint internalFormat
+		m_volume->width,                 // GLsizei width
+		m_volume->height,                // GLsizei height
+		0,                               // GLint border
 		GL_RGB,                          // GLenum format
 		GL_UNSIGNED_BYTE,                // GLenum type
 		m_volume->data);                 // const GLvoid * data
+}
+#endif
+
+void EnableFunc(void)
+{
+	// Enable blend effect
+//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//	glEnable(GL_BLEND);
+
+	// Enable depth testing
+	glEnable(GL_DEPTH_TEST);
+
+#ifdef _USING_3D_TEXTURE
+	// Enable culll face
+	glEnable(GL_CULL_FACE);
+#endif
+
+	// Enable clearing of the depth buffer
+	glClearDepth(1.f);
+
+	// Type of depth test to do
+	glDepthFunc(GL_LEQUAL);	
+};
+
+
+void InitMouseStatus(void)
+{
+	m_mouse->left_button_pressed = false;
+	m_mouse->right_button_pressed = false;
 };
 
 
@@ -130,26 +177,13 @@ void Visualization::Init(GLuint width, GLuint height)
 	InitFPS();
 	InitViewMatrix();
 
+	// Enable
+	EnableFunc();
+
 	// Load the textures
-	Bind3DTexutre();
-
-	// Set clearing color
-	glClearColor(0.f, 0.f, 0.0f, 1.f);
-
-	// Enable clearing of the depth buffer
-	glClearDepth(1.f);
-
-	// Type of depth test to do
-	//glDepthFunc(GL_LESS);
-	glDepthFunc(GL_LEQUAL);	
+	BindVolumeTexutre();
 
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-
-	// Enable depth testing
-	glEnable(GL_DEPTH_TEST);
-
-	// Enable culll face
-	glEnable(GL_CULL_FACE);
 
 	// Enable smooth color shading
 	glShadeModel(GL_SMOOTH);
@@ -167,8 +201,10 @@ void Visualization::Init(GLuint width, GLuint height)
 	// Changing matrix 
 	glMatrixMode(GL_MODELVIEW);
 
-	m_mouse->left_button_pressed = false;
-	m_mouse->right_button_pressed = false;
+	// Set clearing color
+	glClearColor(0.f, 0.f, 0.0f, 1.f);
+
+	InitMouseStatus();
 }
 
 
@@ -197,22 +233,30 @@ void Visualization::Display()
 	// Clear Screen and Depth Buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// 通过移动Camera实现对模型的观察
+	// Set camera
 	gluLookAt(
 		m_view->eye_at_x,  m_view->eye_at_y,  m_view->eye_at_z,  // eye
 		m_view->look_at_x, m_view->look_at_y, m_view->look_at_z, // center
 		m_view->dx_up_x,   m_view->dx_up_y,   m_view->dx_up_z);  // Up
 	
-	// 放置代理幾何
+	// Draw agent
 	glPushMatrix();
 	{
-//		glRotatef(m_view->rotate_of_y += 0.01, 0, 1, 0);
-		// 绘制代理几何
+#ifdef _USING_3D_TEXTURE
 		glEnable(GL_TEXTURE_3D);
+#endif
+#ifdef _USING_2D_TEXTURE
+		glEnable(GL_TEXTURE_2D);
+#endif
 		{
-			CreateAgentBox();
+			CreateAgent();
 		}
+#ifdef _USING_2D_TEXTURE
+		glDisable(GL_TEXTURE_2D);
+#endif
+#ifdef _USING_3D_TEXTURE
 		glDisable(GL_TEXTURE_3D);
+#endif
 	}
 	glPopMatrix();
 
@@ -220,12 +264,12 @@ void Visualization::Display()
 }
 
 
-void Visualization::CreateAgentBox()
+void Visualization::CreateAgent()
 {
-	// 将数据实时显示在屏幕上，这里采用glTexSubImage3D而不是glTexImage3D，是为了降低频繁更新而带来的性能损耗
 	// every 10 frames per second
-	if (m_fps->dwElapsedTime > 500)
-	{
+//	if (m_fps->dwElapsedTime > 500)
+//	{
+#ifdef _USING_3D_TEXTURE
 		glTexSubImage3D(
 			GL_TEXTURE_3D,                 // GLenum target,
 			0,                             // GLint level,
@@ -238,8 +282,34 @@ void Visualization::CreateAgentBox()
 			GL_RGB,                        // GLenum format,
 			GL_UNSIGNED_BYTE,              // GLenum type,
 			m_volume->data);               // const GLvoid * data
-	}
+#endif
+#ifdef _USING_2D_TEXTURE
 
+		glBindTexture(GL_TEXTURE_2D, m_volume->textureID);
+		glTexImage2D(GL_TEXTURE_2D,          // GLenum target
+		0,		                         // GLint level,
+		GL_RGB,                          // GLint internalFormat
+		m_volume->width,                 // GLsizei width
+		m_volume->height,                // GLsizei height
+		0,                               // GLint border
+		GL_RGB,                          // GLenum format
+		GL_UNSIGNED_BYTE,                // GLenum type
+		m_volume->data);                 // const GLvoid * data
+//		glTexSubImage2D(
+//			GL_TEXTURE_2D,                  // GLenum target
+//			0,                              // GLint level
+//			0,                              // GLint xoffset
+//			0,                              // GLint yoffset
+//			m_volume->width,                // GLsizei width
+//			m_volume->height,               // GLsizei height
+//			GL_RGB,                         // GLenum format
+//			GL_UNSIGNED_BYTE,               // GLenum type
+//			m_volume->data);                // const GLvoid * data;
+		
+#endif
+//	}
+
+#ifdef _USING_3D_TEXTURE
 	// Draw 6 quadrilaterals
 	glBegin(GL_QUADS);
 	{
@@ -280,6 +350,18 @@ void Visualization::CreateAgentBox()
 		glTexCoord3f(0.0f, 1.0f,0.0f); glVertex3f(-1.0f,  1.0f, -1.0f);	// Top Left Of The Texture and Quad
 	}
 	glEnd();
+#endif
+#ifdef _USING_2D_TEXTURE
+	glBegin(GL_QUADS);
+	{
+		// Front Face
+		glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);	// Bottom Left Of The Texture and Quad
+		glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f, -1.0f);	// Bottom Right Of The Texture and Quad
+		glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f,  1.0f);	// Top Right Of The Texture and Quad
+		glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  1.0f);	// Top Left Of The Texture and Quad
+	}
+	glEnd();
+#endif
 };
 
 
@@ -290,7 +372,7 @@ void Visualization::CountFPS( ) {
 	m_fps->dwCurrentTime = GetTickCount(); // Even better to use timeGetTime()
 	m_fps->dwElapsedTime = m_fps->dwCurrentTime - m_fps->dwLastUpdateTime;
 	
-	
+	// Already 1s
 	if ( m_fps->dwElapsedTime >= 1000 )
 	{
 		m_fps->FPS = m_fps->dwFrames * 1000.0 / m_fps->dwElapsedTime;
@@ -305,7 +387,11 @@ void Visualization::CountFPS( ) {
 		
 		// White Text
 		glColor3f(1.0f, 1.0f, 1.0f);
-		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", m_fps->FPS);			
+		m_font->EnableFreeType();
+		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", m_fps->FPS);
+		m_font->DisableFreeType();
+
+		if ( !m_font->IsTextureIDAvailable(m_volume->textureID) ) ErrorMSG("Ooops!");
 	}
 	glPopMatrix();
 
@@ -316,7 +402,7 @@ int Visualization::LoadVolumeData(_volumeData const *data_in)
 {
 	if (data_in == NULL) 
 	{
-		pterror("Error you've passed an empty pointer");
+		ErrorMSG("Error you've passed an empty pointer");
 		return SG_FAIL;
 	}
 
@@ -332,7 +418,7 @@ int Visualization::SaveVolumeData(_volumeData *data_out)
 {
 	if (m_volume->data == NULL) 
 	{
-		pterror("Error you've tried access an empty pointer");
+		ErrorMSG("Error you've tried access an empty pointer");
 		return SG_FAIL;
 	}
 
@@ -348,7 +434,7 @@ int Visualization::SetWindowParam(_viewMatrix const *view_matrix_in)
 {
 	if (view_matrix_in == NULL)
 	{
-		pterror("Error you've passed an empty pointer");
+		ErrorMSG("Error you've passed an empty pointer");
 		return SG_FAIL;
 	}
 
@@ -364,7 +450,7 @@ int Visualization::GetWindowParam(_viewMatrix *view_matrix_out)
 {
 	if (m_view == NULL) 
 	{
-		pterror("Error you've tried access an empty pointer");
+		ErrorMSG("Error you've tried access an empty pointer");
 		return SG_FAIL;
 	}
 
@@ -463,20 +549,12 @@ void RotateObjects(unsigned x, unsigned y)
 	}
 
 #ifdef __USING
-	// 標準的direction up right向量及其求法
-	// 之後進行3D觀察時可能會用到這段代碼
+	// Get vectors of direction up right
 	system("cls");
 	Eigen::Vector3f lookat(cos( m_view->rotate_of_x ), 0.f, sin( m_view->rotate_of_x ));
 	Eigen::Vector3f right(cos( m_view->rotate_of_x + PI/2), 0.f, sin( m_view->rotate_of_x + PI/2));
-//	Eigen::Vector3f lookat(0,0,-1);
-//	Eigen::Vector3f right(1,0, 0);
-	float result = lookat.dot(right);
 	Eigen::Vector3f up = right.cross(lookat);
-	std::cout<<result<<std::endl;
-	std::cout<<up<<std::endl;
 #endif 
-//	system("cls");
-//	std::cout<<sin(PI/2)<<std::endl;
 };
 
 
@@ -494,7 +572,7 @@ void MouseMotion(SG_MOUSE mouse, unsigned x, unsigned y)
 		ApproachObjects();
 	}
 	
-	// 检查鼠标左右键的状态
+	// Mouse
 	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN || mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN)
 	 {
 		 m_mouse->pre_cursor_x = x;
@@ -513,7 +591,7 @@ void MouseMotion(SG_MOUSE mouse, unsigned x, unsigned y)
 			 m_mouse->right_button_pressed = false;
 	 }
 
-	// 檢查鼠標移動狀態
+	// Mouse motion
 	if (mouse == SG_MOUSE::SG_MOUSE_MOVE)
 	{
 		RotateObjects(x, y);
@@ -523,6 +601,7 @@ void MouseMotion(SG_MOUSE mouse, unsigned x, unsigned y)
 
 void Visualization::Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 {
+#ifndef _USING_2D_TEXTURE
 	// Forward or backward objects when wheeled
 	if (mouse == SG_MOUSE::SG_MOUSE_WHEEL_FORWARD)
 	{
@@ -578,28 +657,13 @@ void Visualization::Mouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
 #endif
 		MouseMotion(mouse, x_pos, y_pos);
 	}
+#endif
 };
 
 
 void Visualization::Keyboard(SG_KEYS keys, SG_KEY_STATUS status)
 { 
-	switch ( keys )
-	{
-	case SG_KEYS::SG_KEY_R:
-		m_view->rotate_of_y += 0.3f;
-		break;
 
-	case SG_KEYS::SG_KEY_D:
-		m_view->rotate_of_x += 0.3f;
-		break;
-
-	case SG_KEYS::SG_KEY_Z:
-		m_view->rotate_of_x = 0.f;
-		m_view->rotate_of_y = 0.f;
-		break;
-	
-	default: break;
-	}
 }
 
 

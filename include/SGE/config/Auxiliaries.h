@@ -1,5 +1,4 @@
 /**
-* ------------------------------------the MIT License--------------------------------------------------
 *
 * Copyright (C) <2013> <Orlando Chen>
 * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -20,14 +19,8 @@
 
 /**
 * <Author>      Orlando Chen
-* <Date>        8/25/2013
+* <Date>        Sep 12, 2013
 * <File>        Auxiliaries.h
-* <Specification>
-*	該文件內定義了一些宏，這些將作為輔助工具並應用在其他頭文件或源代碼文件中。
-*	目前包含了以下內容：
-*	- 指針釋放命令，包括針對單獨的指針，連續的內存空間，以及指針數組的釋放；
-*	- dll文件導出及導入接口命令的修飾，在函數及變量前加上這些修飾符號，
-*		將暴露接口，以便於其他程序進行訪問；
 */
 
 #ifndef _SEAGOSOFT_AUXILIARY_H_
@@ -53,26 +46,19 @@
 #undef pterror(str)
 #endif
 
-#define SAFE_FREE_PTR(ptr)   { if( ptr ) free(ptr);  ptr = NULL; }   // 安全的释放由calloc和malloc函数创建的指针
-#define SAFE_DELT_PTR(ptr)   { if( ptr ) delete ptr; ptr = NULL; }   // 安全的释放一般指针
-#define SAFE_DELT_ARR(ptr)   { if( ptr ) delete []ptr; ptr = NULL; } // 安全的释放指针数组
-
-//#define DllImport   __declspec( dllimport )
-//#define DllExport   __declspec( dllexport )
+#define SAFE_FREE_PTR(ptr)   { if( ptr ) free(ptr);  ptr = NULL; }   // rid ptr from calloc or malloc
+#define SAFE_DELT_PTR(ptr)   { if( ptr ) delete ptr; ptr = NULL; }   // rid ptr, such as int *ptr
+#define SAFE_DELT_ARR(ptr)   { if( ptr ) delete []ptr; ptr = NULL; } // rid ptr array
 
 #ifdef _In_Dll_File
-#define _DLL __declspec(dllexport)    // 当此头文件被DLL中的源代码模块引用时定义
+#define _DLL __declspec(dllexport)    // Headers included in dll source
 #else
-#define _DLL __declspec(dllimport)    // 当此头文件被其他工程中的源代码模块引用时定义  
+#define _DLL __declspec(dllimport)    // Headers included from external  
 #endif  
 
 #ifdef _In_Dll_File
 #include <stdio.h>
 #endif
-
-#define pterror(str) { \
-	printf("Error> %s, check your code at line %d of file %s\n", \
-	str, __LINE__, __FILE__); exit(1);}
 
 #ifdef SG_OK
 #undef SG_OK
@@ -94,5 +80,17 @@
 #include <GL\glew.h>
 #include <GL\glut.h>
 #endif
+
+/// Some Functions ///
+#define ErrorMSG(str) { printf("Error> %s, check your code at line %d of %s in file %s\n", \
+	str, __LINE__, __FUNCTIONW__, __FILE__);}
+
+namespace sge
+{
+	class float3
+	{
+
+	};
+};
 
 #endif

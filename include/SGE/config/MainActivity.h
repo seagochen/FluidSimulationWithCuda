@@ -1,5 +1,4 @@
 /**
-* ------------------------------------the MIT License--------------------------------------------------
 *
 * Copyright (C) <2013> <Orlando Chen>
 * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -20,12 +19,8 @@
 
 /**
 * <Author>      Orlando Chen
-* <Date>        8/25/2013
+* <Date>        Sep 12, 2013
 * <File>        MainActivity.h
-* <Specification>
-*	與程序初始化有關的類，包含對MFC的封裝
-*	- 利用MFC創建窗口；
-*	- 利用MFC監聽操作事件；
 */
 
 #ifndef _SEAGOSOFT_ENGINE_MAINACTIVITY_H_
@@ -61,8 +56,9 @@ namespace sge
 		_DLL static void RegisterMouseFunc(
 			void (*hMouseFunc)(SG_MOUSE mouse, unsigned xpos, unsigned ypos));
 		// Register display function
-		_DLL static void RegisterDisplayFunc(
-			void (*hDisplayFunc)(void));
+		_DLL static void RegisterDisplayFunc(void (*hDisplayFunc)(void));
+		// Register destory function
+		_DLL static void RegisterDestoryFunc(void (*hDestoryFunc)(void));
 
 	public:
 		// When functions registered call this function to create app form

@@ -1,5 +1,4 @@
 /**
-* ------------------------------------the MIT License--------------------------------------------------
 *
 * Copyright (C) <2013> <Orlando Chen>
 * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -20,10 +19,8 @@
 
 /**
 * <Author>      Orlando Chen
-* <Date>        8/25/2013
+* <Date>        Sep 12, 2013
 * <File>        SGUtils.h
-* <Specification>
-*	Main header file of SGE
 */
 
 #ifndef _SEAGOSOFT_SGUTILS_H_
@@ -48,11 +45,12 @@
 #error Do not need load those libraries when you already included SGUtils.h
 #endif
 
-#include "Auxiliaries.h"
-#include "FileManager.h"
-#include "GameEvents.h"
-#include "MainActivity.h"
-#include "FreeType.h"
+
+#include "config\Auxiliaries.h"
+#include "config\FileManager.h"
+#include "config\GameEvents.h"
+#include "config\MainActivity.h"
+#include "config\FreeType.h"
 
 #ifndef _INCLUDES_NECESSARY_LIBS_
 #define _INCLUDES_NECESSARY_LIBS_
@@ -63,5 +61,9 @@
 #pragma comment (lib, "freeglut.lib")
 #pragma comment (lib, "GlU32.Lib")
 #endif
+
+// MSVC will spit out all sorts of useless warnings if you create vectors of strings,
+// this pragma gets rid of them.
+#pragma warning(disable: 4786)
 
 #endif
