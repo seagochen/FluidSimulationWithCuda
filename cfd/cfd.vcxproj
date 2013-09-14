@@ -85,6 +85,8 @@
     <Font Include="EHSMB.TTF" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CFDMain.cpp" />
+    <ClCompile Include="CFDSim.cpp" />
     <ClCompile Include="Math.cpp" />
     <ClCompile Include="Visual.cpp" />
   </ItemGroup>
