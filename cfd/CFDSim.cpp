@@ -5,7 +5,9 @@ using namespace sge;
 extern Visual *visual;
 _volume2D vbdata;
 
+#define _IN_CFDSIM_CPP
 #include "MacroDefinition.h"
+
 
 DWORD simulation (LPVOID lpdwThreadParam )
 {

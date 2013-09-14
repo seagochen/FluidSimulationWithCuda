@@ -55,7 +55,7 @@ using std::string;
 	
 	public:
 		// The init function will create a font of the height h from the file fname.
-		_DLL void Init(const char * filename, unsigned int font_height);
+		_DLL bool Init(const char * filename, unsigned int font_height);
 		
 		// Free all the resources assosiated with the font.
 		_DLL void Clean(void);
