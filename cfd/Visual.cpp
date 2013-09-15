@@ -51,6 +51,7 @@ void InitFont(void)
 	if (!m_font->Init("EHSMB.TTF", 12))
 	{
 		ErrorMSG("Cannot create FreeType font");
+		exit(1);
 	};
 }
 

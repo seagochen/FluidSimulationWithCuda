@@ -21,10 +21,10 @@
     <ClInclude Include="Visual.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Math.h">
+    <ClInclude Include="MacroDefinition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MacroDefinition.h">
+    <ClInclude Include="CFDMethods.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,13 +47,13 @@
     <ClCompile Include="Visual.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Math.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CFDMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CFDSim.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CFDMethods.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -71,8 +71,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CFDMethods.h" />
     <ClInclude Include="MacroDefinition.h" />
-    <ClInclude Include="Math.h" />
     <ClInclude Include="Visual.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
@@ -87,8 +87,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CFDMain.cpp" />
+    <ClCompile Include="CFDMethods.cpp" />
     <ClCompile Include="CFDSim.cpp" />
-    <ClCompile Include="Math.cpp" />
     <ClCompile Include="Visual.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
