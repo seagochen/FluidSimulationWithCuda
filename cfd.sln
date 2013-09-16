@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Boiling2D", "Boiling2D\Boil
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Jet", "Jet\Jet.vcxproj", "{91DAE412-CC9A-4826-9867-86874BCB0D10}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tester", "Tester\Tester.vcxproj", "{5356595F-10DC-4CF5-A578-6C8AD4684A4B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -25,6 +27,10 @@ Global
 		{91DAE412-CC9A-4826-9867-86874BCB0D10}.Debug|Win32.Build.0 = Debug|Win32
 		{91DAE412-CC9A-4826-9867-86874BCB0D10}.Release|Win32.ActiveCfg = Release|Win32
 		{91DAE412-CC9A-4826-9867-86874BCB0D10}.Release|Win32.Build.0 = Release|Win32
+		{5356595F-10DC-4CF5-A578-6C8AD4684A4B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5356595F-10DC-4CF5-A578-6C8AD4684A4B}.Debug|Win32.Build.0 = Debug|Win32
+		{5356595F-10DC-4CF5-A578-6C8AD4684A4B}.Release|Win32.ActiveCfg = Release|Win32
+		{5356595F-10DC-4CF5-A578-6C8AD4684A4B}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
