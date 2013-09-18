@@ -101,19 +101,30 @@ void InitIndex()
 			index[u][v].CellIndex  = Vector2d(u, v);
 			index[u][v].CenterCell = Vector2d(u, v);
 
-			// Fill the neighboring cells index
+			// Keep a backup of iterator
 			int ut = u; int vt =v;
+
+			// Fill the neighboring cells, the left cell
 			if (ut - 1 < 0) ut = 0;
-			else ut = ut - 1;
+			else ut -= 1;
 			index[u][v].LeftCell  = Vector2d(ut, vt);
-			if (ut + 1 >= SIMAREA_WIDTH) ut = SIMAREA_WIDTH - 1;
-			else ut = ut + 1;
+
+			// Fill the neighboring cells, the right cell
+			ut = u; vt = v;
+			if (ut + 1 == SIMAREA_WIDTH) ut = SIMAREA_WIDTH - 1;
+			else ut += 1;
 			index[u][v].RightCell = Vector2d(ut, vt);
+
+			// Fill the neighboring cells, the bottom cell
+			ut = u; vt = v;
 			if (vt - 1 < 0) vt = 0;
-			else vt = vt - 1;
+			else vt -= 1;
 			index[u][v].DownCell  = Vector2d(ut, vt);
+
+			// Fill the neighboring cells, the up cell
+			ut = u; vt = v;
 			if (vt + 1 >= SIMAREA_HEIGHT) vt = SIMAREA_HEIGHT - 1;
-			else vt = vt + 1;
+			else vt += 1;
 			index[u][v].UpCell    = Vector2d(ut, vt);
 
 			buffer<<"# "<<u<<v<<
