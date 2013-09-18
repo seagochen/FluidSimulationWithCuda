@@ -44,17 +44,13 @@ namespace sge
 
 	public:
 		// Register create (initialize) function
-		_DLL static void RegisterCreateFunc(
-			void (*hCreateFunc)(void));
+		_DLL static void RegisterCreateFunc(void (*hCreateFunc)(void));
 		// Register reshape function
-		_DLL static void RegisterReshapeFunc(
-			void (*hReshapeFunc)(unsigned width, unsigned height));
+		_DLL static void RegisterReshapeFunc(void (*hReshapeFunc)(unsigned width, unsigned height));
 		// Register keyboard function
-		_DLL static void RegisterKeyboardFunc(
-			void (*hKeyboardFunc)(SG_KEYS keyboard, SG_KEY_STATUS keystate));
+		_DLL static void RegisterKeyboardFunc(void (*hKeyboardFunc)(SG_KEYS keyboard, SG_KEY_STATUS keystate));
 		// Register mouse function
-		_DLL static void RegisterMouseFunc(
-			void (*hMouseFunc)(SG_MOUSE mouse, unsigned xpos, unsigned ypos));
+		_DLL static void RegisterMouseFunc(void (*hMouseFunc)(SG_MOUSE mouse, unsigned xpos, unsigned ypos));
 		// Register display function
 		_DLL static void RegisterDisplayFunc(void (*hDisplayFunc)(void));
 		// Register destory function
@@ -62,9 +58,9 @@ namespace sge
 
 	public:
 		// When functions registered call this function to create app form
-		_DLL static int SetupRoutine(void);
+		_DLL static SGRUNTIMEMSG SetupRoutine(void);
 		// Display the app form and loop the message
-		_DLL static int MainLoop(void);
+		_DLL static SGRUNTIMEMSG MainLoop(void);
 
 	private:
 		_DLL static LRESULT CALLBACK WindowProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam);
