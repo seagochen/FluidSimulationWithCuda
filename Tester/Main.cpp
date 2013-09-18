@@ -23,7 +23,7 @@ void InitVelocity(), InitPressure(), InitDivergence();
 
 FLUIDSIM index[SIMAREA_WIDTH][SIMAREA_HEIGHT];
 
-void InitIndex();
+void InitIndex(), MKLTester();
 
 int main()
 {
@@ -34,6 +34,8 @@ int main()
 	InitPressure();
 	InitDivergence();
 	InitIndex();
+
+//	MKLTester();
 
 	system("pause");
 };
@@ -53,7 +55,7 @@ void InitVelocity()
 		}
 		buffer<<endl;
 	}
-	file.SetDataToFile(buffer.str(), "velocity.txt", SGFILEOPENTYPE::SG_FILE_OPEN_DEFAULT);
+	file.SetDataToFile(buffer.str(), "velocity.txt", SGFILEOPENMODE::SG_FILE_OPEN_DEFAULT);
 };
 
 void InitPressure()
@@ -70,7 +72,7 @@ void InitPressure()
 		}
 		buffer<<endl;
 	}
-	file.SetDataToFile(buffer.str(), "pressure.txt", SGFILEOPENTYPE::SG_FILE_OPEN_DEFAULT);
+	file.SetDataToFile(buffer.str(), "pressure.txt", SGFILEOPENMODE::SG_FILE_OPEN_DEFAULT);
 };
 
 void InitDivergence()
@@ -87,11 +89,13 @@ void InitDivergence()
 		}
 		buffer<<endl;
 	}
-	file.SetDataToFile(buffer.str(), "divergence.txt", SGFILEOPENTYPE::SG_FILE_OPEN_DEFAULT);
+	file.SetDataToFile(buffer.str(), "divergence.txt", SGFILEOPENMODE::SG_FILE_OPEN_DEFAULT);
 };
+
 
 void InitIndex()
 {
+	/*
 	buffer.str("");
 	for (int u=0; u<SIMAREA_WIDTH; u++)
 	{
@@ -120,5 +124,26 @@ void InitIndex()
 		buffer<<"-----------------------------------------------------------------"<<endl<<endl;
 	}
 
-	file.SetDataToFile(buffer.str(), "index.txt", SGFILEOPENTYPE::SG_FILE_OPEN_DEFAULT);
+	file.SetDataToFile(buffer.str(), "index.txt", SGFILEOPENMODE::SG_FILE_OPEN_DEFAULT);
+	*/
+
+	index[1][2].CellIndex = Vector2d(0, 1);
+
+	printf("%f %f \n", index[1][2].CellIndex[0], index[1][2].CellIndex[1]);
 };
+
+
+/*
+
+#include <Intel\MKL\mkl.h>
+
+void MKLTester()
+{
+	cblas_dgemm(CBLAS_ORDER::CblasColMajor, );
+	void cblas_dgemm (const CBLAS_ORDER Order, const CBLAS_TRANSPOSE TransA, const
+CBLAS_TRANSPOSE TransB, const MKL_INT M, const MKL_INT N, const MKL_INT K, const double
+alpha, const double *A, const MKL_INT lda, const double *B, const MKL_INT ldb, const
+double beta, double *C, const MKL_INT ldc);
+};
+
+*/
