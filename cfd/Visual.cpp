@@ -48,7 +48,11 @@ void InitFPS(void)
 
 void InitFont(void)
 {
-	m_font->Init("EHSMB.TTF", 12);
+	if (!m_font->Init("EHSMB.TTF", 12))
+	{
+		ErrorMSG("Cannot create FreeType font");
+		exit(1);
+	};
 }
 
 

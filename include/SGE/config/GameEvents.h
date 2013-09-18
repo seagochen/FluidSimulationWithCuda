@@ -132,6 +132,19 @@ namespace sge {
 		SG_KEY_F10 = VK_F10, // F10
 		SG_KEY_F11 = VK_F11, // F11
 		SG_KEY_F12 = VK_F12, // F12
+
+		// Number pad
+		SG_PAD_LOCK = VK_NUMLOCK,         // NumLock
+		SG_PAD_N0   = VK_NUMPAD0,         // pad 0
+		SG_PAD_N9   = VK_NUMPAD9,         // pad 9
+		SG_PAD_N8   = VK_NUMPAD8,         // pad 8
+		SG_PAD_N7   = VK_NUMPAD7,         // pad 7
+		SG_PAD_N6   = VK_NUMPAD6,         // pad 6
+		SG_PAD_N5   = VK_NUMPAD5,         // pad 5
+		SG_PAD_N4   = VK_NUMPAD4,         // pad 4
+		SG_PAD_N3   = VK_NUMPAD3,         // pad 3
+		SG_PAD_N2   = VK_NUMPAD2,         // pad 2
+		SG_PAD_N1   = VK_NUMPAD1,         // pad 1
 	};
 
 	enum SG_MOUSE
@@ -151,22 +164,6 @@ namespace sge {
 		SG_MOUSE_R_BUTTON_UP = WM_RBUTTONUP,     // right button up
 		SG_MOUSE_M_BUTTON_UP = WM_MBUTTONUP,     // middle button up
 
-	};
-
-	enum SG_PAD
-	{
-		// Number pad
-		SG_PAD_LOCK = VK_NUMLOCK,         // NumLock
-		SG_PAD_N0   = VK_NUMPAD0,         // pad 0
-		SG_PAD_N9   = VK_NUMPAD9,         // pad 9
-		SG_PAD_N8   = VK_NUMPAD8,         // pad 8
-		SG_PAD_N7   = VK_NUMPAD7,         // pad 7
-		SG_PAD_N6   = VK_NUMPAD6,         // pad 6
-		SG_PAD_N5   = VK_NUMPAD5,         // pad 5
-		SG_PAD_N4   = VK_NUMPAD4,         // pad 4
-		SG_PAD_N3   = VK_NUMPAD3,         // pad 3
-		SG_PAD_N2   = VK_NUMPAD2,         // pad 2
-		SG_PAD_N1   = VK_NUMPAD1,         // pad 1
 	};
 	
 	struct SG_FUNCTIONS_HOLDER

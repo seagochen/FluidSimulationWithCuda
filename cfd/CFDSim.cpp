@@ -1,16 +1,19 @@
 #include "Visual.h"
+#include "CFDMethods.h"
 #include <time.h>
 
 using namespace sge;
 extern Visual *visual;
 _volume2D vbdata;
 
+#define _IN_CFDSIM_CPP
 #include "MacroDefinition.h"
+
 
 DWORD simulation (LPVOID lpdwThreadParam )
 {
-	vbdata.width = 256;
-	vbdata.height = 256;
+	vbdata.width = SIMAREA_WIDTH;
+	vbdata.height = SIMAREA_HEIGHT;
 	vbdata.texture_id;
 	vbdata.size = sizeof(GLubyte) * vbdata.width * vbdata.height * BYTES_PER_TEXEL;
 

@@ -42,7 +42,7 @@ namespace sge
 		SG_FILE_FORMAT_XF  = 0x0c,
 	};
 
-	enum SGFILEOPENTYPE
+	enum SGFILEOPENMODE
 	{
 		SG_FILE_OPEN_DEFAULT,  // Create or overwrite a file
 		SG_FILE_OPEN_APPEND,   // Create or append text to file
@@ -52,11 +52,13 @@ namespace sge
 	{
 	public:
 		// Load data from external file
-		_DLL std::string GetDataFromFile(const char *filename);
+		_DLL SGRUNTIMEMSG GetDataFromFile(const char *filename, const char *str_out);
 		
-		// Save data to external file
-		_DLL void SetDataToFile(
-			std::string data, const char *filename, SGFILEOPENTYPE mode);
+		// Save data to external file, using string
+		_DLL SGRUNTIMEMSG SetDataToFile(std::string str_in, const char *filename, SGFILEOPENMODE mode);
+
+		// Save data to external file, using const char *
+		_DLL SGRUNTIMEMSG SetDataToFile(const char *str_in, const char *filename, SGFILEOPENMODE mode);
 	};
 }
 

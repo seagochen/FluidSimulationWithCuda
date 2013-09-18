@@ -60,21 +60,26 @@
 #include <stdio.h>
 #endif
 
-#ifdef SG_OK
-#undef SG_OK
-#endif
+namespace sge
+{
+	enum SGRUNTIMEMSG
+	{
+		/// Runtime OK
+		SG_RUNTIME_OK,		            // return SG_RUNTIME_OK when result is ok
+		SG_RUNTIME_FALSE,               // return SG_RUNTIME_FALSE when result is false
 
-#ifdef SG_FAIL
-#undef SG_FAIL
-#endif
+		/// Runtime Exceptions
+		SG_NULL_POINTER_EXCEP,          // return SG_NULL_POINTER when a null pointer passed in
+		SG_NO_TARGET_FOUND_EXCEP,       // return SG_NO_TARGET_FOUND_EXCEP when no file found
+		SG_READ_TARGET_FAILED_EXCEP,    // return SG_READ_TARGET_FAILED_EXCEP when failed to read a file
+		SG_WRITE_TARGET_FAILED_EXCEP,   // return SG_WRITE_TARGET_FAILED_EXCEP when failed to write a file
+		SG_CALL_EXTFUNC_FAILED_EXCEP,   // return SG_CALL_EXTFUNC_FAILED_EXCEP when call an external function failed
 
-#ifdef SG_ERROR
-#undef SG_ERROR
-#endif
-
-#define SG_OK     1
-#define SG_FAIL   0
-#define SG_ERROR -1
+		/// Logical error
+		SG_ZERO_DENOMINATOR_ERROR,      // return SG_ZERO_DENOMINATOR_ERROR when denominator is zero
+		SG_OUT_OF_RANGE_ERROR,          // return SG_OUT_OF_RANGE_ERROR when result is out of range
+	};
+};
 
 #ifdef _In_Dll_File
 #include <GL\glew.h>
@@ -82,15 +87,7 @@
 #endif
 
 /// Some Functions ///
-#define ErrorMSG(str) { printf("Error> %s, check your code at line %d of %s in file %s\n", \
-	str, __LINE__, __FUNCTIONW__, __FILE__);}
-
-namespace sge
-{
-	class float3
-	{
-
-	};
-};
+#define ErrorMSG(str) { printf("Error> %s, check your code at line %d in file %s\n", \
+	str, __LINE__, __FILE__);}
 
 #endif

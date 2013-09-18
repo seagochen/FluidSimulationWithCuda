@@ -55,26 +55,26 @@ using std::string;
 	
 	public:
 		// The init function will create a font of the height h from the file fname.
-		_DLL void Init(const char * filename, unsigned int font_height);
+		_DLL SGRUNTIMEMSG Init(const char * filename, unsigned int font_height);
 		
 		// Free all the resources assosiated with the font.
-		_DLL void Clean(void);
+		_DLL SGRUNTIMEMSG Clean(void);
 		
 		// The flagship function of the library - this thing will print out text at 
 		// window coordinates x,y, using the font ft_font. The current modelview matrix 
 		// will also be applied to the text. 
-		_DLL void PrintText(const FreeType &freetype_in, float x, float y, const char *fmt, ...);
+		_DLL SGRUNTIMEMSG PrintText(const FreeType &freetype, float x, float y, const char *fmt, ...);
 		
 		// Call this function will enable FreeType
-		_DLL void EnableFreeType(void);
+		_DLL SGRUNTIMEMSG EnableFreeType(void);
 
 		// Call this function to disable FreeType
-		_DLL void DisableFreeType(void);
+		_DLL SGRUNTIMEMSG DisableFreeType(void);
 
 		// FreeType will bind a lot of texture IDs, so in order to avoid the texture ID user created
 		// has be occupied, you may need to call this function checks whether the current texture ID
 		// is available
-		_DLL bool IsTextureIDAvailable(unsigned textureID);
+		_DLL SGRUNTIMEMSG IsTextureIDAvailable(unsigned textureID);
 };
 
 };
