@@ -35,7 +35,10 @@ int main()
 	InitDivergence();
 	InitIndex();
 
-//	MKLTester();
+	for (int i=0; i<5; i++)
+	{
+
+	}
 
 	system("pause");
 };
@@ -95,25 +98,39 @@ void InitDivergence()
 
 void InitIndex()
 {
-	/*
 	buffer.str("");
 	for (int u=0; u<SIMAREA_WIDTH; u++)
 	{
 		for (int v=0; v<SIMAREA_HEIGHT; v++)
 		{
-			index[u][v].CellIndex(u, v);
-			index[u][v].CenterCell(u, v);
+			index[u][v].CellIndex  = Vector2d(u, v);
+			index[u][v].CenterCell = Vector2d(u, v);
 
-			// Fill the neighboring cells index
+			// Keep a backup of iterator
 			int ut = u; int vt =v;
+
+			// Fill the neighboring cells, the left cell
 			if (ut - 1 < 0) ut = 0;
-			index[u][v].LeftCell(ut, vt);
-			if (ut + 1 >= SIMAREA_WIDTH) ut = SIMAREA_WIDTH - 1;
-			index[u][v].RightCell(ut, vt);
+			else ut -= 1;
+			index[u][v].LeftCell  = Vector2d(ut, vt);
+
+			// Fill the neighboring cells, the right cell
+			ut = u; vt = v;
+			if (ut + 1 == SIMAREA_WIDTH) ut = SIMAREA_WIDTH - 1;
+			else ut += 1;
+			index[u][v].RightCell = Vector2d(ut, vt);
+
+			// Fill the neighboring cells, the bottom cell
+			ut = u; vt = v;
 			if (vt - 1 < 0) vt = 0;
-			index[u][v].DownCell(ut, vt);
+			else vt -= 1;
+			index[u][v].DownCell  = Vector2d(ut, vt);
+
+			// Fill the neighboring cells, the up cell
+			ut = u; vt = v;
 			if (vt + 1 >= SIMAREA_HEIGHT) vt = SIMAREA_HEIGHT - 1;
-			index[u][v].UpCell(ut, vt);
+			else vt += 1;
+			index[u][v].UpCell    = Vector2d(ut, vt);
 
 			buffer<<"# "<<u<<v<<
 				"  L: "<<index[u][v].LeftCell[0]<<index[u][v].LeftCell[1]<<
@@ -125,25 +142,5 @@ void InitIndex()
 	}
 
 	file.SetDataToFile(buffer.str(), "index.txt", SGFILEOPENMODE::SG_FILE_OPEN_DEFAULT);
-	*/
 
-	index[1][2].CellIndex = Vector2d(0, 1);
-
-	printf("%f %f \n", index[1][2].CellIndex[0], index[1][2].CellIndex[1]);
 };
-
-
-/*
-
-#include <Intel\MKL\mkl.h>
-
-void MKLTester()
-{
-	cblas_dgemm(CBLAS_ORDER::CblasColMajor, );
-	void cblas_dgemm (const CBLAS_ORDER Order, const CBLAS_TRANSPOSE TransA, const
-CBLAS_TRANSPOSE TransB, const MKL_INT M, const MKL_INT N, const MKL_INT K, const double
-alpha, const double *A, const MKL_INT lda, const double *B, const MKL_INT ldb, const
-double beta, double *C, const MKL_INT ldc);
-};
-
-*/
