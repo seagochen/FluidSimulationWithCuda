@@ -35,8 +35,12 @@ int main()
 	InitDivergence();
 	InitIndex();
 
+	// Clear data
+	buffer.str("");
+
 	for (int i=0; i<5; i++)
 	{
+		buffer<<"--------------------------------------------------------------"<<endl;
 
 	}
 
