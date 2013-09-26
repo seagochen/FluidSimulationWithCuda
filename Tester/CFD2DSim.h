@@ -44,6 +44,9 @@ using Eigen::Vector2i;
 
 namespace sge 
 {
+//////////////////////////////////////////////////////////////////////////////////////////
+////
+
 	enum SamplingMode
 	{
 		samPointClamp = 0x00,   // Pick sampling from a point
@@ -64,10 +67,14 @@ namespace sge
 		SwapDataFromUpdateToOrigin = 0x21,
 	};
 
-	/* Simulator Header of Computational Fluid Dynamics */
+////
+//////////////////////////////////////////////////////////////////////////////////////////
+////
+
+	/* Data Structure of Computational Fluid Dynamics */
 	class SGCFD2D
 	{
-	private:
+	public:
 		// Vector fields of velocity
 		Vector2d velocity_origin[CELLSU+2][CELLSV+2];
 		Vector2d velocity_update[CELLSU+2][CELLSV+2];
@@ -75,6 +82,7 @@ namespace sge
 		double density_origin[CELLSU+2][CELLSV+2];
 		double density_update[CELLSU+2][CELLSV+2];
 
+	private:
 		// Updated
 		bool updated;
 
@@ -127,6 +135,25 @@ namespace sge
 		Vector2i *SamplePoint(int u, int v);
 	};
 
+////
+//////////////////////////////////////////////////////////////////////////////////////////
+////
+
+	/* Simulator of Computational Fluid Dynamics */
+	class SGCFD2DSim
+	{
+	private:
+		SGCFD2D cfd2D;
+
+	public:
+		void ScalarLineSolveFunc(double a, double c);
+		void VectorLineSolveFunc(double a, double c);
+		void ScalarDiffuse(double diff, double dt);
+		void VecotrDiffuse(double diff, double dt);
+	};
+
+////
+//////////////////////////////////////////////////////////////////////////////////////////
 };
 
 #endif
