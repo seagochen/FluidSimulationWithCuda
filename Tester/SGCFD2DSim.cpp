@@ -61,3 +61,15 @@ void SGCFD2DSim::VecotrDiffuse(double diff, double dt)
 	double a = dt * diff * CELLSU * CELLSV;
 	VectorLineSolveFunc(a, 1+4*a);
 };
+
+
+// Advect function for scalar field
+void SGCFD2DSim::ScalarAdvect(double dt)
+{
+};
+
+
+// Advect function for vector field
+void SGCFD2DSim::VectorAdvect(double dt)
+{
+};

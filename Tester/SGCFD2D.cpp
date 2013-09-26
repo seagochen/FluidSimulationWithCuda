@@ -306,20 +306,14 @@ double SGCFD2D::SamplingFromLastScalarField(SamplingMode pmode, Vector2i *CellIn
 // Update vector field
 void SGCFD2D::UpdateVectorField(int u, int v, Vector2d *vel_in)
 {
-	if (!updated)
-	{
-		Vector2i temp(u, v);
-		YieldValueToVectorField(SelectingMode::YieldDataToUpdate, vel_in, &temp);
-	}
+	Vector2i temp(u, v);
+	YieldValueToVectorField(SelectingMode::YieldDataToUpdate, vel_in, &temp);
 };
 
 
 // Update Scalar field
 void SGCFD2D::UpdateScalarField(int u, int v, double vel_in)
 {
-	if (!updated)
-	{
-		Vector2i temp(u, v);
-		YieldValueToScalarField(SelectingMode::YieldDataToUpdate, vel_in, &temp);
-	}
+	Vector2i temp(u, v);
+	YieldValueToScalarField(SelectingMode::YieldDataToUpdate, vel_in, &temp);	
 };

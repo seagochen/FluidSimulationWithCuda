@@ -82,10 +82,6 @@ namespace sge
 		double density_origin[CELLSU+2][CELLSV+2];
 		double density_update[CELLSU+2][CELLSV+2];
 
-	private:
-		// Updated
-		bool updated;
-
 	public:
 		// Sampling method for vector field
 		Vector2d *SamplingFromVectorField(SamplingMode pmode, SelectingMode smode, Vector2i *CellIndex);
@@ -111,9 +107,6 @@ namespace sge
 		void UpdateVectorField(int u, int v, Vector2d *vel_in);
 		// Update Scalar field
 		void UpdateScalarField(int u, int v, double vel_in);
-
-		// Updated!
-		inline void Updated(bool up) { updated = up; };
 
 		// Cells in horizontal direction, including ghost cells
 		inline int NumOfHorizontalCells() { return CELLSU + 2; };
@@ -146,10 +139,20 @@ namespace sge
 		SGCFD2D cfd2D;
 
 	public:
+		// Line solver function for scalar field
 		void ScalarLineSolveFunc(double a, double c);
+		// Line solver function for vector field
 		void VectorLineSolveFunc(double a, double c);
+
+		// Diffuse function for scalar field
 		void ScalarDiffuse(double diff, double dt);
+		// Diffuse function for vector field
 		void VecotrDiffuse(double diff, double dt);
+
+		// Advect function for scalar field
+		void ScalarAdvect(double dt);
+		// Advect function for vector field
+		void VectorAdvect(double dt);
 	};
 
 ////
