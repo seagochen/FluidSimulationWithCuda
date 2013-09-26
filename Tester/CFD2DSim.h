@@ -38,6 +38,9 @@
 using Eigen::Vector2d;
 using Eigen::Vector2i;
 
+#define CELLSU   SIMAREA_WIDTH / 4
+#define CELLSV   SIMAREA_HEIGHT/ 4
+
 
 namespace sge 
 {
@@ -66,11 +69,14 @@ namespace sge
 	{
 	private:
 		// Vector fields of velocity
-		Vector2d velocity_origin[SIMAREA_WIDTH+2][SIMAREA_HEIGHT+2];
-		Vector2d velocity_update[SIMAREA_WIDTH+2][SIMAREA_HEIGHT+2];
+		Vector2d velocity_origin[CELLSU+2][CELLSV+2];
+		Vector2d velocity_update[CELLSU+2][CELLSV+2];
 		// Scalar fields of density
-		double density_origin[SIMAREA_WIDTH+2][SIMAREA_HEIGHT+2];
-		double density_update[SIMAREA_WIDTH+2][SIMAREA_HEIGHT+2];
+		double density_origin[CELLSU+2][CELLSV+2];
+		double density_update[CELLSU+2][CELLSV+2];
+
+		// Updated
+		bool updated;
 
 	public:
 		// Sampling method for vector field
@@ -93,6 +99,22 @@ namespace sge
 		// Sampling from last updated scalar field
 		double    SamplingFromLastScalarField(SamplingMode pmode, Vector2i *CellIndex);
 
+		// Update vector field
+		void UpdateVectorField(int u, int v, Vector2d *vel_in);
+		// Update Scalar field
+		void UpdateScalarField(int u, int v, double vel_in);
+
+		// Updated!
+		inline void Updated(bool up) { updated = up; };
+
+		// Cells in horizontal direction, including ghost cells
+		inline int NumOfHorizontalCells() { return CELLSU + 2; };
+		// Cells in vertical direction, including ghost cells
+		inline int NumOfVerticalCells() { return CELLSV + 2; };
+		// Cells in horizontal direction, excluding ghost cells
+		inline int NumOfSimHorizontalCells() { return CELLSU; };
+		// Cells in vertical direction, excluding ghost cells
+		inline int NumOfSimVerticalCells() { return CELLSV; };
 
 	private:
 		/// internal functions ///

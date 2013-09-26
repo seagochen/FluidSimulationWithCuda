@@ -1,4 +1,4 @@
-#include "CFDHeaders.h"
+#include "CFD2DSim.h"
 
 using namespace sge;
 
@@ -229,6 +229,66 @@ void SGCFD2D::YieldValueToScalarField(SelectingMode smode, double value, Vector2
 };
 
 
+// Swap value of vector fields
+void SGCFD2D::SwapVectorField(SwappingMode wmode)
+{
+	if (wmode == SwappingMode::SwapDataFromOriginToUpdate)
+	{
+		for (int i=0; i < CELLSU + 2; i++)
+		{
+			for (int j=0; j < CELLSV + 2; j++)
+			{
+				Vector2d temp = velocity_update[i][j];
+				velocity_update[i][j] = velocity_origin[i][j];
+				velocity_origin[i][j] = temp;
+			}
+		}
+	}
+	elif (wmode == SwappingMode::SwapDataFromUpdateToOrigin)
+	{
+		for (int i=0; i < CELLSU + 2; i++)
+		{
+			for (int j=0; j < CELLSV + 2; j++)
+			{
+				Vector2d temp = velocity_origin[i][j];
+				velocity_origin[i][j] = velocity_update[i][j];
+				velocity_update[i][j] = temp;
+			}
+		}
+	}
+};
+
+
+// Swap value of scalar fields
+void SGCFD2D::SwapScalarField(SwappingMode wmode)
+{
+	if (wmode == SwappingMode::SwapDataFromOriginToUpdate)
+	{
+		for (int i=0; i < CELLSU + 2; i++)
+		{
+			for (int j=0; j < CELLSV + 2; j++)
+			{
+				double temp = density_update[i][j];
+				density_update[i][j] = density_origin[i][j];
+				density_origin[i][j] = temp;
+			}
+		}
+	}
+	elif (wmode == SwappingMode::SwapDataFromUpdateToOrigin)
+	{
+		for (int i=0; i < CELLSU + 2; i++)
+		{
+			for (int j=0; j < CELLSV + 2; j++)
+			{
+				double temp = density_origin[i][j];
+				density_origin[i][j] = density_update[i][j];
+				density_update[i][j] = temp;
+			}
+		}
+	}
+};
+
+
 // Sampling from last updated vector field
 Vector2d *SGCFD2D::SamplingFromLastVectorField(SamplingMode pmode, Vector2i *CellIndex)
 {
@@ -243,12 +303,23 @@ double SGCFD2D::SamplingFromLastScalarField(SamplingMode pmode, Vector2i *CellIn
 };
 
 
-// Swap value of vector fields
-void SGCFD2D::SwapVectorField(SwappingMode wmode)
+// Update vector field
+void SGCFD2D::UpdateVectorField(int u, int v, Vector2d *vel_in)
 {
+	if (!updated)
+	{
+		Vector2i temp(u, v);
+		YieldValueToVectorField(SelectingMode::YieldDataToUpdate, vel_in, &temp);
+	}
 };
 
-// Swap value of scalar fields
-void SGCFD2D::SwapScalarField(SwappingMode wmode)
+
+// Update Scalar field
+void SGCFD2D::UpdateScalarField(int u, int v, double vel_in)
 {
+	if (!updated)
+	{
+		Vector2i temp(u, v);
+		YieldValueToScalarField(SelectingMode::YieldDataToUpdate, vel_in, &temp);
+	}
 };
