@@ -25,6 +25,18 @@ void SGCFD2DSim::ScalarLineSolveFunc(double a, double c)
 	}
 };
 
+#undef density
+#undef densityL
+#undef densityR
+#undef densityU
+#undef densityD
+#undef density0
+#undef density0L
+#undef density0R
+#undef density0U
+#undef density0D
+
+
 
 #define velocity   cfd2D.velocity_update[i][j]
 #define velocityL  cfd2D.velocity_update[i-1][j]
@@ -47,6 +59,18 @@ void SGCFD2DSim::VectorLineSolveFunc(double a, double c)
 		}
 	}
 };
+
+#undef velocity
+#undef velocityL
+#undef velocityR
+#undef velocityU
+#undef velocityD
+#undef velocity0
+#undef velocity0L
+#undef velocity0R
+#undef velocity0U
+#undef velocity0D
+
 
 
 void SGCFD2DSim::ScalarDiffuse(double diff, double dt)

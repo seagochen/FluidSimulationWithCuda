@@ -9,7 +9,7 @@ using namespace sge;
 #define V(px) px[1]
 #define W(px) px[2]
 
-#define decode(ptr, u, v) {Vector2i px = *ptr; u = U(px); v = V(px);}
+#define decode(ptr) int ups, vps; Vector2i px = *ptr; ups = U(px); vps = V(px);
 
 
 Vector2i *SGCFD2D::SamplePoint(int u, int v)
@@ -30,8 +30,7 @@ Vector2i *SGCFD2D::SamplePoint(int u, int v)
 double SGCFD2D::SamplingScalarLinear(SelectingMode smode, Vector2i *CellIndex)
 {
 	// Decode the cell index
-	int ups, vps;
-	decode(CellIndex, ups, vps);
+	decode(CellIndex);
 	
 
 	/// horizontal direction is u
@@ -74,8 +73,7 @@ double SGCFD2D::SamplingScalarLinear(SelectingMode smode, Vector2i *CellIndex)
 Vector2d *SGCFD2D::SamplingVectorLinear(SelectingMode smode, Vector2i *CellIndex)
 {
 	// Decode the cell index
-	int ups, vps;
-	decode(CellIndex, ups, vps);
+	decode(CellIndex);
 	
 
 	/// horizontal direction is u
@@ -118,8 +116,7 @@ Vector2d *SGCFD2D::SamplingVectorLinear(SelectingMode smode, Vector2i *CellIndex
 Vector2d *SGCFD2D::SamplingVectorPointer(SelectingMode smode, Vector2i *CellIndex)
 {
 	// Decode the cell index
-	int ups, vps;
-	decode(CellIndex, ups, vps);
+	decode(CellIndex);
 
 	if (smode == SelectingMode::SelectDataFromOrigin)
 	{
@@ -140,8 +137,7 @@ Vector2d *SGCFD2D::SamplingVectorPointer(SelectingMode smode, Vector2i *CellInde
 double SGCFD2D::SamplingScalarPointer(SelectingMode smode, Vector2i *CellIndex)
 {
 	// Decode the cell index
-	int ups, vps;
-	decode(CellIndex, ups, vps);
+	decode(CellIndex);
 
 	if (smode == SelectingMode::SelectDataFromOrigin)
 	{
@@ -197,8 +193,7 @@ double SGCFD2D::SamplingFromScalarField(SamplingMode pmode, SelectingMode smode,
 void SGCFD2D::YieldValueToVectorField(SelectingMode smode, Vector2d *value, Vector2i *CellIndex)
 {
 	// Decode the cell index
-	int ups, vps;
-	decode(CellIndex, ups, vps);
+	decode(CellIndex);
 
 	if (smode == SelectingMode::YieldDataToOrigin)
 	{
@@ -215,8 +210,7 @@ void SGCFD2D::YieldValueToVectorField(SelectingMode smode, Vector2d *value, Vect
 void SGCFD2D::YieldValueToScalarField(SelectingMode smode, double value, Vector2i *CellIndex)
 {
 	// Decode the cell index
-	int ups, vps;
-	decode(CellIndex, ups, vps);
+	decode(CellIndex);
 	
 	if (smode == SelectingMode::YieldDataToOrigin)
 	{
