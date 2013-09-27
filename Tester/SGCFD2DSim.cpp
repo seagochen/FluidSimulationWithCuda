@@ -16,6 +16,7 @@ using namespace sge;
 
 void SGCFD2DSim::ScalarLineSolveFunc(double a, double c)
 {
+	// TODO
 	for (int i=1; i <= CELLSU; i++)
 	{
 		for (int j=1; j <= CELLSV; j++)
@@ -51,6 +52,7 @@ void SGCFD2DSim::ScalarLineSolveFunc(double a, double c)
 
 void SGCFD2DSim::VectorLineSolveFunc(double a, double c)
 {
+	// TODO
 	for (int i=0; i <= CELLSU; i++)
 	{
 		for (int j=0; j <= CELLSV; j++)
@@ -87,13 +89,52 @@ void SGCFD2DSim::VecotrDiffuse(double diff, double dt)
 };
 
 
+#define decode(ptr) int ups, vps; Vector2i px = *ptr; ups = U(px); vps = V(px);
+#define sampleS(i, j, value) Vector2i temps(i, j); value = cfd2D.SamplingFromScalarField(SamplingMode::samPointClamp, SelectingMode::SelectDataFromOrigin, &temps);
+#define sampleV(i, j, value) Vector2i tempv(i, j); value = *cfd2D.SamplingFromVectorField(SamplingMode::samPointClamp, SelectingMode::SelectDataFromOrigin, &tempv);
+#define abs(n) (n>0)?n:-n;
+#define ceil(n) (n-(int)n>=0.5f)?(int)n+1:(int)n;
+#define floor(n) (int)n;
+
 // Advect function for scalar field
 void SGCFD2DSim::ScalarAdvect(double dt)
 {
+	double    density;
+	Vector2d  velocity;
+
+	for (int i=0; i < CELLSU+2; i++)
+	{
+		for (int j=0; j < CELLSV+2; j++)
+		{
+			sampleS(i, j, density);
+			sampleV(i, j, velocity);
+			velocity *= stepsize;
+			double u = abs(velocity[0]) + i;
+			double v = abs(velocity[1]) + j;
+			ceil(u); 
+			ceil(v);
+			cfd2D.UpdateScalarField(u, v, density);
+		}
+	}
 };
 
 
 // Advect function for vector field
 void SGCFD2DSim::VectorAdvect(double dt)
 {
+	Vector2d  velocity;
+
+	for (int i=0; i < CELLSU+2; i++)
+	{
+		for (int j=0; j < CELLSV+2; j++)
+		{
+			sampleV(i, j, velocity);
+			velocity *= stepsize;
+			double u = abs(velocity[0]) + i;
+			double v = abs(velocity[1]) + j;
+			ceil(u); 
+			ceil(v);
+			cfd2D.UpdateVectorField(u, v, &velocity);
+		}
+	}
 };

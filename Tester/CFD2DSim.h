@@ -41,6 +41,7 @@ using Eigen::Vector2i;
 #define CELLSU   SIMAREA_WIDTH / 4
 #define CELLSV   SIMAREA_HEIGHT/ 4
 
+#define stepsize  0.01f  // step length (size) during a single time slice
 
 namespace sge 
 {
@@ -153,6 +154,9 @@ namespace sge
 		void ScalarAdvect(double dt);
 		// Advect function for vector field
 		void VectorAdvect(double dt);
+
+		// Project vector and scalar field
+		void Project();
 	};
 
 ////
