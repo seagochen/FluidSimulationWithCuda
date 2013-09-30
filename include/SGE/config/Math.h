@@ -28,31 +28,10 @@
 
 #include "Auxiliaries.h"
 
-namespace sge
-{
-	class Vector2d
-	{
-		double x, y;
+/// Some Macro Definition ///
 
-	public:
-
-	};
-
-	class Vector3d
-	{
-		double x, y, z;
-
-	public:
-
-	};
-
-	class Vector4d
-	{
-		double x, y, z, w;
-
-	public:
-
-	};
-};
+#define abs(n) (n>0)?n:-n;
+#define ceil(n) (n-(int)n>=0.5f)?(int)n+1:(int)n;
+#define floor(n) (int)n;
 
 #endif
