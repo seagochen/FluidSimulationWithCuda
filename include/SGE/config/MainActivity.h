@@ -34,13 +34,13 @@
 
 namespace sge
 {
-	class MainActivity
+	class MainActivityBaseWindowVersion
 	{
 	public:
 		// Default Constructor
-		_DLL MainActivity(bool isFull = false);
+		_DLL MainActivityBaseWindowVersion(bool isFull = false);
 		// Constructor with specified window's size
-		_DLL MainActivity(unsigned width, unsigned height, bool isFull = false);
+		_DLL MainActivityBaseWindowVersion(unsigned width, unsigned height, bool isFull = false);
 
 	public:
 		// Register create (initialize) function
@@ -76,6 +76,8 @@ namespace sge
 		_DLL void  SetApplicationIcons(WORD wAppIcon, WORD wSmallIcon);
 		_DLL void  ConvertMFCPosition(unsigned *xpos_in_out, unsigned *ypos_in_out);
 	};
+
+	typedef MainActivityBaseWindowVersion MainActivity;
 };
 
 #endif
