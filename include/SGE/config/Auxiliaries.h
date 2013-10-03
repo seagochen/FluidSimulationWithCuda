@@ -26,6 +26,7 @@
 #ifndef _SEAGOSOFT_AUXILIARY_H_
 #define _SEAGOSOFT_AUXILIARY_H_
 
+/// Undefine those macro definitions if already defined ///
 #ifdef SAFE_FREE_PTR(ptr)
 #undef SAFE_FREE_PTR(ptr)
 #endif
@@ -46,10 +47,14 @@
 #undef pterror(str)
 #endif
 
+
+/// Safe release ptr ///
 #define SAFE_FREE_PTR(ptr)   { if( ptr ) free(ptr);  ptr = NULL; }   // rid ptr from calloc or malloc
 #define SAFE_DELT_PTR(ptr)   { if( ptr ) delete ptr; ptr = NULL; }   // rid ptr, such as int *ptr
 #define SAFE_DELT_ARR(ptr)   { if( ptr ) delete []ptr; ptr = NULL; } // rid ptr array
 
+
+/// DLL ///
 #ifdef _In_Dll_File
 #define _DLL __declspec(dllexport)    // Headers included in dll source
 #else
@@ -60,6 +65,7 @@
 #include <stdio.h>
 #endif
 
+/// SG runtime message ///
 namespace sge
 {
 	enum SGRUNTIMEMSG
@@ -89,5 +95,9 @@ namespace sge
 /// Some Functions ///
 #define ErrorMSG(str) { printf("Error> %s, check your code at line %d in file %s\n", \
 	str, __LINE__, __FILE__);}
+
+
+/// Some macro definitions ///
+#define elif else if
 
 #endif

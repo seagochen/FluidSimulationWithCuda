@@ -19,19 +19,20 @@
 
 /**
 * <Author>      Orlando Chen
-* <Date>        Sep 18, 2013
-* <File>        Math.h
+* <Date>        Sep 25, 2013
+* <File>        Maths.h
 */
 
-#ifndef _SEAGOSOFT_MATH_H_
-#define _SEAGOSOFT_MATH_H_
+#ifndef _SEAGOSOFT_MATHS_H_
+#define _SEAGOSOFT_MATHS_H_
 
-#include "Auxiliaries.h"
-
-/// Some Macro Definition ///
-
+// Absolute value
 #define abs(n) (n>0)?n:-n;
+
+// Ceil function
 #define ceil(n) (n-(int)n>=0.5f)?(int)n+1:(int)n;
+
+// Floor function
 #define floor(n) (int)n;
 
 #endif
