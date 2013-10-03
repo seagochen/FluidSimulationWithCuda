@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <Date>        Sep 25, 2013
-* <File>        CFDHeaders.h
+* <File>        CFD2DSim.h
 */
 
 
@@ -136,9 +136,6 @@ namespace sge
 	/* Simulator of Computational Fluid Dynamics */
 	class SGCFD2DSim
 	{
-	private:
-		SGCFD2D cfd2D;
-
 	public:
 		// Line solver function for scalar field
 		void ScalarLineSolveFunc(double a, double c);
