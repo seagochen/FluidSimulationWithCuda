@@ -37,7 +37,7 @@ extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, floa
 static int N;
 static float dt, diff, visc;
 static float force, source;
-static int dvel;
+static bool dvel;
 
 static float * u, * v, * u_prev, * v_prev;
 static float * dens, * dens_prev;
@@ -196,24 +196,31 @@ void get_from_UI ( float * d, float * u, float * v )
 #undef MouseRightDown
 }
 
-
+/*
+  ----------------------------------------------------------------------
+   Mainroutine
+  ----------------------------------------------------------------------
+*/
 
 void key_func ( SG_KEYS key, SG_KEY_STATUS status )
 {
-	switch ( key )
+	if (status == SG_KEY_STATUS::SG_KEY_DOWN)
 	{
-	case SG_KEYS::SG_KEY_C:
-		clear_data ();
-		break;
-
-	case SG_KEYS::SG_KEY_Q:
-		free_data ();
-		exit ( 0 );
-		break;
-
-	case SG_KEYS::SG_KEY_V:
-		dvel = !dvel;
-		break;
+		switch ( key )
+		{
+		case SG_KEYS::SG_KEY_C:
+			clear_data ();
+			break;
+		
+		case SG_KEYS::SG_KEY_Q:
+			free_data ();
+			exit ( 0 );
+			break;
+		
+		case SG_KEYS::SG_KEY_V:
+			dvel = !dvel;
+			break;
+		}
 	}
 }
 
