@@ -42,7 +42,6 @@ static bool dvel;
 static float * u, * v, * u_prev, * v_prev;
 static float * dens, * dens_prev;
 
-static int win_id;
 static bool mouse_down[2];
 static int omx, omy, mx, my;
 
@@ -135,7 +134,7 @@ static void draw_density ( void )
 	h = 1.0f/N;
 
 	glBegin ( GL_QUADS );
-
+	{
 		for ( i=0 ; i<=N ; i++ ) {
 			x = (i-0.5f)*h;
 			for ( j=0 ; j<=N ; j++ ) {
@@ -152,9 +151,10 @@ static void draw_density ( void )
 				glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
 			}
 		}
-
+	}
 	glEnd ();
 }
+
 
 /*
   ----------------------------------------------------------------------
@@ -195,6 +195,7 @@ void get_from_UI ( float * d, float * u, float * v )
 #undef MouseLeftDown
 #undef MouseRightDown
 }
+
 
 /*
   ----------------------------------------------------------------------
@@ -317,7 +318,7 @@ int main( int argc, char ** argv )
 	printf ( "\t Clear the simulation by pressing the 'c' key\n" );
 	printf ( "\t Quit by pressing the 'q' key\n" );
 
-	dvel = 0;
+	dvel = false;
 	win_x = 256;
 	win_y = 256;
 
