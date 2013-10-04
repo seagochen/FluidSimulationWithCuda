@@ -1,140 +1,98 @@
-#include "CFD2DSim.h"
+#define IX(i,j) ((i)+(N+2)*(j))
+#define SWAP(x0,x) {float * tmp=x0;x0=x;x=tmp;}
+#define FOR_EACH_CELL for ( i=1 ; i<=N ; i++ ) { for ( j=1 ; j<=N ; j++ ) {
+#define END_FOR }}
 
-using namespace sge;
-
-
-#define density   cfd2D.density_update[i][j]
-#define densityL  cfd2D.density_update[i-1][j]
-#define densityR  cfd2D.density_update[i+1][j]
-#define densityU  cfd2D.density_update[i][j+1]
-#define densityD  cfd2D.density_update[i][j-1]
-#define density0  cfd2D.density_origin[i][j]
-#define density0L cfd2D.density_origin[i-1][j]
-#define density0R cfd2D.density_origin[i+1][j]
-#define density0U cfd2D.density_origin[i][j+1]
-#define density0D cfd2D.density_origin[i][j-1]
-
-void SGCFD2DSim::ScalarLineSolveFunc(double a, double c)
+void add_source ( int N, float * x, float * s, float dt )
 {
-	// TODO
-	for (int i=1; i <= CELLSU; i++)
-	{
-		for (int j=1; j <= CELLSV; j++)
-		{
-			density = (density0 + a * (densityL + densityR + densityU + densityD)) / c;
-		}
+	int i, size=(N+2)*(N+2);
+	for ( i=0 ; i<size ; i++ ) x[i] += dt*s[i];
+}
+
+void set_bnd ( int N, int b, float * x )
+{
+	int i;
+
+	for ( i=1 ; i<=N ; i++ ) {
+		x[IX(0  ,i)] = b==1 ? -x[IX(1,i)] : x[IX(1,i)];
+		x[IX(N+1,i)] = b==1 ? -x[IX(N,i)] : x[IX(N,i)];
+		x[IX(i,0  )] = b==2 ? -x[IX(i,1)] : x[IX(i,1)];
+		x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];
 	}
-};
+	x[IX(0  ,0  )] = 0.5f*(x[IX(1,0  )]+x[IX(0  ,1)]);
+	x[IX(0  ,N+1)] = 0.5f*(x[IX(1,N+1)]+x[IX(0  ,N)]);
+	x[IX(N+1,0  )] = 0.5f*(x[IX(N,0  )]+x[IX(N+1,1)]);
+	x[IX(N+1,N+1)] = 0.5f*(x[IX(N,N+1)]+x[IX(N+1,N)]);
+}
 
-#undef density
-#undef densityL
-#undef densityR
-#undef densityU
-#undef densityD
-#undef density0
-#undef density0L
-#undef density0R
-#undef density0U
-#undef density0D
-
-
-
-#define velocity   cfd2D.velocity_update[i][j]
-#define velocityL  cfd2D.velocity_update[i-1][j]
-#define velocityR  cfd2D.velocity_update[i+1][j]
-#define velocityU  cfd2D.velocity_update[i][j+1]
-#define velocityD  cfd2D.velocity_update[i][j-1]
-#define velocity0  cfd2D.velocity_origin[i][j]
-#define velocity0L cfd2D.velocity_origin[i-1][j]
-#define velocity0R cfd2D.velocity_origin[i+1][j]
-#define velocity0U cfd2D.velocity_origin[i][j+1]
-#define velocity0D cfd2D.velocity_origin[i][j-1]
-
-void SGCFD2DSim::VectorLineSolveFunc(double a, double c)
+void lin_solve ( int N, int b, float * x, float * x0, float a, float c )
 {
-	// TODO
-	for (int i=0; i <= CELLSU; i++)
-	{
-		for (int j=0; j <= CELLSV; j++)
-		{
-			velocity = (velocity0 + a * (velocityL + velocityR + velocityU + velocityD)) / c;
-		}
+	int i, j, k;
+
+	for ( k=0 ; k<20 ; k++ ) {
+		FOR_EACH_CELL
+			x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]))/c;
+		END_FOR
+		set_bnd ( N, b, x );
 	}
-};
+}
 
-#undef velocity
-#undef velocityL
-#undef velocityR
-#undef velocityU
-#undef velocityD
-#undef velocity0
-#undef velocity0L
-#undef velocity0R
-#undef velocity0U
-#undef velocity0D
-
-
-
-void SGCFD2DSim::ScalarDiffuse(double diff, double dt)
+void diffuse ( int N, int b, float * x, float * x0, float diff, float dt )
 {
-	double a = dt * diff * CELLSU * CELLSV;
-	ScalarLineSolveFunc(a, 1+4*a);
-};
+	float a=dt*diff*N*N;
+	lin_solve ( N, b, x, x0, a, 1+4*a );
+}
 
-
-void SGCFD2DSim::VecotrDiffuse(double diff, double dt)
+void advect ( int N, int b, float * d, float * d0, float * u, float * v, float dt )
 {
-	double a = dt * diff * CELLSU * CELLSV;
-	VectorLineSolveFunc(a, 1+4*a);
-};
+	int i, j, i0, j0, i1, j1;
+	float x, y, s0, t0, s1, t1, dt0;
 
+	dt0 = dt*N;
+	FOR_EACH_CELL
+		x = i-dt0*u[IX(i,j)]; y = j-dt0*v[IX(i,j)];
+		if (x<0.5f) x=0.5f; if (x>N+0.5f) x=N+0.5f; i0=(int)x; i1=i0+1;
+		if (y<0.5f) y=0.5f; if (y>N+0.5f) y=N+0.5f; j0=(int)y; j1=j0+1;
+		s1 = x-i0; s0 = 1-s1; t1 = y-j0; t0 = 1-t1;
+		d[IX(i,j)] = s0*(t0*d0[IX(i0,j0)]+t1*d0[IX(i0,j1)])+
+					 s1*(t0*d0[IX(i1,j0)]+t1*d0[IX(i1,j1)]);
+	END_FOR
+	set_bnd ( N, b, d );
+}
 
-#define decode(ptr) int ups, vps; Vector2i px = *ptr; ups = U(px); vps = V(px);
-#define sampleS(i, j, value) Vector2i temps(i, j); value = cfd2D.SamplingFromScalarField(SamplingMode::samPointClamp, SelectingMode::SelectDataFromOrigin, &temps);
-#define sampleV(i, j, value) Vector2i tempv(i, j); value = *cfd2D.SamplingFromVectorField(SamplingMode::samPointClamp, SelectingMode::SelectDataFromOrigin, &tempv);
-#define abs(n) (n>0)?n:-n;
-#define ceil(n) (n-(int)n>=0.5f)?(int)n+1:(int)n;
-#define floor(n) (int)n;
-
-// Advect function for scalar field
-void SGCFD2DSim::ScalarAdvect(double dt)
+void project ( int N, float * u, float * v, float * p, float * div )
 {
-	double    density;
-	Vector2d  velocity;
+	int i, j;
 
-	for (int i=0; i < CELLSU+2; i++)
-	{
-		for (int j=0; j < CELLSV+2; j++)
-		{
-			sampleS(i, j, density);
-			sampleV(i, j, velocity);
-			velocity *= stepsize;
-			double u = abs(velocity[0]) + i;
-			double v = abs(velocity[1]) + j;
-			ceil(u); 
-			ceil(v);
-			cfd2D.UpdateScalarField(u, v, density);
-		}
-	}
-};
+	FOR_EACH_CELL
+		div[IX(i,j)] = -0.5f*(u[IX(i+1,j)]-u[IX(i-1,j)]+v[IX(i,j+1)]-v[IX(i,j-1)])/N;
+		p[IX(i,j)] = 0;
+	END_FOR	
+	set_bnd ( N, 0, div ); set_bnd ( N, 0, p );
 
+	lin_solve ( N, 0, p, div, 1, 4 );
 
-// Advect function for vector field
-void SGCFD2DSim::VectorAdvect(double dt)
+	FOR_EACH_CELL
+		u[IX(i,j)] -= 0.5f*N*(p[IX(i+1,j)]-p[IX(i-1,j)]);
+		v[IX(i,j)] -= 0.5f*N*(p[IX(i,j+1)]-p[IX(i,j-1)]);
+	END_FOR
+	set_bnd ( N, 1, u ); set_bnd ( N, 2, v );
+}
+
+void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff, float dt )
 {
-	Vector2d  velocity;
+	add_source ( N, x, x0, dt );
+	SWAP ( x0, x ); diffuse ( N, 0, x, x0, diff, dt );
+	SWAP ( x0, x ); advect ( N, 0, x, x0, u, v, dt );
+}
 
-	for (int i=0; i < CELLSU+2; i++)
-	{
-		for (int j=0; j < CELLSV+2; j++)
-		{
-			sampleV(i, j, velocity);
-			velocity *= stepsize;
-			double u = abs(velocity[0]) + i;
-			double v = abs(velocity[1]) + j;
-			ceil(u); 
-			ceil(v);
-			cfd2D.UpdateVectorField(u, v, &velocity);
-		}
-	}
-};
+void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc, float dt )
+{
+	add_source ( N, u, u0, dt ); add_source ( N, v, v0, dt );
+	SWAP ( u0, u ); diffuse ( N, 1, u, u0, visc, dt );
+	SWAP ( v0, v ); diffuse ( N, 2, v, v0, visc, dt );
+	project ( N, u, v, u0, v0 );
+	SWAP ( u0, u ); SWAP ( v0, v );
+	advect ( N, 1, u, u0, u0, v0, dt ); advect ( N, 2, v, v0, u0, v0, dt );
+	project ( N, u, v, u0, v0 );
+}

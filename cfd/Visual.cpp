@@ -48,7 +48,7 @@ void InitFPS(void)
 
 void InitFont(void)
 {
-	if (!m_font->Init("EHSMB.TTF", 12))
+	if (m_font->Init("EHSMB.TTF", 12) != SGRUNTIMEMSG::SG_RUNTIME_OK)
 	{
 		ErrorMSG("Cannot create FreeType font");
 		exit(1);
@@ -130,7 +130,7 @@ void SetTexture(void)
 	glGenTextures(1, &m_volume3D->texture_id);
 
 	// Check texture ID is available
-	if (!m_font->IsTextureIDAvailable(m_volume2D->texture_id))
+	if (m_font->IsTextureIDAvailable(m_volume2D->texture_id) != SGRUNTIMEMSG::SG_RUNTIME_OK)
 	{
 		ErrorMSG("Cann't assign an available texture ID");
 		exit(0);

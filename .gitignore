@@ -6,3 +6,6 @@ templet.txt
 projectplan.txt
 /Debug
 /Release
+/bin
+/lib
+/include

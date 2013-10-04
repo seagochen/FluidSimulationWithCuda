@@ -19,47 +19,20 @@
 
 /**
 * <Author>      Orlando Chen
-* <Date>        Sep 12, 2013
-* <File>        FileManager.h
+* <Date>        Sep 25, 2013
+* <File>        Maths.h
 */
 
-#ifndef _SEAGOSOFT_FILE_MANAGER_H_
-#define _SEAGOSOFT_FILE_MANAGER_H_
+#ifndef _SEAGOSOFT_MATHS_H_
+#define _SEAGOSOFT_MATHS_H_
 
-#include <string>
-#include <sstream>
+// Absolute value
+#define abs(n) (n>0)?n:-n;
 
-#ifdef _In_Dll_File
-#include "Auxiliaries.h"
-#endif
+// Ceil function
+#define ceil(n) (n-(int)n>=0.5f)?(int)n+1:(int)n;
 
-namespace sge
-{
-	enum SGFILEFORMAT
-	{
-		SG_FILE_FORMAT_XML = 0x0a,
-		SG_FILE_FORMAT_TXT = 0x0b,
-		SG_FILE_FORMAT_XF  = 0x0c,
-	};
-
-	enum SGFILEOPENMODE
-	{
-		SG_FILE_OPEN_DEFAULT,  // Create or overwrite a file
-		SG_FILE_OPEN_APPEND,   // Create or append text to file
-	};
-
-	class FileManager
-	{
-	public:
-		// Load data from external file
-		_DLL SGRUNTIMEMSG GetDataFromFile(const char *filename, const char *str_out);
-		
-		// Save data to external file, using string
-		_DLL SGRUNTIMEMSG SetDataToFile(std::string str_in, const char *filename, SGFILEOPENMODE mode);
-
-		// Save data to external file, using const char *
-		_DLL SGRUNTIMEMSG SetDataToFile(const char *str_in, const char *filename, SGFILEOPENMODE mode);
-	};
-}
+// Floor function
+#define floor(n) (int)n;
 
 #endif
