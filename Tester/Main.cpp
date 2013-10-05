@@ -34,18 +34,18 @@ extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, floa
 
 /* global variables */
 
-static int N;
-static float dt, diff, visc;
-static float force, source;
-static bool dvel;
+int N;
+float dt, diff, visc;
+float force, source;
+bool dvel;
 
-static float * u, * v, * u_prev, * v_prev;
-static float * dens, * dens_prev;
+float * u, * v, * u_prev, * v_prev;
+float * dens, * dens_prev;
 
-static bool mouse_down[2];
-static int omx, omy, mx, my;
+bool mouse_down[2];
+int omx, omy, mx, my;
 
-static int win_x, win_y;
+int win_x, win_y;
 
 
 
@@ -56,7 +56,7 @@ static int win_x, win_y;
 */
 
 
-static void free_data ( void )
+void free_data ( void )
 {
 	if ( u ) free ( u );
 	if ( v ) free ( v );
@@ -66,7 +66,7 @@ static void free_data ( void )
 	if ( dens_prev ) free ( dens_prev );
 }
 
-static void clear_data ( void )
+void clear_data ( void )
 {
 	int i, size=(N+2)*(N+2);
 
@@ -75,7 +75,7 @@ static void clear_data ( void )
 	}
 }
 
-static int allocate_data ( void )
+int allocate_data ( void )
 {
 	int size = (N+2)*(N+2);
 
@@ -101,14 +101,14 @@ static int allocate_data ( void )
   ----------------------------------------------------------------------
 */
 
-static void draw_velocity ( void )
+void draw_velocity ( void )
 {
 	int i, j;
 	float x, y, h;
 
 	h = 1.0f/N;
 
-	glColor3f ( 1.0f, 1.0f, 1.0f );
+	glColor3f ( 0.0f, 0.0f, 1.0f );
 	glLineWidth ( 1.0f );
 
 	glBegin ( GL_LINES );
@@ -126,7 +126,7 @@ static void draw_velocity ( void )
 	glEnd ();
 }
 
-static void draw_density ( void )
+void draw_density ( void )
 {
 	int i, j;
 	float x, y, h, d00, d01, d10, d11;
@@ -269,10 +269,13 @@ void reshape_func ( unsigned width, unsigned height )
 void display_func ( void )
 {
 	glClear ( GL_COLOR_BUFFER_BIT );
+	draw_density();
+	draw_velocity();
+}
 
-	if ( dvel ) draw_velocity ();
-	else		draw_density ();
 
+void idle_func( void )
+{
 	get_from_UI ( dens_prev, u_prev, v_prev );
 	vel_step ( N, u, v, u_prev, v_prev, visc, dt );
 	dens_step ( N, dens, dens_prev, u, v, diff, dt );
@@ -336,6 +339,7 @@ int main( int argc, char ** argv )
 	activity->RegisterMouseFunc ( mouse_func );
 	activity->RegisterReshapeFunc ( reshape_func );
 	activity->RegisterDisplayFunc ( display_func );
+	activity->RegisterIdleFunc ( idle_func );
 
 	// Initialize window
 	activity->SetupRoutine();
