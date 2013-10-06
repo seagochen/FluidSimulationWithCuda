@@ -25,16 +25,16 @@ MainActivity *activity;
 
 /* macros */
 
-#define IX(i,j) ((i)+(N+2)*(j))
+#define IX(i,j) ((i)+(GridSize+2)*(j))
 
 /* external definitions (from solver.c) */
 
-extern void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff, float dt );
-extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc, float dt );
+extern void dens_step ( int GridSize, float * x, float * x0, float * u, float * v, float diff, float dt );
+extern void vel_step ( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt );
 
 /* global variables */
 
-int N;
+int GridSize;
 float dt, diff, visc;
 float force, source;
 bool dvel;
@@ -68,7 +68,7 @@ void free_data ( void )
 
 void clear_data ( void )
 {
-	int i, size=(N+2)*(N+2);
+	int i, size=(GridSize+2)*(GridSize+2);
 
 	for ( i=0 ; i<size ; i++ ) {
 		u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = 0.0f;
@@ -77,7 +77,7 @@ void clear_data ( void )
 
 int allocate_data ( void )
 {
-	int size = (N+2)*(N+2);
+	int size = (GridSize+2)*(GridSize+2);
 
 	u			= (float *) malloc ( size*sizeof(float) );
 	v			= (float *) malloc ( size*sizeof(float) );
@@ -106,16 +106,16 @@ void draw_velocity ( void )
 	int i, j;
 	float x, y, h;
 
-	h = 1.0f/N;
+	h = 1.0f/GridSize;
 
 	glColor3f ( 0.0f, 0.0f, 1.0f );
 	glLineWidth ( 1.0f );
 
 	glBegin ( GL_LINES );
 
-		for ( i=1 ; i<=N ; i++ ) {
+		for ( i=1 ; i<=GridSize ; i++ ) {
 			x = (i-0.5f)*h;
-			for ( j=1 ; j<=N ; j++ ) {
+			for ( j=1 ; j<=GridSize ; j++ ) {
 				y = (j-0.5f)*h;
 
 				glVertex2f ( x, y );
@@ -131,13 +131,13 @@ void draw_density ( void )
 	int i, j;
 	float x, y, h, d00, d01, d10, d11;
 
-	h = 1.0f/N;
+	h = 1.0f/GridSize;
 
 	glBegin ( GL_QUADS );
 	{
-		for ( i=0 ; i<=N ; i++ ) {
+		for ( i=0 ; i<=GridSize ; i++ ) {
 			x = (i-0.5f)*h;
-			for ( j=0 ; j<=N ; j++ ) {
+			for ( j=0 ; j<=GridSize ; j++ ) {
 				y = (j-0.5f)*h;
 
 				d00 = dens[IX(i,j)];
@@ -167,7 +167,7 @@ void get_from_UI ( float * d, float * u, float * v )
 #define MouseLeftDown  mouse_down[0]
 #define MouseRightDown mouse_down[1]
 
-	int i, j, size = (N+2)*(N+2);
+	int i, j, size = (GridSize+2)*(GridSize+2);
 
 	for ( i=0 ; i<size ; i++ ) {
 		u[i] = v[i] = d[i] = 0.0f;
@@ -175,10 +175,10 @@ void get_from_UI ( float * d, float * u, float * v )
 
 	if ( !MouseLeftDown && !MouseRightDown ) return;
 
-	i = (int)((       mx /(float)win_x)*N+1);
-	j = (int)(((win_y-my)/(float)win_y)*N+1);
+	i = (int)((       mx /(float)win_x)*GridSize+1);
+	j = (int)(((win_y-my)/(float)win_y)*GridSize+1);
 
-	if ( i<1 || i>N || j<1 || j>N ) return;
+	if ( i<1 || i>GridSize || j<1 || j>GridSize ) return;
 
 	if ( MouseLeftDown ) {
 		u[IX(i,j)] = force * (mx-omx);
@@ -277,8 +277,8 @@ void display_func ( void )
 void idle_func( void )
 {
 	get_from_UI ( dens_prev, u_prev, v_prev );
-	vel_step ( N, u, v, u_prev, v_prev, visc, dt );
-	dens_step ( N, dens, dens_prev, u, v, diff, dt );
+	vel_step ( GridSize, u, v, u_prev, v_prev, visc, dt );
+	dens_step ( GridSize, dens, dens_prev, u, v, diff, dt );
 }
 
 
@@ -287,7 +287,7 @@ int main( int argc, char ** argv )
 	if ( argc != 1 && argc != 6 ) {
 		fprintf ( stderr, "usage : %s N dt diff visc force source\n", argv[0] );
 		fprintf ( stderr, "where:\n" );\
-		fprintf ( stderr, "\t N      : grid resolution\n" );
+		fprintf ( stderr, "\t GridSize      : grid resolution\n" );
 		fprintf ( stderr, "\t dt     : time step\n" );
 		fprintf ( stderr, "\t diff   : diffusion rate of the density\n" );
 		fprintf ( stderr, "\t visc   : viscosity of the fluid\n" );
@@ -297,16 +297,16 @@ int main( int argc, char ** argv )
 	}
 
 	if ( argc == 1 ) {
-		N = 64;
+		GridSize = 64;
 		dt = 0.1f;
 		diff = 0.0f;
 		visc = 0.0f;
 		force = 5.0f;
 		source = 100.0f;
-		fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g\n",
-			N, dt, diff, visc, force, source );
+		fprintf ( stderr, "Using defaults : GridSize=%d dt=%g diff=%g visc=%g force = %g source=%g\n",
+			GridSize, dt, diff, visc, force, source );
 	} else {
-		N = atoi(argv[1]);
+		GridSize = atoi(argv[1]);
 		dt = atof(argv[2]);
 		diff = atof(argv[3]);
 		visc = atof(argv[4]);

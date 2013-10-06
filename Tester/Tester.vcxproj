@@ -72,7 +72,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CFD2DSim.h" />
-    <ClInclude Include="Maths.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
