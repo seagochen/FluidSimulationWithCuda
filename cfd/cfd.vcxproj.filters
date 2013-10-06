@@ -18,6 +18,15 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CFD_Params.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CFD_Visualization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Macro_Funcs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="cfd.rc">
@@ -39,6 +48,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CFD_Solver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CFD_Visualization.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

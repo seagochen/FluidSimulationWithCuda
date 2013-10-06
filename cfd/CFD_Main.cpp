@@ -19,6 +19,9 @@
 #include <GL/glut.h>
 #include <SGE\SGUtils.h>
 
+#include "CFD_Params.h"
+#include "resource.h"
+
 using namespace sge;
 
 MainActivity *activity;
@@ -31,22 +34,6 @@ MainActivity *activity;
 
 extern void dens_step ( int GridSize, float * x, float * x0, float * u, float * v, float diff, float dt );
 extern void vel_step ( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt );
-
-/* global variables */
-
-int GridSize;
-float dt, diff, visc;
-float force, source;
-bool dvel;
-
-float * u, * v, * u_prev, * v_prev;
-float * dens, * dens_prev;
-
-bool mouse_down[2];
-int omx, omy, mx, my;
-
-int win_x, win_y;
-
 
 
 /*
@@ -217,9 +204,9 @@ void key_func ( SG_KEYS key, SG_KEY_STATUS status )
 			free_data ();
 			exit ( 0 );
 			break;
-		
-		case SG_KEYS::SG_KEY_V:
-			dvel = !dvel;
+
+		case SG_KEYS::SG_KEY_ESCAPE:
+			key_func(SG_KEY_Q, SG_KEY_DOWN);
 			break;
 		}
 	}
@@ -284,46 +271,8 @@ void idle_func( void )
 
 int main( int argc, char ** argv )
 {
-	if ( argc != 1 && argc != 6 ) {
-		fprintf ( stderr, "usage : %s N dt diff visc force source\n", argv[0] );
-		fprintf ( stderr, "where:\n" );\
-		fprintf ( stderr, "\t GridSize      : grid resolution\n" );
-		fprintf ( stderr, "\t dt     : time step\n" );
-		fprintf ( stderr, "\t diff   : diffusion rate of the density\n" );
-		fprintf ( stderr, "\t visc   : viscosity of the fluid\n" );
-		fprintf ( stderr, "\t force  : scales the mouse movement that generate a force\n" );
-		fprintf ( stderr, "\t source : amount of density that will be deposited\n" );
-		exit ( 1 );
-	}
-
-	if ( argc == 1 ) {
-		GridSize = 64;
-		dt = 0.1f;
-		diff = 0.0f;
-		visc = 0.0f;
-		force = 5.0f;
-		source = 100.0f;
-		fprintf ( stderr, "Using defaults : GridSize=%d dt=%g diff=%g visc=%g force = %g source=%g\n",
-			GridSize, dt, diff, visc, force, source );
-	} else {
-		GridSize = atoi(argv[1]);
-		dt = atof(argv[2]);
-		diff = atof(argv[3]);
-		visc = atof(argv[4]);
-		force = atof(argv[5]);
-		source = atof(argv[6]);
-	}
-
-	printf ( "\n\nHow to use this demo:\n\n" );
-	printf ( "\t Add densities with the right mouse button\n" );
-	printf ( "\t Add velocities with the left mouse button and dragging the mouse\n" );
-	printf ( "\t Toggle density/velocity display with the 'v' key\n" );
-	printf ( "\t Clear the simulation by pressing the 'c' key\n" );
-	printf ( "\t Quit by pressing the 'q' key\n" );
-
-	dvel = false;
-	win_x = 256;
-	win_y = 256;
+	// Initialize the CFD parameters
+	CFD_Init_Params();
 
 	if ( !allocate_data () ) exit ( 1 );
 	clear_data ();
@@ -332,7 +281,8 @@ int main( int argc, char ** argv )
 	activity = new MainActivity(512, 512);
 
 	// Set application title
-	activity->SetApplicationTitle( L"Alias | wavefront" );
+	activity->SetApplicationTitle( L"CFD Demo     Version 1.00.01a" );
+	activity->SetApplicationIcons(APP_ICONS, APP_ICONS);
 		
 	// Register callback functions
 	activity->RegisterKeyboardFunc ( key_func );
