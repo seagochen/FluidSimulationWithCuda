@@ -1,6 +1,10 @@
 #include "CFD_Visualization.h"
+#include "Macro_Funcs.h"
 
 using namespace sge;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///
 
 static _mouse        *m_mouse;
 static _fps          *m_fps;
@@ -11,6 +15,9 @@ static FreeType      *m_font;
 static MainActivity  *m_hAct;
 static GLfloat        m_width, m_height;
 
+///
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///
 
 Visual::Visual(GLuint width, GLuint height, MainActivity *hActivity)
 {
@@ -35,6 +42,9 @@ Visual::~Visual(void)
 	OnDestroy();
 };
 
+///
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///
 
 void InitFPS(void)
 {
@@ -138,43 +148,6 @@ void SetTexture(void)
 };
 
 
-void Visual::OnCreate()
-{
-	// Initialize
-	InitViewMatrix();
-	InitFont();
-	InitFPS();
-	InitMouseStatus();
-
-	// Initialize glew
-	glewInit();
-
-	// Call for OpenGL envrionment setup
-	Setup();
-
-	// Set texture
-	SetTexture();
-};
-
-
-void Visual::OnResize(GLuint width, GLuint height)
-{
-	// Prevent a divide by zero if the window is too small
-	if (height == 0) height = 1;
-
-	m_width  = width;
-	m_height = height;
-
-	glViewport(0, 0, width, height);
-
-	// Reset the current viewport and perspective transformation
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(m_view->view_angle, m_width / m_height, m_view->z_near, m_view->z_far);
-	glMatrixMode(GL_MODELVIEW);
-};
-
-
 void DrawAgent2D()
 {
 	// Bind texture
@@ -247,6 +220,46 @@ void CountFPS( )
 	glPopMatrix();
 }
 
+///
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///
+
+void Visual::OnCreate()
+{
+	// Initialize
+	InitViewMatrix();
+	InitFont();
+	InitFPS();
+	InitMouseStatus();
+
+	// Initialize glew
+	glewInit();
+
+	// Call for OpenGL envrionment setup
+	Setup();
+
+	// Set texture
+	SetTexture();
+};
+
+
+void Visual::OnResize(GLuint width, GLuint height)
+{
+	// Prevent a divide by zero if the window is too small
+	if (height == 0) height = 1;
+
+	m_width  = width;
+	m_height = height;
+
+	glViewport(0, 0, width, height);
+
+	// Reset the current viewport and perspective transformation
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(m_view->view_angle, m_width / m_height, m_view->z_near, m_view->z_far);
+	glMatrixMode(GL_MODELVIEW);
+};
+
 
 void Visual::OnDisplay()
 {
@@ -303,6 +316,9 @@ void Visual::OnDestroy()
 #endif
 };
 
+///
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///
 
 void Visual::UploadVolumeData(_volume2D const *data_in)
 {
@@ -351,3 +367,6 @@ int Visual::Texel3D(int i, int j, int k)
 {
 	return BYTES_PER_TEXEL * (Layer(i) + m_volume3D->height * j + k);
 };
+
+///
+///////////////////////////////////////////////////////////////////////////////////////////////////

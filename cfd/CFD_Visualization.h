@@ -42,13 +42,12 @@ namespace sge
 
 	struct _fps
 	{
-		// Variables used to calculate frames per second:
 		DWORD dwFrames;
 		DWORD dwCurrentTime;
 		DWORD dwLastUpdateTime;
 		DWORD dwElapsedTime;
 		UINT  FPS;
-	}; // Frames per second
+	};
 
 	struct _volume3D
 	{
@@ -88,6 +87,7 @@ namespace sge
 	public:
 		static void OnCreate();
 		static void OnResize(GLuint width, GLuint height);
+		static void OnIdle();
 		static void OnDisplay();
 		static void OnKeyboard(SG_KEYS keys, SG_KEY_STATUS status);
 		static void OnMouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos);

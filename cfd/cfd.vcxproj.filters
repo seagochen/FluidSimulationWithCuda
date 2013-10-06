@@ -13,19 +13,34 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Visualization">
+      <UniqueIdentifier>{5ba479bb-7727-48d7-a821-76ca03797aef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Visualization">
+      <UniqueIdentifier>{40687656-90e9-4360-ad6e-29e628e4e6b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\General">
+      <UniqueIdentifier>{04c1a1c2-2073-45f5-9f5c-4e903f2715c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Solver">
+      <UniqueIdentifier>{970e71fb-d617-4827-84de-cfae1a62e3a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Solver">
+      <UniqueIdentifier>{f12570c7-2f45-414e-9876-2781564e1a91}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CFD_Params.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CFD_Visualization.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Visualization</Filter>
     </ClInclude>
     <ClInclude Include="Macro_Funcs.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="CFD_Params.h">
+      <Filter>Header Files\Solver</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -44,14 +59,14 @@
     </Font>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CFD_Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CFD_Solver.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Solver</Filter>
     </ClCompile>
     <ClCompile Include="CFD_Visualization.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Visualization</Filter>
+    </ClCompile>
+    <ClCompile Include="CFD_Main.cpp">
+      <Filter>Source Files\Solver</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
