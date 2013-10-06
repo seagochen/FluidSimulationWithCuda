@@ -19,7 +19,8 @@
 
 /**
 * <Author>      Orlando Chen
-* <Date>        Sep 13, 2013
+* <First>       Sep 13, 2013
+* <Last>		Oct 6, 2013
 * <File>        CFD_Visualization.h
 */
 
@@ -85,13 +86,13 @@ namespace sge
 		~Visual();
 
 	public:
-		static void OnCreate();
-		static void OnResize(GLuint width, GLuint height);
-		static void OnIdle();
-		static void OnDisplay();
-		static void OnKeyboard(SG_KEYS keys, SG_KEY_STATUS status);
-		static void OnMouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos);
-		static void OnDestroy();
+		static void OnCreate(void (*func)(void));
+		static void OnResize(GLuint width, GLuint height, void (*func)(GLuint width, GLuint height));
+		static void OnIdle(void (*func)(void));
+		static void OnDisplay(void (*func)(void));
+		static void OnKeyboard(SG_KEYS keys, SG_KEY_STATUS status, void (*func)(SG_KEYS keys, SG_KEY_STATUS status));
+		static void OnMouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos, void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos));
+		static void OnDestroy(void (*func)(void));
 
 	public:
 		void UploadVolumeData(_volume2D const *data_in);

@@ -19,7 +19,8 @@
 
 /**
 * <Author>      Orlando Chen
-* <Date>        Oct 6, 2013
+* <First>       Oct 6, 2013
+* <Last>		Oct 6, 2013
 * <File>        CFD_Params.h
 */
 

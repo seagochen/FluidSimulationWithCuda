@@ -19,8 +19,9 @@
 
 /**
 * <Author>      Orlando Chen
-* <Date>        Oct 6, 2013
-* <File>        Macro_Funcs.h
+* <First>       Oct 6, 2013
+* <Last>		Oct 6, 2013
+* <File>        CFD_Macro_Funcs.h
 */
 
 #ifndef _SEAGOSOFT_CUSTOM_MACRO_FUNS_H_

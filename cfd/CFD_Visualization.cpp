@@ -1,3 +1,29 @@
+/**
+*
+* Copyright (C) <2013> <Orlando Chen>
+* Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+* associated documentation files (the "Software"), to deal in the Software without restriction, 
+* including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+* and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, 
+* subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all copies or substantial
+* portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT 
+* NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+* <Author>      Orlando Chen
+* <First>       Sep 13, 2013
+* <Last>		Oct 6, 2013
+* <File>        CFD_Visualization.cpp
+*/
+
 #include "CFD_Visualization.h"
 #include "Macro_Funcs.h"
 
@@ -224,7 +250,7 @@ void CountFPS( )
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-void Visual::OnCreate()
+void Visual::OnCreate(void (*func)(void))
 {
 	// Initialize
 	InitViewMatrix();
@@ -243,7 +269,7 @@ void Visual::OnCreate()
 };
 
 
-void Visual::OnResize(GLuint width, GLuint height)
+void Visual::OnResize(GLuint width, GLuint height, void (*func)(GLuint width, GLuint height))
 {
 	// Prevent a divide by zero if the window is too small
 	if (height == 0) height = 1;
@@ -261,7 +287,12 @@ void Visual::OnResize(GLuint width, GLuint height)
 };
 
 
-void Visual::OnDisplay()
+void Visual::OnIdle(void (*func)(void))
+{
+};
+
+
+void Visual::OnDisplay(void (*func)(void))
 {
 	// Reset matrix
 	glLoadIdentity();
@@ -283,7 +314,7 @@ void Visual::OnDisplay()
 };
 
 
-void Visual::OnKeyboard(SG_KEYS keys, SG_KEY_STATUS status)
+void Visual::OnKeyboard(SG_KEYS keys, SG_KEY_STATUS status, void (*func)(SG_KEYS keys, SG_KEY_STATUS status))
 {
 	if (keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN)	
 	{
@@ -293,13 +324,12 @@ void Visual::OnKeyboard(SG_KEYS keys, SG_KEY_STATUS status)
 };
 
 
-// TODO
-void Visual::OnMouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos)
+void Visual::OnMouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos, void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos))
 {
 };
 
 
-void Visual::OnDestroy()
+void Visual::OnDestroy(void (*func)(void))
 {
 	SAFE_DELT_PTR(m_mouse);
 	SAFE_DELT_PTR(m_fps);
