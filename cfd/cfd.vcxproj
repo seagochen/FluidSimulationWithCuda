@@ -71,6 +71,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CFD_FuncPrototypes.h" />
     <ClInclude Include="CFD_Params.h" />
     <ClInclude Include="CFD_Visualization.h" />
     <ClInclude Include="Macro_Funcs.h" />
@@ -86,6 +87,7 @@
     <Font Include="EHSMB.TTF" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CFD_InteractionEvents.cpp" />
     <ClCompile Include="CFD_Main.cpp" />
     <ClCompile Include="CFD_Solver.cpp" />
     <ClCompile Include="CFD_Visualization.cpp" />

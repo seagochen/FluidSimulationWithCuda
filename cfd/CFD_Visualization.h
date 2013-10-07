@@ -27,9 +27,9 @@
 #ifndef _SEAGOSOFT_CUSTOM_VISUAL_H_
 #define _SEAGOSOFT_CUSTOM_VISUAL_H_
 
-#include <SGE\SGUtils.h>
 #include <GL\glew.h>
 #include <GL\glut.h>
+#include <SGE\SGUtils.h>
 
 namespace sge
 {
@@ -79,20 +79,28 @@ namespace sge
 
 #define BYTES_PER_TEXEL 3
 
-	class Visual
+	typedef class Visual
 	{
 	public:
-		Visual(GLuint width, GLuint height, MainActivity *hActivity);
-		~Visual();
+		Visual( GLuint width, GLuint height, MainActivity *hActivity );
+		~Visual( void );
 
 	public:
-		static void OnCreate(void (*func)(void));
-		static void OnResize(GLuint width, GLuint height, void (*func)(GLuint width, GLuint height));
-		static void OnIdle(void (*func)(void));
-		static void OnDisplay(void (*func)(void));
-		static void OnKeyboard(SG_KEYS keys, SG_KEY_STATUS status, void (*func)(SG_KEYS keys, SG_KEY_STATUS status));
-		static void OnMouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos, void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos));
-		static void OnDestroy(void (*func)(void));
+		static void OnCreate   ( void );
+		static void OnResize   ( GLuint width, GLuint height );
+		static void OnIdle     ( void );
+		static void OnDisplay  ( void );
+		static void OnKeyboard ( SG_KEYS keys, SG_KEY_STATUS status );
+		static void OnMouse    ( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos );
+		static void OnDestroy  ( void );
+
+		static void RegisterCreate  ( void (*func)(void) );
+		static void RegisterResize  ( void (*func)(GLuint width, GLuint height) );
+		static void RegisterDisplay ( void (*func)(void) );
+		static void RegisterIdle    ( void (*func)(void) );
+		static void RegisterKeyboard( void (*func)(SG_KEYS keys, SG_KEY_STATUS status) );
+		static void RegisterMouse   ( void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos) );
+		static void RegisterDestroy ( void (*func)(void) );
 
 	public:
 		void UploadVolumeData(_volume2D const *data_in);
@@ -101,7 +109,7 @@ namespace sge
 	public:
 		int Texel2D(int i, int j);
 		int Texel3D(int i, int j, int k);
-	};
+	}Visualization;
 };
 
 #endif

@@ -28,7 +28,7 @@
 #define _SEAGOSOFT_CUSTOM_PARAMS_H_
 
 /* global variables */
-
+#ifdef _IN_MAIN_FILE
 int GridSize;
 float dt, diff, visc;
 float force, source;
@@ -41,17 +41,18 @@ int omx, omy, mx, my;
 
 int win_x, win_y;
 
+#else
+extern int GridSize;
+extern float dt, diff, visc;
+extern float force, source;
 
-void CFD_Init_Params()
-{
-	GridSize = 64;
-	dt = 0.1f;
-	diff = 0.0f;
-	visc = 0.0f;
-	force = 5.0f;
-	source = 100.0f;
-	win_x = 256;
-	win_y = 256;
-};
+extern float * u, * v, * u_prev, * v_prev;
+extern float * dens, * dens_prev;
+
+extern bool mouse_down[2];
+extern int omx, omy, mx, my;
+
+extern int win_x, win_y;
+#endif
 
 #endif

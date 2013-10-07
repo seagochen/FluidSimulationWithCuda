@@ -42,6 +42,9 @@
     <ClInclude Include="CFD_Params.h">
       <Filter>Header Files\Solver</Filter>
     </ClInclude>
+    <ClInclude Include="CFD_FuncPrototypes.h">
+      <Filter>Header Files\Solver</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="cfd.rc">
@@ -66,6 +69,9 @@
       <Filter>Source Files\Visualization</Filter>
     </ClCompile>
     <ClCompile Include="CFD_Main.cpp">
+      <Filter>Source Files\Solver</Filter>
+    </ClCompile>
+    <ClCompile Include="CFD_InteractionEvents.cpp">
       <Filter>Source Files\Solver</Filter>
     </ClCompile>
   </ItemGroup>
