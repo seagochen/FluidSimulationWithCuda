@@ -241,7 +241,7 @@ void CountFPS( void )
 		glTranslatef(0.0f,0.0f,-1.0f);						// Move One Unit Into The Screen
 		
 		// White Text
-		glColor3f(1.0f, 1.0f, 1.0f);
+		glColor3f(0.0f, 1.0f, 0.0f);
 		m_font->EnableFreeType();
 		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", m_fps->FPS);
 		m_font->DisableFreeType();
