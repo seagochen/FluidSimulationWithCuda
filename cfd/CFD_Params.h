@@ -19,20 +19,40 @@
 
 /**
 * <Author>      Orlando Chen
-* <Date>        Sep 25, 2013
-* <File>        Maths.h
+* <First>       Oct 6, 2013
+* <Last>		Oct 6, 2013
+* <File>        CFD_Params.h
 */
 
-#ifndef _SEAGOSOFT_MATHS_H_
-#define _SEAGOSOFT_MATHS_H_
+#ifndef _SEAGOSOFT_CUSTOM_PARAMS_H_
+#define _SEAGOSOFT_CUSTOM_PARAMS_H_
 
-// Absolute value
-#define abs(n) (n>0)?n:-n;
+/* global variables */
+#ifdef _IN_MAIN_FILE
+int GridSize;
+float dt, diff, visc;
+float force, source;
 
-// Ceil function
-#define ceil(n) (n-(int)n>=0.5f)?(int)n+1:(int)n;
+float * u, * v, * u_prev, * v_prev;
+float * dens, * dens_prev;
 
-// Floor function
-#define floor(n) (int)n;
+bool mouse_down[2];
+int omx, omy, mx, my;
+
+int win_x, win_y;
+
+#else
+extern int GridSize;
+extern float dt, diff, visc;
+extern float force, source;
+
+extern float * u, * v, * u_prev, * v_prev;
+extern float * dens, * dens_prev;
+
+extern bool mouse_down[2];
+extern int omx, omy, mx, my;
+
+extern int win_x, win_y;
+#endif
 
 #endif

@@ -71,9 +71,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="CFDMethods.h" />
-    <ClInclude Include="MacroDefinition.h" />
-    <ClInclude Include="Visual.h" />
+    <ClInclude Include="CFD_FuncPrototypes.h" />
+    <ClInclude Include="CFD_Params.h" />
+    <ClInclude Include="CFD_Visualization.h" />
+    <ClInclude Include="Macro_Funcs.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
@@ -86,10 +87,10 @@
     <Font Include="EHSMB.TTF" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CFDMain.cpp" />
-    <ClCompile Include="CFDMethods.cpp" />
-    <ClCompile Include="CFDSim.cpp" />
-    <ClCompile Include="Visual.cpp" />
+    <ClCompile Include="CFD_InteractionEvents.cpp" />
+    <ClCompile Include="CFD_Main.cpp" />
+    <ClCompile Include="CFD_Solver.cpp" />
+    <ClCompile Include="CFD_Visualization.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
