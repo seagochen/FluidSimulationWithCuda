@@ -65,7 +65,7 @@ Visual::Visual(GLuint width, GLuint height, MainActivity *hActivity)
 
 Visual::~Visual(void)
 {
-	OnDestroy();
+//	OnDestroy();
 };
 
 ///
@@ -316,11 +316,11 @@ void Visual::OnDisplay(void (*func)(void))
 
 void Visual::OnKeyboard(SG_KEYS keys, SG_KEY_STATUS status, void (*func)(SG_KEYS keys, SG_KEY_STATUS status))
 {
-	if (keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN)	
-	{
-		OnDestroy();
-		exit(0);
-	}
+//	if (keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN)	
+//	{
+//		OnDestroy();
+//		exit(0);
+//	}
 };
 
 
