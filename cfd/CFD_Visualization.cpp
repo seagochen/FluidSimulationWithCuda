@@ -24,6 +24,7 @@
 * <File>        CFD_Visualization.cpp
 */
 
+
 #include "CFD_Visualization.h"
 #include "Macro_Funcs.h"
 
@@ -40,12 +41,13 @@ static _viewMatrix   *m_view;
 static FreeType      *m_font;
 static MainActivity  *m_hAct;
 static GLfloat        m_width, m_height;
+static SG_FUNCTIONS_HOLDER *m_funcholder;
 
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-Visual::Visual(GLuint width, GLuint height, MainActivity *hActivity)
+Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
 {
 	m_mouse    = new _mouse;
 	m_fps      = new _fps;
@@ -54,6 +56,7 @@ Visual::Visual(GLuint width, GLuint height, MainActivity *hActivity)
 	m_view     = new _viewMatrix;
 	m_font     = new FreeType;
 	m_hAct     = hActivity;
+	m_funcholder = new SG_FUNCTIONS_HOLDER;
 
 	m_width    = width;
 	m_height   = height;
@@ -63,7 +66,7 @@ Visual::Visual(GLuint width, GLuint height, MainActivity *hActivity)
 };
 
 
-Visual::~Visual(void)
+Visual::~Visual( void )
 {
 	OnDestroy();
 };
@@ -72,7 +75,7 @@ Visual::~Visual(void)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-void InitFPS(void)
+void InitFPS( void )
 {
 	// Zero out the frames per second variables:
 	m_fps->dwFrames = 0;
@@ -82,7 +85,7 @@ void InitFPS(void)
 };
 
 
-void InitFont(void)
+void InitFont( void )
 {
 	if (m_font->Init("EHSMB.TTF", 12) != SGRUNTIMEMSG::SG_RUNTIME_OK)
 	{
@@ -92,7 +95,7 @@ void InitFont(void)
 }
 
 
-void InitViewMatrix(void)
+void InitViewMatrix( void )
 {
 	// view matrix
 	m_view->view_angle    = 45.f;
@@ -116,14 +119,14 @@ void InitViewMatrix(void)
 };
 
 
-void InitMouseStatus(void)
+void InitMouseStatus( void )
 {
 	m_mouse->left_button_pressed = false;
 	m_mouse->right_button_pressed = false;
 };
 
 
-void Setup(void)
+void Setup( void )
 {
 	// Enable depth testing
 	glEnable(GL_DEPTH_TEST);
@@ -157,7 +160,7 @@ void Setup(void)
 };
 
 
-void SetTexture(void)
+void SetTexture( void )
 {
 	// Create 2D image texture and assign an ID
 	glGenTextures(1, &m_volume2D->texture_id);
@@ -174,7 +177,7 @@ void SetTexture(void)
 };
 
 
-void DrawAgent2D()
+void DrawAgent2D( void )
 {
 	// Bind texture
 	glBindTexture(GL_TEXTURE_2D, m_volume2D->texture_id);
@@ -217,7 +220,7 @@ void DrawAgent2D()
 };
 
 
-void CountFPS( ) 
+void CountFPS( void ) 
 {
 	// Calculate the number of frames per one second:
 	m_fps->dwFrames++;
@@ -238,7 +241,7 @@ void CountFPS( )
 		glTranslatef(0.0f,0.0f,-1.0f);						// Move One Unit Into The Screen
 		
 		// White Text
-		glColor3f(1.0f, 1.0f, 1.0f);
+		glColor3f(0.0f, 1.0f, 0.0f);
 		m_font->EnableFreeType();
 		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", m_fps->FPS);
 		m_font->DisableFreeType();
@@ -250,7 +253,25 @@ void CountFPS( )
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-void Visual::OnCreate(void (*func)(void))
+void Visual::RegisterCreate( void (*func)(void) ) { m_funcholder->hCreateFunc = func; };
+
+void Visual::RegisterResize( void (*func)(GLuint width, GLuint height) ) { m_funcholder->hReshapeFunc = func; };
+
+void Visual::RegisterDisplay( void (*func)(void) ) { m_funcholder->hDisplayFunc = func; };
+
+void Visual::RegisterIdle( void (*func)(void) ) { m_funcholder->hIdleFunc = func; };
+
+void Visual::RegisterKeyboard( void (*func)(SG_KEYS keys, SG_KEY_STATUS status) ) { m_funcholder->hKeyboardFunc = func; };
+
+void Visual::RegisterMouse( void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos) ) { m_funcholder->hMouseFunc = func; };
+
+void Visual::RegisterDestroy ( void (*func)(void) ) { m_funcholder->hDestoryFunc = func; };
+
+///
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///
+
+void Visual::OnCreate( void )
 {
 	// Initialize
 	InitViewMatrix();
@@ -262,87 +283,100 @@ void Visual::OnCreate(void (*func)(void))
 	glewInit();
 
 	// Call for OpenGL envrionment setup
-	Setup();
+//	Setup();
 
 	// Set texture
-	SetTexture();
+//	SetTexture();
+
+	if ( m_funcholder->hCreateFunc != NULL ) m_funcholder->hCreateFunc();
 };
 
 
-void Visual::OnResize(GLuint width, GLuint height, void (*func)(GLuint width, GLuint height))
+void Visual::OnResize( GLuint width, GLuint height )
 {
 	// Prevent a divide by zero if the window is too small
-	if (height == 0) height = 1;
+//	if (height == 0) height = 1;
 
 	m_width  = width;
 	m_height = height;
 
-	glViewport(0, 0, width, height);
+//	glViewport(0, 0, width, height);
 
 	// Reset the current viewport and perspective transformation
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(m_view->view_angle, m_width / m_height, m_view->z_near, m_view->z_far);
-	glMatrixMode(GL_MODELVIEW);
+//	glMatrixMode(GL_PROJECTION);
+//	glLoadIdentity();
+//	gluPerspective(m_view->view_angle, m_width / m_height, m_view->z_near, m_view->z_far);
+//	glMatrixMode(GL_MODELVIEW);
+
+	if ( m_funcholder->hReshapeFunc != NULL ) m_funcholder->hReshapeFunc( width, height );
 };
 
 
-void Visual::OnIdle(void (*func)(void))
+void Visual::OnIdle( void )
 {
+	if ( m_funcholder->hIdleFunc != NULL ) m_funcholder->hIdleFunc();
 };
 
 
-void Visual::OnDisplay(void (*func)(void))
+void Visual::OnDisplay( void )
 {
 	// Reset matrix
-	glLoadIdentity();
+//	glLoadIdentity();
 
 	// Clear Screen and Depth Buffer
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Set camera
-	gluLookAt(
-		m_view->eye_x,  m_view->eye_y,  m_view->eye_z,  // eye
-		m_view->look_x, m_view->look_y, m_view->look_z, // center
-		m_view->up_x,   m_view->up_y,   m_view->up_z);  // Up
+//	gluLookAt(
+//		m_view->eye_x,  m_view->eye_y,  m_view->eye_z,  // eye
+//		m_view->look_x, m_view->look_y, m_view->look_z, // center
+//		m_view->up_x,   m_view->up_y,   m_view->up_z);  // Up
 
 	// Draw fluid sim result on 2-D map
-	DrawAgent2D();
+//	DrawAgent2D();
 
+	if ( m_funcholder->hDisplayFunc != NULL ) m_funcholder->hDisplayFunc();
+	
 	// Print FPS
 	CountFPS();
 };
 
 
-void Visual::OnKeyboard(SG_KEYS keys, SG_KEY_STATUS status, void (*func)(SG_KEYS keys, SG_KEY_STATUS status))
+void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 {
-	if (keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN)	
-	{
+	if ( m_funcholder->hKeyboardFunc != NULL ) m_funcholder->hKeyboardFunc( keys, status );
+
+	if ( keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN )	
+	{	
 		OnDestroy();
 		exit(0);
 	}
 };
 
 
-void Visual::OnMouse(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos, void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos))
+void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 {
+	if ( m_funcholder->hMouseFunc != NULL ) m_funcholder->hMouseFunc( mouse, x_pos, y_pos );
 };
 
 
-void Visual::OnDestroy(void (*func)(void))
+void Visual::OnDestroy( void )
 {
-	SAFE_DELT_PTR(m_mouse);
-	SAFE_DELT_PTR(m_fps);
-	SAFE_DELT_PTR(m_view);
+	if ( m_funcholder->hDestoryFunc != NULL ) m_funcholder->hDestoryFunc();
 
-	if (m_volume2D->size > 0) SAFE_FREE_PTR(m_volume2D->data);
-	if (m_volume3D->size > 0) SAFE_FREE_PTR(m_volume3D->data);
+	SAFE_DELT_PTR( m_mouse );
+	SAFE_DELT_PTR( m_fps );
+	SAFE_DELT_PTR( m_view );
+	SAFE_DELT_PTR( m_funcholder );
 
-	if (m_font != NULL)	m_font->Clean();
-	SAFE_DELT_PTR(m_font);
+	if ( m_volume2D->size > 0 ) SAFE_FREE_PTR( m_volume2D->data );
+	if ( m_volume3D->size > 0 ) SAFE_FREE_PTR( m_volume3D->data );
+
+	if ( m_font != NULL )	m_font->Clean();
+	SAFE_DELT_PTR( m_font );
 
 #ifdef PRINT_STATUS
-	printf("Call OnDestroy, now resource released up!\n");
+	printf( "Call OnDestroy, now resource released up!\n" );
 #endif
 };
 
@@ -350,7 +384,7 @@ void Visual::OnDestroy(void (*func)(void))
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-void Visual::UploadVolumeData(_volume2D const *data_in)
+void Visual::UploadVolumeData( _volume2D const *data_in )
 {
 	m_volume2D->width  = data_in->width;
 	m_volume2D->height = data_in->height;
@@ -359,13 +393,13 @@ void Visual::UploadVolumeData(_volume2D const *data_in)
 	m_volume2D->size   = data_in->size;
 
 #ifdef PRINT_STATUS
-	system("cls");
-	printf("Upload volume data and try to rendering the result, size: %d\n", m_volume2D->size);
+	system( "cls" );
+	printf( "Upload volume data and try to rendering the result, size: %d\n", m_volume2D->size );
 #endif
 };
 
 
-void Visual::UploadVolumeData(_volume3D const *data_in)
+void Visual::UploadVolumeData( _volume3D const *data_in )
 {
 	m_volume3D->width  = data_in->width;
 	m_volume3D->height = data_in->height;
@@ -375,27 +409,27 @@ void Visual::UploadVolumeData(_volume3D const *data_in)
 	m_volume3D->size   = data_in->size;
 
 #ifdef PRINT_STATUS
-	system("cls");
-	printf("Upload volume data and try to rendering the result, size: %d\n", m_volume3D->size);
+	system( "cls" );
+	printf( "Upload volume data and try to rendering the result, size: %d\n", m_volume3D->size );
 #endif
 };
 
 
-int Visual::Texel2D(int i, int j)
+int Visual::Texel2D( int i, int j )
 {
-	return  BYTES_PER_TEXEL * (i * m_volume2D->height + j);
+	return  BYTES_PER_TEXEL * ( i * m_volume2D->height + j );
 };
 
 
-int Layer(int layer)
+int Layer( int layer )
 {
 	return layer * m_volume3D->width * m_volume3D->height;
 };
 
 
-int Visual::Texel3D(int i, int j, int k)
+int Visual::Texel3D( int i, int j, int k )
 {
-	return BYTES_PER_TEXEL * (Layer(i) + m_volume3D->height * j + k);
+	return BYTES_PER_TEXEL * ( Layer( i ) + m_volume3D->height * j + k);
 };
 
 ///

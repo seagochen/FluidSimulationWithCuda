@@ -28,6 +28,6 @@
 #define _SEAGOSOFT_CUSTOM_MACRO_FUNS_H_
 
 #define PrintStatus(str) {system("cls"); printf("%s");}
-
+#define IX(i,j) ((i)+(GridSize+2)*(j))
 
 #endif
