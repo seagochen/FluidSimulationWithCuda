@@ -10,7 +10,10 @@
     <ClCompile Include="CFD_InteractionEvents.cpp">
       <Filter>Source Files\Solver</Filter>
     </ClCompile>
-    <ClCompile Include="CFD_CUDAMain.cpp">
+    <ClCompile Include="CFD_CUDA_Main.cpp">
+      <Filter>Source Files\Solver</Filter>
+    </ClCompile>
+    <ClCompile Include="CFD_CUDA_Solver.cu">
       <Filter>Source Files\Solver</Filter>
     </ClCompile>
   </ItemGroup>
@@ -66,10 +69,5 @@
     <ResourceCompile Include="cfd_cuda.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="kernel.cu">
-      <Filter>Source Files\Solver</Filter>
-    </CudaCompile>
   </ItemGroup>
 </Project>

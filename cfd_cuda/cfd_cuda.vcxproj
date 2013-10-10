@@ -151,9 +151,6 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="kernel.cu" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="CFD_FuncPrototypes.h" />
     <ClInclude Include="CFD_Params.h" />
     <ClInclude Include="CFD_Visualization.h" />
@@ -161,8 +158,9 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CFD_CUDA_Solver.cu" />
     <ClCompile Include="CFD_InteractionEvents.cpp" />
-    <ClCompile Include="CFD_CUDAMain.cpp" />
+    <ClCompile Include="CFD_CUDA_Main.cpp" />
     <ClCompile Include="CFD_Solver.cpp" />
     <ClCompile Include="CFD_Visualization.cpp" />
   </ItemGroup>

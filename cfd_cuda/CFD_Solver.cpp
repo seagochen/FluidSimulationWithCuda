@@ -34,7 +34,6 @@ void add_source ( int GridSize, float * grid, float * src, float dt )
 	for ( i=0 ; i<size ; i++ ) grid[i] += dt*src[i];
 }
 
-
 void set_bnd ( int GridSize, int boundary, float * grid )
 {
 	int i;

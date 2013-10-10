@@ -41,11 +41,15 @@
   ----------------------------------------------------------------------
 */
 
+#include <cuda_runtime.h>
 
-extern void dens_step ( int GridSize, float * x, float * x0, float * u, float * v, float diff, float dt );
+extern void dens_step ( int GridSize, float * grid, float * grid0, float * u, float * v, float diff, float dt );
 
 extern void vel_step ( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt );
 
+extern cudaError_t cuda_dens_step( int GridSize, float *grid, float *grid0, float *u, float *v, float diff, float dt );
+
+extern cudaError_t cuda_vel_step( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt );
 
 /*
   ----------------------------------------------------------------------
