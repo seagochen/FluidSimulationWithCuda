@@ -263,6 +263,6 @@ void display_func ( void )
 void idle_func( void )
 {
 	get_from_UI ( dens_prev, u_prev, v_prev );
-	cuda_vel_step ( GridSize, u, v, u_prev, v_prev, visc, dt );
-	cuda_dens_step ( GridSize, dens, dens_prev, u, v, diff, dt );
+	vel_step ( GridSize, u, v, u_prev, v_prev, visc, dt );
+	dens_step ( GridSize, dens, dens_prev, u, v, diff, dt );
 }

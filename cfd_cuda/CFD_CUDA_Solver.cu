@@ -219,3 +219,13 @@ cudaError_t cuda_vel_step( int GridSize, float * u, float * v, float * u0, float
 	advect ( GridSize, 1, u, u0, u0, v0, dt ); advect ( GridSize, 2, v, v0, u0, v0, dt );
 	project ( GridSize, u, v, u0, v0 );
 };
+
+extern "C" void dens_step( int GridSize, float *grid, float *grid0, float *u, float *v, float diff, float dt )
+{
+	cuda_dens_step( GridSize, grid, grid0, u, v, diff, dt );
+}
+
+extern "C" void vel_step( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt )
+{
+	cuda_vel_step(GridSize,  u,  v,  u0,  v0,  visc, dt);
+}
