@@ -36,19 +36,14 @@ __global__ void set_bnd_kernel ( int GridSize, int boundary, float * grid )
 
 __global__ void lin_solve_kernel ( int GridSize, int boundary, float * grid, float * grid0, float a, float c )
 {
-	int i, j, k;
+	int index_x = blockIdx.x * blockDim.x + threadIdx.x;
+	int index_y = blockIdx.y * blockDim.y + threadIdx.y;
+	
+	// map the two 2D indices to a single linear, 1D index
+	int grid_width = gridDim.x * blockDim.x;
+	int index = index_y * grid_width + index_x;
 
-	for ( k=0 ; k<20 ; k++ ) 
-	{
-		for ( i=1 ; i<=GridSize ; i++ )
-		{
-			for ( j=1 ; j<=GridSize ; j++ ) 
-			{
-				grid[IX(i,j)] = (grid0[IX(i,j)] + a*(grid[IX(i-1,j)]+grid[IX(i+1,j)]+grid[IX(i,j-1)]+grid[IX(i,j+1)]))/c;
-			}
-		}
-//		set_bnd ( GridSize, boundary, grid );
-	}
+	grid[index] = (grid0[index] + a*(grid[IX(i-1,j)]+grid[IX(i+1,j)]+grid[IX(i,j-1)]+grid[IX(i,j+1)]))/c;
 }
 
 
@@ -69,6 +64,16 @@ cudaError_t cuda_dens_step( int GridSize, float *grid, float *grid0, float *u, f
 	int size = (GridSize+2)*(GridSize+2);
 
 	cudaError_t cuda_status;
+
+	// create two dimensional 4x4 thread blocks
+	dim3 block_size;
+	block_size.x = 64 + 2;
+	block_size.y = 64 + 2;
+	
+	// configure a two dimensional grid as well
+	dim3 grid_size;
+	grid_size.x = 66 / block_size.x;
+	grid_size.y = 66 / block_size.y;
 
 	// Choose which GPU to run on, change this on a multi-GPU system
 	cuda_status = cudaSetDevice(0);
