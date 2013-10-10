@@ -4,6 +4,7 @@
 *.db
 templet.txt
 projectplan.txt
+plan.md
 /Debug
 /Release
 /bin

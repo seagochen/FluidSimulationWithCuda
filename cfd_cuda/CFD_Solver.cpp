@@ -23,7 +23,7 @@
 * <Last>		Oct 6, 2013
 * <File>        CFD_Solver.cpp
 */
-
+/*
 #define IX(i,j) ((i)+(GridSize+2)*(j))
 #define SWAP(grid0,grid) {float * tmp=grid0;grid0=grid;grid=tmp;}
 
@@ -144,3 +144,4 @@ void vel_step ( int GridSize, float * u, float * v, float * u0, float * v0, floa
 	advect ( GridSize, 1, u, u0, u0, v0, dt ); advect ( GridSize, 2, v, v0, u0, v0, dt );
 	project ( GridSize, u, v, u0, v0 );
 }
+*/
