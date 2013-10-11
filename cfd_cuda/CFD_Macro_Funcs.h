@@ -21,38 +21,34 @@
 * <Author>      Orlando Chen
 * <First>       Oct 6, 2013
 * <Last>		Oct 6, 2013
-* <File>        CFD_Params.h
+* <File>        CFD_Macro_Funcs.h
 */
 
-#ifndef _CUSTOM_PARAMS_H_
-#define _CUSTOM_PARAMS_H_
+#ifndef _CUSTOM_MACRO_FUNS_H_
+#define _CUSTOM_MACRO_FUNS_H_
 
-/* global variables */
-#ifdef _IN_MAIN_FILE
-int GridSize;
-float dt, diff, visc;
-float force, source;
 
-float * u, * v, * u_prev, * v_prev;
-float * dens, * dens_prev;
+/*
+  ----------------------------------------------------------------------
+   Definition blewing be used in CFD_Solver_Kernel.cpp
+  ----------------------------------------------------------------------
+*/
 
-bool mouse_down[2];
-int omx, omy, mx, my;
+#define PrintStatus(str) {system("cls"); printf("%s");}
 
-int win_x, win_y;
+#define IX(i,j) ((i)+(GridSize+2)*(j))
 
-#else
-extern int GridSize;
-extern float dt, diff, visc;
-extern float force, source;
+/*
+  ----------------------------------------------------------------------
+   General Purpose
+  ----------------------------------------------------------------------
+*/
 
-extern float * u, * v, * u_prev, * v_prev;
-extern float * dens, * dens_prev;
+template <class T> void swap ( T& a, T& b )
+{
+  T c(a); a=b; b=c;
+}
 
-extern bool mouse_down[2];
-extern int omx, omy, mx, my;
-
-extern int win_x, win_y;
-#endif
+#define SWAP(ptr1, ptr2)  swap(ptr1, ptr2)
 
 #endif

@@ -19,86 +19,56 @@
 
 /**
 * <Author>      Orlando Chen
-* <First>       Oct 7, 2013
-* <Last>		Oct 7, 2013
-* <File>        CFD_FuncsPrototype.h
+* <First>       Oct 11, 2013
+* <Last>		Oct 11, 2013
+* <File>        CFD_Macro_Definitions.h
 */
 
-
-#ifndef _CUSTOM_FUNCTION_PROTOTYPES_H_
-#define _CUSTOM_FUNCTION_PROTOTYPES_H_
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <GL\glew.h>
-#include <GL\freeglut.h>
-#include <SGE\SGUtils.h>
-#include "CFD_Macro_Funcs.h"
+#ifndef _CUSTOM_MACRO_DEF_H_
+#define _CUSTOM_MACRO_DEF_H_
 
 /*
   ----------------------------------------------------------------------
-   external functions on CPU
+   Normal Definitions
   ----------------------------------------------------------------------
 */
 
-
-void dens_step ( int GridSize, float * grid, float * grid0, float * u, float * v, float diff, float dt );
-
-void vel_step ( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt );
-
+#define True  1
+#define False 0
 
 /*
   ----------------------------------------------------------------------
-   free/clear/allocate simulation data
+   Definition for Variables of Computational Fluid Dynamics
   ----------------------------------------------------------------------
 */
 
 
-void free_data ( void );
-
-void clear_data ( void );
-
-int allocate_data ( void );
+#define GRIDSIZE  64
+#define DELTATIME 0.1f
+#define DIFFRATE  0.0f
+#define VISCOSITY 0.0f
+#define FORCE     5.0f
+#define SOURCE    100.0f
+#define WINDOWSX  512
+#define WINDOWSY  512
 
 
 /*
   ----------------------------------------------------------------------
-   OpenGL specific drawing routines
+   Definition for Visualization
   ----------------------------------------------------------------------
 */
 
-void draw_velocity ( void );
 
-void draw_density ( void );
+#define BYTES_PER_TEXEL 3
 
 
 /*
   ----------------------------------------------------------------------
-   relates mouse movements to forces sources
+   Definition of Switch
   ----------------------------------------------------------------------
 */
 
-
-void get_from_UI ( float * d, float * u, float * v );
-
-
-/*
-  ----------------------------------------------------------------------
-   Mainroutine
-  ----------------------------------------------------------------------
-*/
-
-void key_func ( sge::SG_KEYS key, sge::SG_KEY_STATUS status );
-
-void mouse_func ( sge::SG_MOUSE mouse, unsigned x, unsigned y );
-
-void reshape_func ( unsigned width, unsigned height );
-
-void display_func ( void );
-
-void idle_func( void );
-
-void dest_func( void );
-
+#define USING_GPU_FOR_CFD  False
 
 #endif

@@ -154,15 +154,18 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="CFD_FuncPrototypes.h" />
     <ClInclude Include="CFD_Params.h" />
     <ClInclude Include="CFD_Visualization.h" />
-    <ClInclude Include="Macro_Funcs.h" />
+    <ClInclude Include="CFD_Macro_Definitions.h" />
+    <ClInclude Include="CFD_Macro_Funcs.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="CFD_CUDA_Solver.cu">
+    <CudaCompile Include="CFD_CUDA_Solver_Kernel.cu">
       <FileType>Document</FileType>
     </CudaCompile>
+    <ClCompile Include="CFD_CUDA_Solver.cpp" />
     <ClCompile Include="CFD_InteractionEvents.cpp" />
     <ClCompile Include="CFD_CUDA_Main.cpp" />
+    <ClCompile Include="CFD_Solver_Kernel.cpp" />
     <ClCompile Include="CFD_Visualization.cpp" />
   </ItemGroup>
   <ItemGroup>

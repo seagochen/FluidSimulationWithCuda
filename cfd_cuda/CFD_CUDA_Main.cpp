@@ -30,6 +30,7 @@
 #include "CFD_Params.h"
 #include "CFD_FuncPrototypes.h"
 #include "CFD_Visualization.h"
+#include "CFD_Macro_Definitions.h"
 #include "resource.h"
 
 ////////////////////////////////////////////////////////////////////////
@@ -53,14 +54,14 @@ Visualization *visual;
 
 void CFD_Init_Params()
 {
-	GridSize = 64;
-	dt = 0.1f;
-	diff = 0.0f;
-	visc = 0.0f;
-	force = 5.0f;
-	source = 100.0f;
-	win_x = 512;
-	win_y = 512;
+	GridSize = GRIDSIZE;
+	dt = DELTATIME;
+	diff = DIFFRATE;
+	visc = VISCOSITY;
+	force = FORCE;
+	source = SOURCE;
+	win_x = WINDOWSX;
+	win_y = WINDOWSY;
 };
 
 void CFD_Init_Routine(void)

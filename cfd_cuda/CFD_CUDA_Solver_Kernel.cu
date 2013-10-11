@@ -20,14 +20,6 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 6, 2013
-* <Last>		Oct 6, 2013
-* <File>        CFD_Macro_Funcs.h
+* <Last>		Oct 11, 2013
+* <File>        CFD_CUDA_Solver_Kernel.cpp
 */
-
-#ifndef _SEAGOSOFT_CUSTOM_MACRO_FUNS_H_
-#define _SEAGOSOFT_CUSTOM_MACRO_FUNS_H_
-
-#define PrintStatus(str) {system("cls"); printf("%s");}
-#define IX(i,j) ((i)+(GridSize+2)*(j))
-
-#endif

@@ -19,40 +19,13 @@
 
 /**
 * <Author>      Orlando Chen
-* <First>       Oct 6, 2013
-* <Last>		Oct 6, 2013
-* <File>        CFD_Params.h
+* <First>       Oct 11, 2013
+* <Last>		Oct 11, 2013
+* <File>        CFD_Solver.cpp
 */
 
-#ifndef _CUSTOM_PARAMS_H_
-#define _CUSTOM_PARAMS_H_
+#include "CFD_FuncPrototypes.h"
+#include "CFD_Macro_Definitions.h"
 
-/* global variables */
-#ifdef _IN_MAIN_FILE
-int GridSize;
-float dt, diff, visc;
-float force, source;
-
-float * u, * v, * u_prev, * v_prev;
-float * dens, * dens_prev;
-
-bool mouse_down[2];
-int omx, omy, mx, my;
-
-int win_x, win_y;
-
-#else
-extern int GridSize;
-extern float dt, diff, visc;
-extern float force, source;
-
-extern float * u, * v, * u_prev, * v_prev;
-extern float * dens, * dens_prev;
-
-extern bool mouse_down[2];
-extern int omx, omy, mx, my;
-
-extern int win_x, win_y;
-#endif
-
+#if USING_GPU_FOR_CFD
 #endif

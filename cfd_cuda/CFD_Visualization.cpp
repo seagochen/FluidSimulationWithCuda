@@ -26,7 +26,8 @@
 
 
 #include "CFD_Visualization.h"
-#include "Macro_Funcs.h"
+#include "CFD_Macro_Funcs.h"
+#include "CFD_Macro_Definitions.h"
 
 using namespace sge;
 

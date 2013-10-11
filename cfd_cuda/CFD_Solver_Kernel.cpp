@@ -20,12 +20,14 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 6, 2013
-* <Last>		Oct 6, 2013
-* <File>        CFD_Solver.cpp
+* <Last>		Oct 11, 2013
+* <File>        CFD_CUDA_Solver_Kernel.cpp
 */
 
-#define IX(i,j) ((i)+(GridSize+2)*(j))
-#define SWAP(grid0,grid) {float * tmp=grid0;grid0=grid;grid=tmp;}
+#include "CFD_Macro_Funcs.h"
+#include "CFD_Macro_Definitions.h"
+
+#if ! USING_GPU_FOR_CFD
 
 
 void add_source ( int GridSize, float * grid, float * src, float dt )
@@ -144,3 +146,5 @@ void vel_step ( int GridSize, float * u, float * v, float * u0, float * v0, floa
 	advect ( GridSize, 1, u, u0, u0, v0, dt ); advect ( GridSize, 2, v, v0, u0, v0, dt );
 	project ( GridSize, u, v, u0, v0 );
 }
+
+#endif

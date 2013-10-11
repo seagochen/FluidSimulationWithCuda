@@ -24,8 +24,8 @@
 * <File>        CFD_Visualization.h
 */
 
-#ifndef _SEAGOSOFT_CUSTOM_VISUAL_H_
-#define _SEAGOSOFT_CUSTOM_VISUAL_H_
+#ifndef _CUSTOM_VISUAL_H_
+#define _CUSTOM_VISUAL_H_
 
 #include <GL\glew.h>
 #include <GL\glut.h>
@@ -77,7 +77,7 @@ namespace sge
 	};
 
 
-#define BYTES_PER_TEXEL 3
+
 
 	typedef class Visual
 	{
