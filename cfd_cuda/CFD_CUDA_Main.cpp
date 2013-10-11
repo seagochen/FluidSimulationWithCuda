@@ -95,7 +95,7 @@ int main( int argc, char ** argv )
 	clear_data ();
 
 	// Set application title
-	activity->SetApplicationTitle( L"Navigator I" );
+	activity->SetApplicationTitle( L"CFD - Navigator No. I" );
 	activity->SetApplicationIcons(APP_ICONS, APP_ICONS);
 			
 	// Register callback functions

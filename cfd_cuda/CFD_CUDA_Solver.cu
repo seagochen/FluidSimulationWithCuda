@@ -1,20 +1,37 @@
-#include "CFD_FuncPrototypes.h"
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <SGE\SGUtils.h>
+/**
+*
+* Copyright (C) <2013> <Orlando Chen>
+* Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+* associated documentation files (the "Software"), to deal in the Software without restriction, 
+* including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+* and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, 
+* subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all copies or substantial
+* portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT 
+* NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
-#define CUDA_Release(ptr) {if (ptr != 0) cudaFree(ptr);}
-#define Error_Free(ptr0, ptr1, ptr2, ptr3) {CUDA_Release(ptr0); CUDA_Release(ptr1); CUDA_Release(ptr2); CUDA_Release(ptr3);}
+/**
+* <Author>      Orlando Chen
+* <First>       Oct 6, 2013
+* <Last>		Oct 6, 2013
+* <File>        CFD_Solver.cpp
+*/
 
 #define IX(i,j) ((i)+(GridSize+2)*(j))
 #define SWAP(grid0,grid) {float * tmp=grid0;grid0=grid;grid=tmp;}
 
-__global__ void add_source_kernel ( float * grid_out, float * src_in, float dt_in )
+
+void add_source ( int GridSize, float * grid, float * src, float dt )
 {
-	int i = threadIdx.x;
-	grid_out[i] += dt_in*src_in[i];
+	int i, size=(GridSize+2)*(GridSize+2);
+	for ( i=0 ; i<size ; i++ ) grid[i] += dt*src[i];
 }
 
 void set_bnd ( int GridSize, int boundary, float * grid )
@@ -108,108 +125,16 @@ void project ( int GridSize, float * u, float * v, float * p, float * div )
 	set_bnd ( GridSize, 1, u ); set_bnd ( GridSize, 2, v );
 }
 
-cudaError_t cuda_dens_step( int GridSize, float *grid, float *grid0, float *u, float *v, float diff, float dt )
+
+void dens_step ( int GridSize, float * grid, float * grid0, float * u, float * v, float diff, float dt )
 {
-	float *grid_cuda = 0;
-	float *grid0_cuda= 0;
-	float *u_cuda = 0;
-	float *v_cuda = 0;
-
-	int size = (GridSize+2)*(GridSize+2);
-
-	cudaError_t cuda_status;
-
-	// Choose which GPU to run on, change this on a multi-GPU system
-	cuda_status = cudaSetDevice(0);
-	if ( cuda_status != cudaError::cudaSuccess ) {
-		ErrorMSG("cudaSetDevice failed! Do you have a CUDA-capable GPU installed?");
-		Error_Free(grid_cuda, grid0_cuda, u_cuda, v_cuda);
-		return cuda_status;
-	}
-
-	// Allocate GPU buffers for those vectors
-	if ( (cuda_status = cudaMalloc((void**)&grid_cuda, size * sizeof(float))) != cudaError::cudaSuccess ) 
-	{
-		ErrorMSG("cudaMalloc failed!");
-		Error_Free(grid_cuda, grid0_cuda, u_cuda, v_cuda);
-		return cuda_status;
-	}
-
-	if ( (cuda_status = cudaMalloc((void**)&grid0_cuda, size * sizeof(float))) != cudaError::cudaSuccess )
-	{
-		ErrorMSG("cudaMalloc failed!");
-		Error_Free(grid_cuda, grid0_cuda, u_cuda, v_cuda);
-		return cuda_status;
-	}
-
-	if ( (cuda_status = cudaMalloc((void**)&u_cuda, size * sizeof(float))) != cudaError::cudaSuccess )
-	{
-		ErrorMSG("cudaMalloc failed!");
-		Error_Free(grid_cuda, grid0_cuda, u_cuda, v_cuda);
-		return cuda_status;
-	}
-
-	if ( (cuda_status = cudaMalloc((void**)&v_cuda, size * sizeof(float))) != cudaError::cudaSuccess )
-	{
-		ErrorMSG("cudaMalloc failed!");
-		Error_Free(grid_cuda, grid0_cuda, u_cuda, v_cuda);
-		return cuda_status;
-	}
-
-	// Copy input vectors from host memory to GPU buffers
-	// Do add_source_kernel first
-	cuda_status = cudaMemcpy(grid0_cuda, grid0, size * sizeof(float), cudaMemcpyKind::cudaMemcpyHostToDevice);
-	if ( cuda_status != cudaError::cudaSuccess )
-	{
-		ErrorMSG("cudaMemcpy failed!");
-		Error_Free(grid_cuda, grid0_cuda, u_cuda, v_cuda);
-		return cuda_status;
-	}
-
-	// Launch a kernel on GPU with one thread for each element
-	add_source_kernel<<<1, size>>>(grid_cuda, grid0_cuda, dt);
-
-	// Check for any errors launching the kernel
-	cuda_status = cudaGetLastError();
-	if ( cuda_status != cudaError::cudaSuccess ) 
-	{
-		fprintf(stderr, "add_source_kernel launch failed: %s\n", cudaGetErrorString(cuda_status));
-		Error_Free(grid_cuda, grid0_cuda, u_cuda, v_cuda);
-		return cuda_status;
-	}
-
-	// cudaDeviceSynchronize waits for the kernel to finish, and returns any errors encountered during the launch
-	cuda_status = cudaDeviceSynchronize();
-	if ( cuda_status != cudaError::cudaSuccess )
-	{
-		fprintf(stderr, "cudaDeviceSynchronize returned error code %d (%s) after launching kernel!\n",
-			cuda_status, cudaGetErrorString(cuda_status));
-		Error_Free(grid_cuda, grid0_cuda, u_cuda, v_cuda);
-		return cuda_status;
-	}
-
-	// Copy output vector from GPU buffer to host memory
-	cuda_status = cudaMemcpy(grid, grid_cuda, size*sizeof(float), cudaMemcpyKind::cudaMemcpyDeviceToHost);
-	if ( cuda_status != cudaError::cudaSuccess )
-	{
-		ErrorMSG("cudaMemcpy failed!");
-		Error_Free(grid_cuda, grid0_cuda, u_cuda, v_cuda);
-		return cuda_status;
-	}
-
+	add_source ( GridSize, grid, grid0, dt );
 	SWAP ( grid0, grid ); diffuse ( GridSize, 0, grid, grid0, diff, dt );
 	SWAP ( grid0, grid ); advect ( GridSize, 0, grid, grid0, u, v, dt );
-
-	return cuda_status;
-};
-
-void add_source ( int GridSize, float * grid, float * src, float dt )
-{
-	int i, size=(GridSize+2)*(GridSize+2);
-	for ( i=0 ; i<size ; i++ ) grid[i] += dt*src[i];
 }
 
-cudaError_t cuda_vel_step( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt )
+
+void vel_step ( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt )
 {
 	add_source ( GridSize, u, u0, dt ); add_source ( GridSize, v, v0, dt );
 	SWAP ( u0, u ); diffuse ( GridSize, 1, u, u0, visc, dt );
@@ -218,14 +143,4 @@ cudaError_t cuda_vel_step( int GridSize, float * u, float * v, float * u0, float
 	SWAP ( u0, u ); SWAP ( v0, v );
 	advect ( GridSize, 1, u, u0, u0, v0, dt ); advect ( GridSize, 2, v, v0, u0, v0, dt );
 	project ( GridSize, u, v, u0, v0 );
-};
-
-extern "C" void dens_step( int GridSize, float *grid, float *grid0, float *u, float *v, float diff, float dt )
-{
-	cuda_dens_step( GridSize, grid, grid0, u, v, diff, dt );
-}
-
-extern "C" void vel_step( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt )
-{
-	cuda_vel_step(GridSize,  u,  v,  u0,  v0,  visc, dt);
 }

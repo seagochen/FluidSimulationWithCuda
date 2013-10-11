@@ -42,18 +42,11 @@
 */
 
 #include <cuda_runtime.h>
-/*
-extern void dens_step ( int GridSize, float * grid, float * grid0, float * u, float * v, float diff, float dt );
 
-extern void vel_step ( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt );
+void dens_step ( int GridSize, float * grid, float * grid0, float * u, float * v, float diff, float dt );
 
-extern "C" cudaError_t cuda_dens_step( int GridSize, float *grid, float *grid0, float *u, float *v, float diff, float dt );
 
-extern "C" cudaError_t cuda_vel_step( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt );
-*/
-extern "C" void dens_step( int GridSize, float *grid, float *grid0, float *u, float *v, float diff, float dt );
-
-extern "C" void vel_step( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt );
+void vel_step ( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt );
 
 /*
   ----------------------------------------------------------------------
@@ -96,13 +89,9 @@ void get_from_UI ( float * d, float * u, float * v );
   ----------------------------------------------------------------------
 */
 
-using sge::SG_MOUSE;
-using sge::SG_KEYS;
-using sge::SG_KEY_STATUS;
+void key_func ( sge::SG_KEYS key, sge::SG_KEY_STATUS status );
 
-void key_func ( SG_KEYS key, SG_KEY_STATUS status );
-
-void mouse_func ( SG_MOUSE mouse, unsigned x, unsigned y );
+void mouse_func ( sge::SG_MOUSE mouse, unsigned x, unsigned y );
 
 void reshape_func ( unsigned width, unsigned height );
 
