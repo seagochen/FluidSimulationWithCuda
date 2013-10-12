@@ -82,17 +82,17 @@ namespace sge
 	typedef class Visual
 	{
 	public:
-		Visual( GLuint width, GLuint height, MainActivity *hActivity );
-		~Visual( void );
+		Visual(GLuint width, GLuint height, MainActivity *hActivity);
+		~Visual(void);
 
 	public:
-		static void OnCreate   ( void );
-		static void OnResize   ( GLuint width, GLuint height );
-		static void OnIdle     ( void );
-		static void OnDisplay  ( void );
-		static void OnKeyboard ( SG_KEYS keys, SG_KEY_STATUS status );
-		static void OnMouse    ( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos );
-		static void OnDestroy  ( void );
+		static void OnCreate   (void);
+		static void OnResize   (GLuint width, GLuint height);
+		static void OnIdle     (void);
+		static void OnDisplay  (void);
+		static void OnKeyboard (SG_KEYS keys, SG_KEY_STATUS status);
+		static void OnMouse    (SG_MOUSE mouse, GLuint x_pos, GLuint y_pos);
+		static void OnDestroy  (void);
 
 		static void RegisterCreate  ( void (*func)(void) );
 		static void RegisterResize  ( void (*func)(GLuint width, GLuint height) );

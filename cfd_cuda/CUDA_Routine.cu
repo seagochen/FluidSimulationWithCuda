@@ -30,8 +30,8 @@
 
 #if GPU_ON
 
-void dens_step ( float * grid, float * grid0, float * u, float * v );
+void dens_step(float * grid, float * grid0, float * u, float * v);
 
-void vel_step ( float * u, float * v, float * u0, float * v0 );
+void vel_step(float * u, float * v, float * u0, float * v0);
 
 #endif

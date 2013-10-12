@@ -38,6 +38,7 @@
 
 #define True  1
 #define False 0
+#define is    ==
 
 /*
   ----------------------------------------------------------------------
@@ -73,7 +74,7 @@
   ----------------------------------------------------------------------
 */
 
-#define GPU_ON  False
+#define GPU_ON  True
 
 ///
 ////////////////////////////////////////////////////////////////////////
@@ -89,7 +90,7 @@
 
 #define Index(i,j) ((j)*ENTIRE_GRIDS_NUMBER + i)
 
-template <class T> void SWAP ( T& a, T& b )
+template <class T> void SWAP(T& a, T& b)
 {
   T c(a); a=b; b=c;
 }
@@ -101,9 +102,9 @@ template <class T> void SWAP ( T& a, T& b )
 */
 
 
-void dens_step ( float * grid, float * grid0, float * u, float * v );
+void dens_step(float * grid, float * grid0, float * u, float * v);
 
-void vel_step ( float * u, float * v, float * u0, float * v0 );
+void vel_step(float * u, float * v, float * u0, float * v0);
 
 
 ///

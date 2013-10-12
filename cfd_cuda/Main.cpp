@@ -59,6 +59,10 @@ void idle_func(void);
 
 void param_init(void);
 
+void cuda_init(void);
+
+void cuda_close(void);
+
 void clear_data(void);
 
 int allocate_data(void);
@@ -67,7 +71,7 @@ int allocate_data(void);
 ////////////////////////////////////////////////////////////////////////
 ///
 
-int main( int argc, char ** argv )
+int main(int argc, char ** argv)
 {
 	// Create a main activity and set the window from size as 512x512
 	activity = new MainActivity(WINDOWSX, WINDOWSY);
@@ -75,30 +79,31 @@ int main( int argc, char ** argv )
 
 	// Initialize the parameters
 	param_init();
+	cuda_init();
 
 	// Register callback function to visualization
-	visual->RegisterDisplay ( display_func );
-	visual->RegisterIdle    ( idle_func );
-	visual->RegisterKeyboard( key_func );
-	visual->RegisterMouse   ( mouse_func );
-	visual->RegisterResize  ( reshape_func );
-	visual->RegisterDestroy ( close_func );
+	visual->RegisterDisplay (display_func);
+	visual->RegisterIdle    (idle_func);
+	visual->RegisterKeyboard(key_func);
+	visual->RegisterMouse   (mouse_func);
+	visual->RegisterResize  (reshape_func);
+	visual->RegisterDestroy (close_func);
 
-	if ( !allocate_data () ) exit ( 1 );
-	clear_data ();
+	if ( !allocate_data() ) exit(1);
+	clear_data();
 
 	// Set application title
 	activity->SetApplicationTitle( L"CFD - Navigator No. I" );
 	activity->SetApplicationIcons(APP_ICONS, APP_ICONS);
 			
 	// Register callback functions
-	activity->RegisterCreateFunc   ( visual->OnCreate );
-	activity->RegisterDestoryFunc  ( visual->OnDestroy );
-	activity->RegisterKeyboardFunc ( visual->OnKeyboard );
-	activity->RegisterMouseFunc    ( visual->OnMouse );
-	activity->RegisterReshapeFunc  ( visual->OnResize );
-	activity->RegisterDisplayFunc  ( visual->OnDisplay );
-	activity->RegisterIdleFunc     ( visual->OnIdle );
+	activity->RegisterCreateFunc   (visual->OnCreate);
+	activity->RegisterDestoryFunc  (visual->OnDestroy);
+	activity->RegisterKeyboardFunc (visual->OnKeyboard);
+	activity->RegisterMouseFunc    (visual->OnMouse);
+	activity->RegisterReshapeFunc  (visual->OnResize);
+	activity->RegisterDisplayFunc  (visual->OnDisplay);
+	activity->RegisterIdleFunc     (visual->OnIdle);
 
 	// Initialize window
 	activity->SetupRoutine();
@@ -106,7 +111,7 @@ int main( int argc, char ** argv )
 	// Display and run demo
 	activity->MainLoop();
 
-	exit ( 0 );
+	return 0;
 };
 
 ///
@@ -125,122 +130,129 @@ void param_init()
 	win_y    = WINDOWSY;
 };
 
-void free_data ( void )
+void free_data(void)
 {
-	if ( u ) free ( u );
-	if ( v ) free ( v );
-	if ( u_prev ) free ( u_prev );
-	if ( v_prev ) free ( v_prev );
-	if ( dens ) free ( dens );
-	if ( dens_prev ) free ( dens_prev );
+	if ( u ) SAFE_FREE_PTR(u);
+	if ( v ) SAFE_FREE_PTR(v);
+	if ( u_prev ) SAFE_FREE_PTR(u_prev);
+	if ( v_prev ) SAFE_FREE_PTR(v_prev);
+	if ( dens ) SAFE_FREE_PTR(dens);
+	if ( dens_prev ) SAFE_FREE_PTR(dens_prev);
 }
 
-void clear_data ( void )
+void clear_data(void)
 {
-	int i, size=(GridSize+2)*(GridSize+2);
+	int size=(GridSize+2)*(GridSize+2);
 
-	for ( i=0 ; i<size ; i++ ) {
+	for ( int i=0; i<size ; i++ )
+	{
 		u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = 0.0f;
 	}
 }
 
-int allocate_data ( void )
+int allocate_data(void)
 {
 	int size = (GridSize+2)*(GridSize+2);
 
-	u			= (float *) malloc ( size*sizeof(float) );
-	v			= (float *) malloc ( size*sizeof(float) );
-	u_prev		= (float *) malloc ( size*sizeof(float) );
-	v_prev		= (float *) malloc ( size*sizeof(float) );
-	dens		= (float *) malloc ( size*sizeof(float) );	
-	dens_prev	= (float *) malloc ( size*sizeof(float) );
+	u			= (float *)malloc(size*sizeof(float));
+	v			= (float *)malloc(size*sizeof(float));
+	u_prev		= (float *)malloc(size*sizeof(float));
+	v_prev		= (float *)malloc(size*sizeof(float));
+	dens		= (float *)malloc(size*sizeof(float));	
+	dens_prev	= (float *)malloc(size*sizeof(float));
 
-	if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev ) {
+	if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev ) 
+	{
 		fprintf ( stderr, "cannot allocate data\n" );
 		return ( 0 );
 	}
 
-	return ( 1 );
+	return True;
 }
 
-void draw_velocity ( void )
+void draw_velocity(void)
 {
 	int i, j;
 	float x, y, h;
 
 	h = 1.0f/GridSize;
 
-	glColor3f ( 0.0f, 0.0f, 1.0f );
-	glLineWidth ( 1.0f );
+	glColor3f(0.0f, 0.0f, 1.0f);
+	glLineWidth(1.0f);
 
-	glBegin ( GL_LINES );
-
-		for ( i=1 ; i<=GridSize ; i++ ) {
+	glBegin(GL_LINES);
+	{
+		for ( i=1 ; i<=GridSize ; i++ )
+		{
 			x = (i-0.5f)*h;
-			for ( j=1 ; j<=GridSize ; j++ ) {
+			for ( j=1 ; j<=GridSize ; j++ )
+			{
 				y = (j-0.5f)*h;
-
-				glVertex2f ( x, y );
-				glVertex2f ( x+u[Index(i,j)], y+v[Index(i,j)] );
+				glVertex2f(x, y);
+				glVertex2f(x+u[Index(i,j)], y+v[Index(i,j)]);
 			}
 		}
-
-	glEnd ();
+	}
+	glEnd();
 }
 
-void draw_density ( void )
+void draw_density(void)
 {
 	int i, j;
 	float x, y, h, d00, d01, d10, d11;
 
 	h = 1.0f/GridSize;
 
-	glBegin ( GL_QUADS );
+	glBegin(GL_QUADS);
 	{
-		for ( i=0 ; i<=GridSize ; i++ ) {
+		for ( i=0 ; i<=GridSize ; i++ )
+		{
 			x = (i-0.5f)*h;
-			for ( j=0 ; j<=GridSize ; j++ ) {
+			for ( j=0 ; j<=GridSize ; j++ )
+			{
 				y = (j-0.5f)*h;
-
 				d00 = dens[Index(i,j)];
 				d01 = dens[Index(i,j+1)];
 				d10 = dens[Index(i+1,j)];
 				d11 = dens[Index(i+1,j+1)];
 
-				glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
-				glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
-				glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
-				glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
+				glColor3f(d00, d00, d00); glVertex2f(x, y);
+				glColor3f(d10, d10, d10); glVertex2f(x+h, y);
+				glColor3f(d11, d11, d11); glVertex2f(x+h, y+h);
+				glColor3f(d01, d01, d01); glVertex2f(x, y+h);
 			}
 		}
 	}
-	glEnd ();
+	glEnd();
 }
 
-void get_from_UI ( float * d, float * u, float * v )
+void get_from_UI(float * d, float * u, float * v)
 {
 #define MouseLeftDown  mouse_down[0]
 #define MouseRightDown mouse_down[1]
 
 	int i, j, size = (GridSize+2)*(GridSize+2);
 
-	for ( i=0 ; i<size ; i++ ) {
+	for (i=0 ; i<size ; i++) 
+	{
 		u[i] = v[i] = d[i] = 0.0f;
 	}
 
-	if ( !MouseLeftDown && !MouseRightDown ) return;
+	if (!MouseLeftDown && !MouseRightDown) return;
 
 	i = (int)((       mx /(float)win_x)*GridSize+1);
 	j = (int)(((win_y-my)/(float)win_y)*GridSize+1);
 
-	if ( i<1 || i>GridSize || j<1 || j>GridSize ) return;
+	if (i<1 || i>GridSize || j<1 || j>GridSize) return;
 
-	if ( MouseLeftDown ) {
+	if (MouseLeftDown)
+	{
 		u[Index(i,j)] = force * (mx-omx);
 		v[Index(i,j)] = force * (omy-my);
 	}
 
-	if ( MouseRightDown ) {
+	if (MouseRightDown)
+	{
 		d[Index(i,j)] = source;
 	}
 
@@ -251,18 +263,18 @@ void get_from_UI ( float * d, float * u, float * v )
 #undef MouseRightDown
 }
 
-void key_func ( SG_KEYS key, SG_KEY_STATUS status )
+void key_func(SG_KEYS key, SG_KEY_STATUS status)
 {
 	if (status == SG_KEY_STATUS::SG_KEY_DOWN)
 	{
-		switch ( key )
+		switch (key)
 		{
 		case SG_KEYS::SG_KEY_C:
-			clear_data ();
+			clear_data();
 			break;
 		
 		case SG_KEYS::SG_KEY_Q:
-			free_data ();
+			free_data();
 			exit ( 0 );
 			break;
 
@@ -273,13 +285,14 @@ void key_func ( SG_KEYS key, SG_KEY_STATUS status )
 	}
 }
 
-void close_func ( void )
+void close_func(void)
 {
-	free_data ();
+	free_data();
+	cuda_close();
 	exit(0);
 };
 
-void mouse_func ( SG_MOUSE mouse, unsigned x, unsigned y )
+void mouse_func(SG_MOUSE mouse, unsigned x, unsigned y)
 {
 #define MouseLeftDown  mouse_down[0]
 #define MouseRightDown mouse_down[1]
@@ -302,7 +315,7 @@ void mouse_func ( SG_MOUSE mouse, unsigned x, unsigned y )
 #undef MouseRightDown
 }
 
-void reshape_func ( unsigned width, unsigned height )
+void reshape_func(unsigned width, unsigned height)
 {
 	if (height == 0) height = 1;
 
@@ -310,25 +323,25 @@ void reshape_func ( unsigned width, unsigned height )
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity ();
-	gluOrtho2D ( 0.0, 1.0, 0.0, 1.0 );
-	glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
+	gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+	glClearColor( 0.0f, 0.0f, 0.0f, 1.0f);
 
 	win_x = width;
 	win_y = height;
 }
 
-void display_func ( void )
+void display_func(void)
 {
-	glClear ( GL_COLOR_BUFFER_BIT );
+	glClear(GL_COLOR_BUFFER_BIT);
 	draw_density();
 	draw_velocity();
 }
 
-void idle_func( void )
+void idle_func(void)
 {
-	get_from_UI ( dens_prev, u_prev, v_prev );
-	vel_step ( u, v, u_prev, v_prev );
-	dens_step ( dens, dens_prev, u, v );
+	get_from_UI(dens_prev, u_prev, v_prev);
+	vel_step(u, v, u_prev, v_prev);
+	dens_step(dens, dens_prev, u, v);
 }
 
 ///
