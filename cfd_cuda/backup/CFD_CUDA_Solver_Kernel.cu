@@ -23,3 +23,7 @@
 * <Last>		Oct 11, 2013
 * <File>        CFD_CUDA_Solver_Kernel.cpp
 */
+#define array_size_x 64
+#define array_size_y 64
+
+#define Index(i,j)  ((j)*array_size_x + (i))
