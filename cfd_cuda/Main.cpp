@@ -59,10 +59,6 @@ void idle_func(void);
 
 void param_init(void);
 
-void cuda_init(void);
-
-void cuda_close(void);
-
 void clear_data(void);
 
 int allocate_data(void);
@@ -79,7 +75,6 @@ int main(int argc, char ** argv)
 
 	// Initialize the parameters
 	param_init();
-	cuda_init();
 
 	// Register callback function to visualization
 	visual->RegisterDisplay (display_func);
@@ -288,7 +283,6 @@ void key_func(SG_KEYS key, SG_KEY_STATUS status)
 void close_func(void)
 {
 	free_data();
-	cuda_close();
 	exit(0);
 };
 
