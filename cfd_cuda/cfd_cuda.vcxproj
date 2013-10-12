@@ -151,24 +151,23 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="CFD_FuncPrototypes.h" />
-    <ClInclude Include="CFD_Params.h" />
-    <ClInclude Include="CFD_Visualization.h" />
-    <ClInclude Include="Macro_Funcs.h" />
+    <ClInclude Include="Macro_Definitions.h" />
     <ClInclude Include="resource.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="CFD_CUDA_Solver.cu" />
-    <ClCompile Include="CFD_InteractionEvents.cpp" />
-    <ClCompile Include="CFD_CUDA_Main.cpp" />
-    <ClCompile Include="CFD_Solver.cpp" />
-    <ClCompile Include="CFD_Visualization.cpp" />
+    <ClInclude Include="Visualization.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="cfd_cuda.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="app.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CPU_Routine.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Visualization.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="CUDA_Routine.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

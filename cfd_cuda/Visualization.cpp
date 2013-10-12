@@ -21,12 +21,12 @@
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
 * <Last>		Oct 6, 2013
-* <File>        CFD_Visualization.cpp
+* <File>        Visualization.cpp
 */
 
+#define _VISUALIZATION_CPP_
 
-#include "CFD_Visualization.h"
-#include "Macro_Funcs.h"
+#include "Visualization.h"
 
 using namespace sge;
 
@@ -413,6 +413,9 @@ void Visual::UploadVolumeData( _volume3D const *data_in )
 	printf( "Upload volume data and try to rendering the result, size: %d\n", m_volume3D->size );
 #endif
 };
+
+
+#include "Macro_Definitions.h"
 
 
 int Visual::Texel2D( int i, int j )

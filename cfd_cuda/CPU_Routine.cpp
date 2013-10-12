@@ -19,14 +19,16 @@
 
 /**
 * <Author>      Orlando Chen
-* <First>       Oct 6, 2013
-* <Last>		Oct 6, 2013
-* <File>        CFD_Solver.cpp
+* <First>       Oct 12, 2013
+* <Last>		Oct 12, 2013
+* <File>        CUDA_Routine.cpp
 */
 
-#define IX(i,j) ((i)+(GridSize+2)*(j))
-#define SWAP(grid0,grid) {float * tmp=grid0;grid0=grid;grid=tmp;}
+#define _CUDA_ROUTINE_CPP_
 
+#include "Macro_Definitions.h"
+
+#if !GPU_ON
 
 void add_source ( int GridSize, float * grid, float * src, float dt )
 {
@@ -34,21 +36,20 @@ void add_source ( int GridSize, float * grid, float * src, float dt )
 	for ( i=0 ; i<size ; i++ ) grid[i] += dt*src[i];
 }
 
-
 void set_bnd ( int GridSize, int boundary, float * grid )
 {
 	int i;
 
 	for ( i=1 ; i<=GridSize ; i++ ) {
-		grid[IX(0  ,i)] = boundary==1 ? -grid[IX(1,i)] : grid[IX(1,i)];
-		grid[IX(GridSize+1,i)] = boundary==1 ? -grid[IX(GridSize,i)] : grid[IX(GridSize,i)];
-		grid[IX(i,0  )] = boundary==2 ? -grid[IX(i,1)] : grid[IX(i,1)];
-		grid[IX(i,GridSize+1)] = boundary==2 ? -grid[IX(i,GridSize)] : grid[IX(i,GridSize)];
+		grid[Index(0  ,i)] = boundary==1 ? -grid[Index(1,i)] : grid[Index(1,i)];
+		grid[Index(GridSize+1,i)] = boundary==1 ? -grid[Index(GridSize,i)] : grid[Index(GridSize,i)];
+		grid[Index(i,0  )] = boundary==2 ? -grid[Index(i,1)] : grid[Index(i,1)];
+		grid[Index(i,GridSize+1)] = boundary==2 ? -grid[Index(i,GridSize)] : grid[Index(i,GridSize)];
 	}
-	grid[IX(0  ,0  )] = 0.5f*(grid[IX(1,0  )]+grid[IX(0  ,1)]);
-	grid[IX(0  ,GridSize+1)] = 0.5f*(grid[IX(1,GridSize+1)]+grid[IX(0  ,GridSize)]);
-	grid[IX(GridSize+1,0  )] = 0.5f*(grid[IX(GridSize,0  )]+grid[IX(GridSize+1,1)]);
-	grid[IX(GridSize+1,GridSize+1)] = 0.5f*(grid[IX(GridSize,GridSize+1)]+grid[IX(GridSize+1,GridSize)]);
+	grid[Index(0  ,0  )] = 0.5f*(grid[Index(1,0  )]+grid[Index(0  ,1)]);
+	grid[Index(0  ,GridSize+1)] = 0.5f*(grid[Index(1,GridSize+1)]+grid[Index(0  ,GridSize)]);
+	grid[Index(GridSize+1,0  )] = 0.5f*(grid[Index(GridSize,0  )]+grid[Index(GridSize+1,1)]);
+	grid[Index(GridSize+1,GridSize+1)] = 0.5f*(grid[Index(GridSize,GridSize+1)]+grid[Index(GridSize+1,GridSize)]);
 }
 
 
@@ -62,7 +63,7 @@ void lin_solve ( int GridSize, int boundary, float * grid, float * grid0, float 
 		{
 			for ( j=1 ; j<=GridSize ; j++ ) 
 			{
-				grid[IX(i,j)] = (grid0[IX(i,j)] + a*(grid[IX(i-1,j)]+grid[IX(i+1,j)]+grid[IX(i,j-1)]+grid[IX(i,j+1)]))/c;
+				grid[Index(i,j)] = (grid0[Index(i,j)] + a*(grid[Index(i-1,j)]+grid[Index(i+1,j)]+grid[Index(i,j-1)]+grid[Index(i,j+1)]))/c;
 			}
 		}
 		set_bnd ( GridSize, boundary, grid );
@@ -87,12 +88,12 @@ void advect ( int GridSize, int boundary, float * density, float * density0, flo
 	{
 		for ( j=1 ; j<=GridSize ; j++ ) 
 		{
-			grid = i-dt0*u[IX(i,j)]; y = j-dt0*v[IX(i,j)];
+			grid = i-dt0*u[Index(i,j)]; y = j-dt0*v[Index(i,j)];
 			if (grid<0.5f) grid=0.5f; if (grid>GridSize+0.5f) grid=GridSize+0.5f; i0=(int)grid; i1=i0+1;
 			if (y<0.5f) y=0.5f; if (y>GridSize+0.5f) y=GridSize+0.5f; j0=(int)y; j1=j0+1;
 			s1 = grid-i0; s0 = 1-s1; t1 = y-j0; t0 = 1-t1;
-			density[IX(i,j)] = s0*(t0*density0[IX(i0,j0)]+t1*density0[IX(i0,j1)])+
-				s1*(t0*density0[IX(i1,j0)]+t1*density0[IX(i1,j1)]);
+			density[Index(i,j)] = s0*(t0*density0[Index(i0,j0)]+t1*density0[Index(i0,j1)])+
+				s1*(t0*density0[Index(i1,j0)]+t1*density0[Index(i1,j1)]);
 		}
 	}
 	set_bnd ( GridSize, boundary, density );
@@ -107,8 +108,8 @@ void project ( int GridSize, float * u, float * v, float * p, float * div )
 	{
 		for ( j=1 ; j<=GridSize ; j++ )
 		{
-			div[IX(i,j)] = -0.5f*(u[IX(i+1,j)]-u[IX(i-1,j)]+v[IX(i,j+1)]-v[IX(i,j-1)])/GridSize;		
-			p[IX(i,j)] = 0;
+			div[Index(i,j)] = -0.5f*(u[Index(i+1,j)]-u[Index(i-1,j)]+v[Index(i,j+1)]-v[Index(i,j-1)])/GridSize;		
+			p[Index(i,j)] = 0;
 		}
 	}	
 	set_bnd ( GridSize, 0, div ); set_bnd ( GridSize, 0, p );
@@ -119,15 +120,15 @@ void project ( int GridSize, float * u, float * v, float * p, float * div )
 	{
 		for ( j=1 ; j<=GridSize ; j++ ) 
 		{
-			u[IX(i,j)] -= 0.5f*GridSize*(p[IX(i+1,j)]-p[IX(i-1,j)]);
-			v[IX(i,j)] -= 0.5f*GridSize*(p[IX(i,j+1)]-p[IX(i,j-1)]);
+			u[Index(i,j)] -= 0.5f*GridSize*(p[Index(i+1,j)]-p[Index(i-1,j)]);
+			v[Index(i,j)] -= 0.5f*GridSize*(p[Index(i,j+1)]-p[Index(i,j-1)]);
 		}
 	}
 	set_bnd ( GridSize, 1, u ); set_bnd ( GridSize, 2, v );
 }
 
 
-void dens_step ( int GridSize, float * grid, float * grid0, float * u, float * v, float diff, float dt )
+void dens_step ( float * grid, float * grid0, float * u, float * v )
 {
 	add_source ( GridSize, grid, grid0, dt );
 	SWAP ( grid0, grid ); diffuse ( GridSize, 0, grid, grid0, diff, dt );
@@ -135,7 +136,7 @@ void dens_step ( int GridSize, float * grid, float * grid0, float * u, float * v
 }
 
 
-void vel_step ( int GridSize, float * u, float * v, float * u0, float * v0, float visc, float dt )
+void vel_step ( float * u, float * v, float * u0, float * v0 )
 {
 	add_source ( GridSize, u, u0, dt ); add_source ( GridSize, v, v0, dt );
 	SWAP ( u0, u ); diffuse ( GridSize, 1, u, u0, visc, dt );
@@ -145,3 +146,5 @@ void vel_step ( int GridSize, float * u, float * v, float * u0, float * v0, floa
 	advect ( GridSize, 1, u, u0, u0, v0, dt ); advect ( GridSize, 2, v, v0, u0, v0, dt );
 	project ( GridSize, u, v, u0, v0 );
 }
+
+#endif
