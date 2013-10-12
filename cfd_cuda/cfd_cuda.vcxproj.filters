@@ -1,40 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="CFD_Visualization.cpp">
-      <Filter>Source Files\Visualization</Filter>
-    </ClCompile>
-    <ClCompile Include="CFD_InteractionEvents.cpp">
-      <Filter>Source Files\Solver</Filter>
-    </ClCompile>
-    <ClCompile Include="CFD_CUDA_Main.cpp">
-      <Filter>Source Files\Solver</Filter>
-    </ClCompile>
-    <ClCompile Include="CFD_CUDA_Solver.cpp">
-      <Filter>Source Files\Solver</Filter>
-    </ClCompile>
-    <ClCompile Include="CFD_Solver_Kernel.cpp">
-      <Filter>Source Files\Solver</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="resource.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
-    <ClInclude Include="CFD_FuncPrototypes.h">
-      <Filter>Header Files\Solver</Filter>
+    <ClInclude Include="Macro_Definitions.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CFD_Params.h">
-      <Filter>Header Files\Solver</Filter>
-    </ClInclude>
-    <ClInclude Include="CFD_Visualization.h">
-      <Filter>Header Files\Visualization</Filter>
-    </ClInclude>
-    <ClInclude Include="CFD_Macro_Definitions.h">
-      <Filter>Header Files\General</Filter>
-    </ClInclude>
-    <ClInclude Include="CFD_Macro_Funcs.h">
-      <Filter>Header Files\General</Filter>
+    <ClInclude Include="Visualization.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -44,23 +18,8 @@
     <Filter Include="Header Files">
       <UniqueIdentifier>{81ac123e-d65a-48ac-9d74-0a4022ddbcc7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\General">
-      <UniqueIdentifier>{bb9fa489-314c-46e5-93e4-ed49c52bbf48}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Solver">
-      <UniqueIdentifier>{50ae63c2-45a2-40af-ae5d-fa1bc4f03768}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Visualization">
-      <UniqueIdentifier>{399b20d4-9d7f-4886-98f5-3445b4bd27fa}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files">
       <UniqueIdentifier>{5ec37317-cfa3-42a2-8a6f-752ce969055f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Solver">
-      <UniqueIdentifier>{a02be907-df72-4e8b-8a99-c8d982f38297}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Visualization">
-      <UniqueIdentifier>{50723440-4767-42e7-8e02-50c1d7cbfab2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -74,8 +33,19 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="CFD_CUDA_Solver_Kernel.cu">
-      <Filter>Source Files\Solver</Filter>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Visualization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CPU_Routine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="CUDA_Routine.cu">
+      <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

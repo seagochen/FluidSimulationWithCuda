@@ -21,11 +21,11 @@
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
 * <Last>		Oct 6, 2013
-* <File>        CFD_Visualization.h
+* <File>        Visualization.h
 */
 
-#ifndef _CUSTOM_VISUAL_H_
-#define _CUSTOM_VISUAL_H_
+#ifndef _VISUALIZATION_H_
+#define _VISUALIZATION_H_
 
 #include <GL\glew.h>
 #include <GL\glut.h>

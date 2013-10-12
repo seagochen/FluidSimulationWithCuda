@@ -19,11 +19,19 @@
 
 /**
 * <Author>      Orlando Chen
-* <First>       Oct 6, 2013
-* <Last>		Oct 11, 2013
-* <File>        CFD_CUDA_Solver_Kernel.cpp
+* <First>       Oct 12, 2013
+* <Last>		Oct 12, 2013
+* <File>        CPU_Routine.cpp
 */
-#define array_size_x 64
-#define array_size_y 64
 
-#define Index(i,j)  ((j)*array_size_x + (i))
+#define _CPU_ROUTINE_CPP_
+
+#include "Macro_Definitions.h"
+
+#if GPU_ON
+
+void dens_step ( float * grid, float * grid0, float * u, float * v );
+
+void vel_step ( float * u, float * v, float * u0, float * v0 );
+
+#endif

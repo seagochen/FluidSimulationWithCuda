@@ -24,8 +24,8 @@
 * <File>        Macro_Definitions.h
 */
 
-#ifndef _CUSTOM_MACRO_DEFINITIONS_H_
-#define _CUSTOM_MACRO_DEFINITIONS_H_
+#ifndef _MACRO_DEFINITIONS_H_
+#define _MACRO_DEFINITIONS_H_
 
 ////////////////////////////////////////////////////////////////////////
 ///
@@ -73,8 +73,7 @@
   ----------------------------------------------------------------------
 */
 
-#define USING_GPU_FOR_CFD  False
-#define GPU_SWITCH         USING_GPU_FOR_CFD
+#define GPU_ON  False
 
 ///
 ////////////////////////////////////////////////////////////////////////
@@ -107,58 +106,37 @@ void dens_step ( float * grid, float * grid0, float * u, float * v );
 void vel_step ( float * u, float * v, float * u0, float * v0 );
 
 
-/*
-  ----------------------------------------------------------------------
-   free/clear/allocate simulation data
-  ----------------------------------------------------------------------
-*/
+///
+////////////////////////////////////////////////////////////////////////
+///
 
 
-void free_data ( void );
+#ifdef _MAIN_CPP_
 
-void clear_data ( void );
+int GridSize;
+float dt, diff, visc;
+float force, source;
+float * u, * v, * u_prev, * v_prev;
+float * dens, * dens_prev;
+bool mouse_down[2];
+int omx, omy, mx, my;
+int win_x, win_y;
 
-int allocate_data ( void );
+#else
 
+extern int GridSize;
+extern float dt, diff, visc;
+extern float force, source;
+extern float * u, * v, * u_prev, * v_prev;
+extern float * dens, * dens_prev;
+extern bool mouse_down[2];
+extern int omx, omy, mx, my;
+extern int win_x, win_y;
 
-/*
-  ----------------------------------------------------------------------
-   OpenGL specific drawing routines
-  ----------------------------------------------------------------------
-*/
+#endif
 
-void draw_velocity ( void );
-
-void draw_density ( void );
-
-
-/*
-  ----------------------------------------------------------------------
-   relates mouse movements to forces sources
-  ----------------------------------------------------------------------
-*/
-
-void get_from_UI ( float * d, float * u, float * v );
-
-/*
-  ----------------------------------------------------------------------
-   Mainroutine
-  ----------------------------------------------------------------------
-*/
-
-#include <SGE\SGUtils.h>
-
-void key_func ( sge::SG_KEYS key, sge::SG_KEY_STATUS status );
-
-void mouse_func ( sge::SG_MOUSE mouse, unsigned x, unsigned y );
-
-void reshape_func ( unsigned width, unsigned height );
-
-void display_func ( void );
-
-void idle_func( void );
-
-void dest_func( void );
+///
+////////////////////////////////////////////////////////////////////////
 
 
 #endif
