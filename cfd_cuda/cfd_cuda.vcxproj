@@ -163,7 +163,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CPU_Routine.cpp" />
-    <CudaCompile Include="CUDA_Routine.cpp" />
+    <CudaCompile Include="CUDA_Routine.cu" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Visualization.cpp" />
   </ItemGroup>

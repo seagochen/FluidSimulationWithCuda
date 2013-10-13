@@ -44,7 +44,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="CUDA_Routine.cpp">
+    <CudaCompile Include="CUDA_Routine.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>
