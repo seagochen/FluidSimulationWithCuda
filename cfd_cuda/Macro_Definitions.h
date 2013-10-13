@@ -38,8 +38,6 @@
 
 #define True  1
 #define False 0
-#define is    ==
-
 /*
   ----------------------------------------------------------------------
    Definition for Variables of Computational Fluid Dynamics
