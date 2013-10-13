@@ -63,6 +63,8 @@ void clear_data(void);
 
 int allocate_data(void);
 
+void cuda_init(void);
+
 ///
 ////////////////////////////////////////////////////////////////////////
 ///
@@ -75,6 +77,9 @@ int main(int argc, char ** argv)
 
 	// Initialize the parameters
 	param_init();
+
+	// Initialize the CUDA
+	cuda_init();
 
 	// Register callback function to visualization
 	visual->RegisterDisplay (display_func);
@@ -113,6 +118,49 @@ int main(int argc, char ** argv)
 ///////////////////////////////////////////////////////////////////////
 ///
 
+void free_dev_list()
+{
+	// Release CUDA resource if failed
+	for (int i=0; i<devices; i++)
+	{
+		cudaFree(dev_list[i]);
+	}
+	dev_list.empty();
+}
+
+void cuda_init()
+{
+#if GPU_ON
+	
+	// Push dev into vector
+	for (int i=0; i<devices; i++)
+	{
+		static float *ptr;
+		dev_list.push_back(ptr);
+	}
+
+	size_t size = ENTIRE_GRIDS_NUMBER * ENTIRE_GRIDS_NUMBER;
+
+    // Choose which GPU to run on, change this on a multi-GPU system.
+    cudaStatus = cudaSetDevice(0);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
+        free_dev_list();
+    }
+
+    // Allocate GPU buffers for three vectors (two input, one output).
+	for (int i=0; i<devices; i++)
+	{
+		cudaStatus = cudaMalloc((void**)&dev_list[i], size * sizeof(float));
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudaMalloc failed!");
+			free_dev_list();
+		}
+	}
+
+#endif
+};
+
 void param_init()
 {
 	GridSize = GRIDS_WITHOUT_GHOST;
@@ -133,6 +181,12 @@ void free_data(void)
 	if ( v_prev ) SAFE_FREE_PTR(v_prev);
 	if ( dens ) SAFE_FREE_PTR(dens);
 	if ( dens_prev ) SAFE_FREE_PTR(dens_prev);
+
+#if GPU_ON
+	// Release CUDA resources
+	for (int i=0; i<devices; i++)
+		cudaFree(dev_list[i]);
+#endif
 }
 
 void clear_data(void)
@@ -283,6 +337,18 @@ void key_func(SG_KEYS key, SG_KEY_STATUS status)
 void close_func(void)
 {
 	free_data();
+
+#if GPU_ON
+
+    // cudaDeviceReset must be called before exiting in order for profiling and
+    // tracing tools such as Nsight and Visual Profiler to show complete traces.
+    cudaStatus = cudaDeviceReset();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceReset failed!");
+    }
+
+#endif
+
 	exit(0);
 };
 
