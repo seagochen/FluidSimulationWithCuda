@@ -44,8 +44,8 @@
   ----------------------------------------------------------------------
 */
 
-#define GRIDS_WITHOUT_GHOST  64       // grids number without ghost grids
-#define ENTIRE_GRIDS_NUMBER  66       // grids number contains ghost grids
+#define GRIDS_WITHOUT_GHOST  62       // grids number without ghost grids
+#define ENTIRE_GRIDS_NUMBER  64       // grids number contains ghost grids
 #define DELTA_TIME           0.1f     // 0.1 second
 #define DIFFUSION            0.0f     // diffusion rate
 #define VISCOSITY            0.0f     // viscosity rate
@@ -87,6 +87,7 @@
 #define PrintStatus(str) {system("cls"); printf("%s");}
 
 #define Index(i,j) ((j)*ENTIRE_GRIDS_NUMBER + i)
+#define GPUIndex(i,j) (gridDim.x * blockDim.x * (j) + i)
 
 template <class T> void SWAP(T& a, T& b)
 {
@@ -109,8 +110,16 @@ void vel_step(float * u, float * v, float * u0, float * v0);
 ////////////////////////////////////////////////////////////////////////
 ///
 
+#include <vector>
+#include <cuda_runtime.h>
 
 #ifdef _MAIN_CPP_
+
+/*
+  ----------------------------------------------------------------------
+   Data used in CFD
+  ----------------------------------------------------------------------
+*/
 
 int GridSize;
 float dt, diff, visc;
@@ -121,7 +130,22 @@ bool mouse_down[2];
 int omx, omy, mx, my;
 int win_x, win_y;
 
+/*
+  ----------------------------------------------------------------------
+   Data used in CUDA
+  ----------------------------------------------------------------------
+*/
+
+std::vector<float*> dev_list;
+cudaError cudaStatus;
+
 #else
+
+/*
+  ----------------------------------------------------------------------
+   Data used in CFD
+  ----------------------------------------------------------------------
+*/
 
 extern int GridSize;
 extern float dt, diff, visc;
@@ -132,7 +156,27 @@ extern bool mouse_down[2];
 extern int omx, omy, mx, my;
 extern int win_x, win_y;
 
+/*
+  ----------------------------------------------------------------------
+   Data used in CUDA
+  ----------------------------------------------------------------------
+*/
+
+extern std::vector<float*> dev_list;
+extern cudaError cudaStatus;
+
 #endif
+
+#define dev_u      dev_list[0]
+#define dev_v      dev_list[1]
+#define dev_u0     dev_list[2]
+#define dev_v0     dev_list[3]
+#define dev_den    dev_list[4]
+#define dev_den0   dev_list[5]
+#define dev_grid   dev_list[6]
+#define dev_grid0  dev_list[7]
+
+#define devices   8
 
 ///
 ////////////////////////////////////////////////////////////////////////
