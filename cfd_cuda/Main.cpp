@@ -284,7 +284,7 @@ void get_from_UI(float * d, float * u, float * v)
 #define MouseLeftDown  mouse_down[0]
 #define MouseRightDown mouse_down[1]
 
-	int i, j, size = (GridSize+2)*(GridSize+2);
+	int i, j, size = ENTIRE_GRIDS_NUMBER * ENTIRE_GRIDS_NUMBER;
 
 	for (i=0 ; i<size ; i++) 
 	{
