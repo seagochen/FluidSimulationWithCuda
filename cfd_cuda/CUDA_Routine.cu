@@ -26,7 +26,7 @@
 
 #include "Macro_Definitions.h"
 
-#define _CUDA_ROUTINE_CPP_
+#define _CUDA_ROUTINE_VEL_CPP_
 
 #if GPU_ON
 
@@ -136,62 +136,81 @@ __global__ void advect_kernel(float *density_out, float *density0_in, float *u_i
 };
 
 
-cudaError_t cuda_add_source ( float *grid, float *grid0 )
-{		
-	// Define the computing unit size
-	dim3 block_size;
-	dim3 grid_size;
-	block_size.x = 16;
-	block_size.y = 16;
-	grid_size.x  = ENTIRE_GRIDS_NUMBER / block_size.x;
-	grid_size.y  = ENTIRE_GRIDS_NUMBER / block_size.y;
+__global__ void project_kernel_pt1(float * u, float * v, float * p, float * div)
+{
+	// Get index of GPU-thread
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	
+	if ( i >= 1 && i <= GRIDS_WITHOUT_GHOST && j >= 1 && j <= GRIDS_WITHOUT_GHOST )
+	{
+		div[GPUIndex(i,j)] = -0.5f*(u[GPUIndex(i+1,j)]-u[GPUIndex(i-1,j)]+v[GPUIndex(i,j+1)]-v[GPUIndex(i,j-1)])/GRIDS_WITHOUT_GHOST;
+		p[GPUIndex(i,j)] = 0;
+	}
+}
 
-	size_t size = ENTIRE_GRIDS_NUMBER * ENTIRE_GRIDS_NUMBER;
 
-    // Copy input vectors from host memory to GPU buffers.
-    cudaStatus = cudaMemcpy(dev_grid, grid, size * sizeof(float), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
+__global__ void project_kernel_pt2(float * u, float * v, float * p, float * div)
+{
+	// Get index of GPU-thread
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	
+	if ( i >= 1 && i <= GRIDS_WITHOUT_GHOST && j >= 1 && j <= GRIDS_WITHOUT_GHOST )
+	{
+			u[GPUIndex(i,j)] -= 0.5f*GRIDS_WITHOUT_GHOST*(p[GPUIndex(i+1,j)]-p[GPUIndex(i-1,j)]);
+			v[GPUIndex(i,j)] -= 0.5f*GRIDS_WITHOUT_GHOST*(p[GPUIndex(i,j+1)]-p[GPUIndex(i,j-1)]);
+	}
+}
 
-	cudaStatus = cudaMemcpy(dev_grid0, grid0, size * sizeof(float), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
 
+void cuda_add_source ( float *grid, float *grid0, dim3 *grid_size, dim3 *block_size )
+{
     // Launch a kernel on the GPU with one thread for each element.
-	add_source_kernel<<<grid_size, block_size>>>(dev_grid, dev_grid0);
-
-    // Check for any errors launching the kernel
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "add_source_kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-        goto Error;
-    }
-    
-    // cudaDeviceSynchronize waits for the kernel to finish, and returns
-    // any errors encountered during the launch.
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-        goto Error;
-    }
-
-    // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(grid, dev_grid, size * sizeof(int), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-Error:    
-    return cudaStatus;
+	add_source_kernel<<<*grid_size, *block_size>>>(grid, grid0);
 };
 
 
-cudaError_t cuda_lin_solve (float *grid, float *grid0, int boundary, float a, float c)
+void cuda_lin_solve (float *grid, float *grid0, int boundary, float a, float c, dim3 *grid_size, dim3 *block_size)
+{
+    // Launch a kernel on the GPU with one thread for each element.
+	for (int i=0; i<20; i++)
+	{
+		lin_solve_kernel<<<*grid_size, *block_size>>>(grid, grid0, boundary, a, c);
+	}
+	set_bnd_kernel<<<*grid_size, *block_size>>> (grid, boundary);
+}
+
+
+void cuda_diffuse ( float *grid, float *grid0, int boundary, float diff, dim3 *grid_size, dim3 *block_size )
+{
+	float a=DELTA_TIME*diff*GRIDS_WITHOUT_GHOST*GRIDS_WITHOUT_GHOST;
+	cuda_lin_solve ( grid, grid0, boundary, a, 1+4*a, grid_size, block_size );
+}
+
+
+void cuda_advect( float *density, float *density0, float *u, float *v,  int boundary, dim3 *grid_size, dim3 *block_size )
+{
+    // Launch a kernel on the GPU with one thread for each element.
+	float dt0 = DELTA_TIME*GRIDS_WITHOUT_GHOST;
+	advect_kernel<<<*grid_size, *block_size>>>(density, density0, u, v, dt0);
+	set_bnd_kernel<<<*grid_size, *block_size>>>(density, boundary);
+}
+
+
+void cuda_project ( float * u, float * v, float * p, float * div, dim3 *grid_size, dim3 *block_size )
+{
+	project_kernel_pt1 <<<*grid_size, *block_size>>> (u, v, p, div);
+	set_bnd_kernel <<<*grid_size, *block_size>>> (div, 0); 
+	set_bnd_kernel <<<*grid_size, *block_size>>> (p, 0);
+	lin_solve_kernel <<<*grid_size, *block_size>>> (p, div, 0, 1, 4);
+	project_kernel_pt2 <<<*grid_size, *block_size>>> (u, v, p, div);
+	set_bnd_kernel <<<*grid_size, *block_size>>> ( u, 1 );
+	set_bnd_kernel <<<*grid_size, *block_size>>> ( v, 2 );
+}
+
+
+void dens_step ( float *grid, float *grid0, float *u, float *v )
 {
 	// Define the computing unit size
 	dim3 block_size;
@@ -207,103 +226,33 @@ cudaError_t cuda_lin_solve (float *grid, float *grid0, int boundary, float a, fl
     cudaStatus = cudaMemcpy(dev_grid, grid, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
     }
 
 	cudaStatus = cudaMemcpy(dev_grid0, grid0, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-    // Launch a kernel on the GPU with one thread for each element.
-	for (int i=0; i<20; i++)
-	{
-		lin_solve_kernel<<<grid_size, block_size>>>(dev_grid, dev_grid0, boundary, a, c);
-	}
-	set_bnd_kernel<<<grid_size, block_size>>> (dev_grid, boundary);
-
-    // Check for any errors launching the kernel
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "add_source_kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-        goto Error;
-    }
-    
-    // cudaDeviceSynchronize waits for the kernel to finish, and returns
-    // any errors encountered during the launch.
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-        goto Error;
-    }
-
-    // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(grid, dev_grid, size * sizeof(int), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-Error:    
-    return cudaStatus;
-}
-
-
-void cuda_diffuse ( float *grid, float *grid0, int boundary, float diff )
-{
-	float a=DELTA_TIME*diff*GRIDS_WITHOUT_GHOST*GRIDS_WITHOUT_GHOST;
-	cuda_lin_solve ( grid, grid0, boundary, a, 1+4*a );
-}
-
-
-cudaError_t cuda_advect( float *density, float *density0, float *u, float *v,  int boundary )
-{
-	// Define the computing unit size
-	dim3 block_size;
-	dim3 grid_size;
-	block_size.x = 16;
-	block_size.y = 16;
-	grid_size.x  = ENTIRE_GRIDS_NUMBER / block_size.x;
-	grid_size.y  = ENTIRE_GRIDS_NUMBER / block_size.y;
-
-	size_t size = ENTIRE_GRIDS_NUMBER * ENTIRE_GRIDS_NUMBER;
-
-    // Copy input vectors from host memory to GPU buffers.
-	cudaStatus = cudaMemcpy(dev_den, density, size * sizeof(float), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-	cudaStatus = cudaMemcpy(dev_den0, density0, size * sizeof(float), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
     }
 
 	cudaStatus = cudaMemcpy(dev_u, u, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
     }
 
 	cudaStatus = cudaMemcpy(dev_v, v, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
     }
 
-    // Launch a kernel on the GPU with one thread for each element.
-	float dt0 = DELTA_TIME*GRIDS_WITHOUT_GHOST;
-	advect_kernel<<<grid_size, block_size>>>(dev_den, dev_den0, dev_u, dev_v, dt0);
-	set_bnd_kernel<<<grid_size, block_size>>>(dev_den, boundary);
 
-    // Check for any errors launching the kernel
+	cuda_add_source(dev_grid, dev_grid0, &grid_size, &block_size);
+	SWAP ( dev_grid0, dev_grid ); cuda_diffuse ( dev_grid, dev_grid0, 0, DIFFUSION, &grid_size, &block_size );
+	SWAP ( dev_grid0, dev_grid ); cuda_advect ( dev_grid, dev_grid0, dev_u, dev_v, 0, &grid_size, &block_size );
+	
+	
+	// Check for any errors launching the kernel
     cudaStatus = cudaGetLastError();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "add_source_kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-        goto Error;
     }
     
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
@@ -311,81 +260,108 @@ cudaError_t cuda_advect( float *density, float *density0, float *u, float *v,  i
     cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-        goto Error;
     }
 
     // Copy output vector from GPU buffer to host memory.
-	cudaStatus = cudaMemcpy(density, dev_den, size * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaStatus = cudaMemcpy(grid, dev_grid, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
+    }
+
+	cudaStatus = cudaMemcpy(grid0, dev_grid0, size * sizeof(int), cudaMemcpyDeviceToHost);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
     }
 	
+	cudaStatus = cudaMemcpy(u, dev_u, size * sizeof(int), cudaMemcpyDeviceToHost);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
 
-Error:    
-    return cudaStatus;
-}
-
-void set_bnd ( int GridSize, int boundary, float * grid )
-{
-	int i;
-
-	for ( i=1 ; i<=GridSize ; i++ ) {
-		grid[Index(0  ,i)] = boundary==1 ? -grid[Index(1,i)] : grid[Index(1,i)];
-		grid[Index(GridSize+1,i)] = boundary==1 ? -grid[Index(GridSize,i)] : grid[Index(GridSize,i)];
-		grid[Index(i,0  )] = boundary==2 ? -grid[Index(i,1)] : grid[Index(i,1)];
-		grid[Index(i,GridSize+1)] = boundary==2 ? -grid[Index(i,GridSize)] : grid[Index(i,GridSize)];
-	}
-	grid[Index(0  ,0  )] = 0.5f*(grid[Index(1,0  )]+grid[Index(0  ,1)]);
-	grid[Index(0  ,GridSize+1)] = 0.5f*(grid[Index(1,GridSize+1)]+grid[Index(0  ,GridSize)]);
-	grid[Index(GridSize+1,0  )] = 0.5f*(grid[Index(GridSize,0  )]+grid[Index(GridSize+1,1)]);
-	grid[Index(GridSize+1,GridSize+1)] = 0.5f*(grid[Index(GridSize,GridSize+1)]+grid[Index(GridSize+1,GridSize)]);
-}
-
-void cuda_project ( float * u, float * v, float * p, float * div )
-{
-	int i, j;
-
-	for ( i=1 ; i<=GridSize ; i++ )
-	{
-		for ( j=1 ; j<=GridSize ; j++ )
-		{
-			div[Index(i,j)] = -0.5f*(u[Index(i+1,j)]-u[Index(i-1,j)]+v[Index(i,j+1)]-v[Index(i,j-1)])/GridSize;		
-			p[Index(i,j)] = 0;
-		}
-	}	
-	set_bnd ( GridSize, 0, div ); set_bnd ( GridSize, 0, p );
-
-	cuda_lin_solve ( p, div, 0, 1, 4 );
-
-	for ( i=1 ; i<=GridSize ; i++ )
-	{
-		for ( j=1 ; j<=GridSize ; j++ ) 
-		{
-			u[Index(i,j)] -= 0.5f*GridSize*(p[Index(i+1,j)]-p[Index(i-1,j)]);
-			v[Index(i,j)] -= 0.5f*GridSize*(p[Index(i,j+1)]-p[Index(i,j-1)]);
-		}
-	}
-	set_bnd ( GridSize, 1, u ); set_bnd ( GridSize, 2, v );
-}
-
-void dens_step ( float *grid, float *grid0, float *u, float *v )
-{
-	cuda_add_source(grid, grid0);
-	SWAP ( grid0, grid ); cuda_diffuse ( grid, grid0, 0, DIFFUSION );
-	SWAP ( grid0, grid ); cuda_advect ( grid, grid0, u, v, 0 );
+	cudaStatus = cudaMemcpy(v, dev_v, size * sizeof(int), cudaMemcpyDeviceToHost);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
 }
 
 
-void vel_step ( float *u, float *v, float *u0, float *v0 )
+void vel_step ( float * u, float * v, float * u0, float * v0 )
 {
-	cuda_add_source ( u, u0 ); cuda_add_source ( v, v0 );
-	SWAP ( u0, u ); cuda_diffuse ( u, u0, 1, VISCOSITY );
-	SWAP ( v0, v ); cuda_diffuse ( v, v0, 2, VISCOSITY );
-	cuda_project ( u, v, u0, v0 );
-	SWAP ( u0, u ); SWAP ( v0, v );
-	cuda_advect ( u, u0, u0, v0, 1 ); cuda_advect ( v, v0, u0, v0, 2 );
-	cuda_project ( u, v, u0, v0 );
+	// Define the computing unit size
+	dim3 block_size;
+	dim3 grid_size;
+	block_size.x = 16;
+	block_size.y = 16;
+	grid_size.x  = ENTIRE_GRIDS_NUMBER / block_size.x;
+	grid_size.y  = ENTIRE_GRIDS_NUMBER / block_size.y;
+
+	size_t size = ENTIRE_GRIDS_NUMBER * ENTIRE_GRIDS_NUMBER;
+
+    // Copy input vectors from host memory to GPU buffers.
+    cudaStatus = cudaMemcpy(dev_u0, u0, size * sizeof(float), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+	cudaStatus = cudaMemcpy(dev_v0, v0, size * sizeof(float), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+	cudaStatus = cudaMemcpy(dev_u, u, size * sizeof(float), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+	cudaStatus = cudaMemcpy(dev_v, v, size * sizeof(float), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+
+	cuda_add_source ( dev_u, dev_u0, &grid_size, &block_size ); cuda_add_source ( dev_v, dev_v0, &grid_size, &block_size );
+	SWAP ( dev_u0, dev_u ); cuda_diffuse ( dev_u, dev_u0, 1, visc, &grid_size, &block_size );
+	SWAP ( dev_v0, dev_v ); cuda_diffuse ( dev_v, dev_v0, 2, visc, &grid_size, &block_size );
+	cuda_project ( dev_u, dev_v, dev_u0, dev_v0, &grid_size, &block_size );
+	SWAP ( dev_u0, dev_u ); SWAP ( dev_v0, dev_v );
+	cuda_advect ( dev_u, dev_u0, dev_u0, dev_v0, 1, &grid_size, &block_size );
+	cuda_advect ( dev_v, dev_v0, dev_u0, dev_v0, 2, &grid_size, &block_size );
+	cuda_project ( dev_u, dev_v, dev_u0, dev_v0, &grid_size, &block_size );
+
+
+	// Check for any errors launching the kernel
+    cudaStatus = cudaGetLastError();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "add_source_kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+    }
+    
+    // cudaDeviceSynchronize waits for the kernel to finish, and returns
+    // any errors encountered during the launch.
+    cudaStatus = cudaDeviceSynchronize();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
+    }
+
+    // Copy output vector from GPU buffer to host memory.
+    cudaStatus = cudaMemcpy(u0, dev_u0, size * sizeof(int), cudaMemcpyDeviceToHost);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+	cudaStatus = cudaMemcpy(v0, dev_v0, size * sizeof(int), cudaMemcpyDeviceToHost);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+	
+	cudaStatus = cudaMemcpy(u, dev_u, size * sizeof(int), cudaMemcpyDeviceToHost);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+	cudaStatus = cudaMemcpy(v, dev_v, size * sizeof(int), cudaMemcpyDeviceToHost);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
 }
 
 #endif

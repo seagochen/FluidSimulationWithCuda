@@ -93,7 +93,11 @@ int main(int argc, char ** argv)
 	clear_data();
 
 	// Set application title
-	activity->SetApplicationTitle( L"CFD - Navigator No. I" );
+#if GPU_ON
+	activity->SetApplicationTitle( L"CFD - Navigator No. I  CUDA version" );
+#else
+	activity->SetApplicationTitle( L"CFD - Navigator No. I  CPU version" );
+#endif
 	activity->SetApplicationIcons(APP_ICONS, APP_ICONS);
 			
 	// Register callback functions
