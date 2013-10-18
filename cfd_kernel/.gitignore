@@ -1,0 +1,8 @@
+/Debug
+/Release
+*.db
+*~
+*.pdb
+*.aps
+cfd_kernel.vcxproj.filters
+cfd_kernel.vcxproj.user

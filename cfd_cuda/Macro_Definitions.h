@@ -20,14 +20,14 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 7, 2013
-* <Last>		Oct 7, 2013
+* <Last>		Oct 18, 2013
 * <File>        Macro_Definitions.h
 */
 
 #ifndef _MACRO_DEFINITIONS_H_
 #define _MACRO_DEFINITIONS_H_
 
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 /*
@@ -44,15 +44,16 @@
   ----------------------------------------------------------------------
 */
 
-#define GRIDS_WITHOUT_GHOST  62       // grids number without ghost grids
-#define ENTIRE_GRIDS_NUMBER  64       // grids number contains ghost grids
+#define CELLS_X              126      // grids number without ghost grids
+#define GRIDS_X              128      // grids number contains ghost grids
+#define TILES_X              16       // divide grids into 16 tiles
 #define DELTA_TIME           0.1f     // 0.1 second
 #define DIFFUSION            0.0f     // diffusion rate
 #define VISCOSITY            0.0f     // viscosity rate
 #define FORCE                5.0f     // external force rate
-#define SOURCE               100.0f   // to given a density with 100 percent
-#define WINDOWSX             512      // application window size, width
-#define WINDOWSY             512      // application window size, height
+#define SOURCE               100.0f   // to given a density of 100 %
+#define CLIENT_WIDTH         800      // application window size, width
+#define CLIENT_HEIGHT        600      // application window size, height
 
 /*
   ----------------------------------------------------------------------
@@ -60,22 +61,13 @@
   ----------------------------------------------------------------------
 */
 
-#define BYTES_PER_TEXEL 3
+#define BACK_COLOR_REDf      0.f      // background color, red component
+#define BACK_COLOR_GREENf    0.1f     // background color, green component
+#define BACK_COLOR_BLUEf     0.2f     // background color, blue component
+#define BYTES_PER_TEXEL      3        // a pixel is composed of three components (rgb)
 
 ///
-////////////////////////////////////////////////////////////////////////
-///
-
-/*
-  ----------------------------------------------------------------------
-   Definition of Switch
-  ----------------------------------------------------------------------
-*/
-
-#define GPU_ON  True
-
-///
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 /*
@@ -84,15 +76,7 @@
   ----------------------------------------------------------------------
 */
 
-#define PrintStatus(str) {system("cls"); printf("%s");}
-
-#define Index(i,j) ((j)*ENTIRE_GRIDS_NUMBER + i)
-#define GPUIndex(i,j) (gridDim.x * blockDim.x * (j) + i)
-
-template <class T> void SWAP(T& a, T& b)
-{
-  T c(a); a=b; b=c;
-}
+#include "Macro_Functions.h"
 
 /*
   ----------------------------------------------------------------------
@@ -107,7 +91,7 @@ void vel_step(float * u, float * v, float * u0, float * v0);
 
 
 ///
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 #include <vector>
@@ -179,7 +163,6 @@ extern cudaError cudaStatus;
 #define devices   8
 
 ///
-////////////////////////////////////////////////////////////////////////
-
+//////////////////////////////////////////////////////////////////////////////////////////
 
 #endif

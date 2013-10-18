@@ -2,3 +2,7 @@
 /Release
 *.db
 *~
+*.pdb
+*.aps
+cfd_cuda.vcxproj.filters
+cfd_cuda.vcxproj.user
