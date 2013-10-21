@@ -30,6 +30,8 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
 
+#include "macro_definitions.h"
+
 /*
   ----------------------------------------------------------------------
    Define dll interfaces
@@ -39,11 +41,26 @@
 #define _DLL __declspec(dllexport)    // in dll sources, function prefix
 #else
 #define _DLL __declspec(dllimport)    // Headers included from external  
-#endif  
+#endif
+
+
+/*
+  ----------------------------------------------------------------------
+   external functions on CPU
+  ----------------------------------------------------------------------
+*/
+
+
+_DLL void dens_step(float * grid, float * grid0, float * u, float * v);
+
+_DLL void vel_step(float * u, float * v, float * u0, float * v0);
 
 
 #ifndef _In_Dll_File
 #pragma comment(lib, "cfd_kernel.lib")
 #endif
+
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 
 #endif
