@@ -32,7 +32,7 @@
 
 /*
   ----------------------------------------------------------------------
-   Dll interfaces
+   Define dll interfaces
   ----------------------------------------------------------------------
 */
 #ifdef _In_Dll_File
@@ -42,9 +42,8 @@
 #endif  
 
 
-#ifdef _In_Dll_File
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
+#ifndef _In_Dll_File
+#pragma comment(lib, "cfd_kernel.lib")
 #endif
 
 #endif
