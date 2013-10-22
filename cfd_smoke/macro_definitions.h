@@ -20,12 +20,14 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 7, 2013
-* <Last>		Oct 20, 2013
+* <Last>		Oct 22, 2013
 * <File>        macro_definitions.h
 */
 
 #ifndef _MACRO_DEFINITIONS_H_
 #define _MACRO_DEFINITIONS_H_
+
+#include <vector>
 
 #pragma once
 
@@ -74,13 +76,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-#include <vector>
-
-///
-//////////////////////////////////////////////////////////////////////////////////////////
-///
-
-#ifdef In_Main_Code_
+#ifdef __main_cpp_
 
 std::vector<float*> ptr_list;
 

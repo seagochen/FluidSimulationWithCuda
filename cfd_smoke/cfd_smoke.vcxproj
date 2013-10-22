@@ -30,6 +30,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cfd_main.cpp" />
+    <ClCompile Include="cfd_visual.cpp" />
+    <ClCompile Include="cfd_visual.h" />
     <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>
