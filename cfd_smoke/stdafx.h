@@ -52,7 +52,6 @@
 #include <device_launch_parameters.h>
 
 #include "macro_definitions.h"
-#include "cfd_kernel.h"
 #include "cfd_visual.h"
 #include "resource.h"
 
@@ -78,16 +77,19 @@
 
 #define cuda_device(gridDim, blockDim) <<<gridDim, blockDim>>>
 
-#ifdef swap(a, b)
-#undef swap(a, b)
-#endif
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+///
 
-template <class T> void SWAP(T& a, T& b)
-{
-  T c(a); a=b; b=c;
-}
+/*
+  ----------------------------------------------------------------------
+   Function Prototypes
+  ----------------------------------------------------------------------
+*/
 
-#define swap(a, b) SWAP((a), (b))
+extern void dens_step(float * grid, float * grid0, float * u, float * v);
+
+extern void vel_step(float * u, float * v, float * u0, float * v0);
 
 ///
 //////////////////////////////////////////////////////////////////////////////////////////

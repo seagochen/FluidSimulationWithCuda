@@ -34,15 +34,6 @@
 
 /*
   ----------------------------------------------------------------------
-   Normal Definitions
-  ----------------------------------------------------------------------
-*/
-
-#define True  1
-#define False 0
-
-/*
-  ----------------------------------------------------------------------
    Definition for Computational Fluid Dynamics
   ----------------------------------------------------------------------
 */
@@ -74,34 +65,35 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-#ifdef __main_cpp_
+#ifdef __cfd_main_cpp_
 
-std::vector<float*> ptr_list;
+std::vector<float*> dev_list;
+std::vector<float*> host_list;
 
 #else
 
-extern std::vector<float*> ptr_list;
+extern std::vector<float*> dev_list;
+extern std::vector<float*> host_list;
 
 #endif
 
-#define dev_u      ptr_list[0]
-#define dev_v      ptr_list[1]
-#define dev_u0     ptr_list[2]
-#define dev_v0     ptr_list[3]
-#define dev_den    ptr_list[4]
-#define dev_den0   ptr_list[5]
-#define dev_grid   ptr_list[6]
-#define dev_grid0  ptr_list[7]
-#define host_u     ptr_list[8]
-#define host_v     ptr_list[9]
-#define host_u0    ptr_list[10]
-#define host_v0    ptr_list[11]
-#define host_den   ptr_list[12]
-#define host_den0  ptr_list[13]
+#define dev_u      dev_list[0]
+#define dev_v      dev_list[1]
+#define dev_u0     dev_list[2]
+#define dev_v0     dev_list[3]
+#define dev_den    dev_list[4]
+#define dev_den0   dev_list[5]
+#define dev_grid   dev_list[6]
+#define dev_grid0  dev_list[7]
+#define host_u     host_list[0]
+#define host_v     host_list[1]
+#define host_u0    host_list[2]
+#define host_v0    host_list[3]
+#define host_den   host_list[4]
+#define host_den0  host_list[5]
 
 #define dev_num      8
 #define host_num     6
-#define ptr_num      14
 
 ///
 //////////////////////////////////////////////////////////////////////////////////////////

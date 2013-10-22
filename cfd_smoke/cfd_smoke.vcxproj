@@ -22,7 +22,6 @@
     <CudaCompile Include="cfd_kernel.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cfd_kernel.h" />
     <ClInclude Include="macro_definitions.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />

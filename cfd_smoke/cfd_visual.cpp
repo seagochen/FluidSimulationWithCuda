@@ -56,7 +56,9 @@ Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
 	m_volume3D = new _volume3D;
 	m_view     = new _viewMatrix;
 	m_font     = new FreeType;
-	m_hAct     = hActivity;
+	m_hAct     = new MainActivity(width, height);
+	
+	hActivity  = m_hAct;
 
 	m_width    = width;
 	m_height   = height;
@@ -249,6 +251,97 @@ void CountFPS( void )
 	glPopMatrix();
 }
 
+
+// TODO: modify this part as smoke effect
+#define ind(i,j) ((j) * Grids_X + (i))
+// TODO: modify this part as smoke effect
+void MouseEvent( void )
+{
+	int i, j, size = Grids_X * Grids_X;
+
+	for ( i = 0 ; i < size ; i++ ) 
+	{
+		host_u[i] = host_v[i] = host_den[i] = 0.0f;
+	}
+
+	if (!m_mouse->left_button_pressed && !m_mouse->right_button_pressed) return;
+
+	i = (int)(( m_mouse->cur_cursor_x / (float) ClientSize_X ) * SimArea_X + 1);
+	j = (int)((( ClientSize_X - m_mouse->cur_cursor_y ) / (float) ClientSize_X ) * SimArea_X + 1 );
+
+	if (i<1 || i>SimArea_X || j<1 || j>SimArea_X) return;
+
+	if (m_mouse->left_button_pressed)
+	{
+		host_u[ind(i,j)] = FORCE * (m_mouse->cur_cursor_x - m_mouse->pre_cursor_x);
+		host_v[ind(i,j)] = FORCE * (m_mouse->pre_cursor_y - m_mouse->cur_cursor_y);
+	}
+
+	if (m_mouse->right_button_pressed)
+	{
+		host_den[ind(i,j)] = SOURCE;
+	}
+	
+	m_mouse->pre_cursor_x = m_mouse->cur_cursor_x;
+	m_mouse->pre_cursor_y = m_mouse->cur_cursor_y;
+};
+// TODO: modify this part as smoke effect
+void draw_velocity(void)
+{
+	int i, j;
+	float x, y, h;
+
+	h = 1.0f / Grids_X;
+
+	glColor3f(0.0f, 0.0f, 1.0f);
+	glLineWidth(1.0f);
+
+	glBegin(GL_LINES);
+	{
+		for ( i=1 ; i <= SimArea_X ; i++ )
+		{
+			x = (i-0.5f)*h;
+			for ( j=1 ; j<= SimArea_X ; j++ )
+			{
+				y = (j-0.5f)*h;
+				glVertex2f(x, y);
+				glVertex2f(x+host_u[ind(i,j)], y+host_v[ind(i,j)]);
+			}
+		}
+	}
+	glEnd();
+}
+// TODO: modify this part as smoke effect
+void draw_density(void)
+{
+	int i, j;
+	float x, y, h, d00, d01, d10, d11;
+
+	h = 1.0f/Grids_X;
+
+	glBegin(GL_QUADS);
+	{
+		for ( i=0 ; i<=SimArea_X ; i++ )
+		{
+			x = (i-0.5f)*h;
+			for ( j=0 ; j<=SimArea_X ; j++ )
+			{
+				y = (j-0.5f)*h;
+				d00 = dev_den[ind(i,j)];
+				d01 = dev_den[ind(i,j+1)];
+				d10 = dev_den[ind(i+1,j)];
+				d11 = dev_den[ind(i+1,j+1)];
+
+				glColor3f(d00, d00, d00); glVertex2f(x, y);
+				glColor3f(d10, d10, d10); glVertex2f(x+h, y);
+				glColor3f(d11, d11, d11); glVertex2f(x+h, y+h);
+				glColor3f(d01, d01, d01); glVertex2f(x, y+h);
+			}
+		}
+	}
+	glEnd();
+}
+
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -292,7 +385,7 @@ void Visual::OnResize( GLuint width, GLuint height )
 
 void Visual::OnIdle( void )
 {
-
+	MouseEvent();
 };
 
 
@@ -330,7 +423,21 @@ void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 
 void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 {
+	m_hAct->ConvertMFCPosition(&x_pos, &y_pos);
+	
+	m_mouse->cur_cursor_x = m_mouse->pre_cursor_x = x_pos;
+	m_mouse->cur_cursor_y = m_mouse->pre_cursor_y = y_pos;
 
+	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN) m_mouse->left_button_pressed  = true;
+	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN) m_mouse->right_button_pressed = true;
+	if (mouse == SG_MOUSE::SG_MOUSE_MOVE)
+	{
+		m_mouse->cur_cursor_x = x_pos;
+		m_mouse->cur_cursor_y = y_pos;
+	}
+
+	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP) m_mouse->left_button_pressed   = false;
+	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP) m_mouse->right_button_pressed  = false;
 };
 
 
@@ -346,6 +453,94 @@ void Visual::OnDestroy( void )
 	if ( m_font != NULL )	m_font->Clean();
 	SAFE_DELT_PTR( m_font );
 };
+
+
+void key_func(SG_KEYS key, SG_KEY_STATUS status)
+{
+	if (status == SG_KEY_STATUS::SG_KEY_DOWN)
+	{
+		switch (key)
+		{
+		case SG_KEYS::SG_KEY_C:
+			clear_data();
+			break;
+		
+		case SG_KEYS::SG_KEY_Q:
+			free_data();
+			exit ( 0 );
+			break;
+
+		case SG_KEYS::SG_KEY_ESCAPE:
+			key_func(SG_KEY_Q, SG_KEY_DOWN);
+			break;
+		}
+	}
+}
+
+void close_func(void)
+{
+	free_data();
+
+#if GPU_ON
+
+    // cudaDeviceReset must be called before exiting in order for profiling and
+    // tracing tools such as Nsight and Visual Profiler to show complete traces.
+    cudaStatus = cudaDeviceReset();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceReset failed!");
+    }
+
+#endif
+
+	exit(0);
+};
+
+
+void reshape_func(unsigned width, unsigned height)
+{
+	if (height == 0) height = 1;
+
+	glViewport(0, 0, width, height);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity ();
+	gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+	glClearColor( 0.0f, 0.0f, 0.0f, 1.0f);
+
+	win_x = width;
+	win_y = height;
+}
+
+void display_func(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	draw_density();
+	draw_velocity();
+}
+
+void idle_func(void)
+{
+	get_from_UI(dens_prev, u_prev, v_prev);
+	vel_step(u, v, u_prev, v_prev);
+	dens_step(dens, dens_prev, u, v);
+}
+
+void temp()
+{
+	// Release CUDA resource if failed
+	for ( int i=0; i < dev_num; i++ )
+	{
+		cudaFree ( dev_list[i] );
+	}
+	dev_list.empty ();
+
+	// Release other resource
+	for ( int i=0; i < host_num; i++ )
+	{
+		SAFE_FREE_PTR ( host_list[i] );
+	}
+	host_list.empty ();
+}
 
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
