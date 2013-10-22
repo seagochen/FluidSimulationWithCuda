@@ -24,10 +24,8 @@
 * <File>        macro_definitions.h
 */
 
-#ifndef _MACRO_DEFINITIONS_H_
-#define _MACRO_DEFINITIONS_H_
-
-#include <vector>
+#ifndef __macro_definitions_h_
+#define __macro_definitions_h_
 
 #pragma once
 

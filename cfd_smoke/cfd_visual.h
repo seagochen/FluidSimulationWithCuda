@@ -24,12 +24,10 @@
 * <File>        cfd_visual.h
 */
 
-#ifndef _VISUALIZATION_H_
-#define _VISUALIZATION_H_
+#ifndef __cfd_visual_h_
+#define __cfd_visual_h_
 
-#include <GL\glew.h>
-#include <GL\freeglut.h>
-#include <SGE\SGUtils.h>
+#pragma once
 
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -104,7 +102,7 @@ namespace sge
 
 	public:
 		static void OnCreate   (void);
-		static void OnResize   (void);
+		static void OnResize   (GLuint width, GLuint height);
 		static void OnIdle     (void);
 		static void OnDisplay  (void);
 		static void OnKeyboard (SG_KEYS keys, SG_KEY_STATUS status);

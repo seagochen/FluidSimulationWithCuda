@@ -26,13 +26,11 @@
     <ClInclude Include="macro_definitions.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cfd_main.cpp" />
     <ClCompile Include="cfd_visual.cpp" />
     <ClCompile Include="cfd_visual.h" />
-    <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="cfd_smoke.rc" />

@@ -24,21 +24,16 @@
 * <File>        cfd_main.cpp
 */
 
-#define __main_cpp_
+#ifndef __cfd_main_cpp_
+#define __cfd_main_cpp_
 
-#include <GL\glew.h>
-#include <GL\glut.h>
-#include <SGE\SGUtils.h>
+#pragma once
 
-#include "cfd_kernel.h"
-#include "cfd_visual.h"
-#include "resource.h"
-
+#include "stdafx.h"
+using namespace sge;
 
 ////////////////////////////////////////////////////////////////////////
 ///
-
-using namespace sge;
 
 MainActivity  *activity;
 Visualization *visual;
@@ -83,23 +78,11 @@ int main(int argc, char ** argv)
 	// Initialize the CUDA
 	cuda_init();
 
-	// Register callback function to visualization
-	visual->RegisterDisplay (display_func);
-	visual->RegisterIdle    (idle_func);
-	visual->RegisterKeyboard(key_func);
-	visual->RegisterMouse   (mouse_func);
-	visual->RegisterResize  (reshape_func);
-	visual->RegisterDestroy (close_func);
-
 	if ( !allocate_data() ) exit(1);
 	clear_data();
 
 	// Set application title
-#if GPU_ON
-	activity->SetApplicationTitle( L"CFD - Navigator No. I  CUDA version" );
-#else
 	activity->SetApplicationTitle( L"CFD - Navigator No. I  CPU version" );
-#endif
 	activity->SetApplicationIcons(APP_ICONS, APP_ICONS);
 			
 	// Register callback functions
@@ -412,3 +395,5 @@ void idle_func(void)
 
 ///
 ///////////////////////////////////////////////////////////////////////
+
+#endif
