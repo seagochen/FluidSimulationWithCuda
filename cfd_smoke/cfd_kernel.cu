@@ -27,14 +27,12 @@
 #ifndef __cfd_kernel_cu_
 #define __cfd_kernel_cu_
 
-#pragma once
-
 #include "stdafx.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-cudaError cudaStatus;
+extern cudaError cudaStatus;
 
 __global__ void add_source_kernel ( float *ptr_out, float *ptr_in )
 {

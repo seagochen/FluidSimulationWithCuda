@@ -27,8 +27,6 @@
 #ifndef __cfd_visual_cpp_
 #define __cfd_visual_cpp_
 
-#pragma once
-
 #include "stdafx.h"
 using namespace sge;
 
@@ -342,6 +340,32 @@ void draw_density(void)
 	glEnd();
 }
 
+void free_data(void)
+{
+	for (int i = 0; i < dev_num; i++)
+	{
+		cudaFree ( dev_list[i] );
+	}
+
+	for (int i = 0; i < host_num; i++)
+	{
+		SAFE_FREE_PTR ( host_list[i] );
+	}
+
+	dev_list.empty();
+	host_list.empty();
+}
+
+void clear_data(void)
+{
+	int size = Grids_X * Grids_X;
+
+	for ( int i = 0; i < size ; i++ )
+	{
+		host_u[i] = host_v[i] = host_u0[i] = host_v0[i] = host_den[i] = host_den0[i] = 0.0f;
+	}
+}
+
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -370,8 +394,8 @@ void Visual::OnResize( GLuint width, GLuint height )
 	// Prevent a divide by zero if the window is too small
 //	if (height == 0) height = 1;
 
-	m_width  = width;
-	m_height = height;
+	m_width  = width = ClientSize_X;
+	m_height = height = ClientSize_X;
 
 //	glViewport(0, 0, width, height);
 
@@ -380,12 +404,23 @@ void Visual::OnResize( GLuint width, GLuint height )
 //	glLoadIdentity();
 //	gluPerspective(m_view->view_angle, m_width / m_height, m_view->z_near, m_view->z_far);
 //	glMatrixMode(GL_MODELVIEW);
+
+	if (height == 0) height = 1;
+
+	glViewport(0, 0, width, height);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity ();
+	gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+	glClearColor( 0.0f, 0.0f, 0.0f, 1.0f);
 };
 
 
 void Visual::OnIdle( void )
 {
 	MouseEvent();
+	vel_step(host_u, host_v, host_u0, host_v0);
+	dens_step(host_den, host_den0, host_u, host_v);
 };
 
 
@@ -405,6 +440,9 @@ void Visual::OnDisplay( void )
 
 	// Draw fluid sim result on 2-D map
 //	DrawAgent2D();
+	glClear(GL_COLOR_BUFFER_BIT);
+	draw_density();
+	draw_velocity();
 		
 	// Print FPS
 	CountFPS();
@@ -413,10 +451,21 @@ void Visual::OnDisplay( void )
 
 void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 {
-	if ( keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN )	
-	{	
-		OnDestroy();
-		exit(0);
+	if (status == SG_KEY_STATUS::SG_KEY_DOWN)
+	{
+		switch (keys)
+		{
+		case SG_KEYS::SG_KEY_C:
+			clear_data();
+			break;
+		
+		case SG_KEYS::SG_KEY_Q:
+		case SG_KEYS::SG_KEY_ESCAPE:
+			free_data();
+			OnDestroy();
+			exit(0);
+			break;
+		}
 	}
 };
 
@@ -443,6 +492,14 @@ void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 
 void Visual::OnDestroy( void )
 {
+	free_data();
+
+    // cudaDeviceReset must be called before exiting in order for profiling and
+    // tracing tools such as Nsight and Visual Profiler to show complete traces.
+    if (cudaDeviceReset() != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceReset failed!");
+    }
+
 	SAFE_DELT_PTR( m_mouse );
 	SAFE_DELT_PTR( m_fps );
 	SAFE_DELT_PTR( m_view );
@@ -453,94 +510,6 @@ void Visual::OnDestroy( void )
 	if ( m_font != NULL )	m_font->Clean();
 	SAFE_DELT_PTR( m_font );
 };
-
-
-void key_func(SG_KEYS key, SG_KEY_STATUS status)
-{
-	if (status == SG_KEY_STATUS::SG_KEY_DOWN)
-	{
-		switch (key)
-		{
-		case SG_KEYS::SG_KEY_C:
-			clear_data();
-			break;
-		
-		case SG_KEYS::SG_KEY_Q:
-			free_data();
-			exit ( 0 );
-			break;
-
-		case SG_KEYS::SG_KEY_ESCAPE:
-			key_func(SG_KEY_Q, SG_KEY_DOWN);
-			break;
-		}
-	}
-}
-
-void close_func(void)
-{
-	free_data();
-
-#if GPU_ON
-
-    // cudaDeviceReset must be called before exiting in order for profiling and
-    // tracing tools such as Nsight and Visual Profiler to show complete traces.
-    cudaStatus = cudaDeviceReset();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceReset failed!");
-    }
-
-#endif
-
-	exit(0);
-};
-
-
-void reshape_func(unsigned width, unsigned height)
-{
-	if (height == 0) height = 1;
-
-	glViewport(0, 0, width, height);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity ();
-	gluOrtho2D(0.0, 1.0, 0.0, 1.0);
-	glClearColor( 0.0f, 0.0f, 0.0f, 1.0f);
-
-	win_x = width;
-	win_y = height;
-}
-
-void display_func(void)
-{
-	glClear(GL_COLOR_BUFFER_BIT);
-	draw_density();
-	draw_velocity();
-}
-
-void idle_func(void)
-{
-	get_from_UI(dens_prev, u_prev, v_prev);
-	vel_step(u, v, u_prev, v_prev);
-	dens_step(dens, dens_prev, u, v);
-}
-
-void temp()
-{
-	// Release CUDA resource if failed
-	for ( int i=0; i < dev_num; i++ )
-	{
-		cudaFree ( dev_list[i] );
-	}
-	dev_list.empty ();
-
-	// Release other resource
-	for ( int i=0; i < host_num; i++ )
-	{
-		SAFE_FREE_PTR ( host_list[i] );
-	}
-	host_list.empty ();
-}
 
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////

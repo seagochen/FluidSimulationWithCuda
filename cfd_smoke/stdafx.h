@@ -65,16 +65,8 @@
   ----------------------------------------------------------------------
 */
 
-#ifdef index(i, j)
-#undef index(i, j)
-#endif
 
 #define index(i, j)  ((j) * Tile_X + (i))
-
-#ifdef cuda_device(gridDim, blockDim) 
-#undef cuda_device(gridDim, blockDim) 
-#endif
-
 #define cuda_device(gridDim, blockDim) <<<gridDim, blockDim>>>
 
 ///

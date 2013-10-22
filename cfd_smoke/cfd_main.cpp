@@ -27,8 +27,6 @@
 #ifndef __cfd_main_cpp_
 #define __cfd_main_cpp_
 
-#pragma once
-
 #include "stdafx.h"
 using namespace sge;
 
