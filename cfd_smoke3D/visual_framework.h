@@ -20,16 +20,21 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
-* <Last>		Oct 6, 2013
-* <File>        Visualization.h
+* <Last>		Oct 22, 2013
+* <File>        visual_framework.h
 */
 
-#ifndef _VISUALIZATION_H_
-#define _VISUALIZATION_H_
+#ifndef __cfd_visual_h_
+#define __cfd_visual_h_
 
 #include <GL\glew.h>
 #include <GL\glut.h>
 #include <SGE\SGUtils.h>
+
+#include "macro_def.h"
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
 
 namespace sge
 {
@@ -77,8 +82,6 @@ namespace sge
 	};
 
 
-
-
 	typedef class Visual
 	{
 	public:
@@ -93,23 +96,10 @@ namespace sge
 		static void OnKeyboard (SG_KEYS keys, SG_KEY_STATUS status);
 		static void OnMouse    (SG_MOUSE mouse, GLuint x_pos, GLuint y_pos);
 		static void OnDestroy  (void);
-
-		static void RegisterCreate  ( void (*func)(void) );
-		static void RegisterResize  ( void (*func)(GLuint width, GLuint height) );
-		static void RegisterDisplay ( void (*func)(void) );
-		static void RegisterIdle    ( void (*func)(void) );
-		static void RegisterKeyboard( void (*func)(SG_KEYS keys, SG_KEY_STATUS status) );
-		static void RegisterMouse   ( void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos) );
-		static void RegisterDestroy ( void (*func)(void) );
-
-	public:
-		void UploadVolumeData(_volume2D const *data_in);
-		void UploadVolumeData(_volume3D const *data_in);
-
-	public:
-		int Texel2D(int i, int j);
-		int Texel3D(int i, int j, int k);
 	}Visualization;
 };
+
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 
 #endif
