@@ -45,11 +45,16 @@ using namespace sge;
 
 MainActivity  *activity;
 Visualization *visual;
+FileManager   logfile;
 
 cudaError      cudaStatus;
 
 SGRUNTIMEMSG   clear_data( void );
 SGRUNTIMEMSG   runtime_init( void );
+
+char *msg;
+
+#include <stdio.h>
 
 ///
 ////////////////////////////////////////////////////////////////////////
@@ -58,18 +63,22 @@ SGRUNTIMEMSG   runtime_init( void );
 int main(int argc, char ** argv)
 {
 	// Create a main activity and set the window from size as 512x512
-	visual   = new Visualization ( ClientSize_X, ClientSize_X, activity );
+	visual = new Visualization ( ClientSize_X, ClientSize_X, activity );
 
 	// Initialize the CUDA
 	if ( runtime_init() != SG_RUNTIME_OK )
 	{
 		ErrorMSG("runtime_init failed!");
+		sprintf(msg, "runtime_init failed! %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
 		exit(1);
 	}
 
 	if ( clear_data() != SG_RUNTIME_OK )
 	{
 		ErrorMSG("clear_data failed!");
+		sprintf(msg, "clear_data failed! %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
 		exit(1);
 	}
 
@@ -116,6 +125,8 @@ SGRUNTIMEMSG runtime_init ( void )
     cudaStatus = cudaSetDevice ( 0 );
     if ( cudaStatus != cudaSuccess ) {
         fprintf( stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?" );
+		sprintf(msg, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed? %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
 		goto Error;
     }
 
@@ -125,6 +136,8 @@ SGRUNTIMEMSG runtime_init ( void )
 		cudaStatus = cudaMalloc ( ( void** ) &dev_list[i], size * sizeof ( float ) );
 		if ( cudaStatus != cudaSuccess ) {
 			fprintf ( stderr, "cudaMalloc failed!" );
+			sprintf(msg, "cudaMalloc failed! %d %s", __LINE__, __FILE__);
+			logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
 			goto Error;
 		}
 	}

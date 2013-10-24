@@ -27,14 +27,18 @@
 #ifndef __cfd_kernel_cu_
 #define __cfd_kernel_cu_
 
-#include <SGE\config\SGAuxiliaries.h>
+#include <SGE\SGUtils.h>
+
+using namespace sge;
+using namespace sge::SGTOOL;
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
 #include "macro_def.h"
 
-using namespace sge::SGTOOL;
+extern FileManager logfile;
+extern char * msg;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -225,21 +229,29 @@ void dens_step ( float *grid, float *grid0, float *u, float *v )
     cudaStatus = cudaMemcpy(dev_grid, grid, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed! %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 	cudaStatus = cudaMemcpy(dev_grid0, grid0, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed! %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 	cudaStatus = cudaMemcpy(dev_u, u, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed! %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 	cudaStatus = cudaMemcpy(dev_v, v, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed! %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 
@@ -252,6 +264,8 @@ void dens_step ( float *grid, float *grid0, float *u, float *v )
     cudaStatus = cudaGetLastError();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "add_source_kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+		sprintf(msg, "add_source_kernel launch failed: %s %d %s", cudaGetErrorString(cudaStatus), __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
     
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
@@ -259,27 +273,37 @@ void dens_step ( float *grid, float *grid0, float *u, float *v )
     cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
+		sprintf(msg, "cudaDeviceSynchronize returned error code %d after launching addKernel! %s %d %s", cudaStatus, cudaGetErrorString(cudaStatus), __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
     // Copy output vector from GPU buffer to host memory.
     cudaStatus = cudaMemcpy(grid, dev_grid, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed! %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 	cudaStatus = cudaMemcpy(grid0, dev_grid0, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed!  %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 	
 	cudaStatus = cudaMemcpy(u, dev_u, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed!  %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 	cudaStatus = cudaMemcpy(v, dev_v, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed!  %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 }
 
@@ -300,21 +324,29 @@ void vel_step ( float * u, float * v, float * u0, float * v0 )
     cudaStatus = cudaMemcpy(dev_u0, u0, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed!  %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 	cudaStatus = cudaMemcpy(dev_v0, v0, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed!  %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 	cudaStatus = cudaMemcpy(dev_u, u, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed!  %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 	cudaStatus = cudaMemcpy(dev_v, v, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed! %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 
@@ -332,6 +364,8 @@ void vel_step ( float * u, float * v, float * u0, float * v0 )
     cudaStatus = cudaGetLastError();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "add_source_kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+		sprintf(msg, "add_source_kernel launch failed: %s %d %s", cudaGetErrorString(cudaStatus), __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
     
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
@@ -339,27 +373,37 @@ void vel_step ( float * u, float * v, float * u0, float * v0 )
     cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
+		sprintf(msg, "cudaDeviceSynchronize returned error code %d after launching addKernel! %d %s", cudaStatus, __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
     // Copy output vector from GPU buffer to host memory.
     cudaStatus = cudaMemcpy(u0, dev_u0, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed!  %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 	cudaStatus = cudaMemcpy(v0, dev_v0, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed!  %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 	
 	cudaStatus = cudaMemcpy(u, dev_u, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed!  %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 
 	cudaStatus = cudaMemcpy(v, dev_v, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
+		sprintf(msg, "cudaMemcpy failed!  %d %s", __LINE__, __FILE__);
+		logfile.SetDataToFile(msg, "logfile.txt", SGFILEOPENMODE::SG_FILE_OPEN_APPEND);
     }
 }
 

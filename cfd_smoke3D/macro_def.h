@@ -99,14 +99,8 @@ extern std::vector<float*> host_list;
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-/*
-  ----------------------------------------------------------------------
-   Undefine the following, if they were defined
-  ----------------------------------------------------------------------
-*/
-
-
 #define index(i, j)  ((j) * Tile_X + (i))
+
 #define cuda_device(gridDim, blockDim) <<<gridDim, blockDim>>>
 
 ///
