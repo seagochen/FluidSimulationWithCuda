@@ -20,15 +20,11 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
-* <Last>		Oct 24, 2013
-* <File>        visual_framework.cpp
+* <Last>		Oct 6, 2013
+* <File>        Visualization.cpp
 */
 
-#ifndef __cfd_visual_cpp_
-#define __cfd_visual_cpp_
-
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
+#define _VISUALIZATION_CPP_
 
 #include "visual_framework.h"
 
@@ -37,14 +33,15 @@ using namespace sge;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-static _mouse              *m_mouse;
-static _fps                *m_fps;
-static _volume2D           *m_volume2D;
-static _volume3D           *m_volume3D;
-static _viewMatrix         *m_view;
-static FreeType            *m_font;
-static MainActivity        *m_hAct;
-static GLfloat              m_width, m_height;
+static _mouse        *m_mouse;
+static _fps          *m_fps;
+static _volume2D     *m_volume2D;
+static _volume3D     *m_volume3D;
+static _viewMatrix   *m_view;
+static FreeType      *m_font;
+static MainActivity  *m_hAct;
+static GLfloat        m_width, m_height;
+static SG_FUNCTIONS_HOLDER *m_funcholder;
 
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,9 +55,8 @@ Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
 	m_volume3D = new _volume3D;
 	m_view     = new _viewMatrix;
 	m_font     = new FreeType;
-	m_hAct     = new MainActivity(width, height);
-	
-	hActivity  = m_hAct;
+	m_hAct     = hActivity;
+	m_funcholder = new SG_FUNCTIONS_HOLDER;
 
 	m_width    = width;
 	m_height   = height;
@@ -253,122 +249,23 @@ void CountFPS( void )
 	glPopMatrix();
 }
 
+///
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///
 
-// TODO: modify this part as smoke effect
-#define ind(i,j) ((j) * Grids_X + (i))
-// TODO: modify this part as smoke effect
-void MouseEvent( void )
-{
-	int i, j, size = Grids_X * Grids_X;
+void Visual::RegisterCreate( void (*func)(void) ) { m_funcholder->hCreateFunc = func; };
 
-	for ( i = 0 ; i < size ; i++ ) 
-	{
-		host_u[i] = host_v[i] = host_den[i] = 0.0f;
-	}
+void Visual::RegisterResize( void (*func)(GLuint width, GLuint height) ) { m_funcholder->hReshapeFunc = func; };
 
-	if (!m_mouse->left_button_pressed && !m_mouse->right_button_pressed) return;
+void Visual::RegisterDisplay( void (*func)(void) ) { m_funcholder->hDisplayFunc = func; };
 
-	i = (int)(( m_mouse->cur_cursor_x / (float) ClientSize_X ) * SimArea_X + 1);
-	j = (int)((( ClientSize_X - m_mouse->cur_cursor_y ) / (float) ClientSize_X ) * SimArea_X + 1 );
+void Visual::RegisterIdle( void (*func)(void) ) { m_funcholder->hIdleFunc = func; };
 
-	if (i<1 || i>SimArea_X || j<1 || j>SimArea_X) return;
+void Visual::RegisterKeyboard( void (*func)(SG_KEYS keys, SG_KEY_STATUS status) ) { m_funcholder->hKeyboardFunc = func; };
 
-	if (m_mouse->left_button_pressed)
-	{
-		host_u[ind(i,j)] = FORCE * (m_mouse->cur_cursor_x - m_mouse->pre_cursor_x);
-		host_v[ind(i,j)] = FORCE * (m_mouse->pre_cursor_y - m_mouse->cur_cursor_y);
-	}
+void Visual::RegisterMouse( void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos) ) { m_funcholder->hMouseFunc = func; };
 
-	if (m_mouse->right_button_pressed)
-	{
-		host_den[ind(i,j)] = SOURCE;
-	}
-	
-	m_mouse->pre_cursor_x = m_mouse->cur_cursor_x;
-	m_mouse->pre_cursor_y = m_mouse->cur_cursor_y;
-};
-// TODO: modify this part as smoke effect
-void draw_velocity(void)
-{
-	int i, j;
-	float x, y, h;
-
-	h = 1.0f / Grids_X;
-
-	glColor3f(0.0f, 0.0f, 1.0f);
-	glLineWidth(1.0f);
-
-	glBegin(GL_LINES);
-	{
-		for ( i=1 ; i <= SimArea_X ; i++ )
-		{
-			x = (i-0.5f)*h;
-			for ( j=1 ; j<= SimArea_X ; j++ )
-			{
-				y = (j-0.5f)*h;
-				glVertex2f(x, y);
-				glVertex2f(x+host_u[ind(i,j)], y+host_v[ind(i,j)]);
-			}
-		}
-	}
-	glEnd();
-}
-// TODO: modify this part as smoke effect
-void draw_density(void)
-{
-	int i, j;
-	float x, y, h, d00, d01, d10, d11;
-
-	h = 1.0f/Grids_X;
-
-	glBegin(GL_QUADS);
-	{
-		for ( i=0 ; i<=SimArea_X ; i++ )
-		{
-			x = (i-0.5f)*h;
-			for ( j=0 ; j<=SimArea_X ; j++ )
-			{
-				y = (j-0.5f)*h;
-				d00 = dev_den[ind(i,j)];
-				d01 = dev_den[ind(i,j+1)];
-				d10 = dev_den[ind(i+1,j)];
-				d11 = dev_den[ind(i+1,j+1)];
-
-				glColor3f(d00, d00, d00); glVertex2f(x, y);
-				glColor3f(d10, d10, d10); glVertex2f(x+h, y);
-				glColor3f(d11, d11, d11); glVertex2f(x+h, y+h);
-				glColor3f(d01, d01, d01); glVertex2f(x, y+h);
-			}
-		}
-	}
-	glEnd();
-}
-
-void free_data(void)
-{
-	for (int i = 0; i < dev_num; i++)
-	{
-		cudaFree ( dev_list[i] );
-	}
-
-	for (int i = 0; i < host_num; i++)
-	{
-		SAFE_FREE_PTR ( host_list[i] );
-	}
-
-	dev_list.empty();
-	host_list.empty();
-}
-
-void clear_data(void)
-{
-	int size = Grids_X * Grids_X;
-
-	for ( int i = 0; i < size ; i++ )
-	{
-		host_u[i] = host_v[i] = host_u0[i] = host_v0[i] = host_den[i] = host_den0[i] = 0.0f;
-	}
-}
+void Visual::RegisterDestroy ( void (*func)(void) ) { m_funcholder->hDestoryFunc = func; };
 
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -390,6 +287,8 @@ void Visual::OnCreate( void )
 
 	// Set texture
 //	SetTexture();
+
+	if ( m_funcholder->hCreateFunc != NULL ) m_funcholder->hCreateFunc();
 };
 
 
@@ -398,8 +297,8 @@ void Visual::OnResize( GLuint width, GLuint height )
 	// Prevent a divide by zero if the window is too small
 //	if (height == 0) height = 1;
 
-	m_width  = width = ClientSize_X;
-	m_height = height = ClientSize_X;
+	m_width  = width;
+	m_height = height;
 
 //	glViewport(0, 0, width, height);
 
@@ -409,22 +308,13 @@ void Visual::OnResize( GLuint width, GLuint height )
 //	gluPerspective(m_view->view_angle, m_width / m_height, m_view->z_near, m_view->z_far);
 //	glMatrixMode(GL_MODELVIEW);
 
-	if (height == 0) height = 1;
-
-	glViewport(0, 0, width, height);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity ();
-	gluOrtho2D(0.0, 1.0, 0.0, 1.0);
-	glClearColor( 0.0f, 0.0f, 0.0f, 1.0f);
+	if ( m_funcholder->hReshapeFunc != NULL ) m_funcholder->hReshapeFunc( width, height );
 };
 
 
 void Visual::OnIdle( void )
 {
-	MouseEvent();
-	vel_step(host_u, host_v, host_u0, host_v0);
-	dens_step(host_den, host_den0, host_u, host_v);
+	if ( m_funcholder->hIdleFunc != NULL ) m_funcholder->hIdleFunc();
 };
 
 
@@ -444,10 +334,9 @@ void Visual::OnDisplay( void )
 
 	// Draw fluid sim result on 2-D map
 //	DrawAgent2D();
-	glClear(GL_COLOR_BUFFER_BIT);
-	draw_density();
-	draw_velocity();
-		
+
+	if ( m_funcholder->hDisplayFunc != NULL ) m_funcholder->hDisplayFunc();
+	
 	// Print FPS
 	CountFPS();
 };
@@ -455,67 +344,96 @@ void Visual::OnDisplay( void )
 
 void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 {
-	if (status == SG_KEY_STATUS::SG_KEY_DOWN)
-	{
-		switch (keys)
-		{
-		case SG_KEYS::SG_KEY_C:
-			clear_data();
-			break;
-		
-		case SG_KEYS::SG_KEY_Q:
-		case SG_KEYS::SG_KEY_ESCAPE:
-			free_data();
-			OnDestroy();
-			exit(0);
-			break;
-		}
+	if ( m_funcholder->hKeyboardFunc != NULL ) m_funcholder->hKeyboardFunc( keys, status );
+
+	if ( keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN )	
+	{	
+		OnDestroy();
+		exit(0);
 	}
 };
 
 
 void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 {
-	m_hAct->ConvertMFCPosition(&x_pos, &y_pos);
-	
-	m_mouse->cur_cursor_x = m_mouse->pre_cursor_x = x_pos;
-	m_mouse->cur_cursor_y = m_mouse->pre_cursor_y = y_pos;
-
-	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN) m_mouse->left_button_pressed  = true;
-	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN) m_mouse->right_button_pressed = true;
-	if (mouse == SG_MOUSE::SG_MOUSE_MOVE)
-	{
-		m_mouse->cur_cursor_x = x_pos;
-		m_mouse->cur_cursor_y = y_pos;
-	}
-
-	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP) m_mouse->left_button_pressed   = false;
-	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP) m_mouse->right_button_pressed  = false;
+	if ( m_funcholder->hMouseFunc != NULL ) m_funcholder->hMouseFunc( mouse, x_pos, y_pos );
 };
 
 
 void Visual::OnDestroy( void )
 {
-	free_data();
-
-    // cudaDeviceReset must be called before exiting in order for profiling and
-    // tracing tools such as Nsight and Visual Profiler to show complete traces.
-    if (cudaDeviceReset() != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceReset failed!");
-    }
+	if ( m_funcholder->hDestoryFunc != NULL ) m_funcholder->hDestoryFunc();
 
 	SAFE_DELT_PTR( m_mouse );
 	SAFE_DELT_PTR( m_fps );
 	SAFE_DELT_PTR( m_view );
+	SAFE_DELT_PTR( m_funcholder );
 
 	if ( m_volume2D->size > 0 ) SAFE_FREE_PTR( m_volume2D->data );
 	if ( m_volume3D->size > 0 ) SAFE_FREE_PTR( m_volume3D->data );
 
 	if ( m_font != NULL )	m_font->Clean();
 	SAFE_DELT_PTR( m_font );
+
+#ifdef PRINT_STATUS
+	printf( "Call OnDestroy, now resource released up!\n" );
+#endif
 };
 
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+///
 
+void Visual::UploadVolumeData( _volume2D const *data_in )
+{
+	m_volume2D->width  = data_in->width;
+	m_volume2D->height = data_in->height;
+	m_volume2D->data   = data_in->data;
+
+	m_volume2D->size   = data_in->size;
+
+#ifdef PRINT_STATUS
+	system( "cls" );
+	printf( "Upload volume data and try to rendering the result, size: %d\n", m_volume2D->size );
 #endif
+};
+
+
+void Visual::UploadVolumeData( _volume3D const *data_in )
+{
+	m_volume3D->width  = data_in->width;
+	m_volume3D->height = data_in->height;
+	m_volume3D->depth  = data_in->depth;
+	m_volume3D->data   = data_in->data;
+
+	m_volume3D->size   = data_in->size;
+
+#ifdef PRINT_STATUS
+	system( "cls" );
+	printf( "Upload volume data and try to rendering the result, size: %d\n", m_volume3D->size );
+#endif
+};
+
+
+#include "macro_def.h"
+
+
+int Visual::Texel2D( int i, int j )
+{
+	return  BYTES_PER_TEXEL * ( i * m_volume2D->height + j );
+};
+
+
+int Layer( int layer )
+{
+	return layer * m_volume3D->width * m_volume3D->height;
+};
+
+
+int Visual::Texel3D( int i, int j, int k )
+{
+	return BYTES_PER_TEXEL * ( Layer( i ) + m_volume3D->height * j + k);
+};
+
+///
+///////////////////////////////////////////////////////////////////////////////////////////////////

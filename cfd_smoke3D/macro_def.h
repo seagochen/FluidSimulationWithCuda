@@ -20,33 +20,39 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 7, 2013
-* <Last>		Oct 24, 2013
-* <File>        macro_def.h
+* <Last>		Oct 7, 2013
+* <File>        Macro_Definitions.h
 */
 
-#ifndef __macro_definitions_h_
-#define __macro_definitions_h_
+#ifndef _MACRO_DEFINITIONS_H_
+#define _MACRO_DEFINITIONS_H_
 
-//////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 ///
 
 /*
   ----------------------------------------------------------------------
-   Definition for Computational Fluid Dynamics
+   Normal Definitions
   ----------------------------------------------------------------------
 */
 
-#define SimArea_X            62                       // grid number on single direction that without ghost cells 
-#define Grids_X              64                       // grid number on single direction that contains ghost cells for boundary conditions
-#define Tile_X               Grids_X / 16             // we divide each 16 cells in a block on single direction that means 2-D block contained 16x16 cells.
-#define ClientSize_X         512                      // client size. This can be assigned to window width and height.
-#define StepLenght_X         ClientSize_X / Grids_X   // rendering the result. this definition determines basic primitive size
+#define True  1
+#define False 0
+/*
+  ----------------------------------------------------------------------
+   Definition for Variables of Computational Fluid Dynamics
+  ----------------------------------------------------------------------
+*/
 
-#define DELTA_TIME           0.1f                     // 0.1 second
-#define DIFFUSION            0.0f                     // diffusion rate
-#define VISCOSITY            0.0f                     // viscosity rate
-#define FORCE                5.0f                     // external force rate
-#define SOURCE               100.0f                   // to given a density of 100 %
+#define GRIDS_WITHOUT_GHOST  62       // grids number without ghost grids
+#define ENTIRE_GRIDS_NUMBER  64       // grids number contains ghost grids
+#define DELTA_TIME           0.1f     // 0.1 second
+#define DIFFUSION            0.0f     // diffusion rate
+#define VISCOSITY            0.0f     // viscosity rate
+#define FORCE                5.0f     // external force rate
+#define SOURCE               100.0f   // to given a density with 100 percent
+#define WINDOWSX             512      // application window size, width
+#define WINDOWSY             512      // application window size, height
 
 /*
   ----------------------------------------------------------------------
@@ -54,26 +60,105 @@
   ----------------------------------------------------------------------
 */
 
-#define BACK_COLOR_REDf      0.f      // background color, red component
-#define BACK_COLOR_GREENf    0.1f     // background color, green component
-#define BACK_COLOR_BLUEf     0.2f     // background color, blue component
-#define BYTES_PER_TEXEL      3        // a pixel is composed of three components (rgb)
+#define BYTES_PER_TEXEL 3
 
 ///
-//////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+///
+
+/*
+  ----------------------------------------------------------------------
+   Definition of Switch
+  ----------------------------------------------------------------------
+*/
+
+#define GPU_ON  True
+
+///
+////////////////////////////////////////////////////////////////////////
+///
+
+/*
+  ----------------------------------------------------------------------
+   Function Definitions
+  ----------------------------------------------------------------------
+*/
+
+#define PrintStatus(str) {system("cls"); printf("%s");}
+
+#define Index(i,j) ((j)*ENTIRE_GRIDS_NUMBER + i)
+#define GPUIndex(i,j) (gridDim.x * blockDim.x * (j) + i)
+
+/*
+  ----------------------------------------------------------------------
+   external functions on CPU
+  ----------------------------------------------------------------------
+*/
+
+
+void dens_step(float * grid, float * grid0, float * u, float * v);
+
+void vel_step(float * u, float * v, float * u0, float * v0);
+
+
+///
+////////////////////////////////////////////////////////////////////////
 ///
 
 #include <vector>
+#include <cuda_runtime.h>
 
-#ifdef __cfd_main_cpp_
+#ifdef _MAIN_CPP_
+
+/*
+  ----------------------------------------------------------------------
+   Data used in CFD
+  ----------------------------------------------------------------------
+*/
+
+int GridSize;
+float dt, diff, visc;
+float force, source;
+float * u, * v, * u_prev, * v_prev;
+float * dens, * dens_prev;
+bool mouse_down[2];
+int omx, omy, mx, my;
+int win_x, win_y;
+
+/*
+  ----------------------------------------------------------------------
+   Data used in CUDA
+  ----------------------------------------------------------------------
+*/
 
 std::vector<float*> dev_list;
-std::vector<float*> host_list;
+cudaError cudaStatus;
 
 #else
 
+/*
+  ----------------------------------------------------------------------
+   Data used in CFD
+  ----------------------------------------------------------------------
+*/
+
+extern int GridSize;
+extern float dt, diff, visc;
+extern float force, source;
+extern float * u, * v, * u_prev, * v_prev;
+extern float * dens, * dens_prev;
+extern bool mouse_down[2];
+extern int omx, omy, mx, my;
+extern int win_x, win_y;
+
+/*
+  ----------------------------------------------------------------------
+   Data used in CUDA
+  ----------------------------------------------------------------------
+*/
+
 extern std::vector<float*> dev_list;
-extern std::vector<float*> host_list;
+extern cudaError cudaStatus;
 
 #endif
 
@@ -85,39 +170,11 @@ extern std::vector<float*> host_list;
 #define dev_den0   dev_list[5]
 #define dev_grid   dev_list[6]
 #define dev_grid0  dev_list[7]
-#define host_u     host_list[0]
-#define host_v     host_list[1]
-#define host_u0    host_list[2]
-#define host_v0    host_list[3]
-#define host_den   host_list[4]
-#define host_den0  host_list[5]
 
-#define dev_num      8
-#define host_num     6
+#define devices   8
 
 ///
-//////////////////////////////////////////////////////////////////////////////////////////
-///
+////////////////////////////////////////////////////////////////////////
 
-#define index(i, j)  ((j) * Tile_X + (i))
-
-#define cuda_device(gridDim, blockDim) <<<gridDim, blockDim>>>
-
-///
-//////////////////////////////////////////////////////////////////////////////////////////
-///
-
-/*
-  ----------------------------------------------------------------------
-   Function Prototypes
-  ----------------------------------------------------------------------
-*/
-
-extern void dens_step(float * grid, float * grid0, float * u, float * v);
-
-extern void vel_step(float * u, float * v, float * u0, float * v0);
-
-///
-//////////////////////////////////////////////////////////////////////////////////////////
 
 #endif
