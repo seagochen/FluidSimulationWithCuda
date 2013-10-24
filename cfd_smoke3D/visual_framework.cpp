@@ -20,27 +20,31 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
-* <Last>		Oct 22, 2013
-* <File>        cfd_visual.cpp
+* <Last>		Oct 24, 2013
+* <File>        visual_framework.cpp
 */
 
 #ifndef __cfd_visual_cpp_
 #define __cfd_visual_cpp_
 
-#include "stdafx.h"
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+
+#include "visual_framework.h"
+
 using namespace sge;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-_mouse              *m_mouse;
-_fps                *m_fps;
-_volume2D           *m_volume2D;
-_volume3D           *m_volume3D;
-_viewMatrix         *m_view;
-FreeType            *m_font;
-MainActivity        *m_hAct;
-GLfloat              m_width, m_height;
+static _mouse              *m_mouse;
+static _fps                *m_fps;
+static _volume2D           *m_volume2D;
+static _volume3D           *m_volume3D;
+static _viewMatrix         *m_view;
+static FreeType            *m_font;
+static MainActivity        *m_hAct;
+static GLfloat              m_width, m_height;
 
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////

@@ -20,14 +20,12 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 7, 2013
-* <Last>		Oct 22, 2013
-* <File>        macro_definitions.h
+* <Last>		Oct 24, 2013
+* <File>        macro_def.h
 */
 
 #ifndef __macro_definitions_h_
 #define __macro_definitions_h_
-
-#pragma once
 
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -65,6 +63,8 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
 
+#include <vector>
+
 #ifdef __cfd_main_cpp_
 
 std::vector<float*> dev_list;
@@ -94,6 +94,34 @@ extern std::vector<float*> host_list;
 
 #define dev_num      8
 #define host_num     6
+
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+
+/*
+  ----------------------------------------------------------------------
+   Undefine the following, if they were defined
+  ----------------------------------------------------------------------
+*/
+
+
+#define index(i, j)  ((j) * Tile_X + (i))
+#define cuda_device(gridDim, blockDim) <<<gridDim, blockDim>>>
+
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+
+/*
+  ----------------------------------------------------------------------
+   Function Prototypes
+  ----------------------------------------------------------------------
+*/
+
+extern void dens_step(float * grid, float * grid0, float * u, float * v);
+
+extern void vel_step(float * u, float * v, float * u0, float * v0);
 
 ///
 //////////////////////////////////////////////////////////////////////////////////////////

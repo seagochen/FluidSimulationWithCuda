@@ -1,8 +1,0 @@
-/Debug
-/Release
-*.db
-*~
-*.pdb
-*.aps
-cfd_smoke.vcxproj.filters
-cfd_smoke.vcxproj.user

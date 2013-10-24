@@ -21,13 +21,23 @@
 * <Author>      Orlando Chen
 * <First>       Oct 6, 2013
 * <Last>		Oct 22, 2013
-* <File>        cfd_main.cpp
+* <File>        launch_main.cpp
 */
 
 #ifndef __cfd_main_cpp_
 #define __cfd_main_cpp_
 
-#include "stdafx.h"
+#include <iostream>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+
+#include "macro_def.h"
+#include "visual_framework.h"
+
+#include "resource.h"
+
+#define APP_ICON IDI_ICON1
+
 using namespace sge;
 
 ////////////////////////////////////////////////////////////////////////

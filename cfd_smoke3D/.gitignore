@@ -1,0 +1,6 @@
+/Debug
+/Release
+*.db
+*~
+cfd_smoke3D.aps
+vc110.pdb

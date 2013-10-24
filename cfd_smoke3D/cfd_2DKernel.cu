@@ -27,7 +27,14 @@
 #ifndef __cfd_kernel_cu_
 #define __cfd_kernel_cu_
 
-#include "stdafx.h"
+#include <SGE\config\SGAuxiliaries.h>
+
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+
+#include "macro_def.h"
+
+using namespace sge::SGTOOL;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -237,8 +244,8 @@ void dens_step ( float *grid, float *grid0, float *u, float *v )
 
 
 	cuda_add_source(dev_grid, dev_grid0, &grid_size, &block_size);
-	SWAP ( dev_grid0, dev_grid ); cuda_diffuse ( dev_grid, dev_grid0, 0, DIFFUSION, &grid_size, &block_size );
-	SWAP ( dev_grid0, dev_grid ); cuda_advect ( dev_grid, dev_grid0, dev_u, dev_v, 0, &grid_size, &block_size );
+	swap ( dev_grid0, dev_grid ); cuda_diffuse ( dev_grid, dev_grid0, 0, DIFFUSION, &grid_size, &block_size );
+	swap ( dev_grid0, dev_grid ); cuda_advect ( dev_grid, dev_grid0, dev_u, dev_v, 0, &grid_size, &block_size );
 	
 	
 	// Check for any errors launching the kernel
@@ -312,10 +319,10 @@ void vel_step ( float * u, float * v, float * u0, float * v0 )
 
 
 	cuda_add_source ( dev_u, dev_u0, &grid_size, &block_size ); cuda_add_source ( dev_v, dev_v0, &grid_size, &block_size );
-	SWAP ( dev_u0, dev_u ); cuda_diffuse ( dev_u, dev_u0, 1, VISCOSITY, &grid_size, &block_size );
-	SWAP ( dev_v0, dev_v ); cuda_diffuse ( dev_v, dev_v0, 2, VISCOSITY, &grid_size, &block_size );
+	swap ( dev_u0, dev_u ); cuda_diffuse ( dev_u, dev_u0, 1, VISCOSITY, &grid_size, &block_size );
+	swap ( dev_v0, dev_v ); cuda_diffuse ( dev_v, dev_v0, 2, VISCOSITY, &grid_size, &block_size );
 	cuda_project ( dev_u, dev_v, dev_u0, dev_v0, &grid_size, &block_size );
-	SWAP ( dev_u0, dev_u ); SWAP ( dev_v0, dev_v );
+	swap ( dev_u0, dev_u ); swap ( dev_v0, dev_v );
 	cuda_advect ( dev_u, dev_u0, dev_u0, dev_v0, 1, &grid_size, &block_size );
 	cuda_advect ( dev_v, dev_v0, dev_u0, dev_v0, 2, &grid_size, &block_size );
 	cuda_project ( dev_u, dev_v, dev_u0, dev_v0, &grid_size, &block_size );

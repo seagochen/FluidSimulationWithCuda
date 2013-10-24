@@ -21,26 +21,20 @@
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
 * <Last>		Oct 22, 2013
-* <File>        cfd_visual.h
+* <File>        visual_framework.h
 */
 
 #ifndef __cfd_visual_h_
 #define __cfd_visual_h_
 
-#pragma once
-
 #include <GL\glew.h>
 #include <GL\glut.h>
 #include <SGE\SGUtils.h>
 
+#include "macro_def.h"
+
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
-
-/*
-  ----------------------------------------------------------------------
-   Definitions of Structure
-  ----------------------------------------------------------------------
-*/
 
 namespace sge
 {
@@ -87,17 +81,7 @@ namespace sge
 		GLfloat z_forward;
 	};
 
-};
 
-
-/*
-  ----------------------------------------------------------------------
-   Definition of Visual
-  ----------------------------------------------------------------------
-*/
-
-namespace sge
-{
 	typedef class Visual
 	{
 	public:
