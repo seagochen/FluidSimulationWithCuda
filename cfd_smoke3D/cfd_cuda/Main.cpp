@@ -24,17 +24,14 @@
 * <File>        Main.cpp
 */
 
-#ifndef __launch_main_cpp_
-#define __launch_main_cpp_
+#define _MAIN_CPP_
 
 #include <GL\glew.h>
 #include <GL\glut.h>
 #include <SGE\SGUtils.h>
-#include "macro_def.h"
-#include "visual_framework.h"
+#include "Macro_Definitions.h"
+#include "Visualization.h"
 #include "resource.h"
-
-#define APP_ICONS IDI_ICON1
 
 ////////////////////////////////////////////////////////////////////////
 ///
@@ -75,8 +72,8 @@ void cuda_init(void);
 int main(int argc, char ** argv)
 {
 	// Create a main activity and set the window from size as 512x512
-	activity = new MainActivity(Client_X, Client_X);
-	visual   = new Visualization(Client_X, Client_X, activity);
+	activity = new MainActivity(WINDOWSX, WINDOWSY);
+	visual   = new Visualization(WINDOWSX, WINDOWSX, activity);
 
 	// Initialize the parameters
 	param_init();
@@ -96,7 +93,11 @@ int main(int argc, char ** argv)
 	clear_data();
 
 	// Set application title
+#if GPU_ON
 	activity->SetApplicationTitle( L"CFD - Navigator No. I  CUDA version" );
+#else
+	activity->SetApplicationTitle( L"CFD - Navigator No. I  CPU version" );
+#endif
 	activity->SetApplicationIcons(APP_ICONS, APP_ICONS);
 			
 	// Register callback functions
@@ -132,7 +133,9 @@ void free_dev_list()
 }
 
 void cuda_init()
-{	
+{
+#if GPU_ON
+	
 	// Push dev into vector
 	for (int i=0; i<devices; i++)
 	{
@@ -140,7 +143,7 @@ void cuda_init()
 		dev_list.push_back(ptr);
 	}
 
-	size_t size = Grids_X * Grids_X;
+	size_t size = ENTIRE_GRIDS_NUMBER * ENTIRE_GRIDS_NUMBER;
 
     // Choose which GPU to run on, change this on a multi-GPU system.
     cudaStatus = cudaSetDevice(0);
@@ -158,18 +161,20 @@ void cuda_init()
 			free_dev_list();
 		}
 	}
+
+#endif
 };
 
 void param_init()
 {
-	GridSize = SimArea_X;
+	GridSize = GRIDS_WITHOUT_GHOST;
 	dt       = DELTA_TIME;
 	diff     = DIFFUSION;
 	visc     = VISCOSITY;
 	force    = FORCE;
 	source   = SOURCE;
-	win_x    = Client_X;
-	win_y    = Client_X;
+	win_x    = WINDOWSX;
+	win_y    = WINDOWSY;
 };
 
 void free_data(void)
@@ -181,10 +186,11 @@ void free_data(void)
 	if ( dens ) SAFE_FREE_PTR(dens);
 	if ( dens_prev ) SAFE_FREE_PTR(dens_prev);
 
+#if GPU_ON
 	// Release CUDA resources
 	for (int i=0; i<devices; i++)
 		cudaFree(dev_list[i]);
-
+#endif
 }
 
 void clear_data(void)
@@ -214,7 +220,7 @@ int allocate_data(void)
 		return ( 0 );
 	}
 
-	return 1;
+	return True;
 }
 
 void draw_velocity(void)
@@ -278,7 +284,7 @@ void get_from_UI(float * d, float * u, float * v)
 #define MouseLeftDown  mouse_down[0]
 #define MouseRightDown mouse_down[1]
 
-	int i, j, size = Grids_X * Grids_X;
+	int i, j, size = ENTIRE_GRIDS_NUMBER * ENTIRE_GRIDS_NUMBER;
 
 	for (i=0 ; i<size ; i++) 
 	{
@@ -335,13 +341,18 @@ void key_func(SG_KEYS key, SG_KEY_STATUS status)
 void close_func(void)
 {
 	free_data();
-	
+
+#if GPU_ON
+
     // cudaDeviceReset must be called before exiting in order for profiling and
     // tracing tools such as Nsight and Visual Profiler to show complete traces.
     cudaStatus = cudaDeviceReset();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaDeviceReset failed!");
     }
+
+#endif
+
 	exit(0);
 };
 
@@ -399,5 +410,3 @@ void idle_func(void)
 
 ///
 ///////////////////////////////////////////////////////////////////////
-
-#endif

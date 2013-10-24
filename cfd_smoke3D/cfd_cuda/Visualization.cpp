@@ -24,10 +24,9 @@
 * <File>        Visualization.cpp
 */
 
-#ifndef __visual_framework_cpp_
-#define __visual_framework_cpp_
+#define _VISUALIZATION_CPP_
 
-#include "visual_framework.h"
+#include "Visualization.h"
 
 using namespace sge;
 
@@ -416,7 +415,7 @@ void Visual::UploadVolumeData( _volume3D const *data_in )
 };
 
 
-#include "macro_def.h"
+#include "Macro_Definitions.h"
 
 
 int Visual::Texel2D( int i, int j )
@@ -438,5 +437,3 @@ int Visual::Texel3D( int i, int j, int k )
 
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-#endif

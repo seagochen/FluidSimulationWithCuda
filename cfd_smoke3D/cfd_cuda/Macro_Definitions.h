@@ -20,33 +20,39 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 7, 2013
-* <Last>		Oct 24, 2013
-* <File>        macro_def.h
+* <Last>		Oct 7, 2013
+* <File>        Macro_Definitions.h
 */
 
-#ifndef __macro_definition_h_
-#define __macro_definition_h_
+#ifndef _MACRO_DEFINITIONS_H_
+#define _MACRO_DEFINITIONS_H_
 
 ////////////////////////////////////////////////////////////////////////
 ///
 
 /*
   ----------------------------------------------------------------------
+   Normal Definitions
+  ----------------------------------------------------------------------
+*/
+
+#define True  1
+#define False 0
+/*
+  ----------------------------------------------------------------------
    Definition for Variables of Computational Fluid Dynamics
   ----------------------------------------------------------------------
 */
-#define Grids_X              64       // total grids number
-#define SimArea_X            62       // simulation area which is the number without ghost cells
 
-#define Tile_X               4
-
+#define GRIDS_WITHOUT_GHOST  62       // grids number without ghost grids
+#define ENTIRE_GRIDS_NUMBER  64       // grids number contains ghost grids
 #define DELTA_TIME           0.1f     // 0.1 second
 #define DIFFUSION            0.0f     // diffusion rate
 #define VISCOSITY            0.0f     // viscosity rate
 #define FORCE                5.0f     // external force rate
 #define SOURCE               100.0f   // to given a density with 100 percent
-
-#define Client_X             512      // application's client size
+#define WINDOWSX             512      // application window size, width
+#define WINDOWSY             512      // application window size, height
 
 /*
   ----------------------------------------------------------------------
@@ -62,17 +68,26 @@
 
 /*
   ----------------------------------------------------------------------
+   Definition of Switch
+  ----------------------------------------------------------------------
+*/
+
+#define GPU_ON  True
+
+///
+////////////////////////////////////////////////////////////////////////
+///
+
+/*
+  ----------------------------------------------------------------------
    Function Definitions
   ----------------------------------------------------------------------
 */
 
 #define PrintStatus(str) {system("cls"); printf("%s");}
 
-#define Index(i,j)      ((j) * Grids_X + i)
-
-#define GPUIndex(i, j)  ((j) * gridDim.x * blockDim.x + (i))
-
-#define cuda_device(gridDim, blockDim) <<<gridDim, blockDim>>>
+#define Index(i,j) ((j)*ENTIRE_GRIDS_NUMBER + i)
+#define GPUIndex(i,j) (gridDim.x * blockDim.x * (j) + i)
 
 /*
   ----------------------------------------------------------------------
@@ -93,7 +108,7 @@ void vel_step(float * u, float * v, float * u0, float * v0);
 #include <vector>
 #include <cuda_runtime.h>
 
-#ifdef __launch_main_cpp_
+#ifdef _MAIN_CPP_
 
 /*
   ----------------------------------------------------------------------
