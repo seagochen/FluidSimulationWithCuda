@@ -20,14 +20,15 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
-* <Last>		Oct 6, 2013
-* <File>        Visualization.cpp
+* <Last>		Oct 24, 2013
+* <File>        visual_framework.cpp
 */
 
 #ifndef __visual_framework_cpp_
 #define __visual_framework_cpp_
 
 #include "visual_framework.h"
+#include "macro_def.h"
 
 using namespace sge;
 
@@ -42,7 +43,6 @@ static _viewMatrix   *m_view;
 static FreeType      *m_font;
 static MainActivity  *m_hAct;
 static GLfloat        m_width, m_height;
-static SG_FUNCTIONS_HOLDER *m_funcholder;
 
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -57,7 +57,6 @@ Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
 	m_view     = new _viewMatrix;
 	m_font     = new FreeType;
 	m_hAct     = hActivity;
-	m_funcholder = new SG_FUNCTIONS_HOLDER;
 
 	m_width    = width;
 	m_height   = height;
@@ -254,24 +253,6 @@ void CountFPS( void )
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-void Visual::RegisterCreate( void (*func)(void) ) { m_funcholder->hCreateFunc = func; };
-
-void Visual::RegisterResize( void (*func)(GLuint width, GLuint height) ) { m_funcholder->hReshapeFunc = func; };
-
-void Visual::RegisterDisplay( void (*func)(void) ) { m_funcholder->hDisplayFunc = func; };
-
-void Visual::RegisterIdle( void (*func)(void) ) { m_funcholder->hIdleFunc = func; };
-
-void Visual::RegisterKeyboard( void (*func)(SG_KEYS keys, SG_KEY_STATUS status) ) { m_funcholder->hKeyboardFunc = func; };
-
-void Visual::RegisterMouse( void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos) ) { m_funcholder->hMouseFunc = func; };
-
-void Visual::RegisterDestroy ( void (*func)(void) ) { m_funcholder->hDestoryFunc = func; };
-
-///
-///////////////////////////////////////////////////////////////////////////////////////////////////
-///
-
 void Visual::OnCreate( void )
 {
 	// Initialize
@@ -288,8 +269,7 @@ void Visual::OnCreate( void )
 
 	// Set texture
 //	SetTexture();
-
-	if ( m_funcholder->hCreateFunc != NULL ) m_funcholder->hCreateFunc();
+	
 };
 
 
@@ -309,13 +289,28 @@ void Visual::OnResize( GLuint width, GLuint height )
 //	gluPerspective(m_view->view_angle, m_width / m_height, m_view->z_near, m_view->z_far);
 //	glMatrixMode(GL_MODELVIEW);
 
-	if ( m_funcholder->hReshapeFunc != NULL ) m_funcholder->hReshapeFunc( width, height );
+	if (height == 0) height = 1;
+
+	glViewport(0, 0, width, height);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity ();
+	gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+	glClearColor( 0.0f, 0.0f, 0.0f, 1.0f);
+
+	win_x = width;
+	win_y = height;
 };
 
 
 void Visual::OnIdle( void )
 {
-	if ( m_funcholder->hIdleFunc != NULL ) m_funcholder->hIdleFunc();
+	extern void get_from_UI(float *, float *, float *);
+
+	get_from_UI(dens_prev, u_prev, v_prev);
+	vel_step(u, v, u_prev, v_prev);
+	dens_step(dens, dens_prev, u, v);
+
 };
 
 
@@ -335,9 +330,12 @@ void Visual::OnDisplay( void )
 
 	// Draw fluid sim result on 2-D map
 //	DrawAgent2D();
+	extern void draw_density(), draw_velocity();
 
-	if ( m_funcholder->hDisplayFunc != NULL ) m_funcholder->hDisplayFunc();
-	
+	glClear(GL_COLOR_BUFFER_BIT);
+	draw_density();
+	draw_velocity();
+
 	// Print FPS
 	CountFPS();
 };
@@ -345,40 +343,73 @@ void Visual::OnDisplay( void )
 
 void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 {
-	if ( m_funcholder->hKeyboardFunc != NULL ) m_funcholder->hKeyboardFunc( keys, status );
+	extern void clear_data(), free_data();
 
-	if ( keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN )	
-	{	
-		OnDestroy();
-		exit(0);
+	if (status == SG_KEY_STATUS::SG_KEY_DOWN)
+	{
+		switch (keys)
+		{
+		case SG_KEYS::SG_KEY_C:
+			clear_data();
+			break;
+		
+		case SG_KEYS::SG_KEY_Q:
+		case SG_KEYS::SG_KEY_ESCAPE:
+			free_data();
+			OnDestroy();
+			exit ( 0 );
+			break;
+		}
 	}
 };
 
 
 void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 {
-	if ( m_funcholder->hMouseFunc != NULL ) m_funcholder->hMouseFunc( mouse, x_pos, y_pos );
+#define MouseLeftDown  mouse_down[0]
+#define MouseRightDown mouse_down[1]
+
+	omx = mx = x_pos;
+	omx = my = y_pos;
+
+	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN) MouseLeftDown  = true;
+	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN) MouseRightDown = true;
+	if (mouse == SG_MOUSE::SG_MOUSE_MOVE)
+	{
+		mx = x_pos;
+		my = y_pos;
+	}
+
+	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP) MouseLeftDown   = false;
+	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP) MouseRightDown  = false;
+
+#undef MouseLeftDown
+#undef MouseRightDown
 };
 
 
 void Visual::OnDestroy( void )
 {
-	if ( m_funcholder->hDestoryFunc != NULL ) m_funcholder->hDestoryFunc();
+	extern void free_data();
+
+	free_data();
+	
+    // cudaDeviceReset must be called before exiting in order for profiling and
+    // tracing tools such as Nsight and Visual Profiler to show complete traces.
+    cudaStatus = cudaDeviceReset();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceReset failed!");
+    }
 
 	SAFE_DELT_PTR( m_mouse );
 	SAFE_DELT_PTR( m_fps );
 	SAFE_DELT_PTR( m_view );
-	SAFE_DELT_PTR( m_funcholder );
 
 	if ( m_volume2D->size > 0 ) SAFE_FREE_PTR( m_volume2D->data );
 	if ( m_volume3D->size > 0 ) SAFE_FREE_PTR( m_volume3D->data );
 
 	if ( m_font != NULL )	m_font->Clean();
 	SAFE_DELT_PTR( m_font );
-
-#ifdef PRINT_STATUS
-	printf( "Call OnDestroy, now resource released up!\n" );
-#endif
 };
 
 ///
@@ -392,11 +423,6 @@ void Visual::UploadVolumeData( _volume2D const *data_in )
 	m_volume2D->data   = data_in->data;
 
 	m_volume2D->size   = data_in->size;
-
-#ifdef PRINT_STATUS
-	system( "cls" );
-	printf( "Upload volume data and try to rendering the result, size: %d\n", m_volume2D->size );
-#endif
 };
 
 
@@ -408,11 +434,6 @@ void Visual::UploadVolumeData( _volume3D const *data_in )
 	m_volume3D->data   = data_in->data;
 
 	m_volume3D->size   = data_in->size;
-
-#ifdef PRINT_STATUS
-	system( "cls" );
-	printf( "Upload volume data and try to rendering the result, size: %d\n", m_volume3D->size );
-#endif
 };
 
 

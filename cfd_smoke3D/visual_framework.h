@@ -94,14 +94,6 @@ namespace sge
 		static void OnMouse    (SG_MOUSE mouse, GLuint x_pos, GLuint y_pos);
 		static void OnDestroy  (void);
 
-		static void RegisterCreate  ( void (*func)(void) );
-		static void RegisterResize  ( void (*func)(GLuint width, GLuint height) );
-		static void RegisterDisplay ( void (*func)(void) );
-		static void RegisterIdle    ( void (*func)(void) );
-		static void RegisterKeyboard( void (*func)(SG_KEYS keys, SG_KEY_STATUS status) );
-		static void RegisterMouse   ( void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos) );
-		static void RegisterDestroy ( void (*func)(void) );
-
 	public:
 		void UploadVolumeData(_volume2D const *data_in);
 		void UploadVolumeData(_volume3D const *data_in);

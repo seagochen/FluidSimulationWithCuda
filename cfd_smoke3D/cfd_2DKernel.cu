@@ -20,8 +20,8 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 12, 2013
-* <Last>		Oct 12, 2013
-* <File>        CUDA_Routine.cpp
+* <Last>		Oct 24, 2013
+* <File>        cfd_2DKernel.cu
 */
 
 #ifndef __cfd_2DKernel_cu_

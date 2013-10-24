@@ -30,6 +30,7 @@
     <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cfd_rendering.cpp" />
     <ClCompile Include="launch_main.cpp" />
     <ClCompile Include="visual_framework.cpp" />
   </ItemGroup>
