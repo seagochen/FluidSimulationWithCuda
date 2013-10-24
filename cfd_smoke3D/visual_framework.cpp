@@ -24,7 +24,8 @@
 * <File>        Visualization.cpp
 */
 
-#define _VISUALIZATION_CPP_
+#ifndef __visual_framework_cpp_
+#define __visual_framework_cpp_
 
 #include "visual_framework.h"
 
@@ -437,3 +438,5 @@ int Visual::Texel3D( int i, int j, int k )
 
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+#endif

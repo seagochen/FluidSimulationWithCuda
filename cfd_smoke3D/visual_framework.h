@@ -20,12 +20,12 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
-* <Last>		Oct 6, 2013
-* <File>        Visualization.h
+* <Last>		Oct 24, 2013
+* <File>        visual_framework.h
 */
 
-#ifndef _VISUALIZATION_H_
-#define _VISUALIZATION_H_
+#ifndef __visual_framework_h_
+#define __visual_framework_h_
 
 #include <GL\glew.h>
 #include <GL\glut.h>
