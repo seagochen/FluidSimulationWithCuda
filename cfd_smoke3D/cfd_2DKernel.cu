@@ -20,24 +20,14 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 12, 2013
-* <Last>		Oct 12, 2013
-* <File>        CUDA_Routine.cpp
+* <Last>		Oct 25, 2013
+* <File>        cfd_2DKernel.cu
 */
 
 #ifndef __cfd_2DKernel_cu_
 #define __cfd_2DKernel_cu_
 
 #include "macro_def.h"
-
-#include <SGE\SGUtils.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-#include <vector>
-
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
 
 using namespace std;
 
@@ -214,32 +204,40 @@ void dens_step ( float *grid, float *grid0, float *u, float *v )
 	// Define the computing unit size
 	dim3 block_size;
 	dim3 grid_size;
-	block_size.x = 16;
-	block_size.y = 16;
-	grid_size.x  = Grids_X / block_size.x;
-	grid_size.y  = Grids_X / block_size.y;
+	block_size.x = Tile_X;
+	block_size.y = Tile_X;
+	grid_size.x  = Grids_X / Tile_X;
+	grid_size.y  = Grids_X / Tile_X;
 
 	size_t size = Grids_X * Grids_X;
 
     // Copy input vectors from host memory to GPU buffers.
     cudaStatus = cudaMemcpy(dev_grid, grid, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
 	cudaStatus = cudaMemcpy(dev_grid0, grid0, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
 	cudaStatus = cudaMemcpy(dev_u, u, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);    
+	}
 
 	cudaStatus = cudaMemcpy(dev_v, v, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
 
@@ -251,36 +249,48 @@ void dens_step ( float *grid, float *grid0, float *u, float *v )
 	// Check for any errors launching the kernel
     cudaStatus = cudaGetLastError();
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "add_source_kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "CUDA encountered an error, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
     
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
     // any errors encountered during the launch.
     cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaDeviceSynchronize was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
     // Copy output vector from GPU buffer to host memory.
     cudaStatus = cudaMemcpy(grid, dev_grid, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
 	cudaStatus = cudaMemcpy(grid0, dev_grid0, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
+	}
 	
 	cudaStatus = cudaMemcpy(u, dev_u, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
+	}
 
 	cudaStatus = cudaMemcpy(v, dev_v, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
+	}
 }
 
 
@@ -289,38 +299,46 @@ void vel_step ( float * u, float * v, float * u0, float * v0 )
 	// Define the computing unit size
 	dim3 block_size;
 	dim3 grid_size;
-	block_size.x = 16;
-	block_size.y = 16;
-	grid_size.x  = Grids_X / block_size.x;
-	grid_size.y  = Grids_X / block_size.y;
+	block_size.x = Tile_X;
+	block_size.y = Tile_X;
+	grid_size.x  = Grids_X / Tile_X;
+	grid_size.y  = Grids_X / Tile_X;
 
 	size_t size = Grids_X * Grids_X;
 
     // Copy input vectors from host memory to GPU buffers.
     cudaStatus = cudaMemcpy(dev_u0, u0, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
 	cudaStatus = cudaMemcpy(dev_v0, v0, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
 	cudaStatus = cudaMemcpy(dev_u, u, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
 	cudaStatus = cudaMemcpy(dev_v, v, size * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
 
 	cuda_add_source ( dev_u, dev_u0, &grid_size, &block_size ); cuda_add_source ( dev_v, dev_v0, &grid_size, &block_size );
-	swap ( dev_u0, dev_u ); cuda_diffuse ( dev_u, dev_u0, 1, visc, &grid_size, &block_size );
-	swap ( dev_v0, dev_v ); cuda_diffuse ( dev_v, dev_v0, 2, visc, &grid_size, &block_size );
+	swap ( dev_u0, dev_u ); cuda_diffuse ( dev_u, dev_u0, 1, VISCOSITY, &grid_size, &block_size );
+	swap ( dev_v0, dev_v ); cuda_diffuse ( dev_v, dev_v0, 2, VISCOSITY, &grid_size, &block_size );
 	cuda_project ( dev_u, dev_v, dev_u0, dev_v0, &grid_size, &block_size );
 	swap ( dev_u0, dev_u ); swap ( dev_v0, dev_v );
 	cuda_advect ( dev_u, dev_u0, dev_u0, dev_v0, 1, &grid_size, &block_size );
@@ -331,35 +349,47 @@ void vel_step ( float * u, float * v, float * u0, float * v0 )
 	// Check for any errors launching the kernel
     cudaStatus = cudaGetLastError();
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "add_source_kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "CUDA encountered an error, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
     
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
     // any errors encountered during the launch.
     cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaDeviceSynchronize was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
     // Copy output vector from GPU buffer to host memory.
     cudaStatus = cudaMemcpy(u0, dev_u0, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
 	cudaStatus = cudaMemcpy(v0, dev_v0, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 	
 	cudaStatus = cudaMemcpy(u, dev_u, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 
 	cudaStatus = cudaMemcpy(v, dev_v, size * sizeof(int), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, "cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+		exit(0);
     }
 }
 

@@ -27,12 +27,16 @@
 #ifndef __visual_framework_h_
 #define __visual_framework_h_
 
-#include <GL\glew.h>
-#include <GL\glut.h>
-#include <SGE\SGUtils.h>
+#include "cfd_headers.h"
 
 namespace sge
 {
+	/*
+	----------------------------------------------------------------------
+	Structures
+	----------------------------------------------------------------------
+	*/
+
 	struct _mouse
 	{
 		unsigned pre_cursor_x, pre_cursor_y;
@@ -77,8 +81,12 @@ namespace sge
 	};
 
 
-
-
+	/*
+	----------------------------------------------------------------------
+	Class of Visual
+	----------------------------------------------------------------------
+	*/
+	
 	typedef class Visual
 	{
 	public:
@@ -93,14 +101,6 @@ namespace sge
 		static void OnKeyboard (SG_KEYS keys, SG_KEY_STATUS status);
 		static void OnMouse    (SG_MOUSE mouse, GLuint x_pos, GLuint y_pos);
 		static void OnDestroy  (void);
-
-		static void RegisterCreate  ( void (*func)(void) );
-		static void RegisterResize  ( void (*func)(GLuint width, GLuint height) );
-		static void RegisterDisplay ( void (*func)(void) );
-		static void RegisterIdle    ( void (*func)(void) );
-		static void RegisterKeyboard( void (*func)(SG_KEYS keys, SG_KEY_STATUS status) );
-		static void RegisterMouse   ( void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos) );
-		static void RegisterDestroy ( void (*func)(void) );
 
 	public:
 		void UploadVolumeData(_volume2D const *data_in);

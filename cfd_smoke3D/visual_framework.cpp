@@ -20,18 +20,19 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
-* <Last>		Oct 6, 2013
-* <File>        Visualization.cpp
+* <Last>		Oct 25, 2013
+* <File>        visual_framework.cpp
 */
 
 #ifndef __visual_framework_cpp_
 #define __visual_framework_cpp_
 
 #include "visual_framework.h"
+#include "macro_def.h"
 
 using namespace sge;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 static _mouse        *m_mouse;
@@ -42,10 +43,10 @@ static _viewMatrix   *m_view;
 static FreeType      *m_font;
 static MainActivity  *m_hAct;
 static GLfloat        m_width, m_height;
-static SG_FUNCTIONS_HOLDER *m_funcholder;
+
 
 ///
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
@@ -57,13 +58,20 @@ Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
 	m_view     = new _viewMatrix;
 	m_font     = new FreeType;
 	m_hAct     = hActivity;
-	m_funcholder = new SG_FUNCTIONS_HOLDER;
 
 	m_width    = width;
 	m_height   = height;
 
 	m_volume2D->size = 0;
 	m_volume3D->size = 0;
+	
+	extern void clear_data(void); extern int allocate_data(void); extern void cuda_init(void);
+
+	// Initialize the CUDA
+	cuda_init();
+
+	if ( !allocate_data() ) exit(1);
+	clear_data();
 };
 
 
@@ -73,7 +81,7 @@ Visual::~Visual( void )
 };
 
 ///
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 void InitFPS( void )
@@ -90,7 +98,7 @@ void InitFont( void )
 {
 	if (m_font->Init("EHSMB.TTF", 12) != SGRUNTIMEMSG::SG_RUNTIME_OK)
 	{
-		ErrorMSG("Cannot create FreeType font");
+		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "Cannot init FreeType and load TTF file at line: %d of file %s", __LINE__, __FILE__);
 		exit(1);
 	};
 }
@@ -172,7 +180,7 @@ void SetTexture( void )
 	// Check texture ID is available
 	if (m_font->IsTextureIDAvailable(m_volume2D->texture_id) != SGRUNTIMEMSG::SG_RUNTIME_OK)
 	{
-		ErrorMSG("Cann't assign an available texture ID");
+		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "Cannot assign an available texture ID to object at line: %d of file %s", __LINE__, __FILE__);
 		exit(0);
 	}
 };
@@ -250,26 +258,141 @@ void CountFPS( void )
 	glPopMatrix();
 }
 
+
+void get_from_UI(float * d, float * u, float * v)
+{
+#define MouseLeftDown  m_mouse->left_button_pressed
+#define MouseRightDown m_mouse->right_button_pressed
+#define mx	m_mouse->cur_cursor_x
+#define my  m_mouse->cur_cursor_y
+#define omx m_mouse->pre_cursor_x
+#define omy m_mouse->pre_cursor_y
+
+	int i, j, size = Grids_X * Grids_X;
+
+	for (i=0 ; i<size ; i++) 
+	{
+		u[i] = v[i] = d[i] = 0.0f;
+	}
+
+	if (!MouseLeftDown && !MouseRightDown) return;
+
+	i = (int)((       mx /(float)m_width)*SimArea_X+1);
+	j = (int)(((m_height-my)/(float)m_height)*SimArea_X+1);
+
+	if (i<1 || i>SimArea_X || j<1 || j>SimArea_X) return;
+
+	if (MouseLeftDown)
+	{
+		u[Index(i,j)] = FORCE * (mx-omx);
+		v[Index(i,j)] = FORCE * (omy-my);
+	}
+
+	if (MouseRightDown)
+	{
+		d[Index(i,j)] = SOURCE;
+	}
+
+	omx = mx;
+	omy = my;
+
+#undef mx
+#undef my
+#undef omx
+#undef omy
+#undef MouseLeftDown
+#undef MouseRightDown
+}
+
+void free_dev_list()
+{
+	// Release CUDA resource if failed
+	for (int i=0; i<devices; i++)
+	{
+		cudaFree(dev_list[i]);
+	}
+	dev_list.empty();
+}
+
+void cuda_init()
+{	
+	// Push dev into vector
+	for (int i=0; i<devices; i++)
+	{
+		static float *ptr;
+		dev_list.push_back(ptr);
+	}
+
+	size_t size = Grids_X * Grids_X;
+
+    // Choose which GPU to run on, change this on a multi-GPU system.
+    cudaStatus = cudaSetDevice(0);
+    if (cudaStatus != cudaSuccess) {
+		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "cudaSetDevice was failed, do you have a CUDA-capable GPU installed? at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+        free_dev_list();
+    }
+
+    // Allocate GPU buffers for three vectors (two input, one output).
+	for (int i=0; i<devices; i++)
+	{
+		cudaStatus = cudaMalloc((void**)&dev_list[i], size * sizeof(float));
+		if (cudaStatus != cudaSuccess) {
+			Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "cudaMalloc was failed, at line: %d of file %s", __LINE__, __FILE__);
+			Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+			free_dev_list();
+		}
+	}
+};
+
+void free_data(void)
+{
+	if ( u ) SAFE_FREE_PTR(u);
+	if ( v ) SAFE_FREE_PTR(v);
+	if ( u_prev ) SAFE_FREE_PTR(u_prev);
+	if ( v_prev ) SAFE_FREE_PTR(v_prev);
+	if ( dens ) SAFE_FREE_PTR(dens);
+	if ( dens_prev ) SAFE_FREE_PTR(dens_prev);
+
+	// Release CUDA resources
+	for (int i=0; i<devices; i++)
+		cudaFree(dev_list[i]);
+
+}
+
+void clear_data(void)
+{
+	int size=(Grids_X)*(Grids_X);
+
+	for ( int i=0; i<size ; i++ )
+	{
+		u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = 0.0f;
+	}
+}
+
+int allocate_data(void)
+{
+	int size = (Grids_X)*(Grids_X);
+
+	u			= (float *)malloc(size*sizeof(float));
+	v			= (float *)malloc(size*sizeof(float));
+	u_prev		= (float *)malloc(size*sizeof(float));
+	v_prev		= (float *)malloc(size*sizeof(float));
+	dens		= (float *)malloc(size*sizeof(float));	
+	dens_prev	= (float *)malloc(size*sizeof(float));
+
+	if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev ) 
+	{
+		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "allocate data was failed, at line: %d of file %s", __LINE__, __FILE__);
+		return ( 0 );
+	}
+
+	return 1;
+}
+
+
 ///
-///////////////////////////////////////////////////////////////////////////////////////////////////
-///
-
-void Visual::RegisterCreate( void (*func)(void) ) { m_funcholder->hCreateFunc = func; };
-
-void Visual::RegisterResize( void (*func)(GLuint width, GLuint height) ) { m_funcholder->hReshapeFunc = func; };
-
-void Visual::RegisterDisplay( void (*func)(void) ) { m_funcholder->hDisplayFunc = func; };
-
-void Visual::RegisterIdle( void (*func)(void) ) { m_funcholder->hIdleFunc = func; };
-
-void Visual::RegisterKeyboard( void (*func)(SG_KEYS keys, SG_KEY_STATUS status) ) { m_funcholder->hKeyboardFunc = func; };
-
-void Visual::RegisterMouse( void (*func)(SG_MOUSE mouse, GLuint x_pos, GLuint y_pos) ) { m_funcholder->hMouseFunc = func; };
-
-void Visual::RegisterDestroy ( void (*func)(void) ) { m_funcholder->hDestoryFunc = func; };
-
-///
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 void Visual::OnCreate( void )
@@ -288,8 +411,7 @@ void Visual::OnCreate( void )
 
 	// Set texture
 //	SetTexture();
-
-	if ( m_funcholder->hCreateFunc != NULL ) m_funcholder->hCreateFunc();
+	
 };
 
 
@@ -309,13 +431,25 @@ void Visual::OnResize( GLuint width, GLuint height )
 //	gluPerspective(m_view->view_angle, m_width / m_height, m_view->z_near, m_view->z_far);
 //	glMatrixMode(GL_MODELVIEW);
 
-	if ( m_funcholder->hReshapeFunc != NULL ) m_funcholder->hReshapeFunc( width, height );
+	if (height == 0) height = 1;
+
+	glViewport(0, 0, width, height);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity ();
+	gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+	glClearColor( 0.0f, 0.0f, 0.0f, 1.0f);
 };
 
 
 void Visual::OnIdle( void )
 {
-	if ( m_funcholder->hIdleFunc != NULL ) m_funcholder->hIdleFunc();
+	extern void get_from_UI(float *, float *, float *);
+
+	get_from_UI(dens_prev, u_prev, v_prev);
+	vel_step(u, v, u_prev, v_prev);
+	dens_step(dens, dens_prev, u, v);
+
 };
 
 
@@ -335,9 +469,12 @@ void Visual::OnDisplay( void )
 
 	// Draw fluid sim result on 2-D map
 //	DrawAgent2D();
+	extern void draw_density(), draw_velocity();
 
-	if ( m_funcholder->hDisplayFunc != NULL ) m_funcholder->hDisplayFunc();
-	
+	glClear(GL_COLOR_BUFFER_BIT);
+	draw_density();
+	draw_velocity();
+
 	// Print FPS
 	CountFPS();
 };
@@ -345,44 +482,86 @@ void Visual::OnDisplay( void )
 
 void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 {
-	if ( m_funcholder->hKeyboardFunc != NULL ) m_funcholder->hKeyboardFunc( keys, status );
+	extern void clear_data(), free_data();
 
-	if ( keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN )	
-	{	
-		OnDestroy();
-		exit(0);
+	if (status == SG_KEY_STATUS::SG_KEY_DOWN)
+	{
+		switch (keys)
+		{
+		case SG_KEYS::SG_KEY_C:
+			clear_data();
+			break;
+		
+		case SG_KEYS::SG_KEY_Q:
+		case SG_KEYS::SG_KEY_ESCAPE:
+			free_data();
+			OnDestroy();
+			exit ( 0 );
+			break;
+		}
 	}
 };
 
 
 void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 {
-	if ( m_funcholder->hMouseFunc != NULL ) m_funcholder->hMouseFunc( mouse, x_pos, y_pos );
+#define MouseLeftDown  m_mouse->left_button_pressed
+#define MouseRightDown m_mouse->right_button_pressed
+#define mx	m_mouse->cur_cursor_x
+#define my  m_mouse->cur_cursor_y
+#define omx m_mouse->pre_cursor_x
+#define omy m_mouse->pre_cursor_y
+
+	omx = mx = x_pos;
+	omx = my = y_pos;
+
+	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN) MouseLeftDown  = true;
+	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN) MouseRightDown = true;
+	if (mouse == SG_MOUSE::SG_MOUSE_MOVE)
+	{
+		mx = x_pos;
+		my = y_pos;
+	}
+
+	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP) MouseLeftDown   = false;
+	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP) MouseRightDown  = false;
+
+#undef omx
+#undef omy
+#undef mx
+#undef my
+#undef MouseLeftDown
+#undef MouseRightDown
 };
 
 
 void Visual::OnDestroy( void )
 {
-	if ( m_funcholder->hDestoryFunc != NULL ) m_funcholder->hDestoryFunc();
+	extern void free_data();
+
+	free_data();
+	
+    // cudaDeviceReset must be called before exiting in order for profiling and
+    // tracing tools such as Nsight and Visual Profiler to show complete traces.
+    cudaStatus = cudaDeviceReset();
+    if (cudaStatus != cudaSuccess) {
+		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "cudaDeviceReset was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+    }
 
 	SAFE_DELT_PTR( m_mouse );
 	SAFE_DELT_PTR( m_fps );
 	SAFE_DELT_PTR( m_view );
-	SAFE_DELT_PTR( m_funcholder );
 
 	if ( m_volume2D->size > 0 ) SAFE_FREE_PTR( m_volume2D->data );
 	if ( m_volume3D->size > 0 ) SAFE_FREE_PTR( m_volume3D->data );
 
 	if ( m_font != NULL )	m_font->Clean();
 	SAFE_DELT_PTR( m_font );
-
-#ifdef PRINT_STATUS
-	printf( "Call OnDestroy, now resource released up!\n" );
-#endif
 };
 
 ///
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 void Visual::UploadVolumeData( _volume2D const *data_in )
@@ -392,11 +571,6 @@ void Visual::UploadVolumeData( _volume2D const *data_in )
 	m_volume2D->data   = data_in->data;
 
 	m_volume2D->size   = data_in->size;
-
-#ifdef PRINT_STATUS
-	system( "cls" );
-	printf( "Upload volume data and try to rendering the result, size: %d\n", m_volume2D->size );
-#endif
 };
 
 
@@ -408,16 +582,7 @@ void Visual::UploadVolumeData( _volume3D const *data_in )
 	m_volume3D->data   = data_in->data;
 
 	m_volume3D->size   = data_in->size;
-
-#ifdef PRINT_STATUS
-	system( "cls" );
-	printf( "Upload volume data and try to rendering the result, size: %d\n", m_volume3D->size );
-#endif
 };
-
-
-#include "macro_def.h"
-
 
 int Visual::Texel2D( int i, int j )
 {
@@ -437,6 +602,6 @@ int Visual::Texel3D( int i, int j, int k )
 };
 
 ///
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif
