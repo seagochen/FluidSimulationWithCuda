@@ -27,12 +27,16 @@
 #ifndef __visual_framework_h_
 #define __visual_framework_h_
 
-#include <GL\glew.h>
-#include <GL\glut.h>
-#include <SGE\SGUtils.h>
+#include "cfd_headers.h"
 
 namespace sge
 {
+	/*
+	----------------------------------------------------------------------
+	Structures
+	----------------------------------------------------------------------
+	*/
+
 	struct _mouse
 	{
 		unsigned pre_cursor_x, pre_cursor_y;
@@ -77,8 +81,12 @@ namespace sge
 	};
 
 
-
-
+	/*
+	----------------------------------------------------------------------
+	Class of Visual
+	----------------------------------------------------------------------
+	*/
+	
 	typedef class Visual
 	{
 	public:

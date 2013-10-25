@@ -31,6 +31,9 @@
     <ClInclude Include="visual_framework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cfd_headers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="visual_framework.cpp">

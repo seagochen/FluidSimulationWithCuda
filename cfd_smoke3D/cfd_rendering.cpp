@@ -27,8 +27,6 @@
 #ifndef __cfd_rendering_cpp_
 #define __cfd_rendering_cpp_
 
-#include <GL\freeglut.h>
-
 #include "macro_def.h"
 
 void draw_velocity(void)

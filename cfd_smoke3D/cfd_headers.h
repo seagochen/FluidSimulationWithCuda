@@ -19,113 +19,66 @@
 
 /**
 * <Author>      Orlando Chen
-* <First>       Oct 7, 2013
+* <First>       Oct 25, 2013
 * <Last>		Oct 25, 2013
-* <File>        macro_def.h
+* <File>        cfd_headers.h
 */
 
-#ifndef __macro_definition_h_
-#define __macro_definition_h_
-
-#include "cfd_headers.h"
-
+#ifndef __cfd_headers_h_
+#define __cfd_headers_h_
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 /*
   ----------------------------------------------------------------------
-   Definition for Variables of Computational Fluid Dynamics
+   C Standard & STL Headers and System Headers
   ----------------------------------------------------------------------
 */
-#define Grids_X              64       // total grids number
-#define SimArea_X            62       // simulation area which is the number without ghost cells
 
-#define Tile_X               16       // 16x16 gpu threads as a block
+#include <stdio.h>
+#include <stdlib.h>
 
-#define DELTA_TIME           0.1f     // 0.1 second
-#define DIFFUSION            0.0f     // diffusion rate
-#define VISCOSITY            0.0f     // viscosity rate
-#define FORCE                5.0f     // external force rate
-#define SOURCE               100.0f   // to given a density with 100 percent
-
-#define Client_X             512      // application's client size
-
-#define BYTES_PER_TEXEL      3        // a pixel consists of three unsigned bytes
-
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
+#include <iostream>
+#include <vector>
 
 /*
   ----------------------------------------------------------------------
-   Data used in CFD
+   OpenGL Headers
   ----------------------------------------------------------------------
 */
 
-#ifdef __launch_main_cpp_
-
-float * u, * v, * u_prev, * v_prev;
-float * dens, * dens_prev;
-
-std::vector<float*> dev_list;
-sge::FileManager    Logfile;
-
-cudaError cudaStatus;
-
-#else
-
-extern float * u, * v, * u_prev, * v_prev;
-extern float * dens, * dens_prev;
-
-extern std::vector<float*> dev_list;
-extern sge::FileManager    Logfile;
-
-extern cudaError cudaStatus;
-
-#endif
-
+#include <GL\glew.h>
+#include <GL\glut.h>
 
 /*
   ----------------------------------------------------------------------
-   Function Definitions
+   CUDA Headers
   ----------------------------------------------------------------------
 */
 
-#define Index(i,j)      ((j) * Grids_X + i)
-
-#define GPUIndex(i, j)  ((j) * gridDim.x * blockDim.x + (i))
-
-#define cuda_device(gridDim, blockDim) <<<gridDim, blockDim>>>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 
 /*
   ----------------------------------------------------------------------
-   external functions on CPU
+   Intel MKL Headers
   ----------------------------------------------------------------------
 */
 
-extern void dens_step(float * grid, float * grid0, float * u, float * v);
+/*
+  ----------------------------------------------------------------------
+   SGEngine Headers
+  ----------------------------------------------------------------------
+*/
 
-extern void vel_step(float * u, float * v, float * u0, float * v0);
-
+#include <SGE\SGUtils.h>
 
 /*
   ----------------------------------------------------------------------
    etc.
   ----------------------------------------------------------------------
 */
-
-
-#define devices   8
-
-#define dev_u      dev_list[0]
-#define dev_v      dev_list[1]
-#define dev_u0     dev_list[2]
-#define dev_v0     dev_list[3]
-#define dev_den    dev_list[4]
-#define dev_den0   dev_list[5]
-#define dev_grid   dev_list[6]
-#define dev_grid0  dev_list[7]
 
 ///
 //////////////////////////////////////////////////////////////////////////////////////////////

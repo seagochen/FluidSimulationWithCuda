@@ -32,7 +32,7 @@
 
 using namespace sge;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 static _mouse        *m_mouse;
@@ -44,8 +44,9 @@ static FreeType      *m_font;
 static MainActivity  *m_hAct;
 static GLfloat        m_width, m_height;
 
+
 ///
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
@@ -80,7 +81,7 @@ Visual::~Visual( void )
 };
 
 ///
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 void InitFPS( void )
@@ -97,7 +98,7 @@ void InitFont( void )
 {
 	if (m_font->Init("EHSMB.TTF", 12) != SGRUNTIMEMSG::SG_RUNTIME_OK)
 	{
-		ErrorMSG("Cannot create FreeType font");
+		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "Cannot init FreeType and load TTF file at line: %d of file %s", __LINE__, __FILE__);
 		exit(1);
 	};
 }
@@ -179,7 +180,7 @@ void SetTexture( void )
 	// Check texture ID is available
 	if (m_font->IsTextureIDAvailable(m_volume2D->texture_id) != SGRUNTIMEMSG::SG_RUNTIME_OK)
 	{
-		ErrorMSG("Cann't assign an available texture ID");
+		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "Cannot assign an available texture ID to object at line: %d of file %s", __LINE__, __FILE__);
 		exit(0);
 	}
 };
@@ -327,7 +328,8 @@ void cuda_init()
     // Choose which GPU to run on, change this on a multi-GPU system.
     cudaStatus = cudaSetDevice(0);
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
+		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "cudaSetDevice was failed, do you have a CUDA-capable GPU installed? at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
         free_dev_list();
     }
 
@@ -336,7 +338,8 @@ void cuda_init()
 	{
 		cudaStatus = cudaMalloc((void**)&dev_list[i], size * sizeof(float));
 		if (cudaStatus != cudaSuccess) {
-			fprintf(stderr, "cudaMalloc failed!");
+			Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "cudaMalloc was failed, at line: %d of file %s", __LINE__, __FILE__);
+			Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
 			free_dev_list();
 		}
 	}
@@ -380,7 +383,7 @@ int allocate_data(void)
 
 	if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev ) 
 	{
-		fprintf ( stderr, "cannot allocate data\n" );
+		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "allocate data was failed, at line: %d of file %s", __LINE__, __FILE__);
 		return ( 0 );
 	}
 
@@ -389,7 +392,7 @@ int allocate_data(void)
 
 
 ///
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 void Visual::OnCreate( void )
@@ -542,7 +545,8 @@ void Visual::OnDestroy( void )
     // tracing tools such as Nsight and Visual Profiler to show complete traces.
     cudaStatus = cudaDeviceReset();
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceReset failed!");
+		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "cudaDeviceReset was failed, at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
     }
 
 	SAFE_DELT_PTR( m_mouse );
@@ -557,7 +561,7 @@ void Visual::OnDestroy( void )
 };
 
 ///
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
 void Visual::UploadVolumeData( _volume2D const *data_in )
@@ -580,10 +584,6 @@ void Visual::UploadVolumeData( _volume3D const *data_in )
 	m_volume3D->size   = data_in->size;
 };
 
-
-#include "macro_def.h"
-
-
 int Visual::Texel2D( int i, int j )
 {
 	return  BYTES_PER_TEXEL * ( i * m_volume2D->height + j );
@@ -602,6 +602,6 @@ int Visual::Texel3D( int i, int j, int k )
 };
 
 ///
-///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif

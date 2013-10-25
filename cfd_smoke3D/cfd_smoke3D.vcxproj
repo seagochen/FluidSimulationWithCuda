@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cfd_headers.h" />
     <ClInclude Include="macro_def.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="visual_framework.h" />
