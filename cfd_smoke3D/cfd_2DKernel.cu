@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 12, 2013
-* <Last>		Oct 24, 2013
+* <Last>		Oct 25, 2013
 * <File>        cfd_2DKernel.cu
 */
 
@@ -214,10 +214,10 @@ void dens_step ( float *grid, float *grid0, float *u, float *v )
 	// Define the computing unit size
 	dim3 block_size;
 	dim3 grid_size;
-	block_size.x = 16;
-	block_size.y = 16;
-	grid_size.x  = Grids_X / block_size.x;
-	grid_size.y  = Grids_X / block_size.y;
+	block_size.x = Tile_X;
+	block_size.y = Tile_X;
+	grid_size.x  = Grids_X / Tile_X;
+	grid_size.y  = Grids_X / Tile_X;
 
 	size_t size = Grids_X * Grids_X;
 
@@ -289,10 +289,10 @@ void vel_step ( float * u, float * v, float * u0, float * v0 )
 	// Define the computing unit size
 	dim3 block_size;
 	dim3 grid_size;
-	block_size.x = 16;
-	block_size.y = 16;
-	grid_size.x  = Grids_X / block_size.x;
-	grid_size.y  = Grids_X / block_size.y;
+	block_size.x = Tile_X;
+	block_size.y = Tile_X;
+	grid_size.x  = Grids_X / Tile_X;
+	grid_size.y  = Grids_X / Tile_X;
 
 	size_t size = Grids_X * Grids_X;
 
@@ -319,8 +319,8 @@ void vel_step ( float * u, float * v, float * u0, float * v0 )
 
 
 	cuda_add_source ( dev_u, dev_u0, &grid_size, &block_size ); cuda_add_source ( dev_v, dev_v0, &grid_size, &block_size );
-	swap ( dev_u0, dev_u ); cuda_diffuse ( dev_u, dev_u0, 1, visc, &grid_size, &block_size );
-	swap ( dev_v0, dev_v ); cuda_diffuse ( dev_v, dev_v0, 2, visc, &grid_size, &block_size );
+	swap ( dev_u0, dev_u ); cuda_diffuse ( dev_u, dev_u0, 1, VISCOSITY, &grid_size, &block_size );
+	swap ( dev_v0, dev_v ); cuda_diffuse ( dev_v, dev_v0, 2, VISCOSITY, &grid_size, &block_size );
 	cuda_project ( dev_u, dev_v, dev_u0, dev_v0, &grid_size, &block_size );
 	swap ( dev_u0, dev_u ); swap ( dev_v0, dev_v );
 	cuda_advect ( dev_u, dev_u0, dev_u0, dev_v0, 1, &grid_size, &block_size );

@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
-* <Last>		Oct 24, 2013
+* <Last>		Oct 25, 2013
 * <File>        visual_framework.cpp
 */
 
@@ -63,6 +63,14 @@ Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
 
 	m_volume2D->size = 0;
 	m_volume3D->size = 0;
+	
+	extern void clear_data(void); extern int allocate_data(void); extern void cuda_init(void);
+
+	// Initialize the CUDA
+	cuda_init();
+
+	if ( !allocate_data() ) exit(1);
+	clear_data();
 };
 
 
@@ -249,6 +257,137 @@ void CountFPS( void )
 	glPopMatrix();
 }
 
+
+void get_from_UI(float * d, float * u, float * v)
+{
+#define MouseLeftDown  m_mouse->left_button_pressed
+#define MouseRightDown m_mouse->right_button_pressed
+#define mx	m_mouse->cur_cursor_x
+#define my  m_mouse->cur_cursor_y
+#define omx m_mouse->pre_cursor_x
+#define omy m_mouse->pre_cursor_y
+
+	int i, j, size = Grids_X * Grids_X;
+
+	for (i=0 ; i<size ; i++) 
+	{
+		u[i] = v[i] = d[i] = 0.0f;
+	}
+
+	if (!MouseLeftDown && !MouseRightDown) return;
+
+	i = (int)((       mx /(float)m_width)*SimArea_X+1);
+	j = (int)(((m_height-my)/(float)m_height)*SimArea_X+1);
+
+	if (i<1 || i>SimArea_X || j<1 || j>SimArea_X) return;
+
+	if (MouseLeftDown)
+	{
+		u[Index(i,j)] = FORCE * (mx-omx);
+		v[Index(i,j)] = FORCE * (omy-my);
+	}
+
+	if (MouseRightDown)
+	{
+		d[Index(i,j)] = SOURCE;
+	}
+
+	omx = mx;
+	omy = my;
+
+#undef mx
+#undef my
+#undef omx
+#undef omy
+#undef MouseLeftDown
+#undef MouseRightDown
+}
+
+void free_dev_list()
+{
+	// Release CUDA resource if failed
+	for (int i=0; i<devices; i++)
+	{
+		cudaFree(dev_list[i]);
+	}
+	dev_list.empty();
+}
+
+void cuda_init()
+{	
+	// Push dev into vector
+	for (int i=0; i<devices; i++)
+	{
+		static float *ptr;
+		dev_list.push_back(ptr);
+	}
+
+	size_t size = Grids_X * Grids_X;
+
+    // Choose which GPU to run on, change this on a multi-GPU system.
+    cudaStatus = cudaSetDevice(0);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
+        free_dev_list();
+    }
+
+    // Allocate GPU buffers for three vectors (two input, one output).
+	for (int i=0; i<devices; i++)
+	{
+		cudaStatus = cudaMalloc((void**)&dev_list[i], size * sizeof(float));
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudaMalloc failed!");
+			free_dev_list();
+		}
+	}
+};
+
+void free_data(void)
+{
+	if ( u ) SAFE_FREE_PTR(u);
+	if ( v ) SAFE_FREE_PTR(v);
+	if ( u_prev ) SAFE_FREE_PTR(u_prev);
+	if ( v_prev ) SAFE_FREE_PTR(v_prev);
+	if ( dens ) SAFE_FREE_PTR(dens);
+	if ( dens_prev ) SAFE_FREE_PTR(dens_prev);
+
+	// Release CUDA resources
+	for (int i=0; i<devices; i++)
+		cudaFree(dev_list[i]);
+
+}
+
+void clear_data(void)
+{
+	int size=(Grids_X)*(Grids_X);
+
+	for ( int i=0; i<size ; i++ )
+	{
+		u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = 0.0f;
+	}
+}
+
+int allocate_data(void)
+{
+	int size = (Grids_X)*(Grids_X);
+
+	u			= (float *)malloc(size*sizeof(float));
+	v			= (float *)malloc(size*sizeof(float));
+	u_prev		= (float *)malloc(size*sizeof(float));
+	v_prev		= (float *)malloc(size*sizeof(float));
+	dens		= (float *)malloc(size*sizeof(float));	
+	dens_prev	= (float *)malloc(size*sizeof(float));
+
+	if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev ) 
+	{
+		fprintf ( stderr, "cannot allocate data\n" );
+		return ( 0 );
+	}
+
+	return 1;
+}
+
+
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -297,9 +436,6 @@ void Visual::OnResize( GLuint width, GLuint height )
 	glLoadIdentity ();
 	gluOrtho2D(0.0, 1.0, 0.0, 1.0);
 	glClearColor( 0.0f, 0.0f, 0.0f, 1.0f);
-
-	win_x = width;
-	win_y = height;
 };
 
 
@@ -366,8 +502,12 @@ void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 
 void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 {
-#define MouseLeftDown  mouse_down[0]
-#define MouseRightDown mouse_down[1]
+#define MouseLeftDown  m_mouse->left_button_pressed
+#define MouseRightDown m_mouse->right_button_pressed
+#define mx	m_mouse->cur_cursor_x
+#define my  m_mouse->cur_cursor_y
+#define omx m_mouse->pre_cursor_x
+#define omy m_mouse->pre_cursor_y
 
 	omx = mx = x_pos;
 	omx = my = y_pos;
@@ -383,6 +523,10 @@ void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP) MouseLeftDown   = false;
 	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP) MouseRightDown  = false;
 
+#undef omx
+#undef omy
+#undef mx
+#undef my
 #undef MouseLeftDown
 #undef MouseRightDown
 };

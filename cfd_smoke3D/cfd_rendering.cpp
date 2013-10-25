@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 24, 2013
-* <Last>		Oct 24, 2013
+* <Last>		Oct 25, 2013
 * <File>        cfd_rendering.cpp
 */
 
@@ -36,17 +36,17 @@ void draw_velocity(void)
 	int i, j;
 	float x, y, h;
 
-	h = 1.0f/GridSize;
+	h = 1.0f/SimArea_X;
 
 	glColor3f(0.0f, 0.0f, 1.0f);
 	glLineWidth(1.0f);
 
 	glBegin(GL_LINES);
 	{
-		for ( i=1 ; i<=GridSize ; i++ )
+		for ( i=1 ; i<=SimArea_X ; i++ )
 		{
 			x = (i-0.5f)*h;
-			for ( j=1 ; j<=GridSize ; j++ )
+			for ( j=1 ; j<=SimArea_X ; j++ )
 			{
 				y = (j-0.5f)*h;
 				glVertex2f(x, y);
@@ -62,14 +62,14 @@ void draw_density(void)
 	int i, j;
 	float x, y, h, d00, d01, d10, d11;
 
-	h = 1.0f/GridSize;
+	h = 1.0f/SimArea_X;
 
 	glBegin(GL_QUADS);
 	{
-		for ( i=0 ; i<=GridSize ; i++ )
+		for ( i=0 ; i<=SimArea_X ; i++ )
 		{
 			x = (i-0.5f)*h;
-			for ( j=0 ; j<=GridSize ; j++ )
+			for ( j=0 ; j<=SimArea_X ; j++ )
 			{
 				y = (j-0.5f)*h;
 				d00 = dens[Index(i,j)];

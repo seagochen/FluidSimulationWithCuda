@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 7, 2013
-* <Last>		Oct 24, 2013
+* <Last>		Oct 25, 2013
 * <File>        macro_def.h
 */
 
@@ -38,7 +38,7 @@
 #define Grids_X              64       // total grids number
 #define SimArea_X            62       // simulation area which is the number without ghost cells
 
-#define Tile_X               4
+#define Tile_X               16       // 16x16 gpu threads as a block
 
 #define DELTA_TIME           0.1f     // 0.1 second
 #define DIFFUSION            0.0f     // diffusion rate
@@ -93,54 +93,25 @@ void vel_step(float * u, float * v, float * u0, float * v0);
 #include <vector>
 #include <cuda_runtime.h>
 
-#ifdef __launch_main_cpp_
-
 /*
   ----------------------------------------------------------------------
    Data used in CFD
   ----------------------------------------------------------------------
 */
 
-int GridSize;
-float dt, diff, visc;
-float force, source;
+#ifdef __launch_main_cpp_
+
+
 float * u, * v, * u_prev, * v_prev;
 float * dens, * dens_prev;
-bool mouse_down[2];
-int omx, omy, mx, my;
-int win_x, win_y;
-
-/*
-  ----------------------------------------------------------------------
-   Data used in CUDA
-  ----------------------------------------------------------------------
-*/
 
 std::vector<float*> dev_list;
 cudaError cudaStatus;
 
 #else
 
-/*
-  ----------------------------------------------------------------------
-   Data used in CFD
-  ----------------------------------------------------------------------
-*/
-
-extern int GridSize;
-extern float dt, diff, visc;
-extern float force, source;
 extern float * u, * v, * u_prev, * v_prev;
 extern float * dens, * dens_prev;
-extern bool mouse_down[2];
-extern int omx, omy, mx, my;
-extern int win_x, win_y;
-
-/*
-  ----------------------------------------------------------------------
-   Data used in CUDA
-  ----------------------------------------------------------------------
-*/
 
 extern std::vector<float*> dev_list;
 extern cudaError cudaStatus;
