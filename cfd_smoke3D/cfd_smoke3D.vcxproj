@@ -32,6 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cfd_rendering.cpp" />
+    <ClCompile Include="glew32.cpp" />
     <ClCompile Include="launch_main.cpp" />
     <ClCompile Include="visual_framework.cpp" />
   </ItemGroup>
