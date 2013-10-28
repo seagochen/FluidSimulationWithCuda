@@ -10,6 +10,9 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{cf53d612-2e86-4999-8e4e-09062340f66b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\helper">
+      <UniqueIdentifier>{caa1331b-7acc-4464-852f-4dd9856636db}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Image Include="app.ico">
@@ -46,7 +49,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="glew32.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\helper</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
