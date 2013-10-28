@@ -36,7 +36,7 @@ __global__ void add_source_kernel ( float *ptr_out, float *ptr_in )
 	// Get index of GPU-thread
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	int j = blockIdx.y * blockDim.y + threadIdx.y;
-	int ind = GPUIndex(i, j);
+	int ind = Index(i, j);
 
 	// Yield value
 	ptr_out[ind] += DELTA_TIME * ptr_in[ind];
@@ -54,22 +54,22 @@ __global__ void set_bnd_kernel ( float *grid_out, int boundary )
 	if ( i >= 1 && i <= SimArea_X && j >= 1 && j <= SimArea_X )
 	{
 		// Slove line (0, y)
-		grid_out[GPUIndex(0, j)]  = boundary is 1 ? -grid_out[GPUIndex(1, j)] : grid_out[GPUIndex(1, j)];
+		grid_out[Index(0, j)]  = boundary is 1 ? -grid_out[Index(1, j)] : grid_out[Index(1, j)];
 		// Slove line (65, y)
-		grid_out[GPUIndex(65, j)] = boundary is 1 ? -grid_out[GPUIndex(64,j)] : grid_out[GPUIndex(64,j)];
+		grid_out[Index(65, j)] = boundary is 1 ? -grid_out[Index(64,j)] : grid_out[Index(64,j)];
 		// Slove line (x, 0)
-		grid_out[GPUIndex(i, 0)]  = boundary is 2 ? -grid_out[GPUIndex(i, 1)] : grid_out[GPUIndex(i, 1)];
+		grid_out[Index(i, 0)]  = boundary is 2 ? -grid_out[Index(i, 1)] : grid_out[Index(i, 1)];
 		// Slove line (x, 65)
-		grid_out[GPUIndex(i, 65)] = boundary is 2 ? -grid_out[GPUIndex(i,64)] : grid_out[GPUIndex(i,64)];
+		grid_out[Index(i, 65)] = boundary is 2 ? -grid_out[Index(i,64)] : grid_out[Index(i,64)];
 	}
 	// Slove ghost cell (0, 0)
-	grid_out[GPUIndex(0, 0)] = 0.5f * ( grid_out[GPUIndex(1, 0)]  + grid_out[GPUIndex(0, 1)] );
+	grid_out[Index(0, 0)] = 0.5f * ( grid_out[Index(1, 0)]  + grid_out[Index(0, 1)] );
 	// Slove ghost cell (0, 65)
-	grid_out[GPUIndex(0, 65)] = 0.5f * ( grid_out[GPUIndex(1, 65)] + grid_out[GPUIndex(0, 64)] );
+	grid_out[Index(0, 65)] = 0.5f * ( grid_out[Index(1, 65)] + grid_out[Index(0, 64)] );
 	// Slove ghost cell (65, 0)
-	grid_out[GPUIndex(65, 0)] = 0.5f * ( grid_out[GPUIndex(64, 0)] + grid_out[GPUIndex(65, 1)] );
+	grid_out[Index(65, 0)] = 0.5f * ( grid_out[Index(64, 0)] + grid_out[Index(65, 1)] );
 	// Slove ghost cell (65, 65)
-	grid_out[GPUIndex(65, 65)] = 0.5f * ( grid_out[GPUIndex(64, 65)] + grid_out[GPUIndex(65, 64)]);
+	grid_out[Index(65, 65)] = 0.5f * ( grid_out[Index(64, 65)] + grid_out[Index(65, 64)]);
 
 #undef is
 }
@@ -83,8 +83,8 @@ __global__ void lin_solve_kernel ( float *grid_inout, float *grid0_in, int bound
 
 	if ( i >= 1 && i <= SimArea_X && j >= 1 && j <= SimArea_X )
 	{	
-		grid_inout[GPUIndex(i,j)] = (grid0_in[GPUIndex(i,j)] + a * ( grid_inout[GPUIndex(i-1,j)] + 
-			grid_inout[GPUIndex(i+1,j)] + grid_inout[GPUIndex(i,j-1)] + grid_inout[GPUIndex(i,j+1)] ) ) / c;	
+		grid_inout[Index(i,j)] = (grid0_in[Index(i,j)] + a * ( grid_inout[Index(i-1,j)] + 
+			grid_inout[Index(i+1,j)] + grid_inout[Index(i,j-1)] + grid_inout[Index(i,j+1)] ) ) / c;	
 	}
 }
 
@@ -100,8 +100,8 @@ __global__ void advect_kernel(float *density_out, float *density0_in, float *u_i
 
 	if ( i >= 1 && i <= SimArea_X && j >= 1 && j <= SimArea_X )
 	{
-		x = i - dt0 * u_in[GPUIndex(i,j)];
-		y = j - dt0 * v_in[GPUIndex(i,j)];
+		x = i - dt0 * u_in[Index(i,j)];
+		y = j - dt0 * v_in[Index(i,j)];
 		if (x < 0.5f) x = 0.5f;
 		if (x > SimArea_X + 0.5f) x = SimArea_X+0.5f;
 
@@ -118,9 +118,9 @@ __global__ void advect_kernel(float *density_out, float *density0_in, float *u_i
 		t1 = y - j0;
 		t0 = 1 - t1;
 
-		density_out[GPUIndex(i,j)] = s0 * ( t0 * density0_in[GPUIndex(i0,j0)] +
-			t1 * density0_in[GPUIndex(i0,j1)]) + s1 * ( t0 * density0_in[GPUIndex(i1,j0)] + 
-			t1 * density0_in[GPUIndex(i1,j1)]);
+		density_out[Index(i,j)] = s0 * ( t0 * density0_in[Index(i0,j0)] +
+			t1 * density0_in[Index(i0,j1)]) + s1 * ( t0 * density0_in[Index(i1,j0)] + 
+			t1 * density0_in[Index(i1,j1)]);
 	}
 };
 
@@ -133,8 +133,8 @@ __global__ void project_kernel_pt1(float * u, float * v, float * p, float * div)
 	
 	if ( i >= 1 && i <= SimArea_X && j >= 1 && j <= SimArea_X )
 	{
-		div[GPUIndex(i,j)] = -0.5f*(u[GPUIndex(i+1,j)]-u[GPUIndex(i-1,j)]+v[GPUIndex(i,j+1)]-v[GPUIndex(i,j-1)])/SimArea_X;
-		p[GPUIndex(i,j)] = 0;
+		div[Index(i,j)] = -0.5f*(u[Index(i+1,j)]-u[Index(i-1,j)]+v[Index(i,j+1)]-v[Index(i,j-1)])/SimArea_X;
+		p[Index(i,j)] = 0;
 	}
 }
 
@@ -147,8 +147,8 @@ __global__ void project_kernel_pt2(float * u, float * v, float * p, float * div)
 	
 	if ( i >= 1 && i <= SimArea_X && j >= 1 && j <= SimArea_X )
 	{
-			u[GPUIndex(i,j)] -= 0.5f*SimArea_X*(p[GPUIndex(i+1,j)]-p[GPUIndex(i-1,j)]);
-			v[GPUIndex(i,j)] -= 0.5f*SimArea_X*(p[GPUIndex(i,j+1)]-p[GPUIndex(i,j-1)]);
+			u[Index(i,j)] -= 0.5f*SimArea_X*(p[Index(i+1,j)]-p[Index(i-1,j)]);
+			v[Index(i,j)] -= 0.5f*SimArea_X*(p[Index(i,j+1)]-p[Index(i,j-1)]);
 	}
 }
 

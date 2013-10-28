@@ -92,9 +92,7 @@ extern cudaError cudaStatus;
   ----------------------------------------------------------------------
 */
 
-#define Index(i,j)      ((j) * Grids_X + i)
-
-#define GPUIndex(i, j)  ((j) * gridDim.x * blockDim.x + (i))
+#define Index(i,j)      ((j) * Grids_X + (i))
 
 #define cuda_device(gridDim, blockDim) <<<gridDim, blockDim>>>
 
