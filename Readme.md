@@ -1,5 +1,11 @@
 Develop Log
 ===========
+[Nov 1, 2013]
+-----------
+* After a set of 3-D data tested many times, I put those available functions into one file which named "cudaHelper.h". It will help the user to calculate the index of 3-D data, also provides macro functions for recording cudaError message.
+* I also designed a number of functions, such as automatic calculation grid dimensions, block dimension.
+* I don't understand why when I try to calculate the block dimension with third power of 64, vs prompts error message "stack overflow". 
+* The last word, still bugs in code. 
 
 [Oct 24, 2013]
 -----------
