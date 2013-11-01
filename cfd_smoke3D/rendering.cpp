@@ -48,7 +48,7 @@ void draw_velocity(void)
 			{
 				y = (j-0.5f)*h;
 				glVertex2f(x, y);
-				glVertex2f(x+u[Index(i,j)], y+v[Index(i,j)]);
+				glVertex2f(x+u[cudaIndex2D(i,j,Grids_X)], y+v[cudaIndex2D(i,j,Grids_X)]);
 			}
 		}
 	}
@@ -70,10 +70,10 @@ void draw_density(void)
 			for ( j=0 ; j<=SimArea_X ; j++ )
 			{
 				y = (j-0.5f)*h;
-				d00 = dens[Index(i,j)];
-				d01 = dens[Index(i,j+1)];
-				d10 = dens[Index(i+1,j)];
-				d11 = dens[Index(i+1,j+1)];
+				d00 = dens[cudaIndex2D(i,j,Grids_X)];
+				d01 = dens[cudaIndex2D(i,j+1,Grids_X)];
+				d10 = dens[cudaIndex2D(i+1,j,Grids_X)];
+				d11 = dens[cudaIndex2D(i+1,j+1,Grids_X)];
 
 				glColor3f(d00, d00, d00); glVertex2f(x, y);
 				glColor3f(d10, d10, d10); glVertex2f(x+h, y);

@@ -92,8 +92,6 @@ extern cudaError cudaStatus;
   ----------------------------------------------------------------------
 */
 
-#define Index(i,j)      cudaIndex2D(i, j, Grids_X)
-
 #define cudaDeviceDim2D() \
 	dim3 blockDim, gridDim; \
 	blockDim.x = Tile_X; \

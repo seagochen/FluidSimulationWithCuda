@@ -286,13 +286,13 @@ void get_from_UI(float * d, float * u, float * v)
 
 	if (MouseLeftDown)
 	{
-		u[Index(i,j)] = FORCE * (mx-omx);
-		v[Index(i,j)] = FORCE * (omy-my);
+		u[cudaIndex2D(i,j,Grids_X)] = FORCE * (mx-omx);
+		v[cudaIndex2D(i,j,Grids_X)] = FORCE * (omy-my);
 	}
 
 	if (MouseRightDown)
 	{
-		d[Index(i,j)] = SOURCE;
+		d[cudaIndex2D(i,j,Grids_X)] = SOURCE;
 	}
 
 	omx = mx;
