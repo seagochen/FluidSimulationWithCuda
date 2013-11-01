@@ -19,70 +19,50 @@
 
 /**
 * <Author>      Orlando Chen
-* <First>       Oct 24, 2013
-* <Last>		Oct 25, 2013
-* <File>        cfd_rendering.cpp
+* <First>       Oct 30, 2013
+* <Last>		Nov 1, 2013
+* <File>        cudaHelper.h
 */
 
-#ifndef __cfd_rendering_cpp_
-#define __cfd_rendering_cpp_
+#ifndef __cuda_helper_h_
+#define __cuda_helper_h_
 
-#include "macro_def.h"
+#include <stdio.h>
+#include <stdlib.h>
 
-void draw_velocity(void)
-{
-	int i, j;
-	float x, y, h;
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 
-	h = 1.0f/SimArea_X;
+#define cudaOpenLogFile(filename) \
+	FILE *stream;  \
+	stream = fopen(filename, "w"); 
 
-	glColor3f(0.0f, 0.0f, 1.0f);
-	glLineWidth(1.0f);
+#define cudaCheckErrors(msg) \
+	do { \
+		cudaError_t __err = cudaGetLastError(); \
+		if (__err != cudaSuccess) { \
+			fprintf(stream, "cudaCheckErrors>>> %s (%s at %s:%d)\n", \
+				msg, cudaGetErrorString(__err), \
+				__FILE__, __LINE__); \
+			goto Finished; \
+		} \
+	} while(0); \
 
-	glBegin(GL_LINES);
-	{
-		for ( i=1 ; i<=SimArea_X ; i++ )
-		{
-			x = (i-0.5f)*h;
-			for ( j=1 ; j<=SimArea_X ; j++ )
-			{
-				y = (j-0.5f)*h;
-				glVertex2f(x, y);
-				glVertex2f(x+u[Index(i,j)], y+v[Index(i,j)]);
-			}
-		}
+#define cudaCloseLogFile()  \
+	fclose(stream);
+
+#define cudaFinished()  Finished:  
+
+#define cudaDevice(gridDim, blockDim) <<<gridDim, blockDim>>>
+
+#define cudaIndex2D(i, j, elements_x) ((j) * (elements_x) + (i))
+
+#define cudaTrans2DTo3D(i, j, k, elements_x) { \
+	k = cudaIndex2D(i, j, elements_x) / ((elements_x) * (elements_x)) ; \
+	i = i % elements_x; \
+	j = j % elements_x; \
 	}
-	glEnd();
-}
 
-void draw_density(void)
-{
-	int i, j;
-	float x, y, h, d00, d01, d10, d11;
-
-	h = 1.0f/SimArea_X;
-
-	glBegin(GL_QUADS);
-	{
-		for ( i=0 ; i<=SimArea_X ; i++ )
-		{
-			x = (i-0.5f)*h;
-			for ( j=0 ; j<=SimArea_X ; j++ )
-			{
-				y = (j-0.5f)*h;
-				d00 = dens[Index(i,j)];
-				d01 = dens[Index(i,j+1)];
-				d10 = dens[Index(i+1,j)];
-				d11 = dens[Index(i+1,j+1)];
-
-				glColor3f(d00, d00, d00); glVertex2f(x, y);
-				glColor3f(d10, d10, d10); glVertex2f(x+h, y);
-				glColor3f(d11, d11, d11); glVertex2f(x+h, y+h);
-				glColor3f(d01, d01, d01); glVertex2f(x, y+h);
-			}
-		}
-	}
-	glEnd();
-}
+#define cudaIndex3D(i, j, k, elements_x) ((k) * elements_x * elements_x + (j) * elements_x + (i))
 
 #endif

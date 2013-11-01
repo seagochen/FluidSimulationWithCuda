@@ -28,32 +28,35 @@
     <ClInclude Include="resource.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
-    <ClInclude Include="macro_def.h">
+    <ClInclude Include="cudaHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="visual_framework.h">
+    <ClInclude Include="cfdHeaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cfd_headers.h">
+    <ClInclude Include="macroDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="visualFramework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="visual_framework.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="launch_main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cfd_rendering.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="glew32.cpp">
       <Filter>Source Files\helper</Filter>
     </ClCompile>
+    <ClCompile Include="rendering.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="launchMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="visualFramework.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="cfd_2DKernel.cu">
+    <CudaCompile Include="cfd2DKernel.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>

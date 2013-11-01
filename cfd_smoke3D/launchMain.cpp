@@ -21,14 +21,14 @@
 * <Author>      Orlando Chen
 * <First>       Oct 6, 2013
 * <Last>		Oct 25, 2013
-* <File>        launch_main.cpp
+* <File>        launchMain.cpp
 */
 
 #ifndef __launch_main_cpp_
 #define __launch_main_cpp_
 
-#include "macro_def.h"
-#include "visual_framework.h"
+#include "macroDef.h"
+#include "visualFramework.h"
 #include "resource.h"
 
 #define APP_ICONS IDI_ICON1

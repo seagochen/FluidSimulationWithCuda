@@ -21,14 +21,14 @@
 * <Author>      Orlando Chen
 * <First>       Oct 7, 2013
 * <Last>		Oct 25, 2013
-* <File>        macro_def.h
+* <File>        macroDef.h
 */
 
 #ifndef __macro_definition_h_
 #define __macro_definition_h_
 
-#include "cfd_headers.h"
-
+#include "cfdHeaders.h"
+#include "cudaHelper.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -38,8 +38,8 @@
    Definition for Variables of Computational Fluid Dynamics
   ----------------------------------------------------------------------
 */
-#define Grids_X              64       // total grids number
-#define SimArea_X            62       // simulation area which is the number without ghost cells
+#define Grids_X              32       // total grids number
+#define SimArea_X            30       // simulation area which is the number without ghost cells
 
 #define Tile_X               16       // 16x16 gpu threads as a block
 
@@ -92,9 +92,21 @@ extern cudaError cudaStatus;
   ----------------------------------------------------------------------
 */
 
-#define Index(i,j)      ((j) * Grids_X + (i))
+#define Index(i,j)      cudaIndex2D(i, j, Grids_X)
 
-#define cuda_device(gridDim, blockDim) <<<gridDim, blockDim>>>
+#define cudaDeviceDim2D() \
+	dim3 blockDim, gridDim; \
+	blockDim.x = Tile_X; \
+	blockDim.y = Tile_X; \
+	gridDim.x  = Grids_X / Tile_X; \
+	gridDim.y  = Grids_X / Tile_X;
+
+#define cudaDeviceDim3D() \
+	dim3 blockDim, gridDim; \
+	blockDim.x = (Grids_X / Tile_X); \
+	blockDim.y = (512 / Tile_X); \
+	gridDim.x  = (Grids_X / blockDim.x); \
+	gridDim.y  = (Grids_X * Grids_X * Grids_X) / (blockDim.x * blockDim.y * (Grids_X / blockDim.x));
 
 /*
   ----------------------------------------------------------------------

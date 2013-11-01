@@ -27,8 +27,8 @@
 #ifndef __visual_framework_cpp_
 #define __visual_framework_cpp_
 
-#include "visual_framework.h"
-#include "macro_def.h"
+#include "visualFramework.h"
+#include "macroDef.h"
 
 using namespace sge;
 
@@ -43,6 +43,7 @@ static _viewMatrix   *m_view;
 static FreeType      *m_font;
 static MainActivity  *m_hAct;
 static GLfloat        m_width, m_height;
+static bool           m_density;
 
 
 ///
@@ -61,6 +62,7 @@ Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
 
 	m_width    = width;
 	m_height   = height;
+	m_density  = false;
 
 	m_volume2D->size = 0;
 	m_volume3D->size = 0;
@@ -472,8 +474,11 @@ void Visual::OnDisplay( void )
 	extern void draw_density(), draw_velocity();
 
 	glClear(GL_COLOR_BUFFER_BIT);
-	draw_density();
-	draw_velocity();
+
+	if (m_density)
+		draw_density();
+	else
+		draw_velocity();
 
 	// Print FPS
 	CountFPS();
@@ -490,6 +495,14 @@ void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 		{
 		case SG_KEYS::SG_KEY_C:
 			clear_data();
+			break;
+
+		case SG_KEYS::SG_KEY_D:
+			m_density = true;
+			break;
+
+		case SG_KEYS::SG_KEY_V:
+			m_density = false;
 			break;
 		
 		case SG_KEYS::SG_KEY_Q:

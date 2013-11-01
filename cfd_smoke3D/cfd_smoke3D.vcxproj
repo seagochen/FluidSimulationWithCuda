@@ -19,10 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cfd_headers.h" />
-    <ClInclude Include="macro_def.h" />
+    <ClInclude Include="cfdHeaders.h" />
+    <ClInclude Include="cudaHelper.h" />
+    <ClInclude Include="macroDef.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="visual_framework.h" />
+    <ClInclude Include="visualFramework.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="cfd_smoke3D.rc" />
@@ -31,13 +32,13 @@
     <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cfd_rendering.cpp" />
+    <ClCompile Include="rendering.cpp" />
     <ClCompile Include="glew32.cpp" />
-    <ClCompile Include="launch_main.cpp" />
-    <ClCompile Include="visual_framework.cpp" />
+    <ClCompile Include="launchMain.cpp" />
+    <ClCompile Include="visualFramework.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="cfd_2DKernel.cu" />
+    <CudaCompile Include="cfd2DKernel.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4A86FBE5-D8AF-4124-8B56-B1133DA36A4C}</ProjectGuid>

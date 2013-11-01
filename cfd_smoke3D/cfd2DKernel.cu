@@ -27,7 +27,8 @@
 #ifndef __cfd_2DKernel_cu_
 #define __cfd_2DKernel_cu_
 
-#include "macro_def.h"
+#include "macroDef.h"
+#include "cudaHelper.h"
 
 using namespace std;
 
@@ -36,10 +37,12 @@ __global__ void add_source_kernel ( float *ptr_out, float *ptr_in )
 	// Get index of GPU-thread
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	int j = blockIdx.y * blockDim.y + threadIdx.y;
-	int ind = Index(i, j);
 
-	// Yield value
-	ptr_out[ind] += DELTA_TIME * ptr_in[ind];
+	if (i == Grids_X / 2 && j == Grids_X / 2)
+	{
+		int ind = Index(i, j);
+		ptr_out[ind] += DELTA_TIME * 1.f;
+	}
 };
 
 
@@ -153,61 +156,56 @@ __global__ void project_kernel_pt2(float * u, float * v, float * p, float * div)
 }
 
 
-void cuda_add_source ( float *grid, float *grid0, dim3 *grid_size, dim3 *block_size )
+void cuda_add_source ( float *grid, float *grid0, dim3 *gridDim, dim3 *blockDim )
 {
     // Launch a kernel on the GPU with one thread for each element.
-	add_source_kernel cuda_device(*grid_size,  *block_size) (grid, grid0);
+	add_source_kernel cudaDevice(*gridDim,  *blockDim) (grid, grid0);
 };
 
 
-void cuda_lin_solve (float *grid, float *grid0, int boundary, float a, float c, dim3 *grid_size, dim3 *block_size)
+void cuda_lin_solve (float *grid, float *grid0, int boundary, float a, float c, dim3 *gridDim, dim3 *blockDim)
 {
     // Launch a kernel on the GPU with one thread for each element.
 	for (int i=0; i<20; i++)
 	{
-		lin_solve_kernel cuda_device(*grid_size,  *block_size) (grid, grid0, boundary, a, c);
+		lin_solve_kernel cudaDevice(*gridDim,  *blockDim) (grid, grid0, boundary, a, c);
 	}
-	set_bnd_kernel cuda_device(*grid_size,  *block_size)  (grid, boundary);
+	set_bnd_kernel cudaDevice(*gridDim,  *blockDim)  (grid, boundary);
 }
 
 
-void cuda_diffuse ( float *grid, float *grid0, int boundary, float diff, dim3 *grid_size, dim3 *block_size )
+void cuda_diffuse ( float *grid, float *grid0, int boundary, float diff, dim3 *gridDim, dim3 *blockDim )
 {
 	float a=DELTA_TIME*diff*SimArea_X*SimArea_X;
-	cuda_lin_solve ( grid, grid0, boundary, a, 1+4*a, grid_size, block_size );
+	cuda_lin_solve ( grid, grid0, boundary, a, 1+4*a, gridDim, blockDim );
 }
 
 
-void cuda_advect( float *density, float *density0, float *u, float *v,  int boundary, dim3 *grid_size, dim3 *block_size )
+void cuda_advect( float *density, float *density0, float *u, float *v,  int boundary, dim3 *gridDim, dim3 *blockDim )
 {
     // Launch a kernel on the GPU with one thread for each element.
 	float dt0 = DELTA_TIME*SimArea_X;
-	advect_kernel cuda_device(*grid_size,  *block_size) (density, density0, u, v, dt0);
-	set_bnd_kernel cuda_device(*grid_size,  *block_size) (density, boundary);
+	advect_kernel cudaDevice(*gridDim,  *blockDim) (density, density0, u, v, dt0);
+	set_bnd_kernel cudaDevice(*gridDim,  *blockDim) (density, boundary);
 }
 
 
-void cuda_project ( float * u, float * v, float * p, float * div, dim3 *grid_size, dim3 *block_size )
+void cuda_project ( float * u, float * v, float * p, float * div, dim3 *gridDim, dim3 *blockDim )
 {
-	project_kernel_pt1  cuda_device(*grid_size,  *block_size)  (u, v, p, div);
-	set_bnd_kernel  cuda_device(*grid_size,  *block_size)  (div, 0); 
-	set_bnd_kernel  cuda_device(*grid_size,  *block_size)  (p, 0);
-	lin_solve_kernel  cuda_device(*grid_size,  *block_size)  (p, div, 0, 1, 4);
-	project_kernel_pt2  cuda_device(*grid_size,  *block_size)  (u, v, p, div);
-	set_bnd_kernel  cuda_device(*grid_size,  *block_size)  ( u, 1 );
-	set_bnd_kernel  cuda_device(*grid_size,  *block_size)  ( v, 2 );
+	project_kernel_pt1  cudaDevice(*gridDim,  *blockDim)  (u, v, p, div);
+	set_bnd_kernel  cudaDevice(*gridDim,  *blockDim)  (div, 0); 
+	set_bnd_kernel  cudaDevice(*gridDim,  *blockDim)  (p, 0);
+	lin_solve_kernel  cudaDevice(*gridDim,  *blockDim)  (p, div, 0, 1, 4);
+	project_kernel_pt2  cudaDevice(*gridDim,  *blockDim)  (u, v, p, div);
+	set_bnd_kernel  cudaDevice(*gridDim,  *blockDim)  ( u, 1 );
+	set_bnd_kernel  cudaDevice(*gridDim,  *blockDim)  ( v, 2 );
 }
 
 
 void dens_step ( float *grid, float *grid0, float *u, float *v )
 {
 	// Define the computing unit size
-	dim3 block_size;
-	dim3 grid_size;
-	block_size.x = Tile_X;
-	block_size.y = Tile_X;
-	grid_size.x  = Grids_X / Tile_X;
-	grid_size.y  = Grids_X / Tile_X;
+	cudaDeviceDim2D();
 
 	size_t size = Grids_X * Grids_X;
 
@@ -241,9 +239,9 @@ void dens_step ( float *grid, float *grid0, float *u, float *v )
     }
 
 
-	cuda_add_source(dev_grid, dev_grid0, &grid_size, &block_size);
-	swap ( dev_grid0, dev_grid ); cuda_diffuse ( dev_grid, dev_grid0, 0, DIFFUSION, &grid_size, &block_size );
-	swap ( dev_grid0, dev_grid ); cuda_advect ( dev_grid, dev_grid0, dev_u, dev_v, 0, &grid_size, &block_size );
+	cuda_add_source(dev_grid, dev_grid0, &gridDim, &blockDim);
+	swap ( dev_grid0, dev_grid ); cuda_diffuse ( dev_grid, dev_grid0, 0, DIFFUSION, &gridDim, &blockDim );
+	swap ( dev_grid0, dev_grid ); cuda_advect ( dev_grid, dev_grid0, dev_u, dev_v, 0, &gridDim, &blockDim );
 	
 	
 	// Check for any errors launching the kernel
@@ -297,12 +295,7 @@ void dens_step ( float *grid, float *grid0, float *u, float *v )
 void vel_step ( float * u, float * v, float * u0, float * v0 )
 {
 	// Define the computing unit size
-	dim3 block_size;
-	dim3 grid_size;
-	block_size.x = Tile_X;
-	block_size.y = Tile_X;
-	grid_size.x  = Grids_X / Tile_X;
-	grid_size.y  = Grids_X / Tile_X;
+	cudaDeviceDim2D();
 
 	size_t size = Grids_X * Grids_X;
 
@@ -336,14 +329,14 @@ void vel_step ( float * u, float * v, float * u0, float * v0 )
     }
 
 
-	cuda_add_source ( dev_u, dev_u0, &grid_size, &block_size ); cuda_add_source ( dev_v, dev_v0, &grid_size, &block_size );
-	swap ( dev_u0, dev_u ); cuda_diffuse ( dev_u, dev_u0, 1, VISCOSITY, &grid_size, &block_size );
-	swap ( dev_v0, dev_v ); cuda_diffuse ( dev_v, dev_v0, 2, VISCOSITY, &grid_size, &block_size );
-	cuda_project ( dev_u, dev_v, dev_u0, dev_v0, &grid_size, &block_size );
+	cuda_add_source ( dev_u, dev_u0, &gridDim, &blockDim ); cuda_add_source ( dev_v, dev_v0, &gridDim, &blockDim );
+	swap ( dev_u0, dev_u ); cuda_diffuse ( dev_u, dev_u0, 1, VISCOSITY, &gridDim, &blockDim );
+	swap ( dev_v0, dev_v ); cuda_diffuse ( dev_v, dev_v0, 2, VISCOSITY, &gridDim, &blockDim );
+	cuda_project ( dev_u, dev_v, dev_u0, dev_v0, &gridDim, &blockDim );
 	swap ( dev_u0, dev_u ); swap ( dev_v0, dev_v );
-	cuda_advect ( dev_u, dev_u0, dev_u0, dev_v0, 1, &grid_size, &block_size );
-	cuda_advect ( dev_v, dev_v0, dev_u0, dev_v0, 2, &grid_size, &block_size );
-	cuda_project ( dev_u, dev_v, dev_u0, dev_v0, &grid_size, &block_size );
+	cuda_advect ( dev_u, dev_u0, dev_u0, dev_v0, 1, &gridDim, &blockDim );
+	cuda_advect ( dev_v, dev_v0, dev_u0, dev_v0, 2, &gridDim, &blockDim );
+	cuda_project ( dev_u, dev_v, dev_u0, dev_v0, &gridDim, &blockDim );
 
 
 	// Check for any errors launching the kernel
