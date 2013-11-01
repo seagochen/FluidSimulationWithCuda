@@ -101,14 +101,6 @@ namespace sge
 		static void OnKeyboard (SG_KEYS keys, SG_KEY_STATUS status);
 		static void OnMouse    (SG_MOUSE mouse, GLuint x_pos, GLuint y_pos);
 		static void OnDestroy  (void);
-
-	public:
-		void UploadVolumeData(_volume2D const *data_in);
-		void UploadVolumeData(_volume3D const *data_in);
-
-	public:
-		int Texel2D(int i, int j);
-		int Texel3D(int i, int j, int k);
 	}Visualization;
 };
 

@@ -53,6 +53,8 @@
 
 #define BYTES_PER_TEXEL      3        // a pixel consists of three unsigned bytes
 
+#define SIZE                 Grids_X * Grids_X
+
 ///
 //////////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -102,7 +104,7 @@ extern cudaError cudaStatus;
 #define cudaDeviceDim3D() \
 	dim3 blockDim, gridDim; \
 	blockDim.x = (Grids_X / Tile_X); \
-	blockDim.y = (512 / Tile_X); \
+	blockDim.y = (256 / Tile_X); \
 	gridDim.x  = (Grids_X / blockDim.x); \
 	gridDim.y  = (Grids_X * Grids_X * Grids_X) / (blockDim.x * blockDim.y * (Grids_X / blockDim.x));
 
@@ -122,7 +124,6 @@ extern void vel_step(float * u, float * v, float * u0, float * v0);
    etc.
   ----------------------------------------------------------------------
 */
-
 
 #define devices   8
 

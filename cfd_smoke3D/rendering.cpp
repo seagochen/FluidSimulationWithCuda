@@ -28,6 +28,9 @@
 #define __cfd_rendering_cpp_
 
 #include "macroDef.h"
+#include "visualFramework.h"
+
+using namespace sge;
 
 void draw_velocity(void)
 {
@@ -83,6 +86,7 @@ void draw_density(void)
 		}
 	}
 	glEnd();
+
 }
 
 #endif
