@@ -56,7 +56,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="cfd2DKernel.cu">
+    <CudaCompile Include="cfdKernel.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>

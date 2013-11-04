@@ -21,7 +21,7 @@
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
 * <Last>		Oct 25, 2013
-* <File>        visual_framework.cpp
+* <File>        visualFramework.cpp
 */
 
 #ifndef __visual_framework_cpp_

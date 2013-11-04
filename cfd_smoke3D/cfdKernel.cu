@@ -20,34 +20,40 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 12, 2013
-* <Last>		Oct 25, 2013
-* <File>        cfd_2DKernel.cu
+* <Last>		Nov 5, 2013
+* <File>        cfdKernel.cu
 */
 
-#ifndef __cfd_Kernel_cu_
-#define __cfd_Kernel_cu_
+#ifndef __cfd_2DKernel_cu_
+#define __cfd_2DKernel_cu_
 
-#include "macro_def.h"
+#include "macroDef.h"
 #include "cudaHelper.h"
 
 using namespace std;
 
+#define cudaKernel3DIndex(i, j, k) \
+	i = blockIdx.x * blockDim.x + threadIdx.x; \
+	j = blockIdx.y * blockDim.y + threadIdx.y; \
+	k = 0; \
+	cudaTrans2DTo3D(i, j, k, Grids_X); \
+
+#define cudaKernel2DIndex(i, j) \
+	i = blockIdx.x * blockDim.x + threadIdx.x; \
+	j = blockIdx.y * blockDim.y + threadIdx.y; \
+
+
 __global__ void add_source_kernel ( float *ptr_out, float *ptr_in )
 {
 	// Get index of GPU-thread
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
-	
-	int ind  = Index(i,j);
+	int i, j, k;
+	cudaKernel3DIndex(i, j, k);
 
-	if (i == 32 && j== 8)
+	if (i == Grids_X / 2 && j ==  Grids_X / 2)
 	{
-		ptr_out[ind] += DELTA_TIME * 5;
+		int ind = cudaIndex3D(i, j, k, Grids_X);
+		ptr_out[ind] += DELTA_TIME * 1.f;
 	}
-	//int ind = Index(i, j);
-
-	// Yield value
-//	ptr_out[ind] += DELTA_TIME * ptr_in[ind];
 };
 
 
@@ -55,29 +61,29 @@ __global__ void set_bnd_kernel ( float *grid_out, int boundary )
 {
 #define is ==
 	// Get index of GPU-thread
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	int i, j, k;
+	cudaKernel3DIndex(i, j, k);
 
 	// Boundary condition
 	if ( i >= 1 && i <= SimArea_X && j >= 1 && j <= SimArea_X )
 	{
 		// Slove line (0, y)
-		grid_out[Index(0, j)]  = boundary is 1 ? -grid_out[Index(1, j)] : grid_out[Index(1, j)];
+		grid_out[cudaIndex2D(0, j, Grids_X)]  = boundary is 1 ? -grid_out[cudaIndex2D(1, j, Grids_X)] : grid_out[cudaIndex2D(1, j, Grids_X)];
 		// Slove line (65, y)
-		grid_out[Index(65, j)] = boundary is 1 ? -grid_out[Index(64,j)] : grid_out[Index(64,j)];
+		grid_out[cudaIndex2D(65, j, Grids_X)] = boundary is 1 ? -grid_out[cudaIndex2D(64,j, Grids_X)] : grid_out[cudaIndex2D(64,j, Grids_X)];
 		// Slove line (x, 0)
-		grid_out[Index(i, 0)]  = boundary is 2 ? -grid_out[Index(i, 1)] : grid_out[Index(i, 1)];
+		grid_out[cudaIndex2D(i, 0, Grids_X)]  = boundary is 2 ? -grid_out[cudaIndex2D(i, 1, Grids_X)] : grid_out[cudaIndex2D(i, 1, Grids_X)];
 		// Slove line (x, 65)
-		grid_out[Index(i, 65)] = boundary is 2 ? -grid_out[Index(i,64)] : grid_out[Index(i,64)];
+		grid_out[cudaIndex2D(i, 65, Grids_X)] = boundary is 2 ? -grid_out[cudaIndex2D(i,64, Grids_X)] : grid_out[cudaIndex2D(i,64, Grids_X)];
 	}
 	// Slove ghost cell (0, 0)
-	grid_out[Index(0, 0)] = 0.5f * ( grid_out[Index(1, 0)]  + grid_out[Index(0, 1)] );
+	grid_out[cudaIndex2D(0, 0, Grids_X)] = 0.5f * ( grid_out[cudaIndex2D(1, 0, Grids_X)]  + grid_out[cudaIndex2D(0, 1, Grids_X)] );
 	// Slove ghost cell (0, 65)
-	grid_out[Index(0, 65)] = 0.5f * ( grid_out[Index(1, 65)] + grid_out[Index(0, 64)] );
+	grid_out[cudaIndex2D(0, 65, Grids_X)] = 0.5f * ( grid_out[cudaIndex2D(1, 65, Grids_X)] + grid_out[cudaIndex2D(0, 64, Grids_X)] );
 	// Slove ghost cell (65, 0)
-	grid_out[Index(65, 0)] = 0.5f * ( grid_out[Index(64, 0)] + grid_out[Index(65, 1)] );
+	grid_out[cudaIndex2D(65, 0, Grids_X)] = 0.5f * ( grid_out[cudaIndex2D(64, 0, Grids_X)] + grid_out[cudaIndex2D(65, 1, Grids_X)] );
 	// Slove ghost cell (65, 65)
-	grid_out[Index(65, 65)] = 0.5f * ( grid_out[Index(64, 65)] + grid_out[Index(65, 64)]);
+	grid_out[cudaIndex2D(65, 65, Grids_X)] = 0.5f * ( grid_out[cudaIndex2D(64, 65, Grids_X)] + grid_out[cudaIndex2D(65, 64, Grids_X)]);
 
 #undef is
 }
@@ -86,13 +92,13 @@ __global__ void set_bnd_kernel ( float *grid_out, int boundary )
 __global__ void lin_solve_kernel ( float *grid_inout, float *grid0_in, int boundary, float a, float c )
 {
 	// Get index of GPU-thread
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	int i, j, k;
+	cudaKernel2DIndex(i, j);
 
 	if ( i >= 1 && i <= SimArea_X && j >= 1 && j <= SimArea_X )
 	{	
-		grid_inout[Index(i,j)] = (grid0_in[Index(i,j)] + a * ( grid_inout[Index(i-1,j)] + 
-			grid_inout[Index(i+1,j)] + grid_inout[Index(i,j-1)] + grid_inout[Index(i,j+1)] ) ) / c;	
+		grid_inout[cudaIndex2D(i,j,Grids_X)] = (grid0_in[cudaIndex2D(i,j,Grids_X)] + a * ( grid_inout[cudaIndex2D(i-1,j,Grids_X)] + 
+			grid_inout[cudaIndex2D(i+1,j,Grids_X)] + grid_inout[cudaIndex2D(i,j-1,Grids_X)] + grid_inout[cudaIndex2D(i,j+1,Grids_X)] ) ) / c;	
 	}
 }
 
@@ -100,16 +106,16 @@ __global__ void lin_solve_kernel ( float *grid_inout, float *grid0_in, int bound
 __global__ void advect_kernel(float *density_out, float *density0_in, float *u_in, float *v_in, float dt0)
 {
 	// Get index of GPU-thread
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	int i, j, k;
+	cudaKernel2DIndex(i, j);
 
 	int i0, j0, i1, j1;
 	float x, y, s0, t0, s1, t1;
 
 	if ( i >= 1 && i <= SimArea_X && j >= 1 && j <= SimArea_X )
 	{
-		x = i - dt0 * u_in[Index(i,j)];
-		y = j - dt0 * v_in[Index(i,j)];
+		x = i - dt0 * u_in[cudaIndex2D(i,j,Grids_X)];
+		y = j - dt0 * v_in[cudaIndex2D(i,j,Grids_X)];
 		if (x < 0.5f) x = 0.5f;
 		if (x > SimArea_X + 0.5f) x = SimArea_X+0.5f;
 
@@ -126,9 +132,9 @@ __global__ void advect_kernel(float *density_out, float *density0_in, float *u_i
 		t1 = y - j0;
 		t0 = 1 - t1;
 
-		density_out[Index(i,j)] = s0 * ( t0 * density0_in[Index(i0,j0)] +
-			t1 * density0_in[Index(i0,j1)]) + s1 * ( t0 * density0_in[Index(i1,j0)] + 
-			t1 * density0_in[Index(i1,j1)]);
+		density_out[cudaIndex2D(i,j,Grids_X)] = s0 * ( t0 * density0_in[cudaIndex2D(i0,j0,Grids_X)] +
+			t1 * density0_in[cudaIndex2D(i0,j1,Grids_X)]) + s1 * ( t0 * density0_in[cudaIndex2D(i1,j0,Grids_X)] + 
+			t1 * density0_in[cudaIndex2D(i1,j1,Grids_X)]);
 	}
 };
 
@@ -136,13 +142,14 @@ __global__ void advect_kernel(float *density_out, float *density0_in, float *u_i
 __global__ void project_kernel_pt1(float * u, float * v, float * p, float * div)
 {
 	// Get index of GPU-thread
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	int i, j, k;
+	cudaKernel2DIndex(i, j);
 	
 	if ( i >= 1 && i <= SimArea_X && j >= 1 && j <= SimArea_X )
 	{
-		div[Index(i,j)] = -0.5f*(u[Index(i+1,j)]-u[Index(i-1,j)]+v[Index(i,j+1)]-v[Index(i,j-1)])/SimArea_X;
-		p[Index(i,j)] = 0;
+		div[cudaIndex2D(i,j,Grids_X)] = -0.5f*(u[cudaIndex2D(i+1,j,Grids_X)]-u[cudaIndex2D(i-1,j,Grids_X)]+
+			v[cudaIndex2D(i,j+1,Grids_X)]-v[cudaIndex2D(i,j-1,Grids_X)])/SimArea_X;
+		p[cudaIndex2D(i,j,Grids_X)] = 0;
 	}
 }
 
@@ -150,13 +157,13 @@ __global__ void project_kernel_pt1(float * u, float * v, float * p, float * div)
 __global__ void project_kernel_pt2(float * u, float * v, float * p, float * div)
 {
 	// Get index of GPU-thread
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	int i, j, k;
+	cudaKernel2DIndex(i, j);
 	
 	if ( i >= 1 && i <= SimArea_X && j >= 1 && j <= SimArea_X )
 	{
-			u[Index(i,j)] -= 0.5f*SimArea_X*(p[Index(i+1,j)]-p[Index(i-1,j)]);
-			v[Index(i,j)] -= 0.5f*SimArea_X*(p[Index(i,j+1)]-p[Index(i,j-1)]);
+			u[cudaIndex2D(i,j,Grids_X)] -= 0.5f*SimArea_X*(p[cudaIndex2D(i+1,j,Grids_X)]-p[cudaIndex2D(i-1,j,Grids_X)]);
+			v[cudaIndex2D(i,j,Grids_X)] -= 0.5f*SimArea_X*(p[cudaIndex2D(i,j+1,Grids_X)]-p[cudaIndex2D(i,j-1,Grids_X)]);
 	}
 }
 
@@ -210,7 +217,7 @@ void cuda_project ( float * u, float * v, float * p, float * div, dim3 *gridDim,
 void dens_step ( float *grid, float *grid0, float *u, float *v )
 {
 	// Define the computing unit size
-	cudaParamDim2D();
+	cudaDeviceDim2D();
 
 	size_t size = Grids_X * Grids_X;
 
@@ -300,7 +307,7 @@ void dens_step ( float *grid, float *grid0, float *u, float *v )
 void vel_step ( float * u, float * v, float * u0, float * v0 )
 {
 	// Define the computing unit size
-	cudaParamDim2D();
+	cudaDeviceDim2D();
 
 	size_t size = Grids_X * Grids_X;
 

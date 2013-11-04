@@ -51,9 +51,7 @@
 
 #define Client_X             512      // application's client size
 
-#define BYTES_PER_TEXEL      3        // a pixel consists of three unsigned bytes
-
-#define SIZE                 Grids_X * Grids_X
+#define SIZE                 Grids_X * Grids_X * Grids_X
 
 ///
 //////////////////////////////////////////////////////////////////////////////////////////////

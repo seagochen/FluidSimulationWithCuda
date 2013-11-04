@@ -21,7 +21,7 @@
 * <Author>      Orlando Chen
 * <First>       Oct 24, 2013
 * <Last>		Oct 25, 2013
-* <File>        cfd_rendering.cpp
+* <File>        rendering.cpp
 */
 
 #ifndef __cfd_rendering_cpp_
