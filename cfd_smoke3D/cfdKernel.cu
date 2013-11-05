@@ -200,7 +200,7 @@ void cuda_add_source ( float *grid, dim3 *gridDim, dim3 *blockDim )
 void cuda_lin_solve ( float *grid, float *grid0, int boundary, float a, float c, dim3 *gridDim, dim3 *blockDim )
 {
     // Launch a kernel on the GPU with one thread for each element.
-	for ( int i = 0; i < 20; i ++ )
+	for ( int i = 0; i < 20; i++ )
 	{
 		lin_solve_kernel cudaDevice ( *gridDim,  *blockDim ) ( grid, grid0, boundary, a, c );
 	}
@@ -237,7 +237,7 @@ void cuda_project ( float * u, float * v, float * p, float * div, dim3 *gridDim,
 }
 
 
-void dens_step ( float *grid, float *grid0, float *u, float *v )
+void dens_step ( float *grid, float *grid0, float *u, float *v, float *w )
 {
 	// Define the computing unit size
 	cudaDeviceDim3D ( );
@@ -337,7 +337,7 @@ void dens_step ( float *grid, float *grid0, float *u, float *v )
 }
 
 
-void vel_step ( float * u, float * v, float * u0, float * v0 )
+void vel_step ( float *u, float *v, float *w, float * u0, float * v0, float *w0 )
 {
 	// Define the computing unit size
 	cudaDeviceDim3D ( );

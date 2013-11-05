@@ -59,5 +59,8 @@
     <CudaCompile Include="cfdKernel.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
+    <CudaCompile Include="cfdKernelRendering.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

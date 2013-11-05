@@ -39,6 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="cfdKernel.cu" />
+    <CudaCompile Include="cfdKernelRendering.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4A86FBE5-D8AF-4124-8B56-B1133DA36A4C}</ProjectGuid>

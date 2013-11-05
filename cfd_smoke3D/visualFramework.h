@@ -54,22 +54,6 @@ namespace sge
 		UINT  FPS;
 	};
 
-	struct _volume3D
-	{
-		GLubyte *data;
-		unsigned texture_id;
-		int width, height, depth;
-		unsigned size;
-	};
-
-	struct _volume2D
-	{
-		GLubyte *data;
-		unsigned texture_id;
-		int width, height;
-		unsigned size;
-	};
-
 	struct _viewMatrix
 	{
 		GLfloat view_angle;
