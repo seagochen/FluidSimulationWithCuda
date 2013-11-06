@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 7, 2013
-* <Last>		Oct 25, 2013
+* <Last>		Nov 6, 2013
 * <File>        macroDef.h
 */
 
@@ -38,10 +38,11 @@
    Definition for Variables of Computational Fluid Dynamics
   ----------------------------------------------------------------------
 */
-#define Grids_X              32       // total grids number
-#define SimArea_X            30       // simulation area which is the number without ghost cells
+#define Grids_X              66       // total grids number
+#define SimArea_X            64       // simulation area which is the number without ghost cells
 
 #define Tile_X               16       // 16x16 gpu threads as a block
+#define SIM_SIZE             Grids_X * Grids_X
 
 #define DELTA_TIME           0.1f     // 0.1 second
 #define DIFFUSION            0.0f     // diffusion rate
@@ -50,8 +51,6 @@
 #define SOURCE               100.0f   // to given a density with 100 percent
 
 #define Client_X             512      // application's client size
-
-#define BYTES_PER_TEXEL      3        // a pixel consists of three unsigned bytes
 
 ///
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,22 +64,16 @@
 
 #ifdef __launch_main_cpp_
 
-float * u, * v, * u_prev, * v_prev;
-float * dens, * dens_prev;
-
 std::vector<float*> dev_list;
+std::vector<float*> host_list;
 sge::FileManager    Logfile;
-
 cudaError cudaStatus;
 
 #else
 
-extern float * u, * v, * u_prev, * v_prev;
-extern float * dens, * dens_prev;
-
 extern std::vector<float*> dev_list;
+extern std::vector<float*> host_list;
 extern sge::FileManager    Logfile;
-
 extern cudaError cudaStatus;
 
 #endif
@@ -114,9 +107,9 @@ extern cudaError cudaStatus;
   ----------------------------------------------------------------------
 */
 
-extern void dens_step(float * grid, float * grid0, float * u, float * v);
+extern void dens_step(float *grid, float *grid0, float *u, float *v);
 
-extern void vel_step(float * u, float * v, float * u0, float * v0);
+extern void vel_step(float *u, float *v, float *u0, float *v0);
 
 
 /*
@@ -126,16 +119,29 @@ extern void vel_step(float * u, float * v, float * u0, float * v0);
 */
 
 
-#define devices   8
+#define DevListNum    10
 
-#define dev_u      dev_list[0]
-#define dev_v      dev_list[1]
-#define dev_u0     dev_list[2]
-#define dev_v0     dev_list[3]
-#define dev_den    dev_list[4]
-#define dev_den0   dev_list[5]
-#define dev_grid   dev_list[6]
-#define dev_grid0  dev_list[7]
+#define dev_u         dev_list [ 0 ]
+#define dev_v         dev_list [ 1 ]
+#define dev_w         dev_list [ 2 ]
+#define dev_u0        dev_list [ 3 ]
+#define dev_v0        dev_list [ 4 ]
+#define dev_w0        dev_list [ 5 ]
+#define dev_den       dev_list [ 6 ]
+#define dev_den0      dev_list [ 7 ]
+#define dev_grid      dev_list [ 8 ]
+#define dev_grid0     dev_list [ 9 ]
+
+#define HostListNum   8
+
+#define host_u        host_list [ 0 ]
+#define host_v        host_list [ 1 ]
+#define host_w        host_list [ 2 ]
+#define host_u0       host_list [ 3 ]
+#define host_v0       host_list [ 4 ]
+#define host_w0       host_list [ 5 ]
+#define host_den      host_list [ 6 ]
+#define host_den0     host_list [ 7 ]
 
 ///
 //////////////////////////////////////////////////////////////////////////////////////////////

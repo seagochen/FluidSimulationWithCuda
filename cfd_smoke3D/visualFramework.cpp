@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
-* <Last>		Oct 25, 2013
+* <Last>		Nov 6, 2013
 * <File>        visual_framework.cpp
 */
 
@@ -37,13 +37,12 @@ using namespace sge;
 
 static _mouse        *m_mouse;
 static _fps          *m_fps;
-static _volume2D     *m_volume2D;
-static _volume3D     *m_volume3D;
 static _viewMatrix   *m_view;
 static FreeType      *m_font;
 static MainActivity  *m_hAct;
 static GLfloat        m_width, m_height;
 static bool           m_density;
+static size_t         m_size;
 
 
 ///
@@ -54,26 +53,25 @@ Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
 {
 	m_mouse    = new _mouse;
 	m_fps      = new _fps;
-	m_volume2D = new _volume2D;
-	m_volume3D = new _volume3D;
 	m_view     = new _viewMatrix;
 	m_font     = new FreeType;
 	m_hAct     = hActivity;
 
 	m_width    = width;
 	m_height   = height;
+	m_size     = SIM_SIZE;
 	m_density  = false;
+		
+	extern void ZeroData(void); extern SGRUNTIMEMSG AllocateData(void);
 
-	m_volume2D->size = 0;
-	m_volume3D->size = 0;
-	
-	extern void clear_data(void); extern int allocate_data(void); extern void cuda_init(void);
-
-	// Initialize the CUDA
-	cuda_init();
-
-	if ( !allocate_data() ) exit(1);
-	clear_data();
+	if ( AllocateData ( ) != SG_RUNTIME_OK )
+	{
+		exit ( 1 );
+	}
+	else
+	{
+		ZeroData ( );
+	}
 };
 
 
@@ -171,66 +169,6 @@ void Setup( void )
 };
 
 
-void SetTexture( void )
-{
-	// Create 2D image texture and assign an ID
-	glGenTextures(1, &m_volume2D->texture_id);
-
-	// Create 3D image texture and assign an ID
-	glGenTextures(1, &m_volume3D->texture_id);
-
-	// Check texture ID is available
-	if (m_font->IsTextureIDAvailable(m_volume2D->texture_id) != SGRUNTIMEMSG::SG_RUNTIME_OK)
-	{
-		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "Cannot assign an available texture ID to object at line: %d of file %s", __LINE__, __FILE__);
-		exit(0);
-	}
-};
-
-
-void DrawAgent2D( void )
-{
-	// Bind texture
-	glBindTexture(GL_TEXTURE_2D, m_volume2D->texture_id);
-
-	// Upload 2-D textuer to OpenGL client
-	glTexImage2D(GL_TEXTURE_2D,          // GLenum target
-		0,		                         // GLint level,
-		GL_RGB,                          // GLint internalFormat
-		m_volume2D->width,               // GLsizei width
-		m_volume2D->height,              // GLsizei height
-		0,                               // GLint border
-		GL_RGB,                          // GLenum format
-		GL_UNSIGNED_BYTE,                // GLenum type
-		m_volume2D->data);               // const GLvoid * data
-	
-	// Set texture parameters
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	glPushMatrix(); // push the current matrix stack
-	{
-		// Rotated image first
-		//glRotated(90, 0, 0, 1);
-
-		glEnable(GL_TEXTURE_2D);  // Draw 2-D polygon agent and mapping texture onto it
-		{
-			glBegin(GL_QUADS);
-			{
-				// Front Face
-				glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
-				glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f, -1.0f);
-				glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f,  1.0f);
-				glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  1.0f);
-			}
-			glEnd();
-		}
-		glDisable(GL_TEXTURE_2D); // Finished
-	}
-	glPopMatrix();  // pop the current matrix stack
-};
-
-
 void CountFPS( void ) 
 {
 	// Calculate the number of frames per one second:
@@ -261,135 +199,94 @@ void CountFPS( void )
 }
 
 
-void get_from_UI(float * d, float * u, float * v)
+void FreeResources(void)
 {
-#define MouseLeftDown  m_mouse->left_button_pressed
-#define MouseRightDown m_mouse->right_button_pressed
-#define mx	m_mouse->cur_cursor_x
-#define my  m_mouse->cur_cursor_y
-#define omx m_mouse->pre_cursor_x
-#define omy m_mouse->pre_cursor_y
-
-	int i, j, size = Grids_X * Grids_X;
-
-	for (i=0 ; i<size ; i++) 
+	// Release host buffer if failed
+	for ( int i = 0; i < HostListNum; i++ )
 	{
-		u[i] = v[i] = d[i] = 0.0f;
+		if ( host_list [ i ] ) SAFE_FREE_PTR ( host_list [ i ] );
 	}
+	host_list.empty();
 
-	if (!MouseLeftDown && !MouseRightDown) return;
-
-	i = (int)((       mx /(float)m_width)*SimArea_X+1);
-	j = (int)(((m_height-my)/(float)m_height)*SimArea_X+1);
-
-	if (i<1 || i>SimArea_X || j<1 || j>SimArea_X) return;
-
-	if (MouseLeftDown)
-	{
-		u[Index(i,j)] = FORCE * (mx-omx);
-		v[Index(i,j)] = FORCE * (omy-my);
-	}
-
-	if (MouseRightDown)
-	{
-		d[Index(i,j)] = SOURCE;
-	}
-
-	omx = mx;
-	omy = my;
-
-#undef mx
-#undef my
-#undef omx
-#undef omy
-#undef MouseLeftDown
-#undef MouseRightDown
-}
-
-void free_dev_list()
-{
 	// Release CUDA resource if failed
-	for (int i=0; i<devices; i++)
+	for (int i=0; i<DevListNum; i++)
 	{
 		cudaFree(dev_list[i]);
 	}
 	dev_list.empty();
 }
 
-void cuda_init()
-{	
+
+void ZeroData(void)
+{
+	for ( int i = 0; i < m_size; i++ )
+	{
+		host_u [ i ] = 0.f;
+		host_v [ i ] = 0.f;
+		host_w [ i ] = 0.f;
+		host_u0 [ i ] = 0.f;
+		host_v0 [ i ] = 0.f;
+		host_w0 [ i ] = 0.f;
+		host_den [ i ] = 0.f;
+		host_den0 [ i ] = 0.f;
+	}
+}
+
+
+SGRUNTIMEMSG AllocateData ( void )
+{
+	// Create host buffers
+	for ( int i = 0; i < HostListNum; i++ )
+	{
+		static float *ptr;
+		ptr = ( float * ) malloc ( m_size*sizeof ( float ) );
+		host_list.push_back ( ptr );
+	}
+	
+	// Check host buffers if someone is empty
+	for ( int i = 0; i < HostListNum; i++ )
+	{
+		if ( ! host_list [ i ] )
+		{
+			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND,
+				"allocate data was failed, at line: %d of file %s", __LINE__, __FILE__ );
+			return SG_RUNTIME_FALSE;
+		}
+	}
+
 	// Push dev into vector
-	for (int i=0; i<devices; i++)
+	for ( int i = 0; i < DevListNum; i++ )
 	{
 		static float *ptr;
 		dev_list.push_back(ptr);
 	}
 
-	size_t size = Grids_X * Grids_X;
-
     // Choose which GPU to run on, change this on a multi-GPU system.
     cudaStatus = cudaSetDevice(0);
-    if (cudaStatus != cudaSuccess) {
-		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "cudaSetDevice was failed, do you have a CUDA-capable GPU installed? at line: %d of file %s", __LINE__, __FILE__);
-		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
-        free_dev_list();
+    if ( cudaStatus != cudaSuccess ) {
+		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
+			"cudaSetDevice was failed, do you have a CUDA-capable GPU installed? at line: %d of file %s", __LINE__, __FILE__ );
+		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, 
+			">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
+        FreeResources ( );
+		return SG_RUNTIME_FALSE;
     }
 
-    // Allocate GPU buffers for three vectors (two input, one output).
-	for (int i=0; i<devices; i++)
+    // Allocate GPU buffers
+	for ( int i = 0; i < DevListNum; i++ )
 	{
-		cudaStatus = cudaMalloc((void**)&dev_list[i], size * sizeof(float));
-		if (cudaStatus != cudaSuccess) {
-			Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "cudaMalloc was failed, at line: %d of file %s", __LINE__, __FILE__);
-			Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
-			free_dev_list();
+		cudaStatus = cudaMalloc((void**)&dev_list[i], m_size * sizeof(float));
+		if ( cudaStatus != cudaSuccess ) {
+			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
+				"cudaMalloc was failed, at line: %d of file %s", __LINE__, __FILE__ );
+			Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, 
+				">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
+			FreeResources ( );
+			return SG_RUNTIME_FALSE;
 		}
 	}
-};
-
-void free_data(void)
-{
-	if ( u ) SAFE_FREE_PTR(u);
-	if ( v ) SAFE_FREE_PTR(v);
-	if ( u_prev ) SAFE_FREE_PTR(u_prev);
-	if ( v_prev ) SAFE_FREE_PTR(v_prev);
-	if ( dens ) SAFE_FREE_PTR(dens);
-	if ( dens_prev ) SAFE_FREE_PTR(dens_prev);
-
-	// Release CUDA resources
-	for (int i=0; i<devices; i++)
-		cudaFree(dev_list[i]);
-
-}
-
-void clear_data(void)
-{
-	int size=(Grids_X)*(Grids_X);
-
-	for ( int i=0; i<size ; i++ )
-	{
-		u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = 0.0f;
-	}
-}
-
-int allocate_data(void)
-{
-	int size = (Grids_X)*(Grids_X);
-
-	u			= (float *)malloc(size*sizeof(float));
-	v			= (float *)malloc(size*sizeof(float));
-	u_prev		= (float *)malloc(size*sizeof(float));
-	v_prev		= (float *)malloc(size*sizeof(float));
-	dens		= (float *)malloc(size*sizeof(float));	
-	dens_prev	= (float *)malloc(size*sizeof(float));
-
-	if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev ) 
-	{
-		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "allocate data was failed, at line: %d of file %s", __LINE__, __FILE__);
-		return ( 0 );
-	}
-
-	return 1;
+	
+	return SG_RUNTIME_OK;
 }
 
 
@@ -446,11 +343,8 @@ void Visual::OnResize( GLuint width, GLuint height )
 
 void Visual::OnIdle( void )
 {
-	extern void get_from_UI(float *, float *, float *);
-
-	get_from_UI(dens_prev, u_prev, v_prev);
-	vel_step(u, v, u_prev, v_prev);
-	dens_step(dens, dens_prev, u, v);
+	vel_step ( host_u, host_v, host_u0, host_v0 );
+	dens_step ( host_den, host_den0, host_u, host_v );
 
 };
 
@@ -487,14 +381,14 @@ void Visual::OnDisplay( void )
 
 void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 {
-	extern void clear_data(), free_data();
+	extern void ZeroData(), FreeResources();
 
 	if (status == SG_KEY_STATUS::SG_KEY_DOWN)
 	{
 		switch (keys)
 		{
 		case SG_KEYS::SG_KEY_C:
-			clear_data();
+			ZeroData();
 			break;
 
 		case SG_KEYS::SG_KEY_D:
@@ -507,7 +401,7 @@ void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 		
 		case SG_KEYS::SG_KEY_Q:
 		case SG_KEYS::SG_KEY_ESCAPE:
-			free_data();
+			FreeResources();
 			OnDestroy();
 			exit ( 0 );
 			break;
@@ -550,9 +444,9 @@ void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 
 void Visual::OnDestroy( void )
 {
-	extern void free_data();
+	extern void FreeResources();
 
-	free_data();
+	FreeResources();
 	
     // cudaDeviceReset must be called before exiting in order for profiling and
     // tracing tools such as Nsight and Visual Profiler to show complete traces.
@@ -566,52 +460,8 @@ void Visual::OnDestroy( void )
 	SAFE_DELT_PTR( m_fps );
 	SAFE_DELT_PTR( m_view );
 
-	if ( m_volume2D->size > 0 ) SAFE_FREE_PTR( m_volume2D->data );
-	if ( m_volume3D->size > 0 ) SAFE_FREE_PTR( m_volume3D->data );
-
 	if ( m_font != NULL )	m_font->Clean();
 	SAFE_DELT_PTR( m_font );
-};
-
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
-
-void Visual::UploadVolumeData( _volume2D const *data_in )
-{
-	m_volume2D->width  = data_in->width;
-	m_volume2D->height = data_in->height;
-	m_volume2D->data   = data_in->data;
-
-	m_volume2D->size   = data_in->size;
-};
-
-
-void Visual::UploadVolumeData( _volume3D const *data_in )
-{
-	m_volume3D->width  = data_in->width;
-	m_volume3D->height = data_in->height;
-	m_volume3D->depth  = data_in->depth;
-	m_volume3D->data   = data_in->data;
-
-	m_volume3D->size   = data_in->size;
-};
-
-int Visual::Texel2D( int i, int j )
-{
-	return  BYTES_PER_TEXEL * ( i * m_volume2D->height + j );
-};
-
-
-int Layer( int layer )
-{
-	return layer * m_volume3D->width * m_volume3D->height;
-};
-
-
-int Visual::Texel3D( int i, int j, int k )
-{
-	return BYTES_PER_TEXEL * ( Layer( i ) + m_volume3D->height * j + k);
 };
 
 ///

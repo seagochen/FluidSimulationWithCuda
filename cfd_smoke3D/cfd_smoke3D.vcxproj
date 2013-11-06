@@ -38,7 +38,7 @@
     <ClCompile Include="visualFramework.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="cfd2DKernel.cu" />
+    <CudaCompile Include="cfdMainKernel.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4A86FBE5-D8AF-4124-8B56-B1133DA36A4C}</ProjectGuid>

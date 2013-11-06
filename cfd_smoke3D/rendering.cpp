@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 24, 2013
-* <Last>		Oct 25, 2013
+* <Last>		Nov 6, 2013
 * <File>        cfd_rendering.cpp
 */
 
@@ -48,7 +48,7 @@ void draw_velocity(void)
 			{
 				y = (j-0.5f)*h;
 				glVertex2f(x, y);
-				glVertex2f(x+u[Index(i,j)], y+v[Index(i,j)]);
+				glVertex2f(x+host_u[Index(i,j)], y+host_v[Index(i,j)]);
 			}
 		}
 	}
@@ -70,10 +70,10 @@ void draw_density(void)
 			for ( j=0 ; j<=SimArea_X ; j++ )
 			{
 				y = (j-0.5f)*h;
-				d00 = dens[Index(i,j)];
-				d01 = dens[Index(i,j+1)];
-				d10 = dens[Index(i+1,j)];
-				d11 = dens[Index(i+1,j+1)];
+				d00 = host_den[Index(i,j)];
+				d01 = host_den[Index(i,j+1)];
+				d10 = host_den[Index(i+1,j)];
+				d11 = host_den[Index(i+1,j+1)];
 
 				glColor3f(d00, d00, d00); glVertex2f(x, y);
 				glColor3f(d10, d10, d10); glVertex2f(x+h, y);

@@ -54,22 +54,6 @@ namespace sge
 		UINT  FPS;
 	};
 
-	struct _volume3D
-	{
-		GLubyte *data;
-		unsigned texture_id;
-		int width, height, depth;
-		unsigned size;
-	};
-
-	struct _volume2D
-	{
-		GLubyte *data;
-		unsigned texture_id;
-		int width, height;
-		unsigned size;
-	};
-
 	struct _viewMatrix
 	{
 		GLfloat view_angle;
@@ -101,14 +85,6 @@ namespace sge
 		static void OnKeyboard (SG_KEYS keys, SG_KEY_STATUS status);
 		static void OnMouse    (SG_MOUSE mouse, GLuint x_pos, GLuint y_pos);
 		static void OnDestroy  (void);
-
-	public:
-		void UploadVolumeData(_volume2D const *data_in);
-		void UploadVolumeData(_volume3D const *data_in);
-
-	public:
-		int Texel2D(int i, int j);
-		int Texel3D(int i, int j, int k);
 	}Visualization;
 };
 
