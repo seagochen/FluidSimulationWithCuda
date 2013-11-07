@@ -38,11 +38,11 @@
    Definition for Variables of Computational Fluid Dynamics
   ----------------------------------------------------------------------
 */
-#define Grids_X              66       // total grids number
-#define SimArea_X            64       // simulation area which is the number without ghost cells
+#define Grids_X              32       // total grids number
+#define SimArea_X            30       // simulation area which is the number without ghost cells
 
 #define Tile_X               16       // 16x16 gpu threads as a block
-#define SIM_SIZE             Grids_X * Grids_X
+#define SIM_SIZE             Grids_X * Grids_X * Grids_X
 
 #define DELTA_TIME           0.1f     // 0.1 second
 #define DIFFUSION            0.0f     // diffusion rate
@@ -85,7 +85,7 @@ extern cudaError cudaStatus;
   ----------------------------------------------------------------------
 */
 
-#define Index(i,j)      cudaIndex2D(i, j, Grids_X)
+#define Index(i, j, k)      cudaIndex3D(i, j, k, Grids_X)
 
 #define cudaDeviceDim2D() \
 	dim3 blockDim, gridDim; \
