@@ -29,8 +29,39 @@
 
 #include "macroDef.h"
 
-void draw_velocity(void)
+static const size_t size = Grids_X * Grids_X;
+static float dens[size], u[size], v[size];
+
+
+void DensityInterpolate ( void )
 {
+	for ( int i = 0; i < Grids_X; i++ )
+	{
+		for ( int j = 0; j < Grids_X; j++ )
+		{
+			float var = 0.f;
+			
+			for ( int k = 0; k < Grids_X; k++ )
+			{
+				var += host_den [ cudaIndex3D (i, j, k, Grids_X) ];
+			}
+
+			dens [ cudaIndex2D (i, j, Grids_X)] = var;
+		}
+	}
+};
+
+
+void VelocityInterpolate ( void )
+{
+
+};
+
+
+void DrawVelocity ( void )
+{
+	VelocityInterpolate ( );
+
 	int i, j;
 	float x, y, h;
 
@@ -55,8 +86,10 @@ void draw_velocity(void)
 	glEnd();
 }
 
-void draw_density(void)
+void DrawDensity(void)
 {
+	DensityInterpolate ( );
+
 	int i, j;
 	float x, y, h, d00, d01, d10, d11;
 

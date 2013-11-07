@@ -343,9 +343,8 @@ void Visual::OnResize( GLuint width, GLuint height )
 
 void Visual::OnIdle( void )
 {
-	vel_step ( host_u, host_v, host_u0, host_v0 );
-	dens_step ( host_den, host_den0, host_u, host_v );
-
+	VelocitySolver ( host_u, host_v, host_w, host_u0, host_v0, host_w0 );
+	DensitySolver ( host_den, host_den0, host_u, host_v, host_w );
 };
 
 
@@ -365,14 +364,14 @@ void Visual::OnDisplay( void )
 
 	// Draw fluid sim result on 2-D map
 //	DrawAgent2D();
-	extern void draw_density(), draw_velocity();
+	extern void DrawDensity(), DrawVelocity();
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	if (m_density)
-		draw_density();
+		DrawDensity();
 	else
-		draw_velocity();
+		DrawVelocity();
 
 	// Print FPS
 	CountFPS();

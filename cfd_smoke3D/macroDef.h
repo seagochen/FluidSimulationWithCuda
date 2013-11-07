@@ -107,9 +107,9 @@ extern cudaError cudaStatus;
   ----------------------------------------------------------------------
 */
 
-extern void dens_step(float *grid, float *grid0, float *u, float *v);
+extern void DensitySolver(float *grid, float *grid0, float *u, float *v, float *w);
 
-extern void vel_step(float *u, float *v, float *u0, float *v0);
+extern void VelocitySolver(float *u, float *v, float *w, float *u0, float *v0, float *w0);
 
 
 /*
