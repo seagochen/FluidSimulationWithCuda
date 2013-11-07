@@ -62,8 +62,8 @@ void VelocityInterpolate ( void )
 			
 			for ( int k = 0; k < Grids_X; k++ )
 			{
-				var0 += host_u [ cudaIndex2D (i, j, Grids_X) ];
-				var1 += host_v [ cudaIndex2D (i, j, Grids_X) ];
+				var0 = host_u [ cudaIndex2D (i, j, Grids_X) ];
+				var1 = host_v [ cudaIndex2D (i, j, Grids_X) ];
 			}
 
 			u [ cudaIndex2D (i, j, Grids_X)] = var0;
