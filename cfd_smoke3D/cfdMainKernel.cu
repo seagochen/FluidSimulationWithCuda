@@ -195,7 +195,7 @@ void cudaDiffuse ( float *grid, float *grid0, int boundary, float diff, dim3 *gr
 }
 
 
-void cudaAdvect( float *density, float *density0, float *u, float *v, float *w, int boundary, dim3 *gridDim, dim3 *blockDim )
+void cudaAdvect ( float *density, float *density0, float *u, float *v, float *w, int boundary, dim3 *gridDim, dim3 *blockDim )
 {
     // Launch a kernel on the GPU with one thread for each element.
 	float dt0 = DELTA_TIME*SimArea_X;

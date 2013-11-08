@@ -37,12 +37,12 @@ using namespace std;
 static size_t size  = SIM_SIZE;
 
 
-extern void cudaProject ( float *u, float *v, float *w, float *u0, float *v0, float *w0, dim3 *gridDim, dim3 *blockDim );
-extern void cudaAdvect( float *density, float *density0, float *u, float *v, float *w, int boundary, dim3 *gridDim, dim3 *blockDim );
-extern void cudaDiffuse ( float *grid, float *grid0, int boundary, float diff, dim3 *gridDim, dim3 *blockDim );
+extern void cudaProject    ( float *u, float *v, float *w, float *u0, float *v0, float *w0, dim3 *gridDim, dim3 *blockDim );
+extern void cudaAdvect     ( float *density, float *density0, float *u, float *v, float *w, int boundary, dim3 *gridDim, dim3 *blockDim );
+extern void cudaDiffuse    ( float *grid, float *grid0, int boundary, float diff, dim3 *gridDim, dim3 *blockDim );
 extern void cudaLineSolver (float *grid, float *grid0, int boundary, float a, float c, dim3 *gridDim, dim3 *blockDim);
-extern void cudaAddSource ( float *grid, dim3 *gridDim, dim3 *blockDim );
-extern void FreeResources ( void );
+extern void cudaAddSource  ( float *grid, dim3 *gridDim, dim3 *blockDim );
+extern void FreeResources  ( void );
 
 
 
@@ -190,7 +190,7 @@ void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float 
 	cudaStatus = cudaMemcpy ( dev_v0, v0, size * sizeof(float), cudaMemcpyHostToDevice );
     if (cudaStatus != cudaSuccess) {
 		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND,
-			"cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+			"cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__ );
 		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND,
 			">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
 		FreeResources ( ); exit ( 0 );
@@ -199,7 +199,7 @@ void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float 
 	cudaStatus = cudaMemcpy ( dev_w0, w0, size * sizeof(float), cudaMemcpyHostToDevice );
     if (cudaStatus != cudaSuccess) {
 		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND,
-			"cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+			"cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__ );
 		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND,
 			">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
 		FreeResources ( ); exit ( 0 );
@@ -226,7 +226,7 @@ void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float 
 	cudaStatus = cudaMemcpy ( dev_w, w, size * sizeof(float), cudaMemcpyHostToDevice );
     if (cudaStatus != cudaSuccess) {
 		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND,
-			"cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+			"cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__ );
 		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, 
 			">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
 		FreeResources ( ); exit ( 0 );
@@ -268,7 +268,7 @@ void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float 
     cudaStatus = cudaMemcpy ( u0, dev_u0, size * sizeof(int), cudaMemcpyDeviceToHost );
     if (cudaStatus != cudaSuccess) {
 		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND,
-			"cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+			"cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__ );
 		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND,
 			">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
 		FreeResources ( ); exit ( 0 );
@@ -277,7 +277,7 @@ void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float 
 	cudaStatus = cudaMemcpy ( v0, dev_v0, size * sizeof(int), cudaMemcpyDeviceToHost );
     if (cudaStatus != cudaSuccess) {
 		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, 
-			"cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__);
+			"cudaMemcpy was failed, at line: %d of file %s", __LINE__, __FILE__ );
 		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, 
 			">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
 		FreeResources ( ); exit ( 0 );
