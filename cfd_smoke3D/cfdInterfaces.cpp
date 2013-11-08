@@ -21,11 +21,11 @@
 * <Author>      Orlando Chen
 * <First>       Nov 8, 2013
 * <Last>		Nov 8, 2013
-* <File>        cudaFunctions.cu
+* <File>        cfdInterfaces.cpp
 */
 
-#ifndef __cuda_functions_cpp_
-#define __cuda_functions_cpp_
+#ifndef __cfd_interfaces_cpp_
+#define __cfd_interfaces_cpp_
 
 
 #include "cfdHeaders.h"
