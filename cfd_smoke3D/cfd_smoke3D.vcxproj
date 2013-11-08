@@ -32,6 +32,7 @@
     <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cudaFunctions.cpp" />
     <ClCompile Include="rendering.cpp" />
     <ClCompile Include="glew32.cpp" />
     <ClCompile Include="launchMain.cpp" />
