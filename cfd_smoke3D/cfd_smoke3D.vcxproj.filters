@@ -54,6 +54,9 @@
     <ClCompile Include="visualFramework.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cfdInterfaces.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="cfdMainKernel.cu">
