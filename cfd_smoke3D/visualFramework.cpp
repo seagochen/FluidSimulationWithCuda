@@ -44,7 +44,6 @@ static GLfloat        m_width, m_height;
 static bool           m_density;
 static size_t         m_size;
 
-
 ///
 //////////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -98,7 +97,9 @@ void InitFont ( void )
 {
 	if (m_font->Init("EHSMB.TTF", 12) != SGRUNTIMEMSG::SG_RUNTIME_OK)
 	{
-		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "Cannot init FreeType and load TTF file at line: %d of file %s", __LINE__, __FILE__);
+		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, 
+			"Cannot init FreeType and load TTF file at line: %d of file %s",
+			__LINE__, __FILE__);
 		exit(1);
 	};
 }
@@ -361,6 +362,8 @@ SGRUNTIMEMSG AllocateData ( void )
 			FreeResources ( );
 			return SG_RUNTIME_FALSE;
 		}
+
+		break;
 	}	
 
 /*

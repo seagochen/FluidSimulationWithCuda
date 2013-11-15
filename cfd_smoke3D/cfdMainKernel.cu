@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 12, 2013
-* <Last>		Nov 6, 2013
+* <Last>		Nov 15, 2013
 * <File>        cfdMainKernel.cu
 */
 
@@ -50,7 +50,6 @@
 	int j = blockIdx.y * blockDim.y + threadIdx.y; \
 	int k = 0; \
 	cudaTrans2DTo3D ( i, j, k, Grids_X );
-
 
 
 __global__ void kernelAddSource ( float *ptr_out )

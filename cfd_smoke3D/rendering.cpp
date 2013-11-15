@@ -20,57 +20,18 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 24, 2013
-* <Last>		Nov 6, 2013
+* <Last>		Nov 15, 2013
 * <File>        cfd_rendering.cpp
 */
 
 #ifndef __cfd_rendering_cpp_
 #define __cfd_rendering_cpp_
 
+#include "cfdHeaders.h"
+#include "cudaHelper.h"
 #include "macroDef.h"
 
-static const size_t size = Grids_X * Grids_X;
-static float dens[size], u[size], v[size];
-
-
-void DensityInterpolate ( void )
-{
-	for ( int i = 0; i < Grids_X; i++ )
-	{
-		for ( int j = 0; j < Grids_X; j++ )
-		{
-			float var = 0.f;
-			
-			for ( int k = 0; k < Grids_X; k++ )
-			{
-				var = host_den [ cudaIndex3D (i, j, k, Grids_X) ];
-			}
-
-			dens [ cudaIndex2D (i, j, Grids_X)] = var;
-		}
-	}
-};
-
-
-void VelocityInterpolate ( void )
-{
-	for ( int i = 0; i < Grids_X; i++ )
-	{
-		for ( int j = 0; j < Grids_X; j++ )
-		{
-			float var0 = 0.f, var1 = 0.f;
-			
-			for ( int k = 0; k < Grids_X; k++ )
-			{
-				var0 = host_u [ cudaIndex3D (i, j, k, Grids_X) ];
-				var1 = host_v [ cudaIndex3D (i, j, k, Grids_X) ];
-			}
-
-			u [ cudaIndex2D (i, j, Grids_X)] = var0;
-			v [ cudaIndex2D (i, j, Grids_X)] = var1;
-		}
-	}
-};
+#define Index(i,j) cudaIndex2D(i,j,Grids_X)
 
 
 void DrawVelocity ( void )
@@ -79,25 +40,25 @@ void DrawVelocity ( void )
 
 	float x, y, h;
 
-	h = 1.0f/SimArea_X;
+	h = 1.0f / SimArea_X;
 
-	glColor3f(0.0f, 0.0f, 1.0f);
-	glLineWidth(1.0f);
+	glColor3f ( 0.0f, 0.0f, 1.0f );
+	glLineWidth ( 1.0f );
 
-	glBegin(GL_LINES);
+	glBegin ( GL_LINES );
 	{
-		for ( int i=1 ; i<=SimArea_X ; i++ )
+		for ( int i = 1 ; i <= SimArea_X ; i++ )
 		{
-			x = (i-0.5f)*h;
-			for ( int j=1 ; j<=SimArea_X ; j++ )
+			x = ( i - 0.5f ) * h;
+			for ( int j = 1 ; j <= SimArea_X ; j++ )
 			{
 				y = (j-0.5f)*h;
-				glVertex2f(x, y);
-				glVertex2f(x+u[cudaIndex2D(i,j, Grids_X)], y+v[cudaIndex2D(i,j, Grids_X)]);
+				glVertex2f ( x, y );
+				glVertex2f ( x + host_disu [ Index ( i, j ) ], y + host_disv [ Index ( i, j ) ] );
 			}
 		}
 	}
-	glEnd();
+	glEnd ( );
 }
 
 
@@ -107,9 +68,9 @@ void DrawDensity ( void )
 
 	float x, y, h, d00, d01, d10, d11;
 
-	h = 1.0f/SimArea_X;
+	h = 1.0f / SimArea_X;
 
-	glBegin(GL_QUADS);
+	glBegin ( GL_QUADS );
 	{
 		for ( int i=0 ; i<=SimArea_X ; i++ )
 		{
@@ -117,10 +78,10 @@ void DrawDensity ( void )
 			for ( int j=0 ; j<=SimArea_X ; j++ )
 			{
 				y = (j-0.5f)*h;
-				d00 = dens[cudaIndex2D(i,j, Grids_X)];
-				d01 = dens[cudaIndex2D(i,j+1, Grids_X)];
-				d10 = dens[cudaIndex2D(i+1,j, Grids_X)];
-				d11 = dens[cudaIndex2D(i+1,j+1, Grids_X)];
+				d00 = host_disD [ Index ( i, j ) ];
+				d01 = host_disD [ Index ( i, j+1 ) ];
+				d10 = host_disD [ Index ( i+1, j ) ];
+				d11 = host_disD [ Index ( i+1, j+1 ) ];
 
 				glColor3f(d00, d00, d00); glVertex2f(x, y);
 				glColor3f(d10, d10, d10); glVertex2f(x+h, y);
