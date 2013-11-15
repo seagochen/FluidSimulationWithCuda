@@ -49,7 +49,7 @@ static size_t         m_size;
 //////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
+Visual::Visual ( GLuint width, GLuint height, MainActivity *hActivity )
 {
 	m_mouse    = new _mouse;
 	m_fps      = new _fps;
@@ -75,7 +75,7 @@ Visual::Visual( GLuint width, GLuint height, MainActivity *hActivity)
 };
 
 
-Visual::~Visual( void )
+Visual::~Visual ( void )
 {
 	OnDestroy();
 };
@@ -84,7 +84,7 @@ Visual::~Visual( void )
 //////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-void InitFPS( void )
+void InitFPS ( void )
 {
 	// Zero out the frames per second variables:
 	m_fps->dwFrames = 0;
@@ -94,7 +94,7 @@ void InitFPS( void )
 };
 
 
-void InitFont( void )
+void InitFont ( void )
 {
 	if (m_font->Init("EHSMB.TTF", 12) != SGRUNTIMEMSG::SG_RUNTIME_OK)
 	{
@@ -104,7 +104,7 @@ void InitFont( void )
 }
 
 
-void InitViewMatrix( void )
+void InitViewMatrix ( void )
 {
 	// view matrix
 	m_view->view_angle    = 45.f;
@@ -128,14 +128,14 @@ void InitViewMatrix( void )
 };
 
 
-void InitMouseStatus( void )
+void InitMouseStatus ( void )
 {
 	m_mouse->left_button_pressed = false;
 	m_mouse->right_button_pressed = false;
 };
 
 
-void Setup( void )
+void Setup ( void )
 {
 	// Enable depth testing
 	glEnable(GL_DEPTH_TEST);
@@ -169,7 +169,7 @@ void Setup( void )
 };
 
 
-void CountFPS( void ) 
+void CountFPS ( void ) 
 {
 	// Calculate the number of frames per one second:
 	m_fps->dwFrames++;
@@ -199,25 +199,51 @@ void CountFPS( void )
 }
 
 
-void FreeResources(void)
+void FreeResources ( void )
 {
-	// Release host buffer if failed
+/*
+  ----------------------------------------------------------------------
+   Release host buffer
+  ----------------------------------------------------------------------
+*/
+
 	for ( int i = 0; i < HostListNum; i++ )
 	{
 		if ( host_list [ i ] ) SAFE_FREE_PTR ( host_list [ i ] );
 	}
-	host_list.empty();
+	host_list.empty ( );
 
-	// Release CUDA resource if failed
-	for (int i=0; i<DevListNum; i++)
+/*
+  ----------------------------------------------------------------------
+   Release CUDA resource
+  ----------------------------------------------------------------------
+*/
+
+	for ( int i = 0; i < DevListNum; i++ )
 	{
-		cudaFree(dev_list[i]);
+		cudaFree ( dev_list [ i ] );
 	}
-	dev_list.empty();
+	dev_list.empty ( );
+
+/*
+  ----------------------------------------------------------------------
+   Release rendering source
+  ----------------------------------------------------------------------
+*/
+	for ( int i = 0; i < BufferListNum - 1; i++ )
+	{
+		if ( buff_list [ i ] ) SAFE_FREE_PTR ( buff_list [ i ] );
+	}
+	for ( int i = 0; i < 1; i++ )
+	{
+		cudaFree ( dev_2DRender );
+	}
+	buff_list.empty ( );
+
 }
 
 
-void ZeroData(void)
+void ZeroData ( void )
 {
 	for ( int i = 0; i < m_size; i++ )
 	{
@@ -235,34 +261,14 @@ void ZeroData(void)
 
 SGRUNTIMEMSG AllocateData ( void )
 {
-	// Create host buffers
-	for ( int i = 0; i < HostListNum; i++ )
-	{
-		static float *ptr;
-		ptr = ( float * ) malloc ( m_size*sizeof ( float ) );
-		host_list.push_back ( ptr );
-	}
-	
-	// Check host buffers if someone is empty
-	for ( int i = 0; i < HostListNum; i++ )
-	{
-		if ( ! host_list [ i ] )
-		{
-			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND,
-				"allocate data was failed, at line: %d of file %s", __LINE__, __FILE__ );
-			return SG_RUNTIME_FALSE;
-		}
-	}
 
-	// Push dev into vector
-	for ( int i = 0; i < DevListNum; i++ )
-	{
-		static float *ptr;
-		dev_list.push_back(ptr);
-	}
+/*
+  ----------------------------------------------------------------------
+   Choose which GPU to run on, change this on a multi-GPU system.
+  ----------------------------------------------------------------------
+*/
 
-    // Choose which GPU to run on, change this on a multi-GPU system.
-    cudaStatus = cudaSetDevice(0);
+    cudaStatus = cudaSetDevice ( 0 );
     if ( cudaStatus != cudaSuccess ) {
 		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
 			"cudaSetDevice was failed, do you have a CUDA-capable GPU installed? at line: %d of file %s", __LINE__, __FILE__ );
@@ -272,10 +278,40 @@ SGRUNTIMEMSG AllocateData ( void )
 		return SG_RUNTIME_FALSE;
     }
 
-    // Allocate GPU buffers
+/*
+  ----------------------------------------------------------------------
+   Allocate memory on Host
+  ----------------------------------------------------------------------
+*/
+
+	for ( int i = 0; i < HostListNum; i++ )
+	{
+		static float *ptr;
+		ptr = ( float * ) malloc ( m_size*sizeof ( float ) );
+		host_list.push_back ( ptr );
+
+		// Alarm if null pointer
+		if ( ! host_list [ i ] )
+		{
+			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND,
+				"allocate data was failed, at line: %d of file %s", __LINE__, __FILE__ );
+			return SG_RUNTIME_FALSE;
+		}
+	}
+
+/*
+  ----------------------------------------------------------------------
+   Allocate memory on GPU devices
+  ----------------------------------------------------------------------
+*/
+
 	for ( int i = 0; i < DevListNum; i++ )
 	{
-		cudaStatus = cudaMalloc((void**)&dev_list[i], m_size * sizeof(float));
+		static float *ptr;
+		cudaStatus = cudaMalloc( ( void ** ) &ptr, m_size * sizeof ( float ) );
+		dev_list.push_back(ptr);
+
+		// Alarm if cudaMalloc failed
 		if ( cudaStatus != cudaSuccess ) {
 			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
 				"cudaMalloc was failed, at line: %d of file %s", __LINE__, __FILE__ );
@@ -285,8 +321,56 @@ SGRUNTIMEMSG AllocateData ( void )
 			return SG_RUNTIME_FALSE;
 		}
 	}
-	
+
+/*
+  ----------------------------------------------------------------------
+   Allocate rendering buffers both on host and GPU devices
+  ----------------------------------------------------------------------
+*/
+
+	// Host first
+	for ( int i = 0; i < BufferListNum - 1; i++ )
+	{
+		static float *ptr;
+		ptr = ( float * ) malloc ( DIS_SIZE * sizeof ( float ) );
+		buff_list.push_back ( ptr );
+
+		// Alarm if null pointer
+		if ( ! buff_list [ i ] )
+		{
+			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND,
+				"allocate data was failed, at line: %d of file %s", __LINE__, __FILE__ );
+			return SG_RUNTIME_FALSE;
+		}
+	}
+
+	// Then GPU devices
+	for ( int i = 0; i < 1; i++ )
+	{
+		static float *ptr;
+		cudaStatus = cudaMalloc( ( void ** ) &ptr, DIS_SIZE * sizeof ( float ) );
+		buff_list.push_back(ptr);
+		
+		// Alarm if cudaMalloc failed
+		if ( cudaStatus != cudaSuccess ) 
+		{
+			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
+				"cudaMalloc was failed, at line: %d of file %s", __LINE__, __FILE__ );
+			Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, 
+				">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
+			FreeResources ( );
+			return SG_RUNTIME_FALSE;
+		}
+	}	
+
+/*
+  ----------------------------------------------------------------------
+   Finally
+  ----------------------------------------------------------------------
+*/	
+
 	return SG_RUNTIME_OK;
+
 }
 
 
@@ -294,16 +378,16 @@ SGRUNTIMEMSG AllocateData ( void )
 //////////////////////////////////////////////////////////////////////////////////////////////
 ///
 
-void Visual::OnCreate( void )
+void Visual::OnCreate ( void )
 {
 	// Initialize
-	InitViewMatrix();
-	InitFont();
-	InitFPS();
-	InitMouseStatus();
+	InitViewMatrix ( );
+	InitFont ( );
+	InitFPS ( );
+	InitMouseStatus ( );
 
 	// Initialize glew
-	glewInit();
+	glewInit ( );
 
 	// Call for OpenGL envrionment setup
 //	Setup();
@@ -314,7 +398,7 @@ void Visual::OnCreate( void )
 };
 
 
-void Visual::OnResize( GLuint width, GLuint height )
+void Visual::OnResize ( GLuint width, GLuint height )
 {
 	// Prevent a divide by zero if the window is too small
 //	if (height == 0) height = 1;
@@ -334,21 +418,21 @@ void Visual::OnResize( GLuint width, GLuint height )
 
 	glViewport(0, 0, width, height);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity ();
-	gluOrtho2D(0.0, 1.0, 0.0, 1.0);
-	glClearColor( 0.0f, 0.0f, 0.0f, 1.0f);
+	glMatrixMode ( GL_PROJECTION );
+	glLoadIdentity ( );
+	gluOrtho2D ( 0.0, 1.0, 0.0, 1.0 );
+	glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
 };
 
 
-void Visual::OnIdle( void )
+void Visual::OnIdle ( void )
 {
 	VelocitySolver ( host_u, host_v, host_w, host_u0, host_v0, host_w0 );
 	DensitySolver ( host_den, host_den0, host_u, host_v, host_w );
 };
 
 
-void Visual::OnDisplay( void )
+void Visual::OnDisplay ( void )
 {
 	// Reset matrix
 //	glLoadIdentity();
@@ -364,27 +448,27 @@ void Visual::OnDisplay( void )
 
 	// Draw fluid sim result on 2-D map
 //	DrawAgent2D();
-	extern void DrawDensity(), DrawVelocity();
+	extern void DrawDensity ( ), DrawVelocity ( );
 
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear ( GL_COLOR_BUFFER_BIT );
 
-	if (m_density)
-		DrawDensity();
+	if ( m_density )
+		DrawDensity ( );
 	else
-		DrawVelocity();
+		DrawVelocity ( );
 
 	// Print FPS
 	CountFPS();
 };
 
 
-void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
+void Visual::OnKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 {
-	extern void ZeroData(), FreeResources();
+	extern void ZeroData ( ), FreeResources ( );
 
-	if (status == SG_KEY_STATUS::SG_KEY_DOWN)
+	if ( status == SG_KEY_STATUS::SG_KEY_DOWN )
 	{
-		switch (keys)
+		switch ( keys )
 		{
 		case SG_KEYS::SG_KEY_C:
 			ZeroData();
@@ -400,8 +484,8 @@ void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 		
 		case SG_KEYS::SG_KEY_Q:
 		case SG_KEYS::SG_KEY_ESCAPE:
-			FreeResources();
-			OnDestroy();
+			FreeResources ( );
+			OnDestroy ( );
 			exit ( 0 );
 			break;
 		}
@@ -409,7 +493,7 @@ void Visual::OnKeyboard( SG_KEYS keys, SG_KEY_STATUS status )
 };
 
 
-void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
+void Visual::OnMouse ( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 {
 #define MouseLeftDown  m_mouse->left_button_pressed
 #define MouseRightDown m_mouse->right_button_pressed
@@ -421,16 +505,16 @@ void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 	omx = mx = x_pos;
 	omx = my = y_pos;
 
-	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN) MouseLeftDown  = true;
-	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN) MouseRightDown = true;
-	if (mouse == SG_MOUSE::SG_MOUSE_MOVE)
+	if ( mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_DOWN ) MouseLeftDown  = true;
+	if ( mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_DOWN ) MouseRightDown = true;
+	if ( mouse == SG_MOUSE::SG_MOUSE_MOVE )
 	{
 		mx = x_pos;
 		my = y_pos;
 	}
 
-	if (mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP) MouseLeftDown   = false;
-	if (mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP) MouseRightDown  = false;
+	if ( mouse == SG_MOUSE::SG_MOUSE_L_BUTTON_UP ) MouseLeftDown   = false;
+	if ( mouse == SG_MOUSE::SG_MOUSE_R_BUTTON_UP ) MouseRightDown  = false;
 
 #undef omx
 #undef omy
@@ -441,26 +525,28 @@ void Visual::OnMouse( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 };
 
 
-void Visual::OnDestroy( void )
+void Visual::OnDestroy ( void )
 {
-	extern void FreeResources();
+	extern void FreeResources ( );
 
-	FreeResources();
+	FreeResources ( );
 	
     // cudaDeviceReset must be called before exiting in order for profiling and
     // tracing tools such as Nsight and Visual Profiler to show complete traces.
-    cudaStatus = cudaDeviceReset();
-    if (cudaStatus != cudaSuccess) {
-		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, "cudaDeviceReset was failed, at line: %d of file %s", __LINE__, __FILE__);
-		Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, ">>>> Error Message: %s", cudaGetErrorString(cudaStatus));
+    cudaStatus = cudaDeviceReset ( );
+    if ( cudaStatus != cudaSuccess ) {
+		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
+			"cudaDeviceReset was failed, at line: %d of file %s", __LINE__, __FILE__ );
+		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND,
+			">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
     }
 
-	SAFE_DELT_PTR( m_mouse );
-	SAFE_DELT_PTR( m_fps );
-	SAFE_DELT_PTR( m_view );
+	SAFE_DELT_PTR ( m_mouse );
+	SAFE_DELT_PTR ( m_fps );
+	SAFE_DELT_PTR ( m_view );
 
-	if ( m_font != NULL )	m_font->Clean();
-	SAFE_DELT_PTR( m_font );
+	if ( m_font != NULL )	m_font->Clean ( );
+	SAFE_DELT_PTR ( m_font );
 };
 
 ///
