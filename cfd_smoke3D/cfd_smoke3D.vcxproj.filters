@@ -45,21 +45,18 @@
     <ClCompile Include="glew32.cpp">
       <Filter>Source Files\helper</Filter>
     </ClCompile>
-    <ClCompile Include="rendering.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="launchMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="visualFramework.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cfdInterfaces.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="cfdMainKernel.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="DVRKernel.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>

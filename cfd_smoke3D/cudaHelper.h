@@ -33,6 +33,16 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
+#define cudaCheckRuntimeErrors(msg) \
+	do { \
+	extern void FreeResources (void); \
+	Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, \
+		"%s, at line: %d of file %s", msg, __LINE__, __FILE__ ); \
+	Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, \
+		">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) ); \
+	FreeResources ( ); exit ( 0 ); \
+	} while(0); \
+
 #define cudaOpenLogFile(filename) \
 	FILE *stream;  \
 	stream = fopen(filename, "w"); 

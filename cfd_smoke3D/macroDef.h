@@ -35,22 +35,35 @@
 
 /*
   ----------------------------------------------------------------------
-   Definition for Variables of Computational Fluid Dynamics
+   Parameters Needed for launching CUDA Device
   ----------------------------------------------------------------------
 */
-#define Grids_X              32       // total grids number
-#define SimArea_X            30       // simulation area which is the number without ghost cells
 
-#define Tile_X               16       // 16x16 gpu threads as a block
-#define SIM_SIZE             Grids_X * Grids_X * Grids_X
+#define Grids_X              128 /* --------------------------------------- grids number on each dimension */
+#define SimArea_X            126 /* --------------------------------------- number of grids without ghost cells */
+#define Tile_X               16  /* --------------------------------------- ties 16x16 gpu threads as a block */
+#define SIM_SIZE             Grids_X * Grids_X * Grids_X /* --------------- 3-D grid for CFD */
 
-#define DELTA_TIME           0.1f     // 0.1 second
-#define DIFFUSION            0.0f     // diffusion rate
-#define VISCOSITY            0.0f     // viscosity rate
-#define FORCE                5.0f     // external force rate
-#define SOURCE               100.0f   // to given a density with 100 percent
+/*
+  ----------------------------------------------------------------------
+   Parameters Needed for Computational Fluid Dynamics
+  ----------------------------------------------------------------------
+*/
 
-#define Client_X             512      // application's client size
+#define DELTA_TIME           0.1f /* -------------------------------------- 0.1 second */
+#define DIFFUSION            0.0f /* -------------------------------------- diffusion rate */
+#define VISCOSITY            0.0f /* -------------------------------------- viscosity rate */
+#define FORCE                5.0f /* -------------------------------------- external force rate */
+#define SOURCE               100.0f /* ------------------------------------ to given a density with 100 percent */
+
+/*
+  ----------------------------------------------------------------------
+   Parameters Needed for Rendering
+  ----------------------------------------------------------------------
+*/
+
+#define DIS_SIZE             Grids_X * Grids_X /*-------------------------- rendering buffer size */
+#define Client_X             512 /* --------------------------------------- client size */
 
 ///
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,6 +79,7 @@
 
 std::vector<float*> dev_list;
 std::vector<float*> host_list;
+std::vector<float*> buffer_list;
 sge::FileManager    Logfile;
 cudaError cudaStatus;
 
@@ -73,6 +87,7 @@ cudaError cudaStatus;
 
 extern std::vector<float*> dev_list;
 extern std::vector<float*> host_list;
+extern std::vector<float*> buffer_list;
 extern sge::FileManager    Logfile;
 extern cudaError cudaStatus;
 
@@ -101,6 +116,13 @@ extern cudaError cudaStatus;
 	gridDim.x  = (Grids_X / blockDim.x); \
 	gridDim.y  = (Grids_X * Grids_X * Grids_X) / (blockDim.x * blockDim.y * (Grids_X / blockDim.x));
 
+#define GetIndex()  \
+	int i = blockIdx.x * blockDim.x + threadIdx.x; \
+	int j = blockIdx.y * blockDim.y + threadIdx.y; \
+	int k = 0; \
+	cudaTrans2DTo3D ( i, j, k, Grids_X );
+
+
 /*
   ----------------------------------------------------------------------
    external functions on CPU
@@ -111,6 +133,9 @@ extern void DensitySolver(float *grid, float *grid0, float *u, float *v, float *
 
 extern void VelocitySolver(float *u, float *v, float *w, float *u0, float *v0, float *w0);
 
+extern void DensityInterpolate ( void );
+
+extern void VelocityInterpolate ( void );
 
 /*
   ----------------------------------------------------------------------
@@ -121,27 +146,36 @@ extern void VelocitySolver(float *u, float *v, float *w, float *u0, float *v0, f
 
 #define DevListNum    10
 
-#define dev_u         dev_list [ 0 ]
-#define dev_v         dev_list [ 1 ]
-#define dev_w         dev_list [ 2 ]
-#define dev_u0        dev_list [ 3 ]
-#define dev_v0        dev_list [ 4 ]
-#define dev_w0        dev_list [ 5 ]
-#define dev_den       dev_list [ 6 ]
-#define dev_den0      dev_list [ 7 ]
-#define dev_grid      dev_list [ 8 ]
-#define dev_grid0     dev_list [ 9 ]
+#define dev_u         dev_list [ 0 ] /* ----- u of U, on CUDA */
+#define dev_v         dev_list [ 1 ] /* ----- v of U, on CUDA */
+#define dev_w         dev_list [ 2 ] /* ----- w of U, on CUDA */
+#define dev_u0        dev_list [ 3 ] /* ----- original u of U, on CUDA */
+#define dev_v0        dev_list [ 4 ] /* ----- original v of U, on CUDA */
+#define dev_w0        dev_list [ 5 ] /* ----- original w of U, on CUDA */
+#define dev_den       dev_list [ 6 ] /* ----- density, on CUDA */
+#define dev_den0      dev_list [ 7 ] /* ----- original density, on CUDA */
+#define dev_grid      dev_list [ 8 ] /* ----- temporary grid, on CUDA */
+#define dev_grid0     dev_list [ 9 ] /* ----- original temporary grid, on CUDA */
 
 #define HostListNum   8
 
-#define host_u        host_list [ 0 ]
-#define host_v        host_list [ 1 ]
-#define host_w        host_list [ 2 ]
-#define host_u0       host_list [ 3 ]
-#define host_v0       host_list [ 4 ]
-#define host_w0       host_list [ 5 ]
-#define host_den      host_list [ 6 ]
-#define host_den0     host_list [ 7 ]
+#define host_u        host_list [ 0 ] /* ----- component u of flow U on x-axis (left to right) */
+#define host_v        host_list [ 1 ] /* ----- component v of flow U on y-axis (up to down) */
+#define host_w        host_list [ 2 ] /* ----- component w of flow U on z-axis (near to far) */
+#define host_u0       host_list [ 3 ] /* ----- original u */
+#define host_v0       host_list [ 4 ] /* ----- original v */
+#define host_w0       host_list [ 5 ] /* ----- original w */
+#define host_den      host_list [ 6 ] /* ----- scalar field of density */
+#define host_den0     host_list [ 7 ] /* ----- original density */
+
+#define BufferListNum 5
+
+#define host_disu     buffer_list [ 0 ] /* ----- rendering buffer for u */
+#define host_disv     buffer_list [ 1 ] /* ----- rendering buffer for v */
+#define host_disw     buffer_list [ 2 ] /* ----- rendering buffer for w */
+#define host_disD     buffer_list [ 3 ] /* ----- rendering buffer for density */
+#define dev_dis2D_1   buffer_list [ 4 ] /* ----- ray casting buffer, CUDA device */
+#define dev_dis2D_2   buffer_list [ 5 ] /* ----- ray casting buffer, CUDA device */
 
 ///
 //////////////////////////////////////////////////////////////////////////////////////////////
