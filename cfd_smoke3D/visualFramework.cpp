@@ -134,19 +134,6 @@ void InitMouseStatus ( void )
 };
 
 
-void cudaCheckRuntimeErrors ( char *msg )
-{
-	extern void FreeResources (void);
-
-	Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, 
-		"%s, at line: %d of file %s", msg, __LINE__, __FILE__ ); 
-	Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, 
-		">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
-	FreeResources ( );
-	exit ( 0 );
-};
-
-
 void Setup ( void )
 {
 	// Enable depth testing
@@ -242,16 +229,14 @@ void FreeResources ( void )
    Release rendering source
   ----------------------------------------------------------------------
 */
-	for ( int i = 0; i < BufferListNum - 1; i++ )
+	for ( int i = 0; i < BufferListNum - 2; i++ )
 	{
-		if ( buff_list [ i ] ) SAFE_FREE_PTR ( buff_list [ i ] );
+		if ( buffer_list [ i ] ) SAFE_FREE_PTR ( buffer_list [ i ] );
 	}
-	for ( int i = 0; i < 1; i++ )
-	{
-		cudaFree ( dev_2DRender );
-	}
-	buff_list.empty ( );
+	cudaFree ( dev_dis2D_1 );
+	cudaFree ( dev_dis2D_2 );
 
+	buffer_list.empty ( );
 }
 
 
@@ -329,14 +314,14 @@ SGRUNTIMEMSG AllocateData ( void )
 */
 
 	// Host first
-	for ( int i = 0; i < BufferListNum - 1; i++ )
+	for ( int i = 0; i < BufferListNum - 2; i++ )
 	{
 		static float *ptr;
 		ptr = ( float * ) malloc ( DIS_SIZE * sizeof ( float ) );
-		buff_list.push_back ( ptr );
+		buffer_list.push_back ( ptr );
 
 		// Alarm if null pointer
-		if ( ! buff_list [ i ] )
+		if ( ! buffer_list [ i ] )
 		{
 			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND,
 				"allocate data was failed, at line: %d of file %s", __LINE__, __FILE__ );
@@ -345,7 +330,7 @@ SGRUNTIMEMSG AllocateData ( void )
 	}
 
 	// Then GPU devices
-	for ( int i = 0; i < 1; i++ )
+	for ( int i = 0; i < 2; i++ )
 	{
 		// Alarm if cudaMalloc failed
 		static float *ptr;
@@ -354,7 +339,7 @@ SGRUNTIMEMSG AllocateData ( void )
 			cudaCheckRuntimeErrors ( "cudaMalloc failed!" );
 			return SG_RUNTIME_FALSE;
 		}
-		buff_list.push_back(ptr);
+		buffer_list.push_back(ptr);
 	}	
 
 /*

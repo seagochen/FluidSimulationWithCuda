@@ -32,7 +32,6 @@
     <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="rendering.cpp" />
     <ClCompile Include="glew32.cpp" />
     <ClCompile Include="launchMain.cpp" />
     <ClCompile Include="visualFramework.cpp" />

@@ -45,9 +45,6 @@
     <ClCompile Include="glew32.cpp">
       <Filter>Source Files\helper</Filter>
     </ClCompile>
-    <ClCompile Include="rendering.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="launchMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

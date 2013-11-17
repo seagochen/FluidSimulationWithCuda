@@ -45,7 +45,7 @@ __global__ void kernelZeroBuffer ( float *buffer_inout )
 {
 	GetIndex ( );
 
-	buffer_inout [ cudaIndex3D (i, j, k, Grids_X) ] = 0.f;
+	buffer_inout [ cudaIndex3D (i, j, 0, Grids_X) ] = 0.f;
 };
 
 
@@ -53,45 +53,22 @@ __global__ void kernelDensityInterpolate ( float *den3D_in, float *den2D_out )
 {
 	GetIndex ( );
 	
-	den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] += den3D_in [ cudaIndex3D (i, j, k, Grids_X) ];
+	den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] += den3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
 };
-
-
-__global__ void kernelVelocityInterpolate ( float *u3D_in, float *v3D_in, float *u2D_out, float *v2D_out )
-{
-	GetIndex ( );
-
-	u2D_out [ cudaIndex2D (i, j, Grids_X) ] += u3D_in [ cudaIndex3D (i, j, k, Grids_X) ];
-	v2D_out [ cudaIndex2D (i, j, Grids_X) ] += v3D_in [ cudaIndex3D (i, j, k, Grids_X) ];
-};
-
-
-__global__ void kernelTester ( float *buffer_inout )
-{
-	GetIndex ( );
-
-	buffer_inout [ cudaIndex3D (i, j, k, Grids_X) ] = cudaIndex3D (i, j, k, Grids_X) / 50000.f;
-};
-
 
 
 void DensityInterpolate ( void )
 {
-	extern void FreeResources  ( void );
-
 	// Define the computing unit size
-	cudaDeviceDim2D ( );
+	cudaDeviceDim3D ( );
 
-	float *devPtr = 0;
+	// Copy input vectors from host memory to GPU buffers.
+	if ( cudaMemcpy ( dev_grid, host_den, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed!" );
 
-	if ( cudaMalloc ( ( void ** ) &devPtr, sizeof(float) * DIS_SIZE ) != cudaSuccess )
-		cudaCheckRuntimeErrors ( "cudaMalloc was failed!" );
-
-    // Copy input vectors from host memory to GPU buffers.
-
-
-	kernelTester cudaDevice(gridDim, blockDim) (devPtr);
-    
+	// Launch kernels
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) (dev_dis2D_1);
+	kernelDensityInterpolate cudaDevice(gridDim, blockDim) (dev_grid, dev_dis2D_1);
 
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
     // any errors encountered during the launch.
@@ -99,48 +76,44 @@ void DensityInterpolate ( void )
 		cudaCheckRuntimeErrors ( "cudaDeviceSynchronize was failed" );
 
     // Copy output vector from GPU buffer to host memory.
-	if ( cudaMemcpy ( host_disD, devPtr, sizeof(float) * DIS_SIZE, cudaMemcpyDeviceToHost ) != cudaSuccess )
+	if ( cudaMemcpy ( host_disD, dev_dis2D_1, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
-/*
+};
 
-	FILE *stream = fopen ( "test.txt", "w" ); 
 
-	for ( int i = 0; i < Grids_X; i++ ) 
-	{
-		for ( int j = 0; j < Grids_X; j++ )
-		{
-			fprintf ( stream, "%f ", host_disD [ cudaIndex3D ( i, j, 0, Grids_X) ] );
-		}
+__global__ void kernelVelocityInterpolate ( float *u3D_in, float *v3D_in, float *u2D_out, float *v2D_out )
+{
+	GetIndex ( );
 
-		fprintf ( stream, "\n" );
-	}
-
-	fclose ( stream );
-	cudaFree ( devPtr );
-	FreeResources ( );
-	exit (0);
-	*/
+	u2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = u3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
+	v2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = v3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
 };
 
 
 void VelocityInterpolate ( void )
 {
-	for ( int i = 0; i < Grids_X; i++ )
-	{
-		for ( int j = 0; j < Grids_X; j++ )
-		{
-			float var0 = 0.f, var1 = 0.f;
-			
-			for ( int k = 0; k < Grids_X; k++ )
-			{
-				var0 = host_u [ cudaIndex3D (i, j, k, Grids_X) ];
-				var1 = host_v [ cudaIndex3D (i, j, k, Grids_X) ];
-			}
+	// Define the computing unit size
+	cudaDeviceDim3D ( );
 
-			host_disu [ cudaIndex2D (i, j, Grids_X)] = var0;
-			host_disv [ cudaIndex2D (i, j, Grids_X)] = var1;
-		}
-	}
+	// Copy input vectors from host memory to GPU buffers.
+	if ( cudaMemcpy ( dev_u, host_u, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed!" );
+	if ( cudaMemcpy ( dev_v, host_v, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed!" );
+
+	// Launch kernels
+	kernelVelocityInterpolate cudaDevice(gridDim, blockDim) (dev_u, dev_v, dev_dis2D_1, dev_dis2D_2);
+
+	// cudaDeviceSynchronize waits for the kernel to finish, and returns
+    // any errors encountered during the launch.
+	if ( cudaDeviceSynchronize ( ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaDeviceSynchronize was failed" );
+
+    // Copy output vector from GPU buffer to host memory.
+	if ( cudaMemcpy ( host_disu, dev_dis2D_1, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+	if ( cudaMemcpy ( host_disv, dev_dis2D_2, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
 };
 
 
@@ -154,5 +127,69 @@ void VelocityInterpolate ( void )
 #undef or     /* logical or */
 
 #undef GetIndex()
+
+
+#define Index(i,j) cudaIndex3D(i,j,0,Grids_X)
+
+
+void DrawVelocity ( void )
+{
+	VelocityInterpolate ( );
+
+	float x, y, h;
+
+	h = 1.0f / SimArea_X;
+
+	glColor3f ( 0.0f, 0.0f, 1.0f );
+	glLineWidth ( 1.0f );
+
+	glBegin ( GL_LINES );
+	{
+		for ( int i = 1 ; i <= SimArea_X ; i++ )
+		{
+			x = ( i - 0.5f ) * h;
+			for ( int j = 1 ; j <= SimArea_X ; j++ )
+			{
+				y = (j-0.5f)*h;
+				glVertex2f ( x, y );
+				glVertex2f ( x + host_disu [ Index ( i, j ) ], y + host_disv [ Index ( i, j ) ] );
+			}
+		}
+	}
+	glEnd ( );
+}
+
+
+void DrawDensity ( void )
+{
+	DensityInterpolate ( );
+
+	float x, y, h, d00, d01, d10, d11;
+
+	h = 1.0f / SimArea_X;
+
+	glBegin ( GL_QUADS );
+	{
+		for ( int i=0 ; i<=SimArea_X ; i++ )
+		{
+			x = (i-0.5f)*h;
+			for ( int j=0 ; j<=SimArea_X ; j++ )
+			{
+				y = (j-0.5f)*h;
+				d00 = host_disD [ Index ( i, j ) ];
+				d01 = host_disD [ Index ( i, j+1 ) ];
+				d10 = host_disD [ Index ( i+1, j ) ];
+				d11 = host_disD [ Index ( i+1, j+1 ) ];
+
+				glColor3f(d00, d00, d00); glVertex2f(x, y);
+				glColor3f(d10, d10, d10); glVertex2f(x+h, y);
+				glColor3f(d11, d11, d11); glVertex2f(x+h, y+h);
+				glColor3f(d01, d01, d01); glVertex2f(x, y+h);
+			}
+		}
+	}
+	glEnd();
+}
+
 
 #endif
