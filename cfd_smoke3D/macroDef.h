@@ -116,6 +116,13 @@ extern cudaError cudaStatus;
 	gridDim.x  = (Grids_X / blockDim.x); \
 	gridDim.y  = (Grids_X * Grids_X * Grids_X) / (blockDim.x * blockDim.y * (Grids_X / blockDim.x));
 
+#define GetIndex()  \
+	int i = blockIdx.x * blockDim.x + threadIdx.x; \
+	int j = blockIdx.y * blockDim.y + threadIdx.y; \
+	int k = 0; \
+	cudaTrans2DTo3D ( i, j, k, Grids_X );
+
+
 /*
   ----------------------------------------------------------------------
    external functions on CPU
@@ -129,6 +136,8 @@ extern void VelocitySolver(float *u, float *v, float *w, float *u0, float *v0, f
 extern void DensityInterpolate ( void );
 
 extern void VelocityInterpolate ( void );
+
+extern void cudaCheckRuntimeErrors ( char *msg );
 
 /*
   ----------------------------------------------------------------------

@@ -42,7 +42,6 @@ static FreeType      *m_font;
 static MainActivity  *m_hAct;
 static GLfloat        m_width, m_height;
 static bool           m_density;
-static size_t         m_size;
 
 ///
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,7 +57,6 @@ Visual::Visual ( GLuint width, GLuint height, MainActivity *hActivity )
 
 	m_width    = width;
 	m_height   = height;
-	m_size     = SIM_SIZE;
 	m_density  = false;
 		
 	extern void ZeroData(void); extern SGRUNTIMEMSG AllocateData(void);
@@ -133,6 +131,19 @@ void InitMouseStatus ( void )
 {
 	m_mouse->left_button_pressed = false;
 	m_mouse->right_button_pressed = false;
+};
+
+
+void cudaCheckRuntimeErrors ( char *msg )
+{
+	extern void FreeResources (void);
+
+	Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, 
+		"%s, at line: %d of file %s", msg, __LINE__, __FILE__ ); 
+	Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, 
+		">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
+	FreeResources ( );
+	exit ( 0 );
 };
 
 
@@ -246,7 +257,7 @@ void FreeResources ( void )
 
 void ZeroData ( void )
 {
-	for ( int i = 0; i < m_size; i++ )
+	for ( int i = 0; i < SIM_SIZE; i++ )
 	{
 		host_u [ i ] = 0.f;
 		host_v [ i ] = 0.f;
@@ -269,15 +280,8 @@ SGRUNTIMEMSG AllocateData ( void )
   ----------------------------------------------------------------------
 */
 
-    cudaStatus = cudaSetDevice ( 0 );
-    if ( cudaStatus != cudaSuccess ) {
-		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-			"cudaSetDevice was failed, do you have a CUDA-capable GPU installed? at line: %d of file %s", __LINE__, __FILE__ );
-		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, 
-			">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
-        FreeResources ( );
-		return SG_RUNTIME_FALSE;
-    }
+	if ( cudaSetDevice ( 0 ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaSetDevices" );
 
 /*
   ----------------------------------------------------------------------
@@ -288,7 +292,7 @@ SGRUNTIMEMSG AllocateData ( void )
 	for ( int i = 0; i < HostListNum; i++ )
 	{
 		static float *ptr;
-		ptr = ( float * ) malloc ( m_size*sizeof ( float ) );
+		ptr = ( float * ) malloc ( SIM_SIZE*sizeof ( float ) );
 		host_list.push_back ( ptr );
 
 		// Alarm if null pointer
@@ -308,19 +312,14 @@ SGRUNTIMEMSG AllocateData ( void )
 
 	for ( int i = 0; i < DevListNum; i++ )
 	{
-		static float *ptr;
-		cudaStatus = cudaMalloc( ( void ** ) &ptr, m_size * sizeof ( float ) );
-		dev_list.push_back(ptr);
-
 		// Alarm if cudaMalloc failed
-		if ( cudaStatus != cudaSuccess ) {
-			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-				"cudaMalloc was failed, at line: %d of file %s", __LINE__, __FILE__ );
-			Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, 
-				">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
-			FreeResources ( );
+		static float *ptr;
+		if ( cudaMalloc( ( void ** ) &ptr, SIM_SIZE * sizeof ( float ) ) != cudaSuccess )
+		{
+			cudaCheckRuntimeErrors ( "cudaMalloc failed!" );
 			return SG_RUNTIME_FALSE;
 		}
+		dev_list.push_back(ptr);
 	}
 
 /*
@@ -348,22 +347,14 @@ SGRUNTIMEMSG AllocateData ( void )
 	// Then GPU devices
 	for ( int i = 0; i < 1; i++ )
 	{
-		static float *ptr;
-		cudaStatus = cudaMalloc( ( void ** ) &ptr, DIS_SIZE * sizeof ( float ) );
-		buff_list.push_back(ptr);
-		
 		// Alarm if cudaMalloc failed
-		if ( cudaStatus != cudaSuccess ) 
+		static float *ptr;
+		if ( cudaMalloc( ( void ** ) &ptr, DIS_SIZE * sizeof ( float ) ) != cudaSuccess )
 		{
-			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-				"cudaMalloc was failed, at line: %d of file %s", __LINE__, __FILE__ );
-			Logfile.SaveStringToFile("errormsg.log", sge::SG_FILE_OPEN_APPEND, 
-				">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
-			FreeResources ( );
+			cudaCheckRuntimeErrors ( "cudaMalloc failed!" );
 			return SG_RUNTIME_FALSE;
 		}
-
-		break;
+		buff_list.push_back(ptr);
 	}	
 
 /*
@@ -536,13 +527,8 @@ void Visual::OnDestroy ( void )
 	
     // cudaDeviceReset must be called before exiting in order for profiling and
     // tracing tools such as Nsight and Visual Profiler to show complete traces.
-    cudaStatus = cudaDeviceReset ( );
-    if ( cudaStatus != cudaSuccess ) {
-		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-			"cudaDeviceReset was failed, at line: %d of file %s", __LINE__, __FILE__ );
-		Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND,
-			">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
-    }
+	if ( cudaDeviceReset ( ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaDeviceReset was failed!" );
 
 	SAFE_DELT_PTR ( m_mouse );
 	SAFE_DELT_PTR ( m_fps );

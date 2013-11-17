@@ -31,7 +31,7 @@
 #include "cudaHelper.h"
 #include "macroDef.h"
 
-#define Index(i,j) cudaIndex2D(i,j,Grids_X)
+#define Index(i,j) cudaIndex3D(i,j,0,Grids_X)
 
 
 void DrawVelocity ( void )

@@ -21,7 +21,7 @@
 * <Author>      Orlando Chen
 * <First>       Nov 15, 2013
 * <Last>		Nov 15, 2013
-* <File>        renderingKernel.cu
+* <File>        DVRKernel.cu
 */
 
 #ifndef __rendering_Kernel_cu_
@@ -41,19 +41,11 @@
 #define or       ||            /* logical or */
 
 
-#define GetIndex()  \
-	int i = blockIdx.x * blockDim.x + threadIdx.x; \
-	int j = blockIdx.y * blockDim.y + threadIdx.y; \
-	int k = 0; \
-	cudaTrans2DTo3D ( i, j, k, Grids_X );
-
-
-__global__ void kernelZeroBuffer ( float *buff_inout )
+__global__ void kernelZeroBuffer ( float *buffer_inout )
 {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	GetIndex ( );
 
-	buff_inout [ cudaIndex2D (i, j, Grids_X) ] = 0.f;
+	buffer_inout [ cudaIndex3D (i, j, k, Grids_X) ] = 0.f;
 };
 
 
@@ -61,7 +53,7 @@ __global__ void kernelDensityInterpolate ( float *den3D_in, float *den2D_out )
 {
 	GetIndex ( );
 	
-	den2D_out [ cudaIndex2D (i, j, Grids_X) ] += den3D_in [ cudaIndex3D (i, j, k, Grids_X) ];
+	den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] += den3D_in [ cudaIndex3D (i, j, k, Grids_X) ];
 };
 
 
@@ -74,16 +66,13 @@ __global__ void kernelVelocityInterpolate ( float *u3D_in, float *v3D_in, float 
 };
 
 
-void cudaCheckRuntimeErrors ( char *msg )
+__global__ void kernelTester ( float *buffer_inout )
 {
-	extern void FreeResources (void);
+	GetIndex ( );
 
-	Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, 
-		"%s, at line: %d of file %s", msg, __LINE__, __FILE__ ); 
-	Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, 
-		">>>> Error Message: %s", cudaGetErrorString ( cudaStatus ) );
-	FreeResources ( ); exit ( 0 );
+	buffer_inout [ cudaIndex3D (i, j, k, Grids_X) ] = cudaIndex3D (i, j, k, Grids_X) / 50000.f;
 };
+
 
 
 void DensityInterpolate ( void )
@@ -91,18 +80,17 @@ void DensityInterpolate ( void )
 	extern void FreeResources  ( void );
 
 	// Define the computing unit size
-	cudaDeviceDim3D ( );
-	
+	cudaDeviceDim2D ( );
+
+	float *devPtr = 0;
+
+	if ( cudaMalloc ( ( void ** ) &devPtr, sizeof(float) * DIS_SIZE ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMalloc was failed!" );
+
     // Copy input vectors from host memory to GPU buffers.
-	if ( cudaMemcpy ( dev_grid, host_den, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
-		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
-
-	if ( cudaMemcpy ( dev_2DRender, host_disD, DIS_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
-		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
 
 
-	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_2DRender );
-	kernelDensityInterpolate cudaDevice(gridDim, blockDim) ( dev_grid, dev_2DRender );
+	kernelTester cudaDevice(gridDim, blockDim) (devPtr);
     
 
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
@@ -111,8 +99,27 @@ void DensityInterpolate ( void )
 		cudaCheckRuntimeErrors ( "cudaDeviceSynchronize was failed" );
 
     // Copy output vector from GPU buffer to host memory.
-	if ( cudaMemcpy ( host_disD, dev_2DRender, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+	if ( cudaMemcpy ( host_disD, devPtr, sizeof(float) * DIS_SIZE, cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+/*
+
+	FILE *stream = fopen ( "test.txt", "w" ); 
+
+	for ( int i = 0; i < Grids_X; i++ ) 
+	{
+		for ( int j = 0; j < Grids_X; j++ )
+		{
+			fprintf ( stream, "%f ", host_disD [ cudaIndex3D ( i, j, 0, Grids_X) ] );
+		}
+
+		fprintf ( stream, "\n" );
+	}
+
+	fclose ( stream );
+	cudaFree ( devPtr );
+	FreeResources ( );
+	exit (0);
+	*/
 };
 
 

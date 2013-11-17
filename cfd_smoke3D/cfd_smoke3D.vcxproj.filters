@@ -54,15 +54,12 @@
     <ClCompile Include="visualFramework.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cfdInterfaces.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="cfdMainKernel.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
-    <CudaCompile Include="renderingKernel.cu">
+    <CudaCompile Include="DVRKernel.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>

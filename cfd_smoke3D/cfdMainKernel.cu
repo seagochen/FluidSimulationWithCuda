@@ -27,6 +27,9 @@
 #ifndef __cfd_Main_Kernel_cu_
 #define __cfd_Main_Kernel_cu_
 
+//////////////////////////////////////////////////////////////////////////////////////////////
+///
+
 #include "macroDef.h"
 #include "cudaHelper.h"
 
@@ -45,12 +48,9 @@
 #define rscl   SimArea_X       /* simulation cell, No. #last */
 
 
-#define GetIndex()  \
-	int i = blockIdx.x * blockDim.x + threadIdx.x; \
-	int j = blockIdx.y * blockDim.y + threadIdx.y; \
-	int k = 0; \
-	cudaTrans2DTo3D ( i, j, k, Grids_X );
-
+///
+//////////////////////////////////////////////////////////////////////////////////////////////
+///
 
 __global__ void kernelAddSource ( float *ptr_out )
 {
@@ -189,7 +189,7 @@ void cudaLineSolver (float *grid, float *grid0, int boundary, float a, float c, 
 
 void cudaDiffuse ( float *grid, float *grid0, int boundary, float diff, dim3 *gridDim, dim3 *blockDim )
 {
-	float a=DELTA_TIME*diff*SimArea_X*SimArea_X;
+	float a = DELTA_TIME * diff * SimArea_X * SimArea_X;
 	cudaLineSolver ( grid, grid0, boundary, a, 1+4*a, gridDim, blockDim );
 }
 
@@ -230,5 +230,127 @@ void cudaProject ( float *u, float *v, float *w, float *u0, float *v0, float *w0
 #undef or     /* logical or */
 
 #undef GetIndex()
+
+
+///
+//////////////////////////////////////////////////////////////////////////////////////////////
+///
+
+using namespace std;
+
+void DensitySolver ( float *grid, float *grid0, float *u, float *v, float *w )
+{
+	// Define the computing unit size
+	cudaDeviceDim3D ( );
+	
+    // Copy input vectors from host memory to GPU buffers.
+	if ( cudaMemcpy ( dev_grid, grid, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( dev_grid0, grid0, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( dev_u, u, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( dev_v, v, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( dev_w, w, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+
+	cudaAddSource ( dev_grid, &gridDim, &blockDim );
+	swap ( dev_grid0, dev_grid ); cudaDiffuse ( dev_grid, dev_grid0, 0, DIFFUSION, &gridDim, &blockDim );
+	swap ( dev_grid0, dev_grid ); cudaAdvect  ( dev_grid, dev_grid0, dev_u, dev_v, dev_w, 0, &gridDim, &blockDim );
+    
+
+    // cudaDeviceSynchronize waits for the kernel to finish, and returns
+    // any errors encountered during the launch.
+	if ( cudaDeviceSynchronize ( ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaDeviceSynchronize was failed" );
+
+    // Copy output vector from GPU buffer to host memory.
+	if ( cudaMemcpy ( grid, dev_grid, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( grid0, dev_grid0, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+	
+	if ( cudaMemcpy ( u, dev_u, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( v, dev_v, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( w, dev_w, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+}
+
+
+void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float *w0 )
+{
+	// Define the computing unit size
+	cudaDeviceDim3D ( );
+	
+    // Copy input vectors from host memory to GPU buffers.
+	if ( cudaMemcpy ( dev_u0, u0, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( dev_v0, v0, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( dev_w0, w0, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( dev_u, u, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( dev_v, v, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( dev_w, w, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+
+	cudaAddSource ( dev_u, &gridDim, &blockDim ); cudaAddSource ( dev_v, &gridDim, &blockDim );
+	swap ( dev_u0, dev_u ); cudaDiffuse ( dev_u, dev_u0, 1, VISCOSITY, &gridDim, &blockDim );
+	swap ( dev_v0, dev_v ); cudaDiffuse ( dev_v, dev_v0, 2, VISCOSITY, &gridDim, &blockDim );
+	cudaProject ( dev_u, dev_v, dev_w, dev_u0, dev_v0, dev_w0, &gridDim, &blockDim );
+	swap ( dev_u0, dev_u ); swap ( dev_v0, dev_v );
+	cudaAdvect ( dev_u, dev_u0, dev_u0, dev_v0, dev_w0, 1, &gridDim, &blockDim );
+	cudaAdvect ( dev_v, dev_v0, dev_u0, dev_v0, dev_w0, 2, &gridDim, &blockDim );
+	cudaProject ( dev_u, dev_v, dev_w, dev_u0, dev_v0, dev_w0, &gridDim, &blockDim );
+
+
+    
+    // cudaDeviceSynchronize waits for the kernel to finish, and returns
+    // any errors encountered during the launch.
+	if ( cudaDeviceSynchronize ( ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaDeviceSynchronize was failed" );
+
+    // Copy output vector from GPU buffer to host memory.
+	if ( cudaMemcpy ( u0, dev_u0, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( v0, dev_v0, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( w0, dev_w0, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+	
+	if ( cudaMemcpy ( u, dev_u, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( v, dev_v, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	if ( cudaMemcpy ( w, dev_w, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+}
+
+
+///
+//////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif
