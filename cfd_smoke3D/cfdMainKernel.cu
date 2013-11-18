@@ -27,11 +27,15 @@
 #ifndef __cfd_Main_Kernel_cu_
 #define __cfd_Main_Kernel_cu_
 
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
+#include "cfdHeader.h"
 
-#include "macroDef.h"
-#include "cudaHelper.h"
+using namespace std;
+
+/*
+  -----------------------------------------------------------------------------------------------------------
+   Define something
+  -----------------------------------------------------------------------------------------------------------
+*/
 
 #define is       ==            /* equal to */
 #define like     ==            /* equal to */
@@ -47,12 +51,17 @@
 #define rsc0   1               /* simulation cell, No. #0 */
 #define rscl   SimArea_X       /* simulation cell, No. #last */
 
-
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
-
-__global__ void kernelAddSource ( float *ptr_out )
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelAddSource
+* @author   Orlando Chen
+* @date     Nov 15, 2013
+* @input    ptr_inout
+* @return   NULL
+* @bref     Add source to simulation grid      
+-----------------------------------------------------------------------------------------------------------
+*/
+__global__ void kernelAddSource ( float *ptr_inout )
 {
 	// Get index of GPU-thread
 	GetIndex ( );
@@ -60,11 +69,21 @@ __global__ void kernelAddSource ( float *ptr_out )
 	if ( i is Grids_X / 2 && j is Grids_X / 2 )
 	{
 		int ind = Index ( i, j, k );
-		ptr_out [ ind ] += DELTA_TIME * 1.f;
+		ptr_inout [ ind ] += DELTA_TIME * 1.f;
 	}
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelSetBoundary
+* @author   Orlando Chen
+* @date     Nov 15, 2013
+* @input    grid_out, boundary
+* @return   NULL
+* @bref     Check and set boundary condition      
+-----------------------------------------------------------------------------------------------------------
+*/
 __global__ void kernelSetBoundary ( float *grid_out, int boundary )
 {
 	// Get index of GPU-thread
@@ -94,6 +113,16 @@ __global__ void kernelSetBoundary ( float *grid_out, int boundary )
 }
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelLineSolver
+* @author   Orlando Chen
+* @date     Nov 15, 2013
+* @input    grid_inout, grid0_in, boudnary, a, c
+* @return   NULL
+* @bref     Line solver
+-----------------------------------------------------------------------------------------------------------
+*/
 __global__ void kernelLineSolver ( float *grid_inout, float *grid0_in, int boundary, float a, float c )
 {
 	// Get index of GPU-thread
@@ -107,6 +136,16 @@ __global__ void kernelLineSolver ( float *grid_inout, float *grid0_in, int bound
 }
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelAdvect
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    density_out, density0_in, u_in, v_in, w_in, dt0
+* @return   NULL
+* @bref     Advection method      
+-----------------------------------------------------------------------------------------------------------
+*/
 __global__ void kernelAdvect ( float *density_out, float *density0_in, float *u_in, float *v_in, float *w_in, float dt0 )
 {
 	// Get index of GPU-thread
@@ -142,6 +181,16 @@ __global__ void kernelAdvect ( float *density_out, float *density0_in, float *u_
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelProjectPt1
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    u, v, w, u0, v0, w0
+* @return   NULL
+* @bref     CFD projection part I      
+-----------------------------------------------------------------------------------------------------------
+*/
 __global__ void kernelProjectPt1 ( float *u, float *v, float *w, float *u0, float *v0, float *w0 )
 {
 	// Get index of GPU-thread
@@ -155,7 +204,16 @@ __global__ void kernelProjectPt1 ( float *u, float *v, float *w, float *u0, floa
 	}
 }
 
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelProjectPt2
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    u, v, w, u0, v0, w0
+* @return   NULL
+* @bref     CFD projection part II      
+-----------------------------------------------------------------------------------------------------------
+*/
 __global__ void kernelProjectPt2( float *u, float *v, float *w, float *u0, float *v0, float *w0 )
 {
 	// Get index of GPU-thread
@@ -169,13 +227,32 @@ __global__ void kernelProjectPt2( float *u, float *v, float *w, float *u0, float
 }
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function cudaAddSource
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    grid, gridDim, blockDim
+* @return   NULL
+* @bref     C++ encapsulation of kernelAddSource      
+-----------------------------------------------------------------------------------------------------------
+*/
 void cudaAddSource ( float *grid, dim3 *gridDim, dim3 *blockDim )
 {
     // Launch a kernel on the GPU with one thread for each element.
 	kernelAddSource cudaDevice(*gridDim,  *blockDim) (grid);
 };
 
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function cudaLineSolver
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    grid, grid0, boundary, a, c, gridDim, blockDim
+* @return   NULL
+* @bref     C++ encapsulation of kernelLineSolver      
+-----------------------------------------------------------------------------------------------------------
+*/
 void cudaLineSolver (float *grid, float *grid0, int boundary, float a, float c, dim3 *gridDim, dim3 *blockDim)
 {
     // Launch a kernel on the GPU with one thread for each element.
@@ -187,13 +264,32 @@ void cudaLineSolver (float *grid, float *grid0, int boundary, float a, float c, 
 }
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function cudaDiffuse
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    grid, grid0, boundary, diff, gridDim, blockDim
+* @return   NULL
+* @bref     C++ encapsulation of diffuse method      
+-----------------------------------------------------------------------------------------------------------
+*/
 void cudaDiffuse ( float *grid, float *grid0, int boundary, float diff, dim3 *gridDim, dim3 *blockDim )
 {
 	float a = DELTA_TIME * diff * SimArea_X * SimArea_X;
 	cudaLineSolver ( grid, grid0, boundary, a, 1+4*a, gridDim, blockDim );
 }
 
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function cudaAdvect
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    density, density0, u, v, w, boundary, gridDim, blockDim
+* @return   NULL
+* @bref     C++ encapsulation of advection method      
+-----------------------------------------------------------------------------------------------------------
+*/
 void cudaAdvect ( float *density, float *density0, float *u, float *v, float *w, int boundary, dim3 *gridDim, dim3 *blockDim )
 {
     // Launch a kernel on the GPU with one thread for each element.
@@ -203,6 +299,17 @@ void cudaAdvect ( float *density, float *density0, float *u, float *v, float *w,
 }
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function cudaProject
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    u, v, w, u0, v0, w0, gridDim, blockDim
+* @return   NULL
+* @bref     C++ encapsulation of projection method
+*      
+-----------------------------------------------------------------------------------------------------------
+*/
 void cudaProject ( float *u, float *v, float *w, float *u0, float *v0, float *w0, dim3 *gridDim, dim3 *blockDim )
 {
 	kernelProjectPt1   cudaDevice(*gridDim,  *blockDim) ( u, v, w, u0, v0, w0 );
@@ -215,29 +322,16 @@ void cudaProject ( float *u, float *v, float *w, float *u0, float *v0, float *w0
 }
 
 
-#undef gst0   /* ghost cell, No. #0 */
-#undef gstl   /* ghost cell, No. #last */
-#undef rsc0   /* simulation cell, No. #0 */
-#undef rscl   /* simulation cell, No. #last */
-
-#undef is     /* equal to */
-#undef like   /* equal to */
-#undef gte    /* greater than or equal to  */
-#undef gt     /* greater than */
-#undef lse    /* less than or equal to */
-#undef ls     /* less than */
-#undef and    /* logical and */
-#undef or     /* logical or */
-
-#undef GetIndex()
-
-
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
-
-using namespace std;
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function DensitySolver
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    grid, grid0, u, v, w
+* @return   NULL
+* @bref     Calculate the advection of flow, and update the density on each cell     
+-----------------------------------------------------------------------------------------------------------
+*/
 void DensitySolver ( float *grid, float *grid0, float *u, float *v, float *w )
 {
 	// Define the computing unit size
@@ -288,6 +382,17 @@ void DensitySolver ( float *grid, float *grid0, float *u, float *v, float *w )
 }
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function VelocitySolver
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    u, v, w, u0, v0, w0
+* @return   NULL
+* @bref     Calculate the advection of flow, and update the velocity on each cell
+*      
+-----------------------------------------------------------------------------------------------------------
+*/
 void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float *w0 )
 {
 	// Define the computing unit size
@@ -350,7 +455,24 @@ void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float 
 }
 
 
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
+/*
+  -----------------------------------------------------------------------------------------------------------
+   Undef the definitions
+  -----------------------------------------------------------------------------------------------------------
+*/
+
+#undef gst0   /* ghost cell, No. #0 */
+#undef gstl   /* ghost cell, No. #last */
+#undef rsc0   /* simulation cell, No. #0 */
+#undef rscl   /* simulation cell, No. #last */
+
+#undef is     /* equal to */
+#undef like   /* equal to */
+#undef gte    /* greater than or equal to  */
+#undef gt     /* greater than */
+#undef lse    /* less than or equal to */
+#undef ls     /* less than */
+#undef and    /* logical and */
+#undef or     /* logical or */
 
 #endif

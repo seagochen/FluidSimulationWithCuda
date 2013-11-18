@@ -20,27 +20,25 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Nov 15, 2013
-* <Last>		Nov 15, 2013
+* <Last>		Nov 18, 2013
 * <File>        DVRKernel.cu
 */
 
 #ifndef __rendering_Kernel_cu_
 #define __rendering_Kernel_cu_
 
-#include "cfdHeaders.h"
-#include "cudaHelper.h"
-#include "macroDef.h"
+#include "cfdHeader.h"
 
-#define is       ==            /* equal to */
-#define like     ==            /* equal to */
-#define gte      >=            /* greater than or equal to  */
-#define gt       >             /* greater than */
-#define lse      <=            /* less than or equal to */
-#define ls       <             /* less than */
-#define and      &&            /* logical and */
-#define or       ||            /* logical or */
-
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelZeroBuffer
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    buffer_inout
+* @return   NULL
+* @bref     Zero the buffer      
+-----------------------------------------------------------------------------------------------------------
+*/
 __global__ void kernelZeroBuffer ( float *buffer_inout )
 {
 	GetIndex ( );
@@ -49,14 +47,53 @@ __global__ void kernelZeroBuffer ( float *buffer_inout )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelDensityInterpolate
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    den3D_in, den2D_out
+* @return   NULL
+* @bref     Interpolate from 3-D volume data   
+-----------------------------------------------------------------------------------------------------------
+*/
 __global__ void kernelDensityInterpolate ( float *den3D_in, float *den2D_out )
 {
 	GetIndex ( );
 	
-	den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] += den3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
+	den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] += den3D_in [ cudaIndex3D (i, j, k, Grids_X) ];
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelVelocityInterpolat
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    u3D_in, v3D_in, u2D_out, v2D_out
+* @return   NULL
+* @bref     Interpolate from 3-D volume data      
+-----------------------------------------------------------------------------------------------------------
+*/
+__global__ void kernelVelocityInterpolate ( float *u3D_in, float *v3D_in, float *u2D_out, float *v2D_out )
+{
+	GetIndex ( );
+
+	u2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = u3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
+	v2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = v3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function DensityInterpolate
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    NULL
+* @return   NULL
+* @bref     C++ encapsulation of density interpolation      
+-----------------------------------------------------------------------------------------------------------
+*/
 void DensityInterpolate ( void )
 {
 	// Define the computing unit size
@@ -67,29 +104,33 @@ void DensityInterpolate ( void )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed!" );
 
 	// Launch kernels
-	kernelZeroBuffer cudaDevice(gridDim, blockDim) (dev_dis2D_1);
-	kernelDensityInterpolate cudaDevice(gridDim, blockDim) (dev_grid, dev_dis2D_1);
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) (dev_display_temp2D1);
+	kernelDensityInterpolate cudaDevice(gridDim, blockDim) (dev_grid, dev_display_temp2D1);
+
 
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
     // any errors encountered during the launch.
 	if ( cudaDeviceSynchronize ( ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaDeviceSynchronize was failed" );
 
+
     // Copy output vector from GPU buffer to host memory.
-	if ( cudaMemcpy ( host_disD, dev_dis2D_1, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+	if ( cudaMemcpy ( host_display_den, dev_display_temp2D1, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
 };
 
 
-__global__ void kernelVelocityInterpolate ( float *u3D_in, float *v3D_in, float *u2D_out, float *v2D_out )
-{
-	GetIndex ( );
-
-	u2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = u3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
-	v2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = v3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
-};
-
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function VelocityInterpolate
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    NULL
+* @return   NULL
+* @bref     C++ encapsulation of velocity interpolation      
+-----------------------------------------------------------------------------------------------------------
+*/
 void VelocityInterpolate ( void )
 {
 	// Define the computing unit size
@@ -102,7 +143,7 @@ void VelocityInterpolate ( void )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed!" );
 
 	// Launch kernels
-	kernelVelocityInterpolate cudaDevice(gridDim, blockDim) (dev_u, dev_v, dev_dis2D_1, dev_dis2D_2);
+	kernelVelocityInterpolate cudaDevice(gridDim, blockDim) (dev_u, dev_v, dev_display_temp2D1, dev_display_temp2D2);
 
 	// cudaDeviceSynchronize waits for the kernel to finish, and returns
     // any errors encountered during the launch.
@@ -110,28 +151,25 @@ void VelocityInterpolate ( void )
 		cudaCheckRuntimeErrors ( "cudaDeviceSynchronize was failed" );
 
     // Copy output vector from GPU buffer to host memory.
-	if ( cudaMemcpy ( host_disu, dev_dis2D_1, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+	if ( cudaMemcpy ( host_display_u, dev_display_temp2D1, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
-	if ( cudaMemcpy ( host_disv, dev_dis2D_2, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+	if ( cudaMemcpy ( host_display_v, dev_display_temp2D2, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
 };
 
 
-#undef is     /* equal to */
-#undef like   /* equal to */
-#undef gte    /* greater than or equal to  */
-#undef gt     /* greater than */
-#undef lse    /* less than or equal to */
-#undef ls     /* less than */
-#undef and    /* logical and */
-#undef or     /* logical or */
-
-#undef GetIndex()
-
-
 #define Index(i,j) cudaIndex3D(i,j,0,Grids_X)
 
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function DrawVelocity
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Flush the velocity (result: 2-D vector field)
+-----------------------------------------------------------------------------------------------------------
+*/
 void DrawVelocity ( void )
 {
 	VelocityInterpolate ( );
@@ -152,14 +190,23 @@ void DrawVelocity ( void )
 			{
 				y = (j-0.5f)*h;
 				glVertex2f ( x, y );
-				glVertex2f ( x + host_disu [ Index ( i, j ) ], y + host_disv [ Index ( i, j ) ] );
+				glVertex2f ( x + host_display_u [ Index ( i, j ) ], y + host_display_v [ Index ( i, j ) ] );
 			}
 		}
 	}
 	glEnd ( );
 }
 
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function DrawDensity
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Flush the density (result: 2-D scalar field)
+-----------------------------------------------------------------------------------------------------------
+*/
 void DrawDensity ( void )
 {
 	DensityInterpolate ( );
@@ -176,10 +223,10 @@ void DrawDensity ( void )
 			for ( int j=0 ; j<=SimArea_X ; j++ )
 			{
 				y = (j-0.5f)*h;
-				d00 = host_disD [ Index ( i, j ) ];
-				d01 = host_disD [ Index ( i, j+1 ) ];
-				d10 = host_disD [ Index ( i+1, j ) ];
-				d11 = host_disD [ Index ( i+1, j+1 ) ];
+				d00 = host_display_den [ Index ( i, j ) ];
+				d01 = host_display_den [ Index ( i, j+1 ) ];
+				d10 = host_display_den [ Index ( i+1, j ) ];
+				d11 = host_display_den [ Index ( i+1, j+1 ) ];
 
 				glColor3f(d00, d00, d00); glVertex2f(x, y);
 				glColor3f(d10, d10, d10); glVertex2f(x+h, y);
