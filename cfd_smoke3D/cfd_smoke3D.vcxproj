@@ -40,7 +40,9 @@
     <ClCompile Include="visualFramework.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="DVRKernel.cu" />
+    <CudaCompile Include="DVRKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{39C6FE24-7891-4F0C-9BF5-674FF73811DA}</ProjectGuid>

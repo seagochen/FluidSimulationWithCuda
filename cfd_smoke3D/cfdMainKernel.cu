@@ -109,7 +109,6 @@ __global__ void kernelSetBoundary ( float *grid_out, int boundary )
 	grid_out [ Index ( gstl, gst0, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gst0, k ) ] + grid_out [ Index ( gstl, rsc0, k ) ] );
 	// Slove ghost cell (gstl, gstl)
 	grid_out [ Index ( gstl, gstl, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gstl, k ) ] + grid_out [ Index ( gstl, rscl, k ) ] );
-
 }
 
 
