@@ -27,11 +27,8 @@
 #ifndef __cfd_Main_Kernel_cu_
 #define __cfd_Main_Kernel_cu_
 
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
 
-#include "macroDef.h"
-#include "cudaHelper.h"
+#include "cfdHeader.h"
 
 #define is       ==            /* equal to */
 #define like     ==            /* equal to */
@@ -47,10 +44,6 @@
 #define rsc0   1               /* simulation cell, No. #0 */
 #define rscl   SimArea_X       /* simulation cell, No. #last */
 
-
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
 
 __global__ void kernelAddSource ( float *ptr_out )
 {
@@ -232,10 +225,6 @@ void cudaProject ( float *u, float *v, float *w, float *u0, float *v0, float *w0
 #undef GetIndex()
 
 
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
-
 using namespace std;
 
 void DensitySolver ( float *grid, float *grid0, float *u, float *v, float *w )
@@ -348,9 +337,5 @@ void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float 
 	if ( cudaMemcpy ( w, dev_w, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
 }
-
-
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif

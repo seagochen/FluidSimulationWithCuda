@@ -27,13 +27,10 @@
 #ifndef __visual_framework_cpp_
 #define __visual_framework_cpp_
 
-#include "visualFramework.h"
-#include "macroDef.h"
+#include "cfdHeader.h"
 
 using namespace sge;
 
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
 
 static _mouse        *m_mouse;
 static _fps          *m_fps;
@@ -43,9 +40,6 @@ static MainActivity  *m_hAct;
 static GLfloat        m_width, m_height;
 static bool           m_density;
 
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
 
 Visual::Visual ( GLuint width, GLuint height, MainActivity *hActivity )
 {
@@ -77,9 +71,6 @@ Visual::~Visual ( void )
 	OnDestroy();
 };
 
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
 
 void InitFPS ( void )
 {
@@ -356,10 +347,6 @@ SGRUNTIMEMSG AllocateData ( void )
 }
 
 
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
-
 void Visual::OnCreate ( void )
 {
 	// Initialize
@@ -430,7 +417,6 @@ void Visual::OnDisplay ( void )
 
 	// Draw fluid sim result on 2-D map
 //	DrawAgent2D();
-	extern void DrawDensity ( ), DrawVelocity ( );
 
 	glClear ( GL_COLOR_BUFFER_BIT );
 
@@ -525,8 +511,5 @@ void Visual::OnDestroy ( void )
 	if ( m_font != NULL )	m_font->Clean ( );
 	SAFE_DELT_PTR ( m_font );
 };
-
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif

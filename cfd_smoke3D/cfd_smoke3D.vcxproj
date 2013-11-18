@@ -19,9 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cfdHeaders.h" />
+    <ClInclude Include="cfdHeader.h" />
     <ClInclude Include="cudaHelper.h" />
-    <ClInclude Include="macroDef.h" />
+    <ClInclude Include="cudaNewHelper.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="visualFramework.h" />
   </ItemGroup>
@@ -32,16 +32,18 @@
     <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="cfdMainKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
     <ClCompile Include="glew32.cpp" />
     <ClCompile Include="launchMain.cpp" />
     <ClCompile Include="visualFramework.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="cfdMainKernel.cu" />
     <CudaCompile Include="DVRKernel.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{4A86FBE5-D8AF-4124-8B56-B1133DA36A4C}</ProjectGuid>
+    <ProjectGuid>{39C6FE24-7891-4F0C-9BF5-674FF73811DA}</ProjectGuid>
     <RootNamespace>cfd_smoke3D</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

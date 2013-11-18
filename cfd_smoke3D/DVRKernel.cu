@@ -27,9 +27,7 @@
 #ifndef __rendering_Kernel_cu_
 #define __rendering_Kernel_cu_
 
-#include "cfdHeaders.h"
-#include "cudaHelper.h"
-#include "macroDef.h"
+#include "cfdHeader.h"
 
 __global__ void kernelZeroBuffer ( float *buffer_inout )
 {
@@ -56,26 +54,21 @@ void DensityInterpolate ( void )
 	if ( cudaMemcpy ( dev_grid, host_den, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed!" );
 
-	printf ("passed 1\n");
-
 	// Launch kernels
 	kernelZeroBuffer cudaDevice(gridDim, blockDim) (dev_display_temp2D1);
 	kernelDensityInterpolate cudaDevice(gridDim, blockDim) (dev_grid, dev_display_temp2D1);
 
-	printf ("passed 2\n");
 
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
     // any errors encountered during the launch.
 	if ( cudaDeviceSynchronize ( ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaDeviceSynchronize was failed" );
 
-	printf ("passed 3\n");
 
     // Copy output vector from GPU buffer to host memory.
 	if ( cudaMemcpy ( host_display_den, dev_display_temp2D1, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
 
-	printf ("passed 4\n");
 };
 
 

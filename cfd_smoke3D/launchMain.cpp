@@ -20,27 +20,21 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 6, 2013
-* <Last>		Oct 25, 2013
+* <Last>		Nov 18, 2013
 * <File>        launchMain.cpp
 */
 
 #ifndef __launch_main_cpp_
 #define __launch_main_cpp_
 
-#include "macroDef.h"
-#include "visualFramework.h"
-#include "resource.h"
+#include "cfdHeader.h"
 
 #define APP_ICONS IDI_ICON1
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-///
 
 using namespace sge;
 
 MainActivity  *activity;
 Visualization *visual;
-
 
 int main(int argc, char ** argv)
 {
@@ -69,8 +63,5 @@ int main(int argc, char ** argv)
 
 	return 0;
 };
-
-///
-//////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif
