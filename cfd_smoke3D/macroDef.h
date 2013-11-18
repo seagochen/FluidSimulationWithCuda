@@ -79,7 +79,8 @@
 
 std::vector<float*> dev_list;
 std::vector<float*> host_list;
-std::vector<float*> buffer_list;
+std::vector<float*> buffer_host_list;
+std::vector<float*> buffer_dev_list;
 sge::FileManager    Logfile;
 cudaError cudaStatus;
 
@@ -87,7 +88,8 @@ cudaError cudaStatus;
 
 extern std::vector<float*> dev_list;
 extern std::vector<float*> host_list;
-extern std::vector<float*> buffer_list;
+extern std::vector<float*> buffer_host_list;
+extern std::vector<float*> buffer_dev_list;
 extern sge::FileManager    Logfile;
 extern cudaError cudaStatus;
 
@@ -168,14 +170,17 @@ extern void VelocityInterpolate ( void );
 #define host_den      host_list [ 6 ] /* ----- scalar field of density */
 #define host_den0     host_list [ 7 ] /* ----- original density */
 
-#define BufferListNum 5
+#define BufferHostListNum     4
 
-#define host_disu     buffer_list [ 0 ] /* ----- rendering buffer for u */
-#define host_disv     buffer_list [ 1 ] /* ----- rendering buffer for v */
-#define host_disw     buffer_list [ 2 ] /* ----- rendering buffer for w */
-#define host_disD     buffer_list [ 3 ] /* ----- rendering buffer for density */
-#define dev_dis2D_1   buffer_list [ 4 ] /* ----- ray casting buffer, CUDA device */
-#define dev_dis2D_2   buffer_list [ 5 ] /* ----- ray casting buffer, CUDA device */
+#define host_display_u        buffer_host_list [ 0 ] /* ----- rendering buffer for u */
+#define host_display_v        buffer_host_list [ 1 ] /* ----- rendering buffer for v */
+#define host_display_w        buffer_host_list [ 2 ] /* ----- rendering buffer for w */
+#define host_display_den      buffer_host_list [ 3 ] /* ----- rendering buffer for density */
+
+#define BufferDeviceListNum   2
+
+#define dev_display_temp2D1   buffer_dev_list [ 0 ] /* ----- ray casting buffer, CUDA device */
+#define dev_display_temp2D2   buffer_dev_list [ 1 ] /* ----- ray casting buffer, CUDA device */
 
 ///
 //////////////////////////////////////////////////////////////////////////////////////////////

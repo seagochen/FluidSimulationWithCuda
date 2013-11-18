@@ -229,14 +229,17 @@ void FreeResources ( void )
    Release rendering source
   ----------------------------------------------------------------------
 */
-	for ( int i = 0; i < BufferListNum - 2; i++ )
+	for ( int i = 0; i < BufferHostListNum; i++ )
 	{
-		if ( buffer_list [ i ] ) SAFE_FREE_PTR ( buffer_list [ i ] );
+		if ( buffer_host_list [ i ] ) SAFE_FREE_PTR ( buffer_host_list [ i ] );
 	}
-	cudaFree ( dev_dis2D_1 );
-	cudaFree ( dev_dis2D_2 );
+	buffer_host_list.empty ( );
 
-	buffer_list.empty ( );
+	for ( int i = 0; i < BufferDeviceListNum; i++ )
+	{
+		cudaFree ( buffer_dev_list [ i ] );
+	}
+	buffer_dev_list.empty ( );
 }
 
 
@@ -314,14 +317,14 @@ SGRUNTIMEMSG AllocateData ( void )
 */
 
 	// Host first
-	for ( int i = 0; i < BufferListNum - 2; i++ )
+	for ( int i = 0; i < BufferHostListNum; i++ )
 	{
 		static float *ptr;
 		ptr = ( float * ) malloc ( DIS_SIZE * sizeof ( float ) );
-		buffer_list.push_back ( ptr );
+		buffer_host_list.push_back ( ptr );
 
 		// Alarm if null pointer
-		if ( ! buffer_list [ i ] )
+		if ( ! buffer_host_list [ i ] )
 		{
 			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND,
 				"allocate data was failed, at line: %d of file %s", __LINE__, __FILE__ );
@@ -330,7 +333,7 @@ SGRUNTIMEMSG AllocateData ( void )
 	}
 
 	// Then GPU devices
-	for ( int i = 0; i < 2; i++ )
+	for ( int i = 0; i < BufferDeviceListNum; i++ )
 	{
 		// Alarm if cudaMalloc failed
 		static float *ptr;
@@ -339,7 +342,7 @@ SGRUNTIMEMSG AllocateData ( void )
 			cudaCheckRuntimeErrors ( "cudaMalloc failed!" );
 			return SG_RUNTIME_FALSE;
 		}
-		buffer_list.push_back(ptr);
+		buffer_dev_list.push_back(ptr);
 	}	
 
 /*

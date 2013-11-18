@@ -31,16 +31,6 @@
 #include "cudaHelper.h"
 #include "macroDef.h"
 
-#define is       ==            /* equal to */
-#define like     ==            /* equal to */
-#define gte      >=            /* greater than or equal to  */
-#define gt       >             /* greater than */
-#define lse      <=            /* less than or equal to */
-#define ls       <             /* less than */
-#define and      &&            /* logical and */
-#define or       ||            /* logical or */
-
-
 __global__ void kernelZeroBuffer ( float *buffer_inout )
 {
 	GetIndex ( );
@@ -53,7 +43,7 @@ __global__ void kernelDensityInterpolate ( float *den3D_in, float *den2D_out )
 {
 	GetIndex ( );
 	
-	den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] += den3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
+	den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] += den3D_in [ cudaIndex3D (i, j, k, Grids_X) ];
 };
 
 
@@ -66,18 +56,26 @@ void DensityInterpolate ( void )
 	if ( cudaMemcpy ( dev_grid, host_den, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed!" );
 
+	printf ("passed 1\n");
+
 	// Launch kernels
-	kernelZeroBuffer cudaDevice(gridDim, blockDim) (dev_dis2D_1);
-	kernelDensityInterpolate cudaDevice(gridDim, blockDim) (dev_grid, dev_dis2D_1);
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) (dev_display_temp2D1);
+	kernelDensityInterpolate cudaDevice(gridDim, blockDim) (dev_grid, dev_display_temp2D1);
+
+	printf ("passed 2\n");
 
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
     // any errors encountered during the launch.
 	if ( cudaDeviceSynchronize ( ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaDeviceSynchronize was failed" );
 
+	printf ("passed 3\n");
+
     // Copy output vector from GPU buffer to host memory.
-	if ( cudaMemcpy ( host_disD, dev_dis2D_1, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+	if ( cudaMemcpy ( host_display_den, dev_display_temp2D1, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
+
+	printf ("passed 4\n");
 };
 
 
@@ -102,7 +100,7 @@ void VelocityInterpolate ( void )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed!" );
 
 	// Launch kernels
-	kernelVelocityInterpolate cudaDevice(gridDim, blockDim) (dev_u, dev_v, dev_dis2D_1, dev_dis2D_2);
+	kernelVelocityInterpolate cudaDevice(gridDim, blockDim) (dev_u, dev_v, dev_display_temp2D1, dev_display_temp2D2);
 
 	// cudaDeviceSynchronize waits for the kernel to finish, and returns
     // any errors encountered during the launch.
@@ -110,23 +108,11 @@ void VelocityInterpolate ( void )
 		cudaCheckRuntimeErrors ( "cudaDeviceSynchronize was failed" );
 
     // Copy output vector from GPU buffer to host memory.
-	if ( cudaMemcpy ( host_disu, dev_dis2D_1, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+	if ( cudaMemcpy ( host_display_u, dev_display_temp2D1, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
-	if ( cudaMemcpy ( host_disv, dev_dis2D_2, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
+	if ( cudaMemcpy ( host_display_v, dev_display_temp2D2, DIS_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
 };
-
-
-#undef is     /* equal to */
-#undef like   /* equal to */
-#undef gte    /* greater than or equal to  */
-#undef gt     /* greater than */
-#undef lse    /* less than or equal to */
-#undef ls     /* less than */
-#undef and    /* logical and */
-#undef or     /* logical or */
-
-#undef GetIndex()
 
 
 #define Index(i,j) cudaIndex3D(i,j,0,Grids_X)
@@ -152,7 +138,7 @@ void DrawVelocity ( void )
 			{
 				y = (j-0.5f)*h;
 				glVertex2f ( x, y );
-				glVertex2f ( x + host_disu [ Index ( i, j ) ], y + host_disv [ Index ( i, j ) ] );
+				glVertex2f ( x + host_display_u [ Index ( i, j ) ], y + host_display_v [ Index ( i, j ) ] );
 			}
 		}
 	}
@@ -176,10 +162,10 @@ void DrawDensity ( void )
 			for ( int j=0 ; j<=SimArea_X ; j++ )
 			{
 				y = (j-0.5f)*h;
-				d00 = host_disD [ Index ( i, j ) ];
-				d01 = host_disD [ Index ( i, j+1 ) ];
-				d10 = host_disD [ Index ( i+1, j ) ];
-				d11 = host_disD [ Index ( i+1, j+1 ) ];
+				d00 = host_display_den [ Index ( i, j ) ];
+				d01 = host_display_den [ Index ( i, j+1 ) ];
+				d10 = host_display_den [ Index ( i+1, j ) ];
+				d11 = host_display_den [ Index ( i+1, j+1 ) ];
 
 				glColor3f(d00, d00, d00); glVertex2f(x, y);
 				glColor3f(d10, d10, d10); glVertex2f(x+h, y);
