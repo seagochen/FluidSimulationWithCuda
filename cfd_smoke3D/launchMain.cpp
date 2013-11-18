@@ -36,6 +36,16 @@ using namespace sge;
 MainActivity  *activity;
 Visualization *visual;
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function main
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Main function      
+-----------------------------------------------------------------------------------------------------------
+*/
 int main(int argc, char ** argv)
 {
 	// Create a main activity and set the window from size as 512x512

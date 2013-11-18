@@ -35,12 +35,12 @@
 
 #define cudaCheckRuntimeErrors(msg) \
 	do { \
-	extern void FreeResources (void); \
+	extern void FreeResourcePtrs (void); \
 	Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, \
 		"%s, at line: %d of file %s", msg, __LINE__, __FILE__ ); \
 	Logfile.SaveStringToFile ( "errormsg.log", sge::SG_FILE_OPEN_APPEND, \
 		">>>> Error Message: %s", cudaGetErrorString ( cudaGetLastError( ) ) ); \
-	FreeResources ( ); exit ( 0 ); \
+	FreeResourcePtrs ( ); exit ( 0 ); \
 	} while(0); \
 
 #define cudaDevice(gridDim, blockDim) <<<gridDim, blockDim>>>

@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Nov 15, 2013
-* <Last>		Nov 15, 2013
+* <Last>		Nov 18, 2013
 * <File>        DVRKernel.cu
 */
 
@@ -29,6 +29,16 @@
 
 #include "cfdHeader.h"
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelZeroBuffer
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    buffer_inout
+* @return   NULL
+* @bref     Zero the buffer      
+-----------------------------------------------------------------------------------------------------------
+*/
 __global__ void kernelZeroBuffer ( float *buffer_inout )
 {
 	GetIndex ( );
@@ -37,6 +47,16 @@ __global__ void kernelZeroBuffer ( float *buffer_inout )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelDensityInterpolate
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    den3D_in, den2D_out
+* @return   NULL
+* @bref     Interpolate from 3-D volume data   
+-----------------------------------------------------------------------------------------------------------
+*/
 __global__ void kernelDensityInterpolate ( float *den3D_in, float *den2D_out )
 {
 	GetIndex ( );
@@ -45,6 +65,35 @@ __global__ void kernelDensityInterpolate ( float *den3D_in, float *den2D_out )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelVelocityInterpolat
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    u3D_in, v3D_in, u2D_out, v2D_out
+* @return   NULL
+* @bref     Interpolate from 3-D volume data      
+-----------------------------------------------------------------------------------------------------------
+*/
+__global__ void kernelVelocityInterpolate ( float *u3D_in, float *v3D_in, float *u2D_out, float *v2D_out )
+{
+	GetIndex ( );
+
+	u2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = u3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
+	v2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = v3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function DensityInterpolate
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    NULL
+* @return   NULL
+* @bref     C++ encapsulation of density interpolation      
+-----------------------------------------------------------------------------------------------------------
+*/
 void DensityInterpolate ( void )
 {
 	// Define the computing unit size
@@ -72,15 +121,16 @@ void DensityInterpolate ( void )
 };
 
 
-__global__ void kernelVelocityInterpolate ( float *u3D_in, float *v3D_in, float *u2D_out, float *v2D_out )
-{
-	GetIndex ( );
-
-	u2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = u3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
-	v2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = v3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
-};
-
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function VelocityInterpolate
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    NULL
+* @return   NULL
+* @bref     C++ encapsulation of velocity interpolation      
+-----------------------------------------------------------------------------------------------------------
+*/
 void VelocityInterpolate ( void )
 {
 	// Define the computing unit size
@@ -110,7 +160,16 @@ void VelocityInterpolate ( void )
 
 #define Index(i,j) cudaIndex3D(i,j,0,Grids_X)
 
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function DrawVelocity
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Flush the velocity (result: 2-D vector field)
+-----------------------------------------------------------------------------------------------------------
+*/
 void DrawVelocity ( void )
 {
 	VelocityInterpolate ( );
@@ -138,7 +197,16 @@ void DrawVelocity ( void )
 	glEnd ( );
 }
 
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function DrawDensity
+* @author   Orlando Chen
+* @date     Nov 18, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Flush the density (result: 2-D scalar field)
+-----------------------------------------------------------------------------------------------------------
+*/
 void DrawDensity ( void )
 {
 	DensityInterpolate ( );

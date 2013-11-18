@@ -31,7 +31,6 @@
 
 using namespace sge;
 
-
 static _mouse        *m_mouse;
 static _fps          *m_fps;
 static _viewMatrix   *m_view;
@@ -41,37 +40,16 @@ static GLfloat        m_width, m_height;
 static bool           m_density;
 
 
-Visual::Visual ( GLuint width, GLuint height, MainActivity *hActivity )
-{
-	m_mouse    = new _mouse;
-	m_fps      = new _fps;
-	m_view     = new _viewMatrix;
-	m_font     = new FreeType;
-	m_hAct     = hActivity;
-
-	m_width    = width;
-	m_height   = height;
-	m_density  = false;
-		
-	extern void ZeroData(void); extern SGRUNTIMEMSG AllocateData(void);
-
-	if ( AllocateData ( ) != SG_RUNTIME_OK )
-	{
-		exit ( 1 );
-	}
-	else
-	{
-		ZeroData ( );
-	}
-};
-
-
-Visual::~Visual ( void )
-{
-	OnDestroy();
-};
-
-
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function InitFPS
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Initialization parameters associated with FPS   
+-----------------------------------------------------------------------------------------------------------
+*/
 void InitFPS ( void )
 {
 	// Zero out the frames per second variables:
@@ -82,8 +60,19 @@ void InitFPS ( void )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function InitFont
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Initialization parameters associated with FreeType Font     
+-----------------------------------------------------------------------------------------------------------
+*/
 void InitFont ( void )
 {
+	// Initialize the font source, otherwise arise the exception
 	if (m_font->Init("EHSMB.TTF", 12) != SGRUNTIMEMSG::SG_RUNTIME_OK)
 	{
 		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, 
@@ -94,6 +83,16 @@ void InitFont ( void )
 }
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function InitViewMatrix
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Initialization parameters associated with observation Matrix, for 3-D display
+-----------------------------------------------------------------------------------------------------------
+*/
 void InitViewMatrix ( void )
 {
 	// view matrix
@@ -118,6 +117,16 @@ void InitViewMatrix ( void )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function InitMouseStatus
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Initialization parameters associated with mouse      
+-----------------------------------------------------------------------------------------------------------
+*/
 void InitMouseStatus ( void )
 {
 	m_mouse->left_button_pressed = false;
@@ -125,6 +134,16 @@ void InitMouseStatus ( void )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function Setup
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Initialize OpenGL, Rendering, the model of view matrix and etc.
+-----------------------------------------------------------------------------------------------------------
+*/
 void Setup ( void )
 {
 	// Enable depth testing
@@ -159,6 +178,16 @@ void Setup ( void )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function CoutFPS
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     When flush the image onto screen, call this function to count FPS and update its status      
+-----------------------------------------------------------------------------------------------------------
+*/
 void CountFPS ( void ) 
 {
 	// Calculate the number of frames per one second:
@@ -189,43 +218,40 @@ void CountFPS ( void )
 }
 
 
-void FreeResources ( void )
-{
 /*
-  ----------------------------------------------------------------------
-   Release host buffer
-  ----------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------
+* @function FreeResourcePtrs
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Release resource      
+-----------------------------------------------------------------------------------------------------------
 */
-
+void FreeResourcePtrs ( void )
+{
+	// Release ptr of host
 	for ( int i = 0; i < HostListNum; i++ )
 	{
 		if ( host_list [ i ] ) SAFE_FREE_PTR ( host_list [ i ] );
 	}
 	host_list.empty ( );
 
-/*
-  ----------------------------------------------------------------------
-   Release CUDA resource
-  ----------------------------------------------------------------------
-*/
-
+	// Release ptr of CUDA
 	for ( int i = 0; i < DevListNum; i++ )
 	{
 		cudaFree ( dev_list [ i ] );
 	}
 	dev_list.empty ( );
 
-/*
-  ----------------------------------------------------------------------
-   Release rendering source
-  ----------------------------------------------------------------------
-*/
+	// Release other resource
 	for ( int i = 0; i < BufferHostListNum; i++ )
 	{
 		if ( buffer_host_list [ i ] ) SAFE_FREE_PTR ( buffer_host_list [ i ] );
 	}
 	buffer_host_list.empty ( );
 
+	// And ...
 	for ( int i = 0; i < BufferDeviceListNum; i++ )
 	{
 		cudaFree ( buffer_dev_list [ i ] );
@@ -234,6 +260,16 @@ void FreeResources ( void )
 }
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function ZeroData
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Zero the buffers
+-----------------------------------------------------------------------------------------------------------
+*/
 void ZeroData ( void )
 {
 	for ( int i = 0; i < SIM_SIZE; i++ )
@@ -250,24 +286,23 @@ void ZeroData ( void )
 }
 
 
-SGRUNTIMEMSG AllocateData ( void )
-{
-
 /*
-  ----------------------------------------------------------------------
-   Choose which GPU to run on, change this on a multi-GPU system.
-  ----------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------
+* @function AllocateResourcePtrs
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Allocate resource      
+-----------------------------------------------------------------------------------------------------------
 */
-
+SGRUNTIMEMSG AllocateResourcePtrs ( void )
+{
+	// Choose which GPU to run on, change this on a multi-GPU system.
 	if ( cudaSetDevice ( 0 ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaSetDevices" );
 
-/*
-  ----------------------------------------------------------------------
-   Allocate memory on Host
-  ----------------------------------------------------------------------
-*/
-
+	// Allocate memory on Host
 	for ( int i = 0; i < HostListNum; i++ )
 	{
 		static float *ptr;
@@ -283,12 +318,7 @@ SGRUNTIMEMSG AllocateData ( void )
 		}
 	}
 
-/*
-  ----------------------------------------------------------------------
-   Allocate memory on GPU devices
-  ----------------------------------------------------------------------
-*/
-
+	// Allocate memory on GPU devices
 	for ( int i = 0; i < DevListNum; i++ )
 	{
 		// Alarm if cudaMalloc failed
@@ -301,12 +331,7 @@ SGRUNTIMEMSG AllocateData ( void )
 		dev_list.push_back(ptr);
 	}
 
-/*
-  ----------------------------------------------------------------------
-   Allocate rendering buffers both on host and GPU devices
-  ----------------------------------------------------------------------
-*/
-
+	// Allocate rendering buffers both on host and GPU devices
 	// Host first
 	for ( int i = 0; i < BufferHostListNum; i++ )
 	{
@@ -334,19 +359,24 @@ SGRUNTIMEMSG AllocateData ( void )
 			return SG_RUNTIME_FALSE;
 		}
 		buffer_dev_list.push_back(ptr);
-	}	
+	}
 
-/*
-  ----------------------------------------------------------------------
-   Finally
-  ----------------------------------------------------------------------
-*/	
-
+	// Finally
 	return SG_RUNTIME_OK;
-
 }
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function OnCreate
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Callback function, firstly to be called when the visual is created, 
+*           used to initialize the routine
+-----------------------------------------------------------------------------------------------------------
+*/
 void Visual::OnCreate ( void )
 {
 	// Initialize
@@ -367,6 +397,16 @@ void Visual::OnCreate ( void )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function OnResize
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    width, height
+* @return   NULL
+* @bref     Callback function, to be called when client's window has be changed      
+-----------------------------------------------------------------------------------------------------------
+*/
 void Visual::OnResize ( GLuint width, GLuint height )
 {
 	// Prevent a divide by zero if the window is too small
@@ -394,6 +434,16 @@ void Visual::OnResize ( GLuint width, GLuint height )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function OnIdle
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Callback function, to be called when no message has be transfered to SGE      
+-----------------------------------------------------------------------------------------------------------
+*/
 void Visual::OnIdle ( void )
 {
 	VelocitySolver ( host_u, host_v, host_w, host_u0, host_v0, host_w0 );
@@ -401,6 +451,16 @@ void Visual::OnIdle ( void )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function OnDisplay
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Callback function, to render the client      
+-----------------------------------------------------------------------------------------------------------
+*/
 void Visual::OnDisplay ( void )
 {
 	// Reset matrix
@@ -430,10 +490,18 @@ void Visual::OnDisplay ( void )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function OnKeyboard
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    keys, status
+* @return   NULL
+* @bref     Callback function, feedback for keyboard events
+-----------------------------------------------------------------------------------------------------------
+*/
 void Visual::OnKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 {
-	extern void ZeroData ( ), FreeResources ( );
-
 	if ( status == SG_KEY_STATUS::SG_KEY_DOWN )
 	{
 		switch ( keys )
@@ -452,7 +520,7 @@ void Visual::OnKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 		
 		case SG_KEYS::SG_KEY_Q:
 		case SG_KEYS::SG_KEY_ESCAPE:
-			FreeResources ( );
+			FreeResourcePtrs ( );
 			OnDestroy ( );
 			exit ( 0 );
 			break;
@@ -461,6 +529,16 @@ void Visual::OnKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function OnMouse
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    mouse, x_pos, y_pos
+* @return   NULL
+* @bref     Callback function, feedback for mouse events      
+-----------------------------------------------------------------------------------------------------------
+*/
 void Visual::OnMouse ( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 {
 #define MouseLeftDown  m_mouse->left_button_pressed
@@ -493,11 +571,19 @@ void Visual::OnMouse ( SG_MOUSE mouse, GLuint x_pos, GLuint y_pos )
 };
 
 
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function OnDestroy
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Callback function, release the resource, exit the program when everything is done      
+-----------------------------------------------------------------------------------------------------------
+*/
 void Visual::OnDestroy ( void )
 {
-	extern void FreeResources ( );
-
-	FreeResources ( );
+	FreeResourcePtrs ( );
 	
     // cudaDeviceReset must be called before exiting in order for profiling and
     // tracing tools such as Nsight and Visual Profiler to show complete traces.
@@ -512,4 +598,54 @@ void Visual::OnDestroy ( void )
 	SAFE_DELT_PTR ( m_font );
 };
 
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function Visual
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    width, height, hActivity
+* @return   NULL
+* @bref     Constructor
+-----------------------------------------------------------------------------------------------------------
+*/
+Visual::Visual ( GLuint width, GLuint height, MainActivity *hActivity )
+{
+	// Materialized , and the assignment
+	m_mouse    = new _mouse;
+	m_fps      = new _fps;
+	m_view     = new _viewMatrix;
+	m_font     = new FreeType;
+	m_hAct     = hActivity;
+
+	m_width    = width;
+	m_height   = height;
+	m_density  = false;
+
+	// etc.
+	if ( AllocateResourcePtrs ( ) != SG_RUNTIME_OK )
+	{
+		FreeResourcePtrs ( );
+	}
+	else
+	{
+		ZeroData ( );
+	}
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function ~Visual
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Desconstructor   
+-----------------------------------------------------------------------------------------------------------
+*/
+Visual::~Visual ( void )
+{
+	OnDestroy();
+};
 #endif
