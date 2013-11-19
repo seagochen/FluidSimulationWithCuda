@@ -82,8 +82,8 @@ __global__ void kernelVelocityInterpolate ( float *u3D_in, float *v3D_in, float 
 	GetIndex ( );
 
 	// Interpolate data from the 10th frame (just for testing)
-	u2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = u3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
-	v2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = v3D_in [ cudaIndex3D (i, j, 10, Grids_X) ];
+	u2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = u3D_in [ cudaIndex3D (i, j, 64, Grids_X) ];
+	v2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = v3D_in [ cudaIndex3D (i, j, 64, Grids_X) ];
 };
 
 

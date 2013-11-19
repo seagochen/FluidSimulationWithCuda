@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 12, 2013
-* <Last>		Nov 15, 2013
+* <Last>		Nov 19, 2013
 * <File>        cfdMainKernel.cu
 */
 
@@ -51,13 +51,12 @@ using namespace std;
 #define rsc0   1               /* simulation cell, No. #0 */
 #define rscl   SimArea_X       /* simulation cell, No. #last */
 
-#define pi     3.14159
 
 /*
 -----------------------------------------------------------------------------------------------------------
 * @function kernelAddSource
 * @author   Orlando Chen
-* @date     Nov 15, 2013
+* @date     Nov 19, 2013
 * @input    ptr_inout
 * @return   NULL
 * @bref     Add source to simulation grid      
@@ -68,7 +67,7 @@ __global__ void kernelAddSource ( float *ptr_inout )
 	// Get index of GPU-thread
 	GetIndex ( );
 
-	// Coordinates arround the (64, 64, 64), r is 10
+	// Coordinates arround the (64, 64, 64), r is 5
 	if ( i > 54 and i < 74 ) if ( k > 54 and k < 74 )
 	{
 		int x = i - 64;
@@ -76,7 +75,7 @@ __global__ void kernelAddSource ( float *ptr_inout )
 		float r = sqrtf ( x * x + y * y );
 		
 		// Within the correct distance
-		if ( r >= 0 && r <= 10  )
+		if ( r >= 0 && r <= 5  )
 		{
 			// Add source from layer 0 - 4
 			if ( j < 5 )
