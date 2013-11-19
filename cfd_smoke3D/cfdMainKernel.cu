@@ -51,6 +51,8 @@ using namespace std;
 #define rsc0   1               /* simulation cell, No. #0 */
 #define rscl   SimArea_X       /* simulation cell, No. #last */
 
+#define pi     3.14159
+
 /*
 -----------------------------------------------------------------------------------------------------------
 * @function kernelAddSource
@@ -66,10 +68,20 @@ __global__ void kernelAddSource ( float *ptr_inout )
 	// Get index of GPU-thread
 	GetIndex ( );
 
-	if ( i is Grids_X / 2 && j is Grids_X / 2 )
+	// Coordinates arround the (64, 64, 64), r is 10
+	if ( i > 54 and i < 74 ) if ( k > 54 and k < 74 )
 	{
-		int ind = Index ( i, j, k );
-		ptr_inout [ ind ] += DELTA_TIME * 1.f;
+		int x = i - 64;
+		int y = k - 64;
+		float r = sqrtf ( x * x + y * y );
+		
+		// Within the correct distance
+		if ( r >= 0 && r <= 10  )
+		{
+			// Add source from layer 0 - 4
+			if ( j < 5 )
+				ptr_inout [ Index (i, j, k) ] = SOURCE * DELTA_TIME * 0.1f;
+		}
 	}
 };
 
