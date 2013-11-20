@@ -303,7 +303,7 @@ void cudaDiffuse ( float *grid, float *grid0, int boundary, float diff, dim3 *gr
 void cudaAdvect ( float *density, float *density0, float *u, float *v, float *w, int boundary, dim3 *gridDim, dim3 *blockDim )
 {
     // Launch a kernel on the GPU with one thread for each element.
-	float dt0 = DELTA_TIME*SimArea_X;
+	float dt0 = DELTA_TIME * SimArea_X;
 	kernelAdvect      cudaDevice(*gridDim,  *blockDim) ( density, density0, u, v, w, dt0 );
 	kernelSetBoundary cudaDevice(*gridDim,  *blockDim) ( density, boundary );
 }
@@ -427,8 +427,8 @@ void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float 
 	if ( cudaMemcpy ( dev_w, w, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
 
-
-	cudaAddSource ( dev_u, &gridDim, &blockDim ); cudaAddSource ( dev_v, &gridDim, &blockDim );
+	cudaAddSource ( dev_u, &gridDim, &blockDim );
+	cudaAddSource ( dev_v, &gridDim, &blockDim );
 	swap ( dev_u0, dev_u ); cudaDiffuse ( dev_u, dev_u0, 1, VISCOSITY, &gridDim, &blockDim );
 	swap ( dev_v0, dev_v ); cudaDiffuse ( dev_v, dev_v0, 2, VISCOSITY, &gridDim, &blockDim );
 	cudaProject ( dev_u, dev_v, dev_w, dev_u0, dev_v0, dev_w0, &gridDim, &blockDim );
