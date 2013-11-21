@@ -62,5 +62,8 @@
     <CudaCompile Include="DVRKernel.cu">
       <Filter>Source Files\CUDAKernels</Filter>
     </CudaCompile>
+    <CudaCompile Include="cfdMacCormackSchemeKernel.cu">
+      <Filter>Source Files\CUDAKernels</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

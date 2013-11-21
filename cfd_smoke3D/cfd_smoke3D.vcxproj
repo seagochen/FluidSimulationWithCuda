@@ -32,6 +32,9 @@
     <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="cfdMacCormackSchemeKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
     <CudaCompile Include="cfdMainKernel.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>

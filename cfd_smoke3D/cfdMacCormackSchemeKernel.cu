@@ -44,10 +44,16 @@
 #define gst_tailer       Grids_X - 1   /* (ghost, halo) the last cell of grid */
 #define sim_tailer       Grids_X - 2   /* (actually) the second last cell of grid */
 
+#define CheckIndex(i,j,k)  \
+	if ( i >= sim_tailer ) i = sim_tailer; \
+	if ( j >= sim_tailer ) j = sim_tailer; \
+	if ( k >= sim_tailer ) k = sim_tailer;
+
+
 
 /*
 -----------------------------------------------------------------------------------------------------------
-* @function kernelAddSource
+* @function kernelAddSourceMacCormack
 * @author   Orlando Chen
 * @date     Nov 19, 2013
 * @input    ptr_inout
@@ -55,7 +61,7 @@
 * @bref     Add source to simulation grid      
 -----------------------------------------------------------------------------------------------------------
 */
-__global__ void kernelAddSource ( float *ptr_inout )
+__global__ void kernelAddSourceMacCormack ( float *ptr_inout )
 {
 	// Get index of GPU-thread
 	GetIndex ( );
@@ -72,11 +78,45 @@ __global__ void kernelAddSource ( float *ptr_inout )
 		{
 			// Add source from layer 0 - 4
 			if ( j < 5 )
-				ptr_inout [ Index (i, j, k) ] = SOURCE * DELTA_TIME * 0.1f;
+				ptr_inout [ Index (i, j, k) ] = SOURCE * DELTA_TIME;
 		}
 	}
 };
 
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelSetBoundaryMacCormack
+* @author   Orlando Chen
+* @date     Nov 21, 2013
+* @input    grid_out, boundary
+* @return   NULL
+* @bref     Check and set boundary condition      
+-----------------------------------------------------------------------------------------------------------
+*/
+__device__ void kernelSetBoundaryMacCormack ( float *grid_out )
+{
+	// Get index of GPU-thread
+	GetIndex ( );
+
+	CheckIndex (i, j, k);
+
+	// Header cells of halo
+	grid_out [ Index (gst_header, j, k) ] = ( grid_out [ Index (gst_header, j, k) ] + grid_out [ Index (sim_header, j, k) ] ) * ANNIHILATION;
+	grid_out [ Index (i, gst_header, k) ] = ( grid_out [ Index (i, gst_header, k) ] + grid_out [ Index (i, sim_header, k) ] ) * ANNIHILATION;
+	grid_out [ Index (i, j, gst_header) ] = ( grid_out [ Index (i, j, gst_header) ] + grid_out [ Index (i, j, sim_header) ] ) * ANNIHILATION;
+
+	// Tailer cells of halo
+	grid_out [ Index (gst_tailer, j, k) ] = ( grid_out [ Index (gst_tailer, j, k) ] + grid_out [ Index (sim_tailer, j, k) ] ) * ANNIHILATION;
+	grid_out [ Index (i, gst_tailer, k) ] = ( grid_out [ Index (i, gst_tailer, k) ] + grid_out [ Index (i, sim_tailer, k) ] ) * ANNIHILATION;
+	grid_out [ Index (i, j, gst_tailer) ] = ( grid_out [ Index (i, j, gst_tailer) ] + grid_out [ Index (i, j, gst_tailer) ] ) * ANNIHILATION;
+}
+
+
+__global__ void kernelDiffusionMacCormack ( float *grid_out, float *grid_in )
+{
+
+};
 
 /*
   -----------------------------------------------------------------------------------------------------------
@@ -138,9 +178,9 @@ void MacCormackSchemeSolver ( float *u, float *v, float *w, float *u0, float *v0
 
 	// Launch kernels
 	// Add source to background for further simulation
-	kernelAddSource <<< gridDim, blockDim >>> (dev_u0);
-	kernelAddSource <<< gridDim, blockDim >>> (dev_v0);
-	kernelAddSource <<< gridDim, blockDim >>> (dev_den0);
+	kernelAddSourceMacCormack <<< gridDim, blockDim >>> (dev_u0);
+	kernelAddSourceMacCormack <<< gridDim, blockDim >>> (dev_v0);
+	kernelAddSourceMacCormack <<< gridDim, blockDim >>> (dev_den0);
 	// ...
     
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
