@@ -94,10 +94,11 @@
 */
 
 #define DELTA_TIME           0.1f   /* -------------------------------------- 0.1 second */
-#define DIFFUSION            0.0f   /* -------------------------------------- diffusion rate */
-#define VISCOSITY            0.0f   /* -------------------------------------- viscosity rate */
-#define FORCE                5.0f   /* -------------------------------------- external force rate */
-#define SOURCE               100.0f /* -------------------------------------- 100% indensity */
+#define DIFFUSION            0.1f   /* -------------------------------------- diffusion */
+#define VISCOSITY            0.0f   /* -------------------------------------- viscosity */
+#define FORCE                5.0f   /* -------------------------------------- external force */
+#define SOURCE               100.0f /* -------------------------------------- indensity */
+#define ANNIHILATION         0.3    /* -------------------------------------- annihilation */
 
 /*
   -----------------------------------------------------------------------------------------------------------
@@ -129,9 +130,11 @@ extern sge::FileManager    Logfile;           /* ----------------- declaration o
   -----------------------------------------------------------------------------------------------------------
 */
 
-extern void DensitySolver(float *grid, float *grid0, float *u, float *v, float *w);
+extern void DensitySolver ( float *grid, float *grid0, float *u, float *v, float *w );
 
-extern void VelocitySolver(float *u, float *v, float *w, float *u0, float *v0, float *w0);
+extern void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float *w0 );
+
+extern void MacCormackSchemeSolver ( float *u, float *v, float *w, float *u0, float *v0, float *w0, float *grid, float *grid0 );
 
 extern void DrawDensity ( void );
 

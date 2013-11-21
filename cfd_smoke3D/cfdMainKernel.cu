@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 12, 2013
-* <Last>		Nov 15, 2013
+* <Last>		Nov 19, 2013
 * <File>        cfdMainKernel.cu
 */
 
@@ -51,11 +51,23 @@ using namespace std;
 #define rsc0   1               /* simulation cell, No. #0 */
 #define rscl   SimArea_X       /* simulation cell, No. #last */
 
+
+#define gst_header       0             /* (ghost, halo) the header cell of grid */
+#define sim_header       1             /* (actually) the second cell of grid */
+#define gst_tailer       Grids_X - 1   /* (ghost, halo) the last cell of grid */
+#define sim_tailer       Grids_X - 2   /* (actually) the second last cell of grid */
+
+
+#define CheckIndex(i,j,k)  \
+	if ( i >= sim_tailer ) i = sim_tailer; \
+	if ( j >= sim_tailer ) j = sim_tailer; \
+	if ( k >= sim_tailer ) k = sim_tailer;
+
 /*
 -----------------------------------------------------------------------------------------------------------
 * @function kernelAddSource
 * @author   Orlando Chen
-* @date     Nov 15, 2013
+* @date     Nov 19, 2013
 * @input    ptr_inout
 * @return   NULL
 * @bref     Add source to simulation grid      
@@ -66,10 +78,20 @@ __global__ void kernelAddSource ( float *ptr_inout )
 	// Get index of GPU-thread
 	GetIndex ( );
 
-	if ( i is Grids_X / 2 && j is Grids_X / 2 )
+	// Coordinates arround the (64, 64, 64), r is 5
+	if ( i > 54 and i < 74 ) if ( k > 54 and k < 74 )
 	{
-		int ind = Index ( i, j, k );
-		ptr_inout [ ind ] += DELTA_TIME * 1.f;
+		int x = i - 64;
+		int y = k - 64;
+		float r = sqrtf ( x * x + y * y );
+		
+		// Within the correct distance
+		if ( r >= 0 && r <= 5  )
+		{
+			// Add source from layer 0 - 4
+			if ( j < 5 )
+				ptr_inout [ Index (i, j, k) ] = SOURCE * DELTA_TIME;
+		}
 	}
 };
 
@@ -87,29 +109,48 @@ __global__ void kernelAddSource ( float *ptr_inout )
 __global__ void kernelSetBoundary ( float *grid_out, int boundary )
 {
 	// Get index of GPU-thread
-	GetIndex ( );
+//	GetIndex ( );
 
 	// Boundary condition
-	if ( i gte 1 && i lse SimArea_X && j gte 1 && j lse SimArea_X )
-	{
+//	if ( i gte 1 && i lse SimArea_X && j gte 1 && j lse SimArea_X )
+//	{
 		// Slove line (gst0, y)
-		grid_out [ Index ( gst0, j, k ) ] = boundary is 1 ? -grid_out [ Index ( rsc0, j, k ) ] : grid_out [ Index ( rsc0, j, k ) ];
+//		grid_out [ Index ( gst0, j, k ) ] = boundary is 1 ? -grid_out [ Index ( rsc0, j, k ) ] : grid_out [ Index ( rsc0, j, k ) ];
 		// Slove line (gstl, y)
-		grid_out [ Index ( gstl, j, k ) ] = boundary is 1 ? -grid_out [ Index ( rscl, j, k ) ] : grid_out [ Index ( rscl, j, k ) ];
+//		grid_out [ Index ( gstl, j, k ) ] = boundary is 1 ? -grid_out [ Index ( rscl, j, k ) ] : grid_out [ Index ( rscl, j, k ) ];
 		// Slove line (x, gst0)
-		grid_out [ Index ( i, gst0, k ) ] = boundary is 2 ? -grid_out [ Index ( i, rsc0, k ) ] : grid_out [ Index ( i, rsc0, k ) ];
+//		grid_out [ Index ( i, gst0, k ) ] = boundary is 2 ? -grid_out [ Index ( i, rsc0, k ) ] : grid_out [ Index ( i, rsc0, k ) ];
 		// Slove line (x, gstl)
-		grid_out [ Index ( i, gstl, k ) ] = boundary is 2 ? -grid_out [ Index ( i, rscl, k ) ] : grid_out [ Index ( i, rscl, k ) ];
-	}
+//		grid_out [ Index ( i, gstl, k ) ] = boundary is 2 ? -grid_out [ Index ( i, rscl, k ) ] : grid_out [ Index ( i, rscl, k ) ];
+//	}
 	// Slove ghost cell (gst0, gst0)
-	grid_out [ Index ( gst0, gst0, k ) ] = 0.5f * ( grid_out [ Index ( rsc0, gst0, k ) ] + grid_out [ Index ( gst0, rsc0, k ) ] );
+//	grid_out [ Index ( gst0, gst0, k ) ] = 0.5f * ( grid_out [ Index ( rsc0, gst0, k ) ] + grid_out [ Index ( gst0, rsc0, k ) ] );
 	// Slove ghost cell (gst0, gstl)
-	grid_out [ Index ( gst0, gstl, k ) ] = 0.5f * ( grid_out [ Index ( rsc0, gstl, k ) ] + grid_out [ Index ( gst0, rscl, k ) ] );
+//	grid_out [ Index ( gst0, gstl, k ) ] = 0.5f * ( grid_out [ Index ( rsc0, gstl, k ) ] + grid_out [ Index ( gst0, rscl, k ) ] );
 	// Slove ghost cell (gstl, gst0)
-	grid_out [ Index ( gstl, gst0, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gst0, k ) ] + grid_out [ Index ( gstl, rsc0, k ) ] );
+//	grid_out [ Index ( gstl, gst0, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gst0, k ) ] + grid_out [ Index ( gstl, rsc0, k ) ] );
 	// Slove ghost cell (gstl, gstl)
-	grid_out [ Index ( gstl, gstl, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gstl, k ) ] + grid_out [ Index ( gstl, rscl, k ) ] );
+//	grid_out [ Index ( gstl, gstl, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gstl, k ) ] + grid_out [ Index ( gstl, rscl, k ) ] );
 
+	// Get index of GPU-thread
+	GetIndex ( );
+
+	CheckIndex (i, j, k);
+
+	// Header cells of halo
+	grid_out [ Index (gst_header, j, k) ] = ( grid_out [ Index (gst_header, j, k) ] + grid_out [ Index (sim_header, j, k) ] ) * ANNIHILATION;
+	grid_out [ Index (i, gst_header, k) ] = ( grid_out [ Index (i, gst_header, k) ] + grid_out [ Index (i, sim_header, k) ] ) * ANNIHILATION;
+	grid_out [ Index (i, j, gst_header) ] = ( grid_out [ Index (i, j, gst_header) ] + grid_out [ Index (i, j, sim_header) ] ) * ANNIHILATION;
+
+	// Tailer cells of halo
+	grid_out [ Index (gst_tailer, j, k) ] = ( grid_out [ Index (gst_tailer, j, k) ] + grid_out [ Index (sim_tailer, j, k) ] ) * ANNIHILATION;
+	grid_out [ Index (i, gst_tailer, k) ] = ( grid_out [ Index (i, gst_tailer, k) ] + grid_out [ Index (i, sim_tailer, k) ] ) * ANNIHILATION;
+	grid_out [ Index (i, j, gst_tailer) ] = ( grid_out [ Index (i, j, gst_tailer) ] + grid_out [ Index (i, j, gst_tailer) ] ) * ANNIHILATION;
+	
+	grid_out [ Index ( gst0, gst0, k ) ] = 0.5f * ( grid_out [ Index ( rsc0, gst0, k ) ] + grid_out [ Index ( gst0, rsc0, k ) ] );
+	grid_out [ Index ( gst0, gstl, k ) ] = 0.5f * ( grid_out [ Index ( rsc0, gstl, k ) ] + grid_out [ Index ( gst0, rscl, k ) ] );
+	grid_out [ Index ( gstl, gst0, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gst0, k ) ] + grid_out [ Index ( gstl, rsc0, k ) ] );
+	grid_out [ Index ( gstl, gstl, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gstl, k ) ] + grid_out [ Index ( gstl, rscl, k ) ] );
 }
 
 
@@ -293,7 +334,7 @@ void cudaDiffuse ( float *grid, float *grid0, int boundary, float diff, dim3 *gr
 void cudaAdvect ( float *density, float *density0, float *u, float *v, float *w, int boundary, dim3 *gridDim, dim3 *blockDim )
 {
     // Launch a kernel on the GPU with one thread for each element.
-	float dt0 = DELTA_TIME*SimArea_X;
+	float dt0 = DELTA_TIME * SimArea_X;
 	kernelAdvect      cudaDevice(*gridDim,  *blockDim) ( density, density0, u, v, w, dt0 );
 	kernelSetBoundary cudaDevice(*gridDim,  *blockDim) ( density, boundary );
 }
@@ -417,8 +458,8 @@ void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float 
 	if ( cudaMemcpy ( dev_w, w, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
 
-
-	cudaAddSource ( dev_u, &gridDim, &blockDim ); cudaAddSource ( dev_v, &gridDim, &blockDim );
+//	cudaAddSource ( dev_u, &gridDim, &blockDim );
+	cudaAddSource ( dev_v, &gridDim, &blockDim );
 	swap ( dev_u0, dev_u ); cudaDiffuse ( dev_u, dev_u0, 1, VISCOSITY, &gridDim, &blockDim );
 	swap ( dev_v0, dev_v ); cudaDiffuse ( dev_v, dev_v0, 2, VISCOSITY, &gridDim, &blockDim );
 	cudaProject ( dev_u, dev_v, dev_w, dev_u0, dev_v0, dev_w0, &gridDim, &blockDim );
