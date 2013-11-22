@@ -37,7 +37,7 @@ static _viewMatrix   *m_view;
 static FreeType      *m_font;
 static MainActivity  *m_hAct;
 static GLfloat        m_width, m_height;
-static bool           m_density;
+static bool           m_density, m_macCormack;
 
 
 /*
@@ -446,8 +446,15 @@ void Visual::OnResize ( GLuint width, GLuint height )
 */
 void Visual::OnIdle ( void )
 {
-	VelocitySolver ( host_u, host_v, host_w, host_u0, host_v0, host_w0 );
-	DensitySolver ( host_den, host_den0, host_u, host_v, host_w );
+	if ( m_macCormack == false )
+	{
+		VelocitySolver ( host_u, host_v, host_w, host_u0, host_v0, host_w0 );
+		DensitySolver ( host_den, host_den0, host_u, host_v, host_w );
+	}
+	else
+	{
+		MacCormackSchemeSolver ( host_u, host_v, host_w, host_u0, host_v0, host_w0, host_den, host_den0 );
+	}
 };
 
 
@@ -516,6 +523,16 @@ void Visual::OnKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 
 		case SG_KEYS::SG_KEY_V:
 			m_density = false;
+			break;
+
+		case SG_KEYS::SG_KEY_M:
+			ZeroData ();
+			m_macCormack = true;
+			break;
+
+		case SG_KEYS::SG_KEY_N:
+			ZeroData ();
+			m_macCormack = false;
 			break;
 		
 		case SG_KEYS::SG_KEY_Q:
@@ -621,6 +638,7 @@ Visual::Visual ( GLuint width, GLuint height, MainActivity *hActivity )
 	m_width    = width;
 	m_height   = height;
 	m_density  = false;
+	m_macCormack = false;
 
 	// etc.
 	if ( AllocateResourcePtrs ( ) != SG_RUNTIME_OK )

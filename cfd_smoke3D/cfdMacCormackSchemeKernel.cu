@@ -44,11 +44,12 @@
 #define gst_tailer       Grids_X - 1   /* (ghost, halo) the last cell of grid */
 #define sim_tailer       Grids_X - 2   /* (actually) the second last cell of grid */
 
-#define CheckIndex(i,j,k)  \
-	if ( i >= sim_tailer ) i = sim_tailer; \
-	if ( j >= sim_tailer ) j = sim_tailer; \
-	if ( k >= sim_tailer ) k = sim_tailer;
+#define BeginSimArea() \
+	if ( i >= sim_header and i <= sim_tailer ) \
+	if ( j >= sim_header and j <= sim_tailer ) \
+	if ( k >= sim_header and k <= sim_tailer ) {
 
+#define EndSimArea() }
 
 
 /*
@@ -56,12 +57,12 @@
 * @function kernelAddSourceMacCormack
 * @author   Orlando Chen
 * @date     Nov 19, 2013
-* @input    ptr_inout
+* @input    density_inout, velU_inout, velV_inout, velW_inout
 * @return   NULL
 * @bref     Add source to simulation grid      
 -----------------------------------------------------------------------------------------------------------
 */
-__global__ void kernelAddSourceMacCormack ( float *ptr_inout )
+__global__ void kernelAddSourceMacCormack ( float *density_inout, float *velU_inout, float *velV_inout, float *velW_inout )
 {
 	// Get index of GPU-thread
 	GetIndex ( );
@@ -78,7 +79,10 @@ __global__ void kernelAddSourceMacCormack ( float *ptr_inout )
 		{
 			// Add source from layer 0 - 4
 			if ( j < 5 )
-				ptr_inout [ Index (i, j, k) ] = SOURCE * DELTA_TIME;
+			{
+				density_inout [ Index (i, j, k) ] += SOURCE * DELTA_TIME;
+				velV_inout [ Index (i, j, k) ] = SOURCE * DELTA_TIME;
+			}
 		}
 	}
 };
@@ -86,53 +90,59 @@ __global__ void kernelAddSourceMacCormack ( float *ptr_inout )
 
 /*
 -----------------------------------------------------------------------------------------------------------
-* @function kernelSetBoundaryMacCormack
+* @function kernelBoundaryMacCormack
 * @author   Orlando Chen
 * @date     Nov 21, 2013
-* @input    grid_out, boundary
+* @input    density_inout, velU_inout, velV_inout, velW_inout 
 * @return   NULL
 * @bref     Check and set boundary condition      
 -----------------------------------------------------------------------------------------------------------
 */
-__device__ void kernelSetBoundaryMacCormack ( float *grid_out )
+__device__ void kernelBoundaryMacCormack ( float *density_inout, float *velU_inout, float *velV_inout, float *velW_inout )
 {
 	// Get index of GPU-thread
 	GetIndex ( );
 
-	CheckIndex (i, j, k);
+	// Boundary condition
+	BeginSimArea();
+	{
+		// Solve the condition of density
+		density_inout [ Index (gst_header, j, k) ] = density_inout [ Index (sim_header, j, k) ]; // bottom side of simulation grid
+		density_inout [ Index (gst_tailer, j, k) ] = density_inout [ Index (sim_tailer, j, k) ]; // top side of simulation grid
+		density_inout [ Index (i, gst_header, k) ] = density_inout [ Index (i, sim_header, k) ]; // left side of simulation grid
+		density_inout [ Index (i, gst_tailer, k) ] = density_inout [ Index (i, sim_tailer, k) ]; // right side of simulation grid
+		density_inout [ Index (i, j, gst_header) ] = density_inout [ Index (i, j, sim_header) ]; // front side of simulation grid
+		density_inout [ Index (i, j, gst_tailer) ] = density_inout [ Index (i, j, sim_tailer) ]; // back side of simulation grid
 
-	// Header cells of halo
-	grid_out [ Index (gst_header, j, k) ] = ( grid_out [ Index (gst_header, j, k) ] + grid_out [ Index (sim_header, j, k) ] ) * ANNIHILATION;
-	grid_out [ Index (i, gst_header, k) ] = ( grid_out [ Index (i, gst_header, k) ] + grid_out [ Index (i, sim_header, k) ] ) * ANNIHILATION;
-	grid_out [ Index (i, j, gst_header) ] = ( grid_out [ Index (i, j, gst_header) ] + grid_out [ Index (i, j, sim_header) ] ) * ANNIHILATION;
+		// Solve the condition of sub-flow U
+		velU_inout [ Index (gst_header, j, k) ] = -velU_inout [ Index (sim_header, j, k) ]; // bottom side of simulation grid
+		velU_inout [ Index (gst_tailer, j, k) ] = -velU_inout [ Index (sim_tailer, j, k) ]; // top side of simulation grid
+		velU_inout [ Index (i, gst_header, k) ] =  velU_inout [ Index (i, sim_header, k) ]; // left side of simulation grid
+		velU_inout [ Index (i, gst_tailer, k) ] =  velU_inout [ Index (i, sim_tailer, k) ]; // right side of simulation grid
+		velU_inout [ Index (i, j, gst_header) ] =  velU_inout [ Index (i, j, sim_header) ]; // front side of simulation grid
+		velU_inout [ Index (i, j, gst_tailer) ] =  velU_inout [ Index (i, j, sim_tailer) ]; // back side of simulation grid
+		
+		// Solve the condition of sub-flow v
+		velV_inout [ Index (gst_header, j, k) ] =  velV_inout [ Index (sim_header, j, k) ]; // bottom side of simulation grid
+		velV_inout [ Index (gst_tailer, j, k) ] =  velV_inout [ Index (sim_tailer, j, k) ]; // top side of simulation grid
+		velV_inout [ Index (i, gst_header, k) ] = -velV_inout [ Index (i, sim_header, k) ]; // left side of simulation grid
+		velV_inout [ Index (i, gst_tailer, k) ] =  velV_inout [ Index (i, sim_tailer, k) ]; // right side of simulation grid
+		velV_inout [ Index (i, j, gst_header) ] =  velV_inout [ Index (i, j, sim_header) ]; // front side of simulation grid
+		velV_inout [ Index (i, j, gst_tailer) ] =  velV_inout [ Index (i, j, sim_tailer) ]; // back side of simulation grid
 
-	// Tailer cells of halo
-	grid_out [ Index (gst_tailer, j, k) ] = ( grid_out [ Index (gst_tailer, j, k) ] + grid_out [ Index (sim_tailer, j, k) ] ) * ANNIHILATION;
-	grid_out [ Index (i, gst_tailer, k) ] = ( grid_out [ Index (i, gst_tailer, k) ] + grid_out [ Index (i, sim_tailer, k) ] ) * ANNIHILATION;
-	grid_out [ Index (i, j, gst_tailer) ] = ( grid_out [ Index (i, j, gst_tailer) ] + grid_out [ Index (i, j, gst_tailer) ] ) * ANNIHILATION;
-}
+		// Solve the condition of sub-flow w
+		velW_inout [ Index (gst_header, j, k) ] =  velW_inout [ Index (sim_header, j, k) ]; // bottom side of simulation grid
+		velW_inout [ Index (gst_tailer, j, k) ] =  velW_inout [ Index (sim_tailer, j, k) ]; // top side of simulation grid
+		velW_inout [ Index (i, gst_header, k) ] =  velW_inout [ Index (i, sim_header, k) ]; // left side of simulation grid
+		velW_inout [ Index (i, gst_tailer, k) ] =  velW_inout [ Index (i, sim_tailer, k) ]; // right side of simulation grid
+		velW_inout [ Index (i, j, gst_header) ] = -velW_inout [ Index (i, j, sim_header) ]; // front side of simulation grid
+		velW_inout [ Index (i, j, gst_tailer) ] = -velW_inout [ Index (i, j, sim_tailer) ]; // back side of simulation grid
+	}
+	EndSimArea();
 
-
-__global__ void kernelDiffusionMacCormack ( float *grid_out, float *grid_in )
-{
-
+	// Condition of density
+	density_inout [ Index (i, gst_tailer, k) ] *= ANNIHILATION;
 };
-
-/*
-  -----------------------------------------------------------------------------------------------------------
-   Undefine something
-  -----------------------------------------------------------------------------------------------------------
-*/
-
-#undef eqt   /* equal to */
-#undef and   /* logical and */
-#undef or    /* logical or */
-
-#undef gst_header  /* (ghost, halo) the header cell of grid */
-#undef sim_header  /* (actually) the second cell of grid */
-#undef gst_tailer  /* (ghost, halo) the last cell of grid */
-#undef sim_tailer  /* (actually) the second last cell of grid */
-
 
 
 /*
@@ -178,9 +188,7 @@ void MacCormackSchemeSolver ( float *u, float *v, float *w, float *u0, float *v0
 
 	// Launch kernels
 	// Add source to background for further simulation
-	kernelAddSourceMacCormack <<< gridDim, blockDim >>> (dev_u0);
-	kernelAddSourceMacCormack <<< gridDim, blockDim >>> (dev_v0);
-	kernelAddSourceMacCormack <<< gridDim, blockDim >>> (dev_den0);
+	kernelAddSourceMacCormack <<< gridDim, blockDim >>> (dev_den0, dev_u0, dev_v0, dev_w0);
 	// ...
     
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
@@ -213,5 +221,20 @@ void MacCormackSchemeSolver ( float *u, float *v, float *w, float *u0, float *v0
 	if ( cudaMemcpy ( w, dev_w, SIM_SIZE * sizeof(float), cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
 };
+
+/*
+  -----------------------------------------------------------------------------------------------------------
+   Undefine something
+  -----------------------------------------------------------------------------------------------------------
+*/
+
+#undef eqt   /* equal to */
+#undef and   /* logical and */
+#undef or    /* logical or */
+
+#undef gst_header  /* (ghost, halo) the header cell of grid */
+#undef sim_header  /* (actually) the second cell of grid */
+#undef gst_tailer  /* (ghost, halo) the last cell of grid */
+#undef sim_tailer  /* (actually) the second last cell of grid */
 
 #endif

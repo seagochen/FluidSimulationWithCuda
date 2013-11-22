@@ -58,10 +58,13 @@ using namespace std;
 #define sim_tailer       Grids_X - 2   /* (actually) the second last cell of grid */
 
 
-#define CheckIndex(i,j,k)  \
-	if ( i >= sim_tailer ) i = sim_tailer; \
-	if ( j >= sim_tailer ) j = sim_tailer; \
-	if ( k >= sim_tailer ) k = sim_tailer;
+#define BeginSimArea() \
+	if ( i >= sim_header and i <= sim_tailer ) \
+	if ( j >= sim_header and j <= sim_tailer ) \
+	if ( k >= sim_header and k <= sim_tailer ) {
+
+#define EndSimArea() }
+
 
 /*
 -----------------------------------------------------------------------------------------------------------
@@ -90,7 +93,7 @@ __global__ void kernelAddSource ( float *ptr_inout )
 		{
 			// Add source from layer 0 - 4
 			if ( j < 5 )
-				ptr_inout [ Index (i, j, k) ] = SOURCE * DELTA_TIME;
+				ptr_inout [ Index (i, j, k) ] += SOURCE * DELTA_TIME;
 		}
 	}
 };
@@ -109,47 +112,27 @@ __global__ void kernelAddSource ( float *ptr_inout )
 __global__ void kernelSetBoundary ( float *grid_out, int boundary )
 {
 	// Get index of GPU-thread
-//	GetIndex ( );
-
-	// Boundary condition
-//	if ( i gte 1 && i lse SimArea_X && j gte 1 && j lse SimArea_X )
-//	{
-		// Slove line (gst0, y)
-//		grid_out [ Index ( gst0, j, k ) ] = boundary is 1 ? -grid_out [ Index ( rsc0, j, k ) ] : grid_out [ Index ( rsc0, j, k ) ];
-		// Slove line (gstl, y)
-//		grid_out [ Index ( gstl, j, k ) ] = boundary is 1 ? -grid_out [ Index ( rscl, j, k ) ] : grid_out [ Index ( rscl, j, k ) ];
-		// Slove line (x, gst0)
-//		grid_out [ Index ( i, gst0, k ) ] = boundary is 2 ? -grid_out [ Index ( i, rsc0, k ) ] : grid_out [ Index ( i, rsc0, k ) ];
-		// Slove line (x, gstl)
-//		grid_out [ Index ( i, gstl, k ) ] = boundary is 2 ? -grid_out [ Index ( i, rscl, k ) ] : grid_out [ Index ( i, rscl, k ) ];
-//	}
-	// Slove ghost cell (gst0, gst0)
-//	grid_out [ Index ( gst0, gst0, k ) ] = 0.5f * ( grid_out [ Index ( rsc0, gst0, k ) ] + grid_out [ Index ( gst0, rsc0, k ) ] );
-	// Slove ghost cell (gst0, gstl)
-//	grid_out [ Index ( gst0, gstl, k ) ] = 0.5f * ( grid_out [ Index ( rsc0, gstl, k ) ] + grid_out [ Index ( gst0, rscl, k ) ] );
-	// Slove ghost cell (gstl, gst0)
-//	grid_out [ Index ( gstl, gst0, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gst0, k ) ] + grid_out [ Index ( gstl, rsc0, k ) ] );
-	// Slove ghost cell (gstl, gstl)
-//	grid_out [ Index ( gstl, gstl, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gstl, k ) ] + grid_out [ Index ( gstl, rscl, k ) ] );
-
-	// Get index of GPU-thread
 	GetIndex ( );
 
-	CheckIndex (i, j, k);
+	// Boundary condition
+	BeginSimArea();
+		// Slove line (gst0, y)
+		grid_out [ Index ( gst0, j, k ) ] = boundary is 1 ? -grid_out [ Index ( rsc0, j, k ) ] : grid_out [ Index ( rsc0, j, k ) ];
+		// Slove line (gstl, y)
+		grid_out [ Index ( gstl, j, k ) ] = boundary is 1 ? -grid_out [ Index ( rscl, j, k ) ] : grid_out [ Index ( rscl, j, k ) ];
+		// Slove line (x, gst0)
+		grid_out [ Index ( i, gst0, k ) ] = boundary is 2 ? -grid_out [ Index ( i, rsc0, k ) ] : grid_out [ Index ( i, rsc0, k ) ];
+		// Slove line (x, gstl)
+		grid_out [ Index ( i, gstl, k ) ] = boundary is 2 ? -grid_out [ Index ( i, rscl, k ) ] : grid_out [ Index ( i, rscl, k ) ];
+	EndSimArea();
 
-	// Header cells of halo
-	grid_out [ Index (gst_header, j, k) ] = ( grid_out [ Index (gst_header, j, k) ] + grid_out [ Index (sim_header, j, k) ] ) * ANNIHILATION;
-	grid_out [ Index (i, gst_header, k) ] = ( grid_out [ Index (i, gst_header, k) ] + grid_out [ Index (i, sim_header, k) ] ) * ANNIHILATION;
-	grid_out [ Index (i, j, gst_header) ] = ( grid_out [ Index (i, j, gst_header) ] + grid_out [ Index (i, j, sim_header) ] ) * ANNIHILATION;
-
-	// Tailer cells of halo
-	grid_out [ Index (gst_tailer, j, k) ] = ( grid_out [ Index (gst_tailer, j, k) ] + grid_out [ Index (sim_tailer, j, k) ] ) * ANNIHILATION;
-	grid_out [ Index (i, gst_tailer, k) ] = ( grid_out [ Index (i, gst_tailer, k) ] + grid_out [ Index (i, sim_tailer, k) ] ) * ANNIHILATION;
-	grid_out [ Index (i, j, gst_tailer) ] = ( grid_out [ Index (i, j, gst_tailer) ] + grid_out [ Index (i, j, gst_tailer) ] ) * ANNIHILATION;
-	
+	// Slove ghost cell (gst0, gst0)
 	grid_out [ Index ( gst0, gst0, k ) ] = 0.5f * ( grid_out [ Index ( rsc0, gst0, k ) ] + grid_out [ Index ( gst0, rsc0, k ) ] );
+	// Slove ghost cell (gst0, gstl)
 	grid_out [ Index ( gst0, gstl, k ) ] = 0.5f * ( grid_out [ Index ( rsc0, gstl, k ) ] + grid_out [ Index ( gst0, rscl, k ) ] );
+	// Slove ghost cell (gstl, gst0)
 	grid_out [ Index ( gstl, gst0, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gst0, k ) ] + grid_out [ Index ( gstl, rsc0, k ) ] );
+	// Slove ghost cell (gstl, gstl)
 	grid_out [ Index ( gstl, gstl, k ) ] = 0.5f * ( grid_out [ Index ( rscl, gstl, k ) ] + grid_out [ Index ( gstl, rscl, k ) ] );
 }
 
@@ -193,12 +176,12 @@ __global__ void kernelAdvect ( float *density_out, float *density0_in, float *u_
 	GetIndex ( );
 
 	int i0, j0, i1, j1;
-	float x, y, s0, t0, s1, t1;
+	float s0, t0, s1, t1;
 
-	if ( i gte 1 && i lse SimArea_X && j gte 1 && j lse SimArea_X )
+	BeginSimArea();
 	{
-		x = i - dt0 * u_in[Index(i, j, k)];
-		y = j - dt0 * v_in[Index(i, j, k)];
+		float x = i - dt0 * u_in[Index(i, j, k)];
+		float y = j - dt0 * v_in[Index(i, j, k)];
 		if (x < 0.5f) x = 0.5f;
 		if (x > SimArea_X + 0.5f) x = SimArea_X+0.5f;
 
@@ -219,6 +202,7 @@ __global__ void kernelAdvect ( float *density_out, float *density0_in, float *u_
 			t1 * density0_in[Index(i0, j1, k)]) + s1 * ( t0 * density0_in[Index(i1, j0, k)] + 
 			t1 * density0_in[Index(i1, j1, k)]);
 	}
+	EndSimArea();
 };
 
 
