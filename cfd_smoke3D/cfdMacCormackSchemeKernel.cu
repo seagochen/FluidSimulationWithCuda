@@ -90,6 +90,26 @@ __global__ void kernelAddSourceMacCormack ( float *density_inout, float *velU_in
 
 /*
 -----------------------------------------------------------------------------------------------------------
+* @function cudaAddSourceMacCormack
+* @author   Orlando Chen
+* @date     Nov 22, 2013
+* @input    float *density_inout, float *velU_inout, float *velV_inout, float *velW_inout
+* @return   NULL
+* @bref     Encapsulation of kernelAddSourceMacCormack    
+-----------------------------------------------------------------------------------------------------------
+*/
+__host__ void cudaAddSourceMacCormack ( float *density_inout, float *velU_inout, float *velV_inout, float *velW_inout )
+{
+	// Define the computing unit size
+	cudaDeviceDim3D ( );
+
+	kernelAddSourceMacCormack <<< gridDim, blockDim >>> 
+		( density_inout, velU_inout, velV_inout, velW_inout );
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
 * @function subkernelBoundaryMacCormack
 * @author   Orlando Chen
 * @date     Nov 22, 2013
@@ -150,12 +170,13 @@ __device__ void subkernelBoundaryMacCormack ( float *density_inout, float *velU_
 * @function subkernelAdvectDensity
 * @author   Orlando Chen
 * @date     Nov 22, 2013
-* @input    float *den_out, float *den_in, float *velU_in, float *velV_in, float *velW_in
+* @input    float *den_out, float *den_in, float *velU_in, float *velV_in, float *velW_in, int opt
 * @return   NULL
-* @bref     Update density state      
+* @bref     Update density state.
+* --------- When opt is 0, the prediction is calculated, opt is 1, the checksum value is calculated
 -----------------------------------------------------------------------------------------------------------
 */
-__device__ void subkernelAdvectDensity ( float *den_out, float *den_in, float *velU_in, float *velV_in, float *velW_in )
+__device__ void subkernelAdvectDensity ( float *den_out, float *den_in, float *velU_in, float *velV_in, float *velW_in, int opt )
 {
 	GetIndex();
 
@@ -169,15 +190,16 @@ __device__ void subkernelAdvectDensity ( float *den_out, float *den_in, float *v
 
 /*
 -----------------------------------------------------------------------------------------------------------
-* @function subkernelAdvectFlowU
+* @function subkernelAdvectFlow
 * @author   Orlando Chen
 * @date     Nov 22, 2013
-* @input    float *velU_out, float *den_in, float *velU_in, float *velV_in, float *velW_in
+* @input    float *vel_out, float *den_in, float *velU_in, float *velV_in, float *velW_in, int opt
 * @return   NULL
-* @bref     Update component u of flow state      
+* @bref     Update a component of flow state
+* --------- When opt is 0, the prediction is calculated, opt is 1, the checksum value is calculated
 -----------------------------------------------------------------------------------------------------------
 */
-__device__ void subkernelAdvectFlowU ( float *velU_out, float *den_in, float *velU_in, float *velV_in, float *velW_in )
+__device__ void subkernelAdvectFlow ( float *vel_out, float *den_in, float *velU_in, float *velV_in, float *velW_in, int opt )
 {
 	GetIndex();
 
@@ -191,51 +213,7 @@ __device__ void subkernelAdvectFlowU ( float *velU_out, float *den_in, float *ve
 
 /*
 -----------------------------------------------------------------------------------------------------------
-* @function subkernelAdvectFlowV
-* @author   Orlando Chen
-* @date     Nov 22, 2013
-* @input    float *velU_out, float *den_in, float *velU_in, float *velV_in, float *velW_in
-* @return   NULL
-* @bref     Update component v of flow state      
------------------------------------------------------------------------------------------------------------
-*/
-__device__ void subkernelAdvectFlowV ( float *velV_out, float *den_in, float *velU_in, float *velV_in, float *velW_in )
-{
-	GetIndex();
-
-	BeginSimArea();
-	{
-
-	}
-	EndSimArea();
-};
-
-
-/*
------------------------------------------------------------------------------------------------------------
-* @function subkernelAdvectFlowW
-* @author   Orlando Chen
-* @date     Nov 22, 2013
-* @input    float *velW_out, float *den_in, float *velU_in, float *velV_in, float *velW_in
-* @return   NULL
-* @bref     Update component w of flow state      
------------------------------------------------------------------------------------------------------------
-*/
-__device__ void subkernelAdvectFlowW ( float *velW_out, float *den_in, float *velU_in, float *velV_in, float *velW_in )
-{
-	GetIndex();
-
-	BeginSimArea();
-	{
-
-	}
-	EndSimArea();
-};
-
-
-/*
------------------------------------------------------------------------------------------------------------
-* @function kernelAdvectMacCormack
+* @function kernelPredicateAdvectionMacCormack
 * @author   Orlando Chen
 * @date     Nov 22, 2013
 * @input    float *den_out, float *velU_out, float *velV_out, float *velW_out, 
@@ -244,17 +222,73 @@ __device__ void subkernelAdvectFlowW ( float *velW_out, float *den_in, float *ve
 * @bref     Update flow status      
 -----------------------------------------------------------------------------------------------------------
 */
-__global__ void kernelAdvectMacCormack ( float *den_out, float *velU_out, float *velV_out, float *velW_out, 
+__global__ void kernelPredicateAdvectionMacCormack ( float *den_out, float *velU_out, float *velV_out, float *velW_out, 
 										float *den_in, float *velU_in, float *velV_in,float *velW_in )
 {
-	// Update state of flow
-	subkernelAdvectFlowU ( velU_out, den_in, velU_in, velV_in, velW_in );
-	subkernelAdvectFlowV ( velV_out, den_in, velU_in, velV_in, velW_in );
-	subkernelAdvectFlowW ( velW_out, den_in, velU_in, velV_in, velW_in );
-	subkernelAdvectDensity ( den_out, den_in, velU_in, velV_in, velW_in );
+	subkernelAdvectFlow ( velU_out, den_in, velU_in, velV_in, velW_in, 0 );
+	subkernelAdvectFlow ( velV_out, den_in, velU_in, velV_in, velW_in, 0 );
+	subkernelAdvectFlow ( velW_out, den_in, velU_in, velV_in, velW_in, 0 );
+	subkernelAdvectDensity ( den_out, den_in, velU_in, velV_in, velW_in, 0 );
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelChecksumAdvectionMacCormack
+* @author   Orlando Chen
+* @date     Nov 22, 2013
+* @input    float *den_out, float *velU_out, float *velV_out, float *velW_out, 
+* --------- float *den_in, float *velU_in, float *velV_in,float *velW_in
+* @return   NULL
+* @bref     Update flow status      
+-----------------------------------------------------------------------------------------------------------
+*/
+__global__ void kernelChecksumAdvectionMacCormack ( float *den_out, float *velU_out, float *velV_out, float *velW_out, 
+										float *den_in, float *velU_in, float *velV_in,float *velW_in )
+{
+	subkernelAdvectFlow ( velU_in, den_out, velU_out, velV_out, velW_out, 1 );
+	subkernelAdvectFlow ( velV_in, den_out, velU_out, velV_out, velW_out, 1 );
+	subkernelAdvectFlow ( velW_in, den_out, velU_out, velV_out, velW_out, 1 );
+	subkernelAdvectDensity ( den_in, den_out, velU_out, velV_out, velW_out, 1 );
+};
+
+
+__global__ void kernelFinalAdvectionMacCormack ( float *den_out, float *velU_out, float *velV_out, float *velW_out, 
+										float *den_in, float *velU_in, float *velV_in,float *velW_in )
+{
+	GetIndex ( );
+
+	den_out [ Index(i,j,k) ] = 0.5f * ( den_out [ Index(i,j,k) ] + den_in [ Index(i,j,k) ] );
+	velU_out [ Index(i,j,k) ] = 0.5f * ( velU_out [ Index(i,j,k) ] + velU_in [ Index(i,j,k) ] );
+	velV_out [ Index(i,j,k) ] = 0.5f * ( velV_out [ Index(i,j,k) ] + velV_in [ Index(i,j,k) ] );
+	velW_out [ Index(i,j,k) ] = 0.5f * ( velW_out [ Index(i,j,k) ] + velW_in [ Index(i,j,k) ] );
 
 	// Check boundary condition
-	subkernelBoundaryMacCormack ( den_out, velU_out, velV_out, velW_out);
+	subkernelBoundaryMacCormack ( den_out, velU_out, velV_out, velW_out );
+};
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function cudaAdvectMacCormack
+* @author   Orlando Chen
+* @date     Nov 22, 2013
+* @input    float *den_out, float *velU_out, float *velV_out, float *velW_out, 
+* --------- float *den_in, float *velU_in, float *velV_in,float *velW_in
+* @return   NULL
+* @bref     Update flow status      
+-----------------------------------------------------------------------------------------------------------
+*/
+__host__ void cudaAdvectMacCormack ( float *den_out, float *velU_out, float *velV_out, float *velW_out, 
+										float *den_in, float *velU_in, float *velV_in,float *velW_in )
+{
+	// Define the computing unit size
+	cudaDeviceDim3D ( );
+
+	// Calculate the advection
+	kernelPredicateAdvectionMacCormack <<<gridDim, blockDim>>> 
+		( den_out, velU_out, velV_out, velW_out, den_in, velU_in, velV_in, velW_in );
+	kernelChecksumAdvectionMacCormack  <<<gridDim, blockDim>>>
+		( den_out, velU_out, velV_out, velW_out, den_in, velU_in, velV_in, velW_in );
 };
 
 /*
@@ -267,9 +301,8 @@ __global__ void kernelAdvectMacCormack ( float *den_out, float *velU_out, float 
 * @bref     Calculate the advection of flow by MackCormack Scheme
 -----------------------------------------------------------------------------------------------------------
 */
-void MacCormackSchemeSolver ( float *u, float *v, float *w, float *u0, float *v0, float *w0, float *grid, float *grid0 )
+__host__ void MacCormackSchemeSolver ( float *u, float *v, float *w, float *u0, float *v0, float *w0, float *grid, float *grid0 )
 {
-
 	// Define the computing unit size
 	cudaDeviceDim3D ( );
 	
@@ -300,7 +333,8 @@ void MacCormackSchemeSolver ( float *u, float *v, float *w, float *u0, float *v0
 
 	// Launch kernels
 	// Add source to background for further simulation
-	kernelAddSourceMacCormack <<< gridDim, blockDim >>> (dev_den0, dev_u0, dev_v0, dev_w0);
+	cudaAddSourceMacCormack (dev_den0, dev_u0, dev_v0, dev_w0);
+	cudaAdvectMacCormack (dev_den, dev_u, dev_v, dev_w, dev_den0, dev_u0, dev_v0, dev_w0);
 	// ...
     
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
