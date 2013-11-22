@@ -57,7 +57,7 @@
 * @function kernelAddSourceMacCormack
 * @author   Orlando Chen
 * @date     Nov 19, 2013
-* @input    density_inout, velU_inout, velV_inout, velW_inout
+* @input    float *density_inout, float *velU_inout, float *velV_inout, float *velW_inout
 * @return   NULL
 * @bref     Add source to simulation grid      
 -----------------------------------------------------------------------------------------------------------
@@ -90,15 +90,15 @@ __global__ void kernelAddSourceMacCormack ( float *density_inout, float *velU_in
 
 /*
 -----------------------------------------------------------------------------------------------------------
-* @function kernelBoundaryMacCormack
+* @function subkernelBoundaryMacCormack
 * @author   Orlando Chen
-* @date     Nov 21, 2013
-* @input    density_inout, velU_inout, velV_inout, velW_inout 
+* @date     Nov 22, 2013
+* @input    float *density_inout, float *velU_inout, float *velV_inout, float *velW_inout
 * @return   NULL
 * @bref     Check and set boundary condition      
 -----------------------------------------------------------------------------------------------------------
 */
-__device__ void kernelBoundaryMacCormack ( float *density_inout, float *velU_inout, float *velV_inout, float *velW_inout )
+__device__ void subkernelBoundaryMacCormack ( float *density_inout, float *velU_inout, float *velV_inout, float *velW_inout )
 {
 	// Get index of GPU-thread
 	GetIndex ( );
@@ -144,6 +144,118 @@ __device__ void kernelBoundaryMacCormack ( float *density_inout, float *velU_ino
 	density_inout [ Index (i, gst_tailer, k) ] *= ANNIHILATION;
 };
 
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function subkernelAdvectDensity
+* @author   Orlando Chen
+* @date     Nov 22, 2013
+* @input    float *den_out, float *den_in, float *velU_in, float *velV_in, float *velW_in
+* @return   NULL
+* @bref     Update density state      
+-----------------------------------------------------------------------------------------------------------
+*/
+__device__ void subkernelAdvectDensity ( float *den_out, float *den_in, float *velU_in, float *velV_in, float *velW_in )
+{
+	GetIndex();
+
+	BeginSimArea();
+	{
+
+	}
+	EndSimArea();
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function subkernelAdvectFlowU
+* @author   Orlando Chen
+* @date     Nov 22, 2013
+* @input    float *velU_out, float *den_in, float *velU_in, float *velV_in, float *velW_in
+* @return   NULL
+* @bref     Update component u of flow state      
+-----------------------------------------------------------------------------------------------------------
+*/
+__device__ void subkernelAdvectFlowU ( float *velU_out, float *den_in, float *velU_in, float *velV_in, float *velW_in )
+{
+	GetIndex();
+
+	BeginSimArea();
+	{
+
+	}
+	EndSimArea();
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function subkernelAdvectFlowV
+* @author   Orlando Chen
+* @date     Nov 22, 2013
+* @input    float *velU_out, float *den_in, float *velU_in, float *velV_in, float *velW_in
+* @return   NULL
+* @bref     Update component v of flow state      
+-----------------------------------------------------------------------------------------------------------
+*/
+__device__ void subkernelAdvectFlowV ( float *velV_out, float *den_in, float *velU_in, float *velV_in, float *velW_in )
+{
+	GetIndex();
+
+	BeginSimArea();
+	{
+
+	}
+	EndSimArea();
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function subkernelAdvectFlowW
+* @author   Orlando Chen
+* @date     Nov 22, 2013
+* @input    float *velW_out, float *den_in, float *velU_in, float *velV_in, float *velW_in
+* @return   NULL
+* @bref     Update component w of flow state      
+-----------------------------------------------------------------------------------------------------------
+*/
+__device__ void subkernelAdvectFlowW ( float *velW_out, float *den_in, float *velU_in, float *velV_in, float *velW_in )
+{
+	GetIndex();
+
+	BeginSimArea();
+	{
+
+	}
+	EndSimArea();
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelAdvectMacCormack
+* @author   Orlando Chen
+* @date     Nov 22, 2013
+* @input    float *den_out, float *velU_out, float *velV_out, float *velW_out, 
+* --------- float *den_in, float *velU_in, float *velV_in,float *velW_in
+* @return   NULL
+* @bref     Update flow status      
+-----------------------------------------------------------------------------------------------------------
+*/
+__global__ void kernelAdvectMacCormack ( float *den_out, float *velU_out, float *velV_out, float *velW_out, 
+										float *den_in, float *velU_in, float *velV_in,float *velW_in )
+{
+	// Update state of flow
+	subkernelAdvectFlowU ( velU_out, den_in, velU_in, velV_in, velW_in );
+	subkernelAdvectFlowV ( velV_out, den_in, velU_in, velV_in, velW_in );
+	subkernelAdvectFlowW ( velW_out, den_in, velU_in, velV_in, velW_in );
+	subkernelAdvectDensity ( den_out, den_in, velU_in, velV_in, velW_in );
+
+	// Check boundary condition
+	subkernelBoundaryMacCormack ( den_out, velU_out, velV_out, velW_out);
+};
 
 /*
 -----------------------------------------------------------------------------------------------------------
