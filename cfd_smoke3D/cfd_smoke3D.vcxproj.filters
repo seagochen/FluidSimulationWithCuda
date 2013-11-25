@@ -57,6 +57,9 @@
     <ClCompile Include="VelocitySolver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DensitySolver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="DVRKernel.cu">
@@ -68,20 +71,14 @@
     <CudaCompile Include="SetBoundaryKernel.cu">
       <Filter>Source Files\CUDAKernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="DiffuseKernel.cu">
-      <Filter>Source Files\CUDAKernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="AdvectKernel.cu">
-      <Filter>Source Files\CUDAKernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="ViscosityKernel.cu">
       <Filter>Source Files\CUDAKernels</Filter>
     </CudaCompile>
     <CudaCompile Include="ProjectFieldKernel.cu">
       <Filter>Source Files\CUDAKernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="DensitySolver.cu">
-      <Filter>Source Files</Filter>
+    <CudaCompile Include="DifVisKernel.cu">
+      <Filter>Source Files\CUDAKernels</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

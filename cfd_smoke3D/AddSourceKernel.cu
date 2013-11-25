@@ -57,7 +57,7 @@ __global__ void kernelAddSource ( float *ptr_inout )
 		{
 			// Add source from layer 0 - 4
 			if ( j < 5 )
-				ptr_inout [ Index (i, j, k) ] += SOURCE * DELTA_TIME;
+				ptr_inout [ Index (i, j, k) ] = SOURCE * DELTA_TIME;
 		}
 	}
 };

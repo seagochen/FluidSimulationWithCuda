@@ -21,11 +21,11 @@
 * <Author>      Orlando Chen
 * <First>       Nov 25, 2013
 * <Last>		Nov 25, 2013
-* <File>        DiffuseKernel.cu
+* <File>        DifVisKernel.cu
 */
 
-#ifndef __diffuse_kernel_cu_
-#define __diffuse_kernel_cu_
+#ifndef __diffuse_viscosity_kernel_cu_
+#define __diffuse_viscosity_kernel_cu_
 
 #include "cfdHeader.h"
 
@@ -41,19 +41,39 @@ extern void cudaSetBoundary ( float *grid_out, int boundary, dim3 *gridDim, dim3
 * @bref     To diffuse (smooth) the simulation result
 -----------------------------------------------------------------------------------------------------------
 */
-__global__ void kernelDiffuse ( float *grid_out, float const *grid_in )
+__global__ void kernelLineSolver ( float *grid_out, float const *grid_in, float const ratio, float const div )
 {
 	// Get index of GPU-thread
 	GetIndex ( );
 
-	float ratio = DELETE * DIFFUSION * Grids_X * Grids_X;
-
 	BeginSimArea ( );
 	{
 		grid_out [ Index(i, j, k) ] = (grid_in [ Index(i, j, k) ] + ratio * ( grid_out [ Index(i-1, j, k) ] +  grid_out [ Index( i+1, j, k) ] +
-			grid_out [ Index(i, j-1, k) ] + grid_out [ Index(i, j+1, k) ] )) / ( 1 + 4 * ratio );
+			grid_out [ Index(i, j-1, k) ] + grid_out [ Index(i, j+1, k) ] )) / div;
 	}
 	EndSimArea ( );
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function cudaViscosity
+* @author   Orlando Chen
+* @date     Nov 25, 2013
+* @input    float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim
+* @return   NULL
+* @bref     Encapsulation the CUDA routine (diffuse)
+-----------------------------------------------------------------------------------------------------------
+*/
+__host__ void cudaViscosity ( float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim )
+{
+	float ratio = DELTA_TIME * VISCOSITY * SimArea_X * SimArea_X;
+	float div   = 1.f + 4.f * ratio;
+	for ( int i = 0; i < 20; i++ )
+	{
+		kernelLineSolver cudaDevice(*gridDim, *blockDim) ( grid_out, grid_in, ratio, div );
+		cudaSetBoundary  ( grid_out, boundary, gridDim, blockDim );
+	}
 };
 
 
@@ -69,9 +89,12 @@ __global__ void kernelDiffuse ( float *grid_out, float const *grid_in )
 */
 __host__ void cudaDiffuse ( float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim )
 {
+	float ratio = DELTA_TIME * DIFFUSION * SimArea_X * SimArea_X;
+	float div   = 1.f + 4.f * ratio;
+
 	for ( int i = 0; i < 20; i++ )
 	{
-		kernelDiffuse cudaDevice(*gridDim, *blockDim) ( grid_out, grid_in );
+		kernelLineSolver cudaDevice(*gridDim, *blockDim) ( grid_out, grid_in, ratio, div );
 		cudaSetBoundary  ( grid_out, boundary, gridDim, blockDim );
 	}
 };
