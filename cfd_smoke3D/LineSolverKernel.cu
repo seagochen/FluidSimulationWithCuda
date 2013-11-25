@@ -21,11 +21,11 @@
 * <Author>      Orlando Chen
 * <First>       Nov 25, 2013
 * <Last>		Nov 25, 2013
-* <File>        DifVisKernel.cu
+* <File>        LineSolverKernel.cu
 */
 
-#ifndef __diffuse_viscosity_kernel_cu_
-#define __diffuse_viscosity_kernel_cu_
+#ifndef __line_solver_kernel_cu_
+#define __line_solver_kernel_cu_
 
 #include "cfdHeader.h"
 
@@ -48,11 +48,14 @@ __global__ void kernelLineSolver ( float *grid_out, float const *grid_in, float 
 
 	BeginSimArea ( );
 	{
-		grid_out [ Index(i, j, k) ] = (grid_in [ Index(i, j, k) ] + ratio * ( grid_out [ Index(i-1, j, k) ] +  grid_out [ Index( i+1, j, k) ] +
-			grid_out [ Index(i, j-1, k) ] + grid_out [ Index(i, j+1, k) ] )) / div;
+		grid_out [ Index(i, j, k) ] = ( grid_in [ Index(i, j, k) ] + 
+			ratio * ( grid_out [ Index(i-1, j, k) ] +  grid_out [ Index( i+1, j, k) ] + grid_out [ Index(i, j-1, k) ] + grid_out [ Index(i, j+1, k) ] ) ) / div;
 	}
 	EndSimArea ( );
 };
+
+
+
 
 
 /*

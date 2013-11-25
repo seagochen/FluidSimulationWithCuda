@@ -98,7 +98,6 @@
 #define VISCOSITY            0.0f   /* -------------------------------------- viscosity */
 #define FORCE                5.0f   /* -------------------------------------- external force */
 #define SOURCE               100.f  /* -------------------------------------- indensity */
-#define ANNIHILATION         0.3    /* -------------------------------------- annihilation */
 
 /*
   -----------------------------------------------------------------------------------------------------------
@@ -130,13 +129,7 @@ extern sge::FileManager    Logfile;           /* ----------------- declaration o
   -----------------------------------------------------------------------------------------------------------
 */
 
-extern void DensitySolver ( float *grid, float *grid0, float *u, float *v, float *w );
-
-extern void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float *w0 );
-
-extern void DrawDensity ( void );
-
-extern void DrawVelocity ( void );
+#include "cfdFunctions.h"
 
 /*
   -----------------------------------------------------------------------------------------------------------

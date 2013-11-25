@@ -43,6 +43,9 @@
     <ClInclude Include="visualFramework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cfdFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glew32.cpp">
@@ -54,10 +57,7 @@
     <ClCompile Include="visualFramework.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VelocitySolver.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DensitySolver.cpp">
+    <ClCompile Include="CFDSolver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -77,7 +77,10 @@
     <CudaCompile Include="ProjectFieldKernel.cu">
       <Filter>Source Files\CUDAKernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="DifVisKernel.cu">
+    <CudaCompile Include="LineSolverKernel.cu">
+      <Filter>Source Files\CUDAKernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="HelperKernel.cu">
       <Filter>Source Files\CUDAKernels</Filter>
     </CudaCompile>
   </ItemGroup>

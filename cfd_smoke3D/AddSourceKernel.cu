@@ -32,32 +32,82 @@
 
 /*
 -----------------------------------------------------------------------------------------------------------
-* @function kernelAddSource
+* @function kernelAddDensity
 * @author   Orlando Chen
 * @date     Nov 19, 2013
-* @input    float *ptr_inout
+* @input    float *den_out
 * @return   NULL
 * @bref     Add new density of flow as well as initial velocity, need to call this function first of all 
 -----------------------------------------------------------------------------------------------------------
 */
-__global__ void kernelAddSource ( float *ptr_inout )
+__global__ void kernelAddDensity ( float *den_out )
 {
 	// Get index of GPU-thread
 	GetIndex ( );
 
-	// Coordinates arround the (64, 64, 64), r is 5
-	if ( i > 54 and i < 74 ) if ( k > 54 and k < 74 )
+	int half = Grids_X / 2;
+
+	// Coordinates arround the center, r is 2
+	if ( i > half - 10 and i < half + 10 ) if ( k > half - 10 and k < half + 10 )
 	{
-		int x = i - 64;
-		int y = k - 64;
+		int x = i - half;
+		int y = k - half;
 		float r = sqrtf ( x * x + y * y );
 		
 		// Within the correct distance
-		if ( r >= 0 && r <= 5  )
+		if ( r >= 0 && r <= 2  )
 		{
 			// Add source from layer 0 - 4
-			if ( j < 5 )
-				ptr_inout [ Index (i, j, k) ] = SOURCE * DELTA_TIME;
+			if ( j < 2 )
+				den_out [ Index (i, j, k) ] = SOURCE * DELTA_TIME;
+		}
+	}
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function kernelAddVelocity
+* @author   Orlando Chen
+* @date     Nov 19, 2013
+* @input    float *u_out, float *v_out, float *w_out
+* @return   NULL
+* @bref     Add new density of flow as well as initial velocity, need to call this function first of all 
+-----------------------------------------------------------------------------------------------------------
+*/
+__global__ void kernelAddVelocity ( float *u_out, float *v_out, float *w_out )
+{
+	// Get index of GPU-thread
+	GetIndex ( );
+
+	int half = Grids_X / 2;
+
+	// Coordinates arround the center, r is 2
+	if ( i > half - 10 and i < half + 10 ) if ( k > half - 10 and k < half + 10 )
+	{
+		int x = i - half;
+		int y = k - half;
+		float r = sqrtf ( x * x + y * y );
+		
+		// Within the correct distance
+		if ( r >= 0 && r <= 2  )
+		{
+			// Add source from layer 0 - 4
+			if ( j < 2 )
+			{
+				v_out [ Index (i, j, k) ] = SOURCE * DELTA_TIME;
+
+				if ( i > half - 10 and i <= half )
+				{
+					u_out [ Index (i, j, k) ] = - SOURCE * DELTA_TIME * 0.1f;
+					w_out [ Index (i, j, k) ] = - SOURCE * DELTA_TIME * 0.1f;
+				}
+				else
+				{
+					u_out [ Index (i, j, k) ] = SOURCE * DELTA_TIME * 0.1f;
+					w_out [ Index (i, j, k) ] = SOURCE * DELTA_TIME * 0.1f;
+				}
+			}
 		}
 	}
 };
@@ -68,14 +118,18 @@ __global__ void kernelAddSource ( float *ptr_inout )
 * @function cudaAddSource
 * @author   Orlando Chen
 * @date     Nov 25, 2013
-* @input    float *ptr_inout, dim3 *gridDim, dim3 *blockDim
+* @input    float *den_out, float *u_out, float *v_out, float *w_out, dim3 *gridDim, dim3 *blockDim
 * @return   NULL
 * @bref     Encapsulation the CUDA routine (addsource)
 -----------------------------------------------------------------------------------------------------------
 */
-__host__ void cudaAddSource ( float *ptr_inout, dim3 *gridDim, dim3 *blockDim )
+__host__ void cudaAddSource ( float *den_out, float *u_out, float *v_out, float *w_out, 
+	dim3 *gridDim, dim3 *blockDim )
 {
-	kernelAddSource cudaDevice(*gridDim, *blockDim) (ptr_inout);
+	if ( den_out != NULL )
+		kernelAddDensity cudaDevice(*gridDim, *blockDim) (den_out);
+	if ( u_out != NULL and v_out != NULL and w_out != NULL )
+		kernelAddVelocity cudaDevice(*gridDim, *blockDim) (u_out, v_out, w_out);
 };
 
 #endif

@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cfdFunctions.h" />
     <ClInclude Include="cfdHeader.h" />
     <ClInclude Include="cudaHelper.h" />
     <ClInclude Include="cudaNewHelper.h" />
@@ -38,18 +39,20 @@
     <CudaCompile Include="AdvectKernel.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
-    <ClCompile Include="DensitySolver.cpp" />
     <ClCompile Include="glew32.cpp" />
     <ClCompile Include="launchMain.cpp" />
+    <CudaCompile Include="HelperKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
     <CudaCompile Include="ProjectFieldKernel.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
     <CudaCompile Include="SetBoundaryKernel.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
-    <ClCompile Include="VelocitySolver.cpp" />
+    <ClCompile Include="CFDSolver.cpp" />
     <ClCompile Include="visualFramework.cpp" />
-    <CudaCompile Include="DifVisKernel.cu">
+    <CudaCompile Include="LineSolverKernel.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
   </ItemGroup>
