@@ -32,15 +32,31 @@
     <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="cfdMacCormackSchemeKernel.cu">
+    <CudaCompile Include="AddSourceKernel.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
-    <CudaCompile Include="cfdMainKernel.cu">
+    <CudaCompile Include="AdvectKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <CudaCompile Include="DiffuseKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <CudaCompile Include="DensitySolver.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
     <ClCompile Include="glew32.cpp" />
     <ClCompile Include="launchMain.cpp" />
+    <CudaCompile Include="ProjectFieldKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <CudaCompile Include="SetBoundaryKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <ClCompile Include="VelocitySolver.cpp" />
     <ClCompile Include="visualFramework.cpp" />
+    <CudaCompile Include="ViscosityKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="DVRKernel.cu">
