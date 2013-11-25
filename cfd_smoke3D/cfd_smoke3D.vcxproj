@@ -38,12 +38,7 @@
     <CudaCompile Include="AdvectKernel.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
-    <CudaCompile Include="DiffuseKernel.cu">
-      <FileType>CppCode</FileType>
-    </CudaCompile>
-    <CudaCompile Include="DensitySolver.cu">
-      <FileType>CppCode</FileType>
-    </CudaCompile>
+    <ClCompile Include="DensitySolver.cpp" />
     <ClCompile Include="glew32.cpp" />
     <ClCompile Include="launchMain.cpp" />
     <CudaCompile Include="ProjectFieldKernel.cu">
@@ -54,7 +49,7 @@
     </CudaCompile>
     <ClCompile Include="VelocitySolver.cpp" />
     <ClCompile Include="visualFramework.cpp" />
-    <CudaCompile Include="ViscosityKernel.cu">
+    <CudaCompile Include="DifVisKernel.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
   </ItemGroup>
