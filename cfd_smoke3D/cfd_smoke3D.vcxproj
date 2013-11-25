@@ -32,15 +32,31 @@
     <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="cfdMainKernel.cu">
+    <CudaCompile Include="AddSourceKernel.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
+    <CudaCompile Include="AdvectKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <ClCompile Include="DensitySolver.cpp" />
     <ClCompile Include="glew32.cpp" />
     <ClCompile Include="launchMain.cpp" />
+    <CudaCompile Include="ProjectFieldKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <CudaCompile Include="SetBoundaryKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <ClCompile Include="VelocitySolver.cpp" />
     <ClCompile Include="visualFramework.cpp" />
+    <CudaCompile Include="DifVisKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="DVRKernel.cu" />
+    <CudaCompile Include="DVRKernel.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{39C6FE24-7891-4F0C-9BF5-674FF73811DA}</ProjectGuid>

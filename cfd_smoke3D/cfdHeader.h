@@ -94,10 +94,11 @@
 */
 
 #define DELTA_TIME           0.1f   /* -------------------------------------- 0.1 second */
-#define DIFFUSION            0.0f   /* -------------------------------------- diffusion rate */
-#define VISCOSITY            0.0f   /* -------------------------------------- viscosity rate */
-#define FORCE                5.0f   /* -------------------------------------- external force rate */
-#define SOURCE               100.0f /* -------------------------------------- 100% indensity */
+#define DIFFUSION            0.1f   /* -------------------------------------- diffusion */
+#define VISCOSITY            0.0f   /* -------------------------------------- viscosity */
+#define FORCE                5.0f   /* -------------------------------------- external force */
+#define SOURCE               100.f  /* -------------------------------------- indensity */
+#define ANNIHILATION         0.3    /* -------------------------------------- annihilation */
 
 /*
   -----------------------------------------------------------------------------------------------------------
@@ -129,9 +130,9 @@ extern sge::FileManager    Logfile;           /* ----------------- declaration o
   -----------------------------------------------------------------------------------------------------------
 */
 
-extern void DensitySolver(float *grid, float *grid0, float *u, float *v, float *w);
+extern void DensitySolver ( float *grid, float *grid0, float *u, float *v, float *w );
 
-extern void VelocitySolver(float *u, float *v, float *w, float *u0, float *v0, float *w0);
+extern void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float *w0 );
 
 extern void DrawDensity ( void );
 
@@ -139,7 +140,7 @@ extern void DrawVelocity ( void );
 
 /*
   -----------------------------------------------------------------------------------------------------------
-   etc.
+   List
   -----------------------------------------------------------------------------------------------------------
 */
 
@@ -174,5 +175,28 @@ extern void DrawVelocity ( void );
 #define BufferDeviceListNum   2
 #define dev_display_temp2D1   buffer_dev_list [ 0 ] /* ----------- ray casting buffer, CUDA device */
 #define dev_display_temp2D2   buffer_dev_list [ 1 ] /* ----------- ray casting buffer, CUDA device */
+
+
+/*
+  -----------------------------------------------------------------------------------------------------------
+   Define something
+  -----------------------------------------------------------------------------------------------------------
+*/
+
+#define eqt              ==            /* equal to */
+#define and              &&            /* logical and */
+#define or               ||            /* logical or */
+
+#define gst_header       0             /* (ghost, halo) the header cell of grid */
+#define sim_header       1             /* (actually) the second cell of grid */
+#define gst_tailer       Grids_X - 1   /* (ghost, halo) the last cell of grid */
+#define sim_tailer       Grids_X - 2   /* (actually) the second last cell of grid */
+
+#define BeginSimArea() \
+	if ( i >= sim_header and i <= sim_tailer ) \
+	if ( j >= sim_header and j <= sim_tailer ) \
+	if ( k >= sim_header and k <= sim_tailer ) {
+
+#define EndSimArea() }
 
 #endif
