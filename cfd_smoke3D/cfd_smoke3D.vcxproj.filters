@@ -54,16 +54,34 @@
     <ClCompile Include="visualFramework.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="VelocitySolver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="cfdMainKernel.cu">
-      <Filter>Source Files\CUDAKernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="DVRKernel.cu">
       <Filter>Source Files\CUDAKernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="cfdMacCormackSchemeKernel.cu">
+    <CudaCompile Include="AddSourceKernel.cu">
       <Filter>Source Files\CUDAKernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="SetBoundaryKernel.cu">
+      <Filter>Source Files\CUDAKernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="DiffuseKernel.cu">
+      <Filter>Source Files\CUDAKernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="AdvectKernel.cu">
+      <Filter>Source Files\CUDAKernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="ViscosityKernel.cu">
+      <Filter>Source Files\CUDAKernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="ProjectFieldKernel.cu">
+      <Filter>Source Files\CUDAKernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="DensitySolver.cu">
+      <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>
