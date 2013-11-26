@@ -70,16 +70,15 @@ __global__ void kernelSetBoundary ( float *grid_out, int const boundary )
 
 
 /*
- -----------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------
 * @function cudaSetBoundary
 * @author   Orlando Chen
-* @date     Nov 25, 2013
+* @date     Nov 26, 2013
 * @input    float *grid_out, int boundary, dim3 *gridDim, dim3 *blockDim
 * @return   NULL
-* @bref     Check and set boundary condition      
-------------------------------------------------------------------------------------------------------------
+* @bref     Boundary condition
+-----------------------------------------------------------------------------------------------------------
 */
-
 __host__ void cudaSetBoundary ( float *grid_out, int boundary, dim3 *gridDim, dim3 *blockDim )
 {
 	kernelSetBoundary cudaDevice(*gridDim, *blockDim) (grid_out, boundary);

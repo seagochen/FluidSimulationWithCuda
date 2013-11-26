@@ -31,20 +31,15 @@
 
 using namespace std;
 
-extern void cudaAddSource ( float *ptr_inout, dim3 *gridDim, dim3 *blockDim );
-extern void cudaDiffuse ( float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim );
-extern void cudaDensAdvect ( float *den_out, float const *dens_in, int boundary,
-						  float const *u_in, float const *v_in, float const *w_in,
-						  dim3 *gridDim, dim3 *blockDim );
 
 /*
 -----------------------------------------------------------------------------------------------------------
 * @function DensitySolver
 * @author   Orlando Chen
-* @date     Nov 18, 2013
-* @input    float *grid, float *grid0, float *u, float *v, float *w
+* @date     Nov 26, 2013
+* @input    float *dens, float *dens0, float *u, float *v, float *w
 * @return   NULL
-* @bref     Calculate the advection of flow, and update the density on each cell     
+* @bref     Add Some particles in the velocity field and calculate how it effects on these particles
 -----------------------------------------------------------------------------------------------------------
 */
 void DensitySolver ( float *dens, float *dens0, float *u, float *v, float *w )
@@ -67,8 +62,8 @@ void DensitySolver ( float *dens, float *dens0, float *u, float *v, float *w )
 
 	if ( cudaMemcpy ( dev_w, w, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
-
-	cudaAddSource ( dev_den, &gridDim, &blockDim );  swap( dev_den, dev_den0 );
+	
+	cudaAddSource ( dev_den, NULL, NULL, NULL, &gridDim, &blockDim );  swap( dev_den, dev_den0 );
 	cudaDiffuse ( dev_den, dev_den0, 0, &gridDim, &blockDim ); swap( dev_den, dev_den0 );
     cudaDensAdvect (dev_den, dev_den0, 0, dev_u, dev_v, dev_w, &gridDim, &blockDim );
 

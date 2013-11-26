@@ -167,10 +167,10 @@ void VelocityInterpolate ( void )
 -----------------------------------------------------------------------------------------------------------
 * @function DrawVelocity
 * @author   Orlando Chen
-* @date     Nov 18, 2013
+* @date     Nov 26, 2013
 * @input    NULL
 * @return   NULL
-* @bref     Flush the velocity (result: 2-D vector field)
+* @bref     To display the result of velocity field
 -----------------------------------------------------------------------------------------------------------
 */
 void DrawVelocity ( void )
@@ -204,10 +204,10 @@ void DrawVelocity ( void )
 -----------------------------------------------------------------------------------------------------------
 * @function DrawDensity
 * @author   Orlando Chen
-* @date     Nov 18, 2013
+* @date     Nov 26, 2013
 * @input    NULL
 * @return   NULL
-* @bref     Flush the density (result: 2-D scalar field)
+* @bref     To display the result of density
 -----------------------------------------------------------------------------------------------------------
 */
 void DrawDensity ( void )

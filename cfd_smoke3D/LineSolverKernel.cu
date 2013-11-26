@@ -59,10 +59,10 @@ __global__ void kernelLineSolver ( float *grid_out, float const *grid_in, float 
 -----------------------------------------------------------------------------------------------------------
 * @function cudaViscosity
 * @author   Orlando Chen
-* @date     Nov 25, 2013
+* @date     Nov 26, 2013
 * @input    float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim
 * @return   NULL
-* @bref     Encapsulation the CUDA routine (diffuse)
+* @bref     Viscosity
 -----------------------------------------------------------------------------------------------------------
 */
 __host__ void cudaViscosity ( float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim )
@@ -81,10 +81,10 @@ __host__ void cudaViscosity ( float *grid_out, float const *grid_in, int boundar
 -----------------------------------------------------------------------------------------------------------
 * @function cudaDiffuse
 * @author   Orlando Chen
-* @date     Nov 25, 2013
+* @date     Nov 26, 2013
 * @input    float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim
 * @return   NULL
-* @bref     Encapsulation the CUDA routine (diffuse)
+* @bref     Diffusion
 -----------------------------------------------------------------------------------------------------------
 */
 __host__ void cudaDiffuse ( float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim )

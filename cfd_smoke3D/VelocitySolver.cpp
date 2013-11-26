@@ -29,24 +29,16 @@
 
 #include "cfdHeader.h"
 
-extern void cudaAddSource ( float *ptr_inout, dim3 *gridDim, dim3 *blockDim );
-extern void cudaDiffuse   ( float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim );
-extern void cudaViscosity ( float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim );
-extern void cudaDensAdvect ( float *den_out, float const *dens_in, int boundary, float const *u_in, float const *v_in, float const *w_in, dim3 *gridDim, dim3 *blockDim );
-extern void cudaVelAdvect ( float *grid_out, float const *grid_in, int boundary, float const *u_in, float const *v_in, float const *w_in, dim3 *gridDim, dim3 *blockDim );
-extern void cudaProjectField ( float *grad_in, float *proj_out, float *u_in, float *v_in, float *w_in, dim3 *gridDim, dim3 *blockDim );
-
 using namespace std;
 
 /*
 -----------------------------------------------------------------------------------------------------------
 * @function VelocitySolver
 * @author   Orlando Chen
-* @date     Nov 18, 2013
-* @input    u, v, w, u0, v0, w0
+* @date     Nov 26, 2013
+* @input    float *u, float *v, float *w, float *u0, float *v0, float *w0
 * @return   NULL
-* @bref     Calculate the advection of flow, and update the velocity on each cell
-*      
+* @bref     To solve the velocity field of fluid
 -----------------------------------------------------------------------------------------------------------
 */
 void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float *w0 )
@@ -73,7 +65,7 @@ void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float 
 	if ( cudaMemcpy ( dev_w, w, SIM_SIZE * sizeof(float), cudaMemcpyHostToDevice ) != cudaSuccess )
 		cudaCheckRuntimeErrors ( "cudaMemcpy was failed" );
 
-	cudaAddSource (dev_v, &gridDim, &blockDim );  
+	cudaAddSource (NULL, dev_u, dev_v, dev_w, &gridDim, &blockDim );  
 	swap ( dev_u0, dev_u ); cudaViscosity ( dev_u, dev_u0, 1, &gridDim, &blockDim );
 	swap ( dev_v0, dev_v ); cudaViscosity ( dev_v, dev_v0, 2, &gridDim, &blockDim );
 

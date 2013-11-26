@@ -119,10 +119,11 @@ __global__ void kernelProjectVelocity ( float const *grad_in, float const *proj_
 -----------------------------------------------------------------------------------------------------------
 * @function cudaProjectField
 * @author   Orlando Chen
-* @date     Nov 25, 2013
-* @input    float const *grad_in, float *proj_out, float const *u_in, float const *v_in, float const *w_in
+* @date     Nov 26, 2013
+* @input    float *grad_in, float *proj_out, float *u_in, float *v_in, float *w_in,
+* --------- dim3 *gridDim, dim3 *blockDim
 * @return   NULL
-* @bref     To calculate the mass conserving field
+* @bref     Update velocity field
 -----------------------------------------------------------------------------------------------------------
 */
 __host__ void cudaProjectField 

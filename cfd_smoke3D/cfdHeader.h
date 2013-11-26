@@ -130,13 +130,7 @@ extern sge::FileManager    Logfile;           /* ----------------- declaration o
   -----------------------------------------------------------------------------------------------------------
 */
 
-extern void DensitySolver ( float *grid, float *grid0, float *u, float *v, float *w );
-
-extern void VelocitySolver ( float *u, float *v, float *w, float *u0, float *v0, float *w0 );
-
-extern void DrawDensity ( void );
-
-extern void DrawVelocity ( void );
+#include "cfdFunctions.h"
 
 /*
   -----------------------------------------------------------------------------------------------------------

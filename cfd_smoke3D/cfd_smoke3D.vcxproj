@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cfdFunctions.h" />
     <ClInclude Include="cfdHeader.h" />
     <ClInclude Include="cudaHelper.h" />
     <ClInclude Include="cudaNewHelper.h" />
@@ -49,7 +50,7 @@
     </CudaCompile>
     <ClCompile Include="VelocitySolver.cpp" />
     <ClCompile Include="visualFramework.cpp" />
-    <CudaCompile Include="DifVisKernel.cu">
+    <CudaCompile Include="LineSolverKernel.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
   </ItemGroup>
