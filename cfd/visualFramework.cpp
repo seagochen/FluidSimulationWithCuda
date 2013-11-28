@@ -174,7 +174,7 @@ void Setup ( void )
 	glMatrixMode(GL_MODELVIEW);
 
 	// Set clearing color
-	glClearColor(0.f, 0.f, 0.0f, 1.f);
+	glClearColor(0.f, 0.f, 0.f, 1.f);
 };
 
 
@@ -384,9 +384,6 @@ void Visual::OnCreate ( void )
 	InitFont ( );
 	InitFPS ( );
 	InitMouseStatus ( );
-
-	// Initialize glew
-	glewInit ( );
 
 	// Call for OpenGL envrionment setup
 //	Setup();
@@ -648,4 +645,6 @@ Visual::~Visual ( void )
 {
 	OnDestroy();
 };
+
+
 #endif

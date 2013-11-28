@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cfd_smoke3D", "cfd_smoke3D\cfd_smoke3D.vcxproj", "{39C6FE24-7891-4F0C-9BF5-674FF73811DA}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cfd", "cfd\cfd.vcxproj", "{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +21,14 @@ Global
 		{39C6FE24-7891-4F0C-9BF5-674FF73811DA}.Release|Win32.Build.0 = Release|Win32
 		{39C6FE24-7891-4F0C-9BF5-674FF73811DA}.Release|x64.ActiveCfg = Release|x64
 		{39C6FE24-7891-4F0C-9BF5-674FF73811DA}.Release|x64.Build.0 = Release|x64
+		{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}.Debug|Win32.Build.0 = Debug|Win32
+		{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}.Debug|x64.ActiveCfg = Debug|x64
+		{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}.Debug|x64.Build.0 = Debug|x64
+		{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}.Release|Win32.ActiveCfg = Release|Win32
+		{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}.Release|Win32.Build.0 = Release|Win32
+		{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}.Release|x64.ActiveCfg = Release|x64
+		{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

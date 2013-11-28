@@ -53,7 +53,7 @@ int main(int argc, char ** argv)
 	visual   = new Visualization(Client_X, Client_X, activity);
 
 	// Set application title
-	activity->SetApplicationTitle( L"CFD - Navigator No. I  CUDA version" );
+	activity->SetApplicationTitle( L"Navigator - 1930b" );
 	activity->SetApplicationIcons(APP_ICONS, APP_ICONS);
 			
 	// Register callback functions
