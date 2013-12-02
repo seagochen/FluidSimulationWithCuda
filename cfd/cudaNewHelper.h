@@ -61,10 +61,10 @@
   -----------------------------------------------------------------------------------------------------------
 */
 
-#define Grids_X              128  /* ----------------------------------- grids number on each dimension */
-#define SimArea_X            126  /* ----------------------------------- number of grids without ghost cells */
-#define Threads_X            1024 /* ----------------------------------- number of threads enabled */
-#define Tile_X               16   /* ----------------------------------- ties 16x16 gpu threads as a block */
+#define Grids_X              64  /* ----------------------------------- grids number on each dimension */
+#define SimArea_X            62  /* ----------------------------------- number of grids without ghost cells */
+#define Threads_X            512 /* ----------------------------------- number of threads enabled */
+#define Tile_X               16  /* ----------------------------------- ties 16x16 gpu threads as a block */
 #define SIM_SIZE             Grids_X * Grids_X * Grids_X /* ----------- CFD dimension of grid */
 
 /*
