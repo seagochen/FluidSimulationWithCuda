@@ -63,8 +63,8 @@ __global__ void kernelDensityInterpolate ( float *den3D_in, float *den2D_out )
 
 	int half = Grids_X / 2;
 	// Maximum indensity projection
-	// if ( den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] < den3D_in [ cudaIndex3D (i, j, k, Grids_X) ] )
-	den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = den3D_in [ cudaIndex3D (i, j, half, Grids_X) ];
+	if ( den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] < den3D_in [ cudaIndex3D (i, j, k, Grids_X) ] )
+		den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = den3D_in [ cudaIndex3D (i, j, half, Grids_X) ];
 };
 
 

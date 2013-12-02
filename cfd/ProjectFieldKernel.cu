@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Nov 25, 2013
-* <Last>		Nov 25, 2013
+* <Last>		Dec 2, 2013
 * <File>        ProjectFieldKernel.cu
 */
 
@@ -35,7 +35,7 @@ extern void cudaSetBoundary ( float *grid_out, int boundary, dim3 *gridDim, dim3
 -----------------------------------------------------------------------------------------------------------
 * @function kernelDivergence
 * @author   Orlando Chen
-* @date     Nov 25, 2013
+* @date     Dec 2, 2013
 * @input    float *grad_out, float *proj_out, float const *u_in, float const *v_in, float const *w_in
 * @return   NULL
 * @bref     To calculate the gradient of velocity U
@@ -48,15 +48,16 @@ __global__ void kernelDivergence ( float *grad_out, float *proj_out, float const
 
 	float h = 1.0 / Grids_X;
 
-	BeginSimArea ();
+	BeginSimArea ( );
 	{
-		grad_out [ Index(i,j,k) ] = -0.5 * h * ( 
-			u_in [ Index(i+1,j,k) ] - u_in [ Index(i-1,j,k) ] +  // gradient of u
-			v_in [ Index(i,j+1,k) ] - v_in [ Index(i,j-1,k) ] ); // gradient of v
+		grad_out [ Index( i, j, k ) ] = -0.5 * h * ( 
+			u_in [ Index( i+1, j, k ) ] - u_in [ Index( i-1, j, k ) ] + // gradient of u
+			v_in [ Index( i, j+1, k ) ] - v_in [ Index( i, j-1, k ) ] + // gradient of v
+			w_in [ Index( i, j, k+1 ) ] - w_in [ Index( i, j, k-1 ) ]); // gradient of w
 
-		proj_out [ Index(i,j,k) ] = 0.f;
+		proj_out[ Index( i, j, k ) ] = 0.f;
 	}
-	EndSimArea ();
+	EndSimArea ( );
 };
 
 
@@ -64,7 +65,7 @@ __global__ void kernelDivergence ( float *grad_out, float *proj_out, float const
 -----------------------------------------------------------------------------------------------------------
 * @function kernelConservField
 * @author   Orlando Chen
-* @date     Nov 25, 2013
+* @date     Dec 2, 2013
 * @input    float const *grad_in, float *proj_out, float const *u_in, float const *v_in, float const *w_in
 * @return   NULL
 * @bref     To calculate the mass conserving field
@@ -77,15 +78,14 @@ __global__ void kernelConservField ( float const *grad_in, float *proj_out, floa
 
 	float h = 1.0 / Grids_X;
 
-	BeginSimArea ();
+	BeginSimArea ( );
 	{
-		proj_out [ Index(i,j,k) ] = ( grad_in [ Index(i,j,k) ] + 
-			proj_out [ Index(i-1,j,k) ] +
-			proj_out [ Index(i+1,j,k) ] +
-			proj_out [ Index(i,j-1,k) ] +
-			proj_out [ Index(i,j+1,k) ] ) / 4.f;
+		proj_out [ Index ( i, j, k ) ] = ( grad_in [ Index ( i, j, k ) ] + 
+			proj_out [ Index ( i-1, j, k ) ] + proj_out [ Index ( i+1, j, k ) ] +
+			proj_out [ Index ( i, j-1, k ) ] + proj_out [ Index ( i, j+1, k ) ] +
+			proj_out [ Index ( i, j, k-1 ) ] + proj_out [ Index ( i, j, k+1 ) ]) / 6.f;
 	}
-	EndSimArea ();
+	EndSimArea ( );
 };
 
 
@@ -93,7 +93,7 @@ __global__ void kernelConservField ( float const *grad_in, float *proj_out, floa
 -----------------------------------------------------------------------------------------------------------
 * @function kernelProjectVelocity
 * @author   Orlando Chen
-* @date     Nov 25, 2013
+* @date     Dec 2, 2013
 * @input    float const *grad_in, float const *proj_out, float *u_in, float *v_in, float *w_in
 * @return   NULL
 * @bref     To calculate the mass conserving field
@@ -106,12 +106,13 @@ __global__ void kernelProjectVelocity ( float const *grad_in, float const *proj_
 
 	float h = 1.0 / Grids_X;
 
-	BeginSimArea ();
+	BeginSimArea ( );
 	{
-		u_out [ Index(i,j,k) ] -= 0.5f * ( proj_in [ Index(i+1, j, k) ] - proj_in [ Index(i-1, j, k) ] ) / h;
-		v_out [ Index(i,j,k) ] -= 0.5f * ( proj_in [ Index(i, j+1, k) ] - proj_in [ Index(i, j-1, k) ] ) / h;
+		u_out [ Index ( i, j, k ) ] -= 0.5f * ( proj_in [ Index ( i+1, j, k ) ] - proj_in [ Index ( i-1, j, k ) ] ) / h;
+		v_out [ Index ( i, j, k ) ] -= 0.5f * ( proj_in [ Index ( i, j+1, k ) ] - proj_in [ Index ( i, j-1, k ) ] ) / h;
+		w_out [ Index ( i, j, k ) ] -= 0.5f * ( proj_in [ Index ( i, j, k+1 ) ] - proj_in [ Index ( i, j, k-1 ) ] ) / h;
 	}
-	EndSimArea ();
+	EndSimArea ( );
 };
 
 
