@@ -60,10 +60,11 @@ __global__ void kernelZeroBuffer ( float *buffer_inout )
 __global__ void kernelDensityInterpolate ( float *den3D_in, float *den2D_out )
 {
 	GetIndex ( );
-	
+
+	int half = Grids_X / 2;
 	// Maximum indensity projection
-	if ( den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] < den3D_in [ cudaIndex3D (i, j, k, Grids_X) ] )
-	den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = den3D_in [ cudaIndex3D (i, j, k, Grids_X) ];
+	// if ( den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] < den3D_in [ cudaIndex3D (i, j, k, Grids_X) ] )
+	den2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = den3D_in [ cudaIndex3D (i, j, half, Grids_X) ];
 };
 
 
@@ -82,8 +83,10 @@ __global__ void kernelVelocityInterpolate ( float *u3D_in, float *v3D_in, float 
 	GetIndex ( );
 
 	// Interpolate data from the 10th frame (just for testing)
-	u2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = u3D_in [ cudaIndex3D (i, j, 64, Grids_X) ];
-	v2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = v3D_in [ cudaIndex3D (i, j, 64, Grids_X) ];
+	int half = Grids_X / 2;
+
+	u2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = u3D_in [ cudaIndex3D (i, j, half, Grids_X) ];
+	v2D_out [ cudaIndex3D (i, j, 0, Grids_X) ] = v3D_in [ cudaIndex3D (i, j, half, Grids_X) ];
 };
 
 
