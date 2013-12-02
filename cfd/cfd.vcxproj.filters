@@ -1,126 +1,24 @@
-<<<<<<< HEAD:cfd_smoke3D/cfd_smoke3D.vcxproj.filters
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{f65dabd1-07cc-4737-b030-2140cfb63b94}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{e2652e7d-e8da-4472-b1af-90352544161d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{25cd4abc-31ca-429c-b184-e9444a7b8ecb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Helper">
-      <UniqueIdentifier>{a79178e7-ce52-478f-a4bc-93d96655da5d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\CUDAKernels">
-      <UniqueIdentifier>{e3ba7ffc-0525-4d21-8b1c-5106839116fb}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="app.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="cfd_smoke3D.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="resource.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cudaHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cudaNewHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cfdHeader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="visualFramework.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cfdFunctions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="glew32.cpp">
-      <Filter>Source Files\Helper</Filter>
-    </ClCompile>
-    <ClCompile Include="launchMain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="visualFramework.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CFDSolver.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="DVRKernel.cu">
-      <Filter>Source Files\CUDAKernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="AddSourceKernel.cu">
-      <Filter>Source Files\CUDAKernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="SetBoundaryKernel.cu">
-      <Filter>Source Files\CUDAKernels</Filter>
+      <Filter>Source Files\CUDA Kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="AdvectKernel.cu">
-      <Filter>Source Files\CUDAKernels</Filter>
+      <Filter>Source Files\CUDA Kernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="ProjectFieldKernel.cu">
-      <Filter>Source Files\CUDAKernels</Filter>
+    <CudaCompile Include="DVRKernel.cu">
+      <Filter>Source Files\CUDA Kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="LineSolverKernel.cu">
-      <Filter>Source Files\CUDAKernels</Filter>
+      <Filter>Source Files\CUDA Kernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="HelperKernel.cu">
-      <Filter>Source Files\CUDAKernels</Filter>
+    <CudaCompile Include="ProjectFieldKernel.cu">
+      <Filter>Source Files\CUDA Kernels</Filter>
     </CudaCompile>
-  </ItemGroup>
-=======
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{afb18f80-5c70-46a2-b717-9786f80d95a1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{72b45852-9655-48f2-900a-129954eecac6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{3a00863e-ad0b-4fb2-9fab-2dadf502230b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\CUDA">
-      <UniqueIdentifier>{8659b3ee-6c9e-4015-b307-db6f2b000af8}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="cfdFunctions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cfdHeader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cudaHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cudaNewHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="visualFramework.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
+    <CudaCompile Include="SetBoundaryKernel.cu">
+      <Filter>Source Files\CUDA Kernels</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DensitySolver.cpp">
@@ -137,24 +35,38 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="AddSourceKernel.cu">
-      <Filter>Source Files\CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="AdvectKernel.cu">
-      <Filter>Source Files\CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="DVRKernel.cu">
-      <Filter>Source Files\CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="LineSolverKernel.cu">
-      <Filter>Source Files\CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="ProjectFieldKernel.cu">
-      <Filter>Source Files\CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="SetBoundaryKernel.cu">
-      <Filter>Source Files\CUDA</Filter>
-    </CudaCompile>
+    <ClInclude Include="cfdHeader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cfdFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cudaHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cudaNewHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="visualFramework.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{82dc2ad1-ffb7-4390-ba50-6bf3185fab32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{047908fa-aeeb-4517-a57e-c19a1b36108d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{fd5194a1-7fca-4941-976b-ee26f16dce41}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CUDA Kernels">
+      <UniqueIdentifier>{2fcdf950-661a-4904-a490-d3b2fee95e2f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Image Include="app.ico">
@@ -166,5 +78,4 @@
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
->>>>>>> develop/cuda:cfd/cfd.vcxproj.filters
 </Project>
