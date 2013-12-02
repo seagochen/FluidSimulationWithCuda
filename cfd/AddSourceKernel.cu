@@ -47,7 +47,7 @@ __global__ void kernelAddDensity ( float *den_out )
 
 	int half = Grids_X / 2;
 
-	// Coordinates arround the center, r is 2
+	// Coordinates arround the center, r is 5
 	if ( i > half - 10 and i < half + 10 ) if ( k > half - 10 and k < half + 10 )
 	{
 		int x = i - half;
@@ -55,10 +55,10 @@ __global__ void kernelAddDensity ( float *den_out )
 		float r = sqrtf ( x * x + y * y );
 		
 		// Within the correct distance
-		if ( r >= 0 && r <= 2  )
+		if ( r >= 0 && r <= 5  )
 		{
 			// Add source from layer 0 - 4
-			if ( j < 2 )
+			if ( j < 4 )
 				den_out [ Index (i, j, k) ] = SOURCE * DELTA_TIME;
 		}
 	}
@@ -117,10 +117,10 @@ __global__ void kernelAddVelocity ( float *u_out, float *v_out, float *w_out )
 -----------------------------------------------------------------------------------------------------------
 * @function cudaAddSource
 * @author   Orlando Chen
-* @date     Nov 25, 2013
+* @date     Nov 26, 2013
 * @input    float *den_out, float *u_out, float *v_out, float *w_out, dim3 *gridDim, dim3 *blockDim
 * @return   NULL
-* @bref     Encapsulation the CUDA routine (addsource)
+* @bref     Add new velocity and density to the field
 -----------------------------------------------------------------------------------------------------------
 */
 __host__ void cudaAddSource ( float *den_out, float *u_out, float *v_out, float *w_out, 

@@ -21,11 +21,11 @@
 * <Author>      Orlando Chen
 * <First>       Nov 25, 2013
 * <Last>		Nov 25, 2013
-* <File>        LineSolverKernel.cu
+* <File>        DifVisKernel.cu
 */
 
-#ifndef __line_solver_kernel_cu_
-#define __line_solver_kernel_cu_
+#ifndef __diffuse_viscosity_kernel_cu_
+#define __diffuse_viscosity_kernel_cu_
 
 #include "cfdHeader.h"
 
@@ -48,24 +48,21 @@ __global__ void kernelLineSolver ( float *grid_out, float const *grid_in, float 
 
 	BeginSimArea ( );
 	{
-		grid_out [ Index(i, j, k) ] = ( grid_in [ Index(i, j, k) ] + 
-			ratio * ( grid_out [ Index(i-1, j, k) ] +  grid_out [ Index( i+1, j, k) ] + grid_out [ Index(i, j-1, k) ] + grid_out [ Index(i, j+1, k) ] ) ) / div;
+		grid_out [ Index(i, j, k) ] = (grid_in [ Index(i, j, k) ] + ratio * ( grid_out [ Index(i-1, j, k) ] +  grid_out [ Index( i+1, j, k) ] +
+			grid_out [ Index(i, j-1, k) ] + grid_out [ Index(i, j+1, k) ] )) / div;
 	}
 	EndSimArea ( );
 };
-
-
-
 
 
 /*
 -----------------------------------------------------------------------------------------------------------
 * @function cudaViscosity
 * @author   Orlando Chen
-* @date     Nov 25, 2013
+* @date     Nov 26, 2013
 * @input    float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim
 * @return   NULL
-* @bref     Encapsulation the CUDA routine (diffuse)
+* @bref     Viscosity
 -----------------------------------------------------------------------------------------------------------
 */
 __host__ void cudaViscosity ( float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim )
@@ -84,10 +81,10 @@ __host__ void cudaViscosity ( float *grid_out, float const *grid_in, int boundar
 -----------------------------------------------------------------------------------------------------------
 * @function cudaDiffuse
 * @author   Orlando Chen
-* @date     Nov 25, 2013
+* @date     Nov 26, 2013
 * @input    float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim
 * @return   NULL
-* @bref     Encapsulation the CUDA routine (diffuse)
+* @bref     Diffusion
 -----------------------------------------------------------------------------------------------------------
 */
 __host__ void cudaDiffuse ( float *grid_out, float const *grid_in, int boundary, dim3 *gridDim, dim3 *blockDim )

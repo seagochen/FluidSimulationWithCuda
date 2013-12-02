@@ -78,16 +78,17 @@ __global__ void kernelAdvect ( float *den_out, float const *dens_in, float const
 	EndSimArea();
 };
 
+
 /*
 -----------------------------------------------------------------------------------------------------------
 * @function cudaDensAdvect
 * @author   Orlando Chen
-* @date     Nov 25, 2013
+* @date     Nov 26, 2013
 * @input    float *den_out, float const *dens_in, int boundary,
 * --------- float const *u_in, float const *v_in, float const *w_in
 * --------- dim3 *gridDim, dim3 *blockDim
 * @return   NULL
-* @bref     Encapsulation the CUDA routine (advect)
+* @bref     Update the status of density
 -----------------------------------------------------------------------------------------------------------
 */
 __host__ void cudaDensAdvect ( float *den_out, float const *dens_in, int boundary,
@@ -103,12 +104,12 @@ __host__ void cudaDensAdvect ( float *den_out, float const *dens_in, int boundar
 -----------------------------------------------------------------------------------------------------------
 * @function cudaVelAdvect
 * @author   Orlando Chen
-* @date     Nov 25, 2013
+* @date     Nov 26, 2013
 * @input    float *den_out, float const *dens_in, int boundary,
 * --------- float const *u_in, float const *v_in, float const *w_in
 * --------- dim3 *gridDim, dim3 *blockDim
 * @return   NULL
-* @bref     Encapsulation the CUDA routine (advect)
+* @bref     Update the status of velocity field
 -----------------------------------------------------------------------------------------------------------
 */
 __host__ void cudaVelAdvect ( float *grid_out, float const *grid_in, int boundary,
