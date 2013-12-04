@@ -49,21 +49,21 @@ Visualization *visual;
 int main(int argc, char ** argv)
 {
 	// Create a main activity and set the window from size as 512x512
-	activity = new MainActivity(Client_X, Client_X);
-	visual   = new Visualization(Client_X, Client_X, activity);
+//	activity = new MainActivity(Client_X, Client_X);
+	visual   = new Visualization ( Client_X, Client_X, &activity );
 
 	// Set application title
-	activity->SetApplicationTitle( L"Navigator - 1930b" );
-	activity->SetApplicationIcons(APP_ICONS, APP_ICONS);
+	activity->SetApplicationTitle ( L"Navigator - 1930b" );
+	activity->SetApplicationIcons ( APP_ICONS, APP_ICONS );
 			
 	// Register callback functions
-	activity->RegisterCreateFunc   (visual->OnCreate);
-	activity->RegisterDestoryFunc  (visual->OnDestroy);
-	activity->RegisterKeyboardFunc (visual->OnKeyboard);
-	activity->RegisterMouseFunc    (visual->OnMouse);
-	activity->RegisterReshapeFunc  (visual->OnResize);
-	activity->RegisterDisplayFunc  (visual->OnDisplay);
-	activity->RegisterIdleFunc     (visual->OnIdle);
+	activity->RegisterCreateFunc   ( visual->OnCreate   );
+	activity->RegisterDestoryFunc  ( visual->OnDestroy  );
+	activity->RegisterKeyboardFunc ( visual->OnKeyboard );
+	activity->RegisterMouseFunc    ( visual->OnMouse    );
+	activity->RegisterReshapeFunc  ( visual->OnResize   );
+	activity->RegisterDisplayFunc  ( visual->OnDisplay  );
+	activity->RegisterIdleFunc     ( visual->OnIdle     );
 
 	// Initialize window
 	activity->SetupRoutine();

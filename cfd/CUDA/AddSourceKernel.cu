@@ -27,7 +27,7 @@
 #ifndef __add_source_kernel_cu_
 #define __add_source_kernel_cu_
 
-#include "cfdHeader.h"
+#include "../cfdHeader.h"
 
 
 /*

@@ -27,7 +27,7 @@
 #ifndef __project_field_kernel_cu_
 #define __project_field_kernel_cu_
 
-#include "cfdHeader.h"
+#include "../cfdHeader.h"
 
 extern void cudaSetBoundary ( float *grid_out, int boundary, dim3 *gridDim, dim3 *blockDim );
 

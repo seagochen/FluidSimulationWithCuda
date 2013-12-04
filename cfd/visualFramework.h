@@ -74,7 +74,7 @@ namespace sge
 	typedef class Visual
 	{
 	public:
-		Visual(GLuint width, GLuint height, MainActivity *hActivity);
+		Visual(GLuint width, GLuint height, MainActivity **hActivity);
 		~Visual(void);
 
 	public:
