@@ -27,7 +27,7 @@
 #ifndef __set_boundary_kernel_cu_
 #define __set_boundary_kernel_cu_
 
-#include "cfdHeader.h"
+#include "../cfdHeader.h"
 
 /*
  -----------------------------------------------------------------------------------------------------------

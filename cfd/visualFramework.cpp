@@ -35,7 +35,6 @@ static _mouse        *m_mouse;
 static _fps          *m_fps;
 static _viewMatrix   *m_view;
 static FreeType      *m_font;
-static MainActivity  *m_hAct;
 static GLfloat        m_width, m_height;
 static bool           m_density;
 
@@ -73,12 +72,12 @@ void InitFPS ( void )
 void InitFont ( void )
 {
 	// Initialize the font source, otherwise arise the exception
-	if (m_font->Init("EHSMB.TTF", 12) != SGRUNTIMEMSG::SG_RUNTIME_OK)
+	if ( m_font->Init ( "EHSMB.TTF", 12 ) != SGRUNTIMEMSG::SG_RUNTIME_OK )
 	{
-		Logfile.SaveStringToFile("errormsg.log", SG_FILE_OPEN_APPEND, 
+		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
 			"Cannot init FreeType and load TTF file at line: %d of file %s",
-			__LINE__, __FILE__);
-		exit(1);
+			__LINE__, __FILE__ );
+		exit ( 1 );
 	};
 }
 
@@ -129,7 +128,7 @@ void InitViewMatrix ( void )
 */
 void InitMouseStatus ( void )
 {
-	m_mouse->left_button_pressed = false;
+	m_mouse->left_button_pressed  = false;
 	m_mouse->right_button_pressed = false;
 };
 
@@ -138,7 +137,7 @@ void InitMouseStatus ( void )
 -----------------------------------------------------------------------------------------------------------
 * @function Setup
 * @author   Orlando Chen
-* @date     Nov 6, 2013
+* @date     Dce 4, 2013
 * @input    NULL
 * @return   NULL
 * @bref     Initialize OpenGL, Rendering, the model of view matrix and etc.
@@ -146,35 +145,15 @@ void InitMouseStatus ( void )
 */
 void Setup ( void )
 {
-	// Enable depth testing
-	glEnable(GL_DEPTH_TEST);
-
-	// Enable clearing of the depth buffer
-	glClearDepth(1.f);
-
-	// Type of depth test to do
-	glDepthFunc(GL_LEQUAL);	
-
-	// Specify implementation-specific hints
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	
-	// Enable smooth color shading
-	glShadeModel(GL_SMOOTH);
-
-	// Changing matrix
-	glMatrixMode(GL_PROJECTION);
-
-	// Reset the projection matrix
-	glLoadIdentity();
-
-	// Calculate the aspect ratio of the window
-	gluPerspective(m_view->view_angle, m_width / m_height, m_view->z_near, m_view->z_far);
-
-	// Changing matrix 
-	glMatrixMode(GL_MODELVIEW);
-
-	// Set clearing color
-	glClearColor(0.f, 0.f, 0.f, 1.f);
+	// Initialize glew first
+	GLenum err = glewInit ( );
+	if ( GLEW_OK != err )
+	{
+		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
+			"Cannot init glewInit, error: %s at line: %d of file %s",
+			glewGetErrorString ( err ), __LINE__, __FILE__ );
+		exit ( 1 );
+	}
 };
 
 
@@ -386,11 +365,12 @@ void Visual::OnCreate ( void )
 	InitMouseStatus ( );
 
 	// Call for OpenGL envrionment setup
-//	Setup();
+	Setup();
 
 	// Set texture
 //	SetTexture();
-	
+
+
 };
 
 
@@ -606,14 +586,14 @@ void Visual::OnDestroy ( void )
 * @bref     Constructor
 -----------------------------------------------------------------------------------------------------------
 */
-Visual::Visual ( GLuint width, GLuint height, MainActivity *hActivity )
+Visual::Visual ( GLuint width, GLuint height, MainActivity **hActivity )
 {
 	// Materialized , and the assignment
 	m_mouse    = new _mouse;
 	m_fps      = new _fps;
 	m_view     = new _viewMatrix;
 	m_font     = new FreeType;
-	m_hAct     = hActivity;
+	*hActivity = new MainActivity ( width, height, false );
 
 	m_width    = width;
 	m_height   = height;

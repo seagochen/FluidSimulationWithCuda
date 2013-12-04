@@ -28,23 +28,24 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DensitySolver.cpp" />
+    <ClCompile Include="glew32.cpp" />
     <ClCompile Include="launchMain.cpp" />
     <ClCompile Include="VelocitySolver.cpp" />
     <ClCompile Include="visualFramework.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="AddSourceKernel.cu" />
-    <CudaCompile Include="AdvectKernel.cu" />
-    <CudaCompile Include="DVRKernel.cu" />
-    <CudaCompile Include="LineSolverKernel.cu" />
-    <CudaCompile Include="ProjectFieldKernel.cu" />
-    <CudaCompile Include="SetBoundaryKernel.cu" />
+    <CudaCompile Include="CUDA\AddSourceKernel.cu" />
+    <CudaCompile Include="CUDA\AdvectKernel.cu" />
+    <CudaCompile Include="CUDA\DVRKernel.cu" />
+    <CudaCompile Include="CUDA\LineSolverKernel.cu" />
+    <CudaCompile Include="CUDA\ProjectFieldKernel.cu" />
+    <CudaCompile Include="CUDA\SetBoundaryKernel.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="cfd.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="app.ico" />
+    <Image Include="resource\app.ico" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}</ProjectGuid>

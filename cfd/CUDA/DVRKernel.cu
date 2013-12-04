@@ -27,7 +27,7 @@
 #ifndef __rendering_Kernel_cu_
 #define __rendering_Kernel_cu_
 
-#include "cfdHeader.h"
+#include "../cfdHeader.h"
 
 /*
 -----------------------------------------------------------------------------------------------------------
