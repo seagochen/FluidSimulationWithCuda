@@ -23,12 +23,14 @@
     <ClInclude Include="cfdHeader.h" />
     <ClInclude Include="cudaHelper.h" />
     <ClInclude Include="cudaNewHelper.h" />
+    <ClInclude Include="GLSLHelper.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="visualFramework.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DensitySolver.cpp" />
     <ClCompile Include="glew32.cpp" />
+    <ClCompile Include="GLSLHelper.cpp" />
     <ClCompile Include="launchMain.cpp" />
     <ClCompile Include="VelocitySolver.cpp" />
     <ClCompile Include="visualFramework.cpp" />

@@ -1,19 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="DensitySolver.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="glew32.cpp">
+      <Filter>Source Files\Helper</Filter>
     </ClCompile>
-    <ClCompile Include="launchMain.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="DensitySolver.cpp">
+      <Filter>Source Files\CFD Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VelocitySolver.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\CFD Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="launchMain.cpp">
+      <Filter>Source Files\Framework Source Files</Filter>
     </ClCompile>
     <ClCompile Include="visualFramework.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Framework Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="glew32.cpp">
+    <ClCompile Include="GLSLHelper.cpp">
       <Filter>Source Files\Helper</Filter>
     </ClCompile>
   </ItemGroup>
@@ -34,7 +37,10 @@
       <Filter>Header Files\Framework Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="GLSLHelper.h">
+      <Filter>Header Files\Framework Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -62,8 +68,17 @@
     <Filter Include="Header Files\Framework Header Files">
       <UniqueIdentifier>{f5511335-2c94-4d82-96e6-4ec610641ed1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\GLSL Header Files">
-      <UniqueIdentifier>{557d3618-eed6-4a7a-b20d-49a31745779f}</UniqueIdentifier>
+    <Filter Include="Resource Files\Icons">
+      <UniqueIdentifier>{56d6845e-0c2c-43d0-a7c2-07c09c68fe55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shader">
+      <UniqueIdentifier>{aedb3f76-9e24-4e2f-9a77-f277681d2981}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CFD Source Files">
+      <UniqueIdentifier>{222d5603-9f3a-49ff-a712-bf3bbf002d3d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Framework Source Files">
+      <UniqueIdentifier>{c6ea19c4-e35a-4db9-8fd1-56df99f6c3b8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -88,12 +103,12 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="resource\app.ico">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\Icons</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="cfd.rc">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\Icons</Filter>
     </ResourceCompile>
   </ItemGroup>
 </Project>
