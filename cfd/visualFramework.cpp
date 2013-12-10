@@ -27,7 +27,42 @@
 #ifndef __visual_framework_cpp_
 #define __visual_framework_cpp_
 
+#define _CRT_SECURE_NO_WARNINGS
+
+
 #include "cfdHeader.h"
+
+#include <iostream>
+#include <cstdio>
+#include <fstream>
+#include <cstdlib>
+#include <GL/glew.h>
+#include <GL/glut.h>
+#include <GLT/glm/glm.hpp>
+#include <GLT/glm/gtc/matrix_transform.hpp>
+#include <GLT/glm/gtx/transform2.hpp>
+#include <GLT/glm/gtc/type_ptr.hpp>
+
+#include "GLSLHelper.h"
+
+using namespace std;
+
+GLuint g_cluster;
+GLuint g_programHandle;
+GLuint g_width  = 400;
+GLuint g_height = 400;
+GLint  g_angle = 0;
+GLuint g_frameBuffer;
+float  g_stepSize  = 0.001f;
+
+// transfer function
+GLuint g_tffTexObj;
+GLuint g_bfTexObj;
+GLuint g_volTexObj;
+GLuint g_rcVertHandle;
+GLuint g_rcFragHandle;
+GLuint g_bfVertHandle;
+GLuint g_bfFragHandle;
 
 using namespace sge;
 
@@ -37,6 +72,311 @@ static _viewMatrix   *m_view;
 //static FreeType      *m_font;
 static GLfloat        m_width, m_height;
 static bool           m_density;
+
+
+
+GLuint initTFF1DTex ( const char* filename )
+{
+    // Read in the user defined data of transfer function
+    ifstream inFile ( filename, ifstream::in );
+	if ( !inFile )
+    {
+		cerr << "Error openning file: " << filename << endl;
+		exit(EXIT_FAILURE);
+    }
+    
+    const int MAX_CNT = 10000;
+    GLubyte *tff = (GLubyte *) calloc(MAX_CNT, sizeof(GLubyte));
+    inFile.read ( reinterpret_cast<char *>(tff), MAX_CNT );
+
+	// File is end?
+    if (inFile.eof())
+    {
+		size_t bytecnt = inFile.gcount();
+		*(tff + bytecnt) = '\0';
+		cout << "bytecnt " << bytecnt << endl;
+	}
+    else if(inFile.fail())
+    {
+		cout << filename << "read failed " << endl;
+    }
+    else
+    {
+		cout << filename << "is too large" << endl;
+    }
+	
+	GLuint tff1DTex;
+    glGenTextures(1, &tff1DTex);
+    glBindTexture(GL_TEXTURE_1D, tff1DTex);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, tff);
+    
+	free(tff);    
+    
+	return tff1DTex;
+};
+
+
+GLuint initFace2DTex ( GLuint bfTexWidth, GLuint bfTexHeight )
+{
+    GLuint backFace2DTex;
+    glGenTextures(1, &backFace2DTex);
+    glBindTexture(GL_TEXTURE_2D, backFace2DTex);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, bfTexWidth, bfTexHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+
+	return backFace2DTex;
+};
+
+
+GLuint initVol3DTex ( const char* filename, GLuint w, GLuint h, GLuint d )
+{
+    FILE *fp;
+    size_t size = w * h * d;
+    GLubyte *data = new GLubyte[size];			  // 8bit
+ 
+	if ( !(fp = fopen(filename, "rb")) )
+    {
+        cout << "Error: opening .raw file failed" << endl;
+        exit ( EXIT_FAILURE );
+    }
+    else
+    {
+        cout << "OK: open .raw file successed" << endl;
+    }
+    if ( fread(data, sizeof(char), size, fp)!= size) 
+    {
+        cout << "Error: read .raw file failed" << endl;
+        exit ( 1 );
+    }
+    else
+    {
+        cout << "OK: read .raw file successed" << endl;
+    }
+    fclose ( fp );
+
+	// Generate 3D textuer
+    glGenTextures(1, &g_volTexObj);
+    glBindTexture(GL_TEXTURE_3D, g_volTexObj);
+
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+    
+	// pixel transfer happens here from client to OpenGL server
+    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_INTENSITY, w, h, d, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE,data);
+
+    delete []data;
+    cout << "volume texture created" << endl;
+    return g_volTexObj;
+};
+
+
+void initFrameBuffer ( GLuint texObj, GLuint texWidth, GLuint texHeight )
+{
+    // Create a depth buffer for framebuffer
+    GLuint depthBuffer;
+    glGenRenderbuffers(1, &depthBuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, texWidth, texHeight);
+
+    // Attach the texture and the depth buffer to the framebuffer
+    glGenFramebuffers(1, &g_frameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, g_frameBuffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+	
+	// Check Framebuffer status
+	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+    {
+		cout << "framebuffer is not complete" << endl;
+		exit(EXIT_FAILURE);
+    }
+    glEnable(GL_DEPTH_TEST);    
+};
+
+
+void initShader ( void )
+{
+	// To create backface shader for first pass
+	helperInitPairShadersObj ( 
+		&g_bfVertHandle, "shader/backface.vert", 
+		&g_bfFragHandle, "shader/backface.frag" );
+
+	// To create raycasting shader for second pass
+	helperInitPairShadersObj ( 
+		&g_rcVertHandle, "shader/raycasting.vert", 
+		&g_rcFragHandle, "shader/raycasting.frag" );
+
+	// Link shader program
+	helperCreateShaderProgram ( &g_programHandle );
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function SetVolumeInfoUinforms
+* @author   Orlando Chen
+* @date     Dec 5, 2013
+* @input    NULL
+* @return   NULL
+* @bref     When this function is called from external, several uniform information will be set,
+* --------- such as screent size, step length, transfer function.
+* --------- The entrance points are the front face of agent box, and exit points are the back face.
+-----------------------------------------------------------------------------------------------------------
+*/
+void SetVolumeInfoUinforms ( void )
+{
+	// Set the uniform of screen size
+    GLint screenSizeLoc = glGetUniformLocation ( g_programHandle, "ScreenSize" );
+    if ( screenSizeLoc >= 0 )
+    {
+		// Incoming two value, width and height
+		glUniform2f ( screenSizeLoc, (float)g_width, (float)g_height );
+    }
+    else
+    {
+		cout << "ScreenSize is not bind to the uniform" << endl;
+    }
+
+	// Set the step length
+    GLint stepSizeLoc = glGetUniformLocation ( g_programHandle, "StepSize" );
+	if ( stepSizeLoc >= 0 )
+    {
+		// Incoming one value, the step size
+		glUniform1f ( stepSizeLoc, g_stepSize );
+    }
+    else
+    {
+		cout << "StepSize is not bind to the uniform" << endl;
+    }
+    
+	// Set the transfer function
+	GLint transferFuncLoc = glGetUniformLocation ( g_programHandle, "TransferFunc" );
+    if ( transferFuncLoc >= 0 )
+	{
+		/**
+		* void glActiveTexture ( GLenum texture );
+		* 
+		* glActiveTexture selects which texture unit subsequent texture state calls will affect.
+		* The number of texture units an implementation supports is implementation dependent, but must be at least 80.
+		*/
+		glActiveTexture ( GL_TEXTURE0 );
+		glBindTexture ( GL_TEXTURE_1D, g_tffTexObj );
+		glUniform1i ( transferFuncLoc, 0 );
+    }
+    else
+    {
+		cout << "TransferFunc is not bind to the uniform" << endl;
+    }
+
+	// Set the back face as exit point for ray casting
+	GLint backFaceLoc = glGetUniformLocation ( g_programHandle, "ExitPoints" );
+	if ( backFaceLoc >= 0 )
+    {
+		glActiveTexture ( GL_TEXTURE1 );
+		glBindTexture(GL_TEXTURE_2D, g_bfTexObj);
+		glUniform1i(backFaceLoc, 1);
+    }
+    else
+    {
+		cout << "ExitPoints is not bind to the uniform" << endl;
+    }
+
+	// Set the uniform to hold the data of volumetric data
+	GLint volumeLoc = glGetUniformLocation(g_programHandle, "VolumeTex");
+	if (volumeLoc >= 0)
+    {
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_3D, g_volTexObj);
+		glUniform1i(volumeLoc, 2);
+    }
+    else
+    {
+		cout << "VolumeTex is not bind to the uniform" << endl;
+    }    
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function RenderingFace
+* @author   Orlando Chen
+* @date     Dec 5, 2013
+* @input    GLenum cullFace
+* @return   NULL
+* @bref     Under the process of OnDisplay, this function will be called twice. During The first calling, 
+* --------- the backface of boundbox was rendered, and the second time, frontface was rendered. The data
+* --------- of both faces will be keeped, and used as entry points for ray casting in and out the box.
+-----------------------------------------------------------------------------------------------------------
+*/
+void RenderingFace ( GLenum cullFace )
+{
+	using namespace glm;
+
+	// Check OpenGL runtime error
+    helperCheckOpenGLStatus ( __FILE__, __LINE__ );
+
+	// Clear background color and depth buffer
+    glClearColor ( 0.2f,0.2f,0.2f,1.0f );
+    glClear ( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    
+	//  Set projection and lookat matrix
+    mat4 projection = perspective ( 60.0f, (GLfloat)g_width/g_height, 0.1f, 400.f );
+    mat4 view = lookAt (
+		vec3(0.0f, 0.0f, 2.0f),
+		vec3(0.0f, 0.0f, 0.0f), 
+		vec3(0.0f, 1.0f, 0.0f));
+
+	// Set model view matrix
+    mat4 model = mat4(1.0f);
+	model = model * rotate ( (float)g_angle, vec3(0.0f, 1.0f, 0.0f) );
+    
+	// Rotate and translate the view matrix, let object seems to "stand up"
+	// Because, original volumetric data is "lying down" on ground.
+	model = model * rotate ( 90.0f, vec3(1.0f, 0.0f, 0.0f) );
+	model = model * translate ( vec3(-0.5f, -0.5f, -0.5f) ); 
+    
+	// Finally, we focus on setting the Model View Projection Matrix (MVP matrix)
+	// Notice that the matrix multiplication order: reverse order of transform
+    mat4 mvp = projection * view * model;
+
+	// Returns an integer that represents the location of a specific uniform variable within a shader program
+    GLuint mvpIdx = glGetUniformLocation ( g_programHandle, "MVP" );
+    
+	if ( mvpIdx >= 0 )
+    {
+    	glUniformMatrix4fv ( mvpIdx, 1, GL_FALSE, &mvp[0][0] );
+    }
+    else
+    {
+    	cerr << "can't get the MVP" << endl;
+    }
+
+	// Check OpenGL runtime error
+    helperCheckOpenGLStatus ( __FILE__, __LINE__ );
+    
+	// Draw agent box
+	glEnable ( GL_CULL_FACE );
+	glCullFace ( cullFace );
+	glBindVertexArray ( g_cluster );
+	glDrawElements ( GL_TRIANGLES, 36, GL_UNSIGNED_INT, (GLuint *)NULL );
+	glDisable ( GL_CULL_FACE );
+
+	// Check OpenGL runtime error
+    helperCheckOpenGLStatus ( __FILE__, __LINE__ );
+}
 
 
 /*
@@ -154,6 +494,15 @@ void Setup ( void )
 			glewGetErrorString ( err ), __LINE__, __FILE__ );
 		exit ( 1 );
 	}
+
+	helperInitVerticesBufferObj ( &g_cluster );
+    initShader ( );
+    g_tffTexObj = initTFF1DTex  ( "tff.dat" );
+	g_bfTexObj  = initFace2DTex ( g_width, g_height );
+    g_volTexObj = initVol3DTex  ( "head256.raw", 256, 256, 225 );
+    helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
+    initFrameBuffer ( g_bfTexObj, g_width, g_height );
+    helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
 };
 
 
@@ -193,9 +542,10 @@ void CountFPS ( void )
 //		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", m_fps->FPS);
 //		m_font->DisableFreeType();
 //	}
+//	glPopMatrix();
+	
 	system ("cls");
 	printf ("Current's FPS:   %d", m_fps->FPS);
-	glPopMatrix();
 }
 
 
@@ -368,11 +718,6 @@ void Visual::OnCreate ( void )
 
 	// Call for OpenGL envrionment setup
 	Setup();
-
-	// Set texture
-//	SetTexture();
-
-
 };
 
 
@@ -388,28 +733,19 @@ void Visual::OnCreate ( void )
 */
 void Visual::OnResize ( GLuint width, GLuint height )
 {
-	// Prevent a divide by zero if the window is too small
-//	if (height == 0) height = 1;
+//	m_width  = width;
+//	m_height = height;
 
-	m_width  = width;
-	m_height = height;
+//	if (height == 0) height = 1;
 
 //	glViewport(0, 0, width, height);
 
-	// Reset the current viewport and perspective transformation
-//	glMatrixMode(GL_PROJECTION);
-//	glLoadIdentity();
-//	gluPerspective(m_view->view_angle, m_width / m_height, m_view->z_near, m_view->z_far);
-//	glMatrixMode(GL_MODELVIEW);
-
-	if (height == 0) height = 1;
-
-	glViewport(0, 0, width, height);
-
-	glMatrixMode ( GL_PROJECTION );
-	glLoadIdentity ( );
-	gluOrtho2D ( 0.0, 1.0, 0.0, 1.0 );
-	glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
+//	glMatrixMode ( GL_PROJECTION );
+//	glLoadIdentity ( );
+//	gluOrtho2D ( 0.0, 1.0, 0.0, 1.0 );
+//	glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
+//	g_width  = width;
+//	g_height = height;
 };
 
 
@@ -427,6 +763,7 @@ void Visual::OnIdle ( void )
 {
 //	VelocitySolver ( host_u, host_v, host_w, host_u0, host_v0, host_w0 );
 //	DensitySolver ( host_den, host_den0, host_u, host_v, host_w );
+	g_angle = (g_angle + 1) % 360;
 };
 
 
@@ -442,28 +779,43 @@ void Visual::OnIdle ( void )
 */
 void Visual::OnDisplay ( void )
 {
-	// Reset matrix
-//	glLoadIdentity();
-
-	// Clear Screen and Depth Buffer
-//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// Set camera
-//	gluLookAt(
-//		m_view->eye_x,  m_view->eye_y,  m_view->eye_z,  // eye
-//		m_view->look_x, m_view->look_y, m_view->look_z, // center
-//		m_view->up_x,   m_view->up_y,   m_view->up_z);  // Up
-
-	// Draw fluid sim result on 2-D map
-//	DrawAgent2D();
-
 	glClear ( GL_COLOR_BUFFER_BIT );
 
-	if ( m_density )
-		DrawDensity ( );
-	else
-		DrawVelocity ( );
+	glEnable ( GL_DEPTH_TEST );
+	helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
+	
+	// Bind index 0 to the shader input variable "VerPos"
+	glBindAttribLocation ( g_programHandle, 0, "VerPos" );
+	// Bind index 1 to the shader input variable "VerClr"
+	glBindAttribLocation ( g_programHandle, 1, "VerClr" );
 
+    /// Do Render Now!
+    glBindFramebuffer ( GL_DRAW_FRAMEBUFFER, g_frameBuffer ); // Chose which framebuffer to render
+	glViewport ( 0, 0, g_width, g_height );
+    helperLinkShader ( g_programHandle, g_bfVertHandle, g_bfFragHandle ); // Linking shader...
+	helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
+    glUseProgram ( g_programHandle ); // Use the shader for rendering the texture
+	RenderingFace ( GL_FRONT );   // From front face
+    glUseProgram ( 0 );    // Release the shader
+	helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
+
+
+    glBindFramebuffer ( GL_FRAMEBUFFER, 0 ); // To break the binding
+    glViewport ( 0, 0, g_width, g_height );
+    helperLinkShader ( g_programHandle, g_rcVertHandle, g_rcFragHandle );
+	helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
+    glUseProgram ( g_programHandle );
+    SetVolumeInfoUinforms ( );
+	helperCheckOpenGLStatus ( __FILE__, __LINE__ );
+    RenderingFace ( GL_BACK );
+    glUseProgram ( 0 );
+	helperCheckOpenGLStatus ( __FILE__, __LINE__ ); 
+
+//	if ( m_density )
+//		DrawDensity ( );
+//	else
+//		DrawVelocity ( );
+//
 	// Print FPS
 	CountFPS();
 };

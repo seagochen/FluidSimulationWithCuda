@@ -34,37 +34,37 @@
 * @function helperCheckOpenGLStatus
 * @author   Orlando Chen
 * @date     Dec 4, 2013
-* @input    const char* file, const int line
+* @input    const char *szFile, const int iLine
 * @return   NULL
 * @bref     Check OpenGL status, if routine occurs runtime exception or error, print out the message
 -----------------------------------------------------------------------------------------------------------
 */
-void helperCheckOpenGLStatus ( const char* file, const int line );
+void helperCheckOpenGLStatus ( const char *szFile, const int iLine );
 
 /*
 -----------------------------------------------------------------------------------------------------------
 * @function helperCheckOpenGLStatus
 * @author   Orlando Chen
 * @date     Dec 4, 2013
-* @input    GLuint *cluster
+* @input    GLuint *hCluster
 * @return   NULL
 * @bref     Initialize and generate the vertices buffer object
 -----------------------------------------------------------------------------------------------------------
 */
-void helperInitVerticesBufferObj ( GLuint *cluster );
+void helperInitVerticesBufferObj ( GLuint *hCluster );
 
 
 /*
 -----------------------------------------------------------------------------------------------------------
-* @function helperCreatePairShadersObj
+* @function helperInitPairShadersObj
 * @author   Orlando Chen
 * @date     Dec 4, 2013
-* @input    GLuint *VertHandler, const char *szVertSource, GLuint *FragHandler, const char *szFragSource
+* @input    GLuint *hVShader, const char *szVertSource, GLuint *hFShader, const char *szFragSource
 * @return   NULL
 * @bref     Load pair of source files and compile the shaders
 -----------------------------------------------------------------------------------------------------------
 */
-void helperCreatePairShadersObj ( GLuint *VertHandler, const char *szVertSource, GLuint *FragHandler, const char *szFragSource );
+void helperInitPairShadersObj ( GLuint *hVShader, const char *szVertSource, GLuint *hFShader, const char *szFragSource );
 
 
 /*
@@ -72,12 +72,12 @@ void helperCreatePairShadersObj ( GLuint *VertHandler, const char *szVertSource,
 * @function helperLinkShader
 * @author   Orlando Chen
 * @date     Dec 4, 2013
-* @input    GLuint shaderPgm, GLuint newVertHandle, GLuint newFragHandle
+* @input    GLuint hShaderProgram, GLuint hVShader, GLuint hFShader
 * @return   NULL
 * @bref     Link shader
 -----------------------------------------------------------------------------------------------------------
 */
-void helperLinkShader ( GLuint shaderPgm, GLuint newVertHandle, GLuint newFragHandle );
+void helperLinkShader ( GLuint hShaderProgram, GLuint hVShader, GLuint hFShader );
 
 
 /*
@@ -85,11 +85,11 @@ void helperLinkShader ( GLuint shaderPgm, GLuint newVertHandle, GLuint newFragHa
 * @function helperCreateShaderProgram
 * @author   Orlando Chen
 * @date     Dec 4, 2013
-* @input    GLuint *progHander
+* @input    GLuint *hShaderProgram
 * @return   NULL
 * @bref     Link shader
 -----------------------------------------------------------------------------------------------------------
 */
-void helperCreateShaderProgram ( GLuint *progHander );
+void helperCreateShaderProgram ( GLuint *hShaderProgram );
 
 #endif

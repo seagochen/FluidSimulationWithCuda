@@ -27,30 +27,32 @@
 #ifndef __glsl_helper_cpp_
 #define __glsl_helper_cpp_
 
-#include "cfdHeader.h"
+#include <GL\glew.h>
+#include <GL\freeglut.h>
 
 #include <iostream>
 #include <fstream>
 
+#include "GLSLHelper.h"
+
 using namespace std;
-using namespace sge;
 
 void helperCheckOpenGLStatus ( const char* file, const int line )
 {
     GLenum error;
 
     error = glGetError();
-	
-	if ( error != GL_NO_ERROR )
-	{
-		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-			"OpenGL Error> %s, at line: %d in file: %s",
-			gluErrorString ( error ), line, file );
-		exit ( 1 );
-	}
+    if ( error != GL_NO_ERROR )
+    {
+		cout << "glError in file " << file
+			<< "@line " << line << gluErrorString ( error ) << endl;
+
+		exit(EXIT_FAILURE);
+    }
 }
 
 
+// Initialize the vertices buffer object
 void helperInitVerticesBufferObj ( GLuint *cluster )
 {
 	// How agent cube looks like by specified the coordinate positions of vertices
@@ -219,9 +221,7 @@ GLuint helperInitShaderObj ( const char *srcfile, GLenum shaderType )
 	// No file resource exists?
     if ( !inFile )
     {
-		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-			"helperInitShaderObj failed when trying to open file: %s, at line: %d in file: %s",
-			srcfile, __LINE__, __FILE__ );
+		cerr << "Error openning file: " << srcfile << endl;
 		exit(EXIT_FAILURE);
     }
     
@@ -229,7 +229,7 @@ GLuint helperInitShaderObj ( const char *srcfile, GLenum shaderType )
     
 	GLchar *shaderCode = (GLchar *) calloc ( MAX_CNT, sizeof(GLchar) );
 
-    inFile.read ( shaderCode, MAX_CNT );
+    inFile.read(shaderCode, MAX_CNT);
     
 	// End of file?
 	if ( inFile.eof() )
@@ -239,17 +239,10 @@ GLuint helperInitShaderObj ( const char *srcfile, GLenum shaderType )
 	}
     else if ( inFile.fail() )
     {
-		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-			"failed when trying to read file: %s, at line: %d in file: %s",
-			srcfile, __LINE__, __FILE__ );
-		exit(EXIT_FAILURE);
+		cout << srcfile << "read failed " << endl;
     }
     else
     {
-		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-			"failed because file: %s is too large, at line: %d in file: %s",
-			srcfile, __LINE__, __FILE__ );
-		exit(EXIT_FAILURE);
 		cout << srcfile << "is too large" << endl;
     }
 
@@ -257,10 +250,7 @@ GLuint helperInitShaderObj ( const char *srcfile, GLenum shaderType )
     GLuint shader = glCreateShader(shaderType);
     if ( 0 == shader )
     {
-		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-			"create shader failed, file: %s, at line: %d in file: %s",
-			srcfile, __LINE__, __FILE__ );
-		exit(EXIT_FAILURE);
+		cerr << "Error creating vertex shader." << endl;
     }
 
     const GLchar* codeArray[] = { shaderCode };
@@ -272,18 +262,14 @@ GLuint helperInitShaderObj ( const char *srcfile, GLenum shaderType )
 	glCompileShader ( shader );
 	if ( GL_FALSE == helperCompilingStatusCheck ( shader ) )
     {
-		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-			"shader compilation failed, file: %s, at line: %d in file: %s",
-			srcfile, __LINE__, __FILE__ );
-		exit(EXIT_FAILURE);
+		cerr << "shader compilation failed" << endl;
     }
 
     return shader;
 };
 
 
-void helperCreatePairShadersObj 
-	( GLuint *VertHandler, const char *szVertSource, GLuint *FragHandler, const char *szFragSource )
+void helperInitPairShadersObj ( GLuint *VertHandler, const char *szVertSource, GLuint *FragHandler, const char *szFragSource )
 {
 	// To create vertex shader object
 	*VertHandler = helperInitShaderObj ( szVertSource, GL_VERTEX_SHADER );
@@ -303,14 +289,10 @@ GLint helperCheckShaderLinkStatus ( GLuint pgmHandle )
 		
 		if ( logLen > 0 )
 		{
-			GLchar * log = (GLchar *) malloc (logLen);
+			GLchar * log = (GLchar *) malloc(logLen);
 			GLsizei written;
 			glGetProgramInfoLog ( pgmHandle, logLen, &written, log );
-			
-			Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-				"error log: %s, at line: %d in file: %s",
-				log, __LINE__, __FILE__ );
-			exit(EXIT_FAILURE);
+			cerr << "Program log: " << log << endl;
 		}
     }
 
@@ -327,12 +309,6 @@ void helperLinkShader ( GLuint shaderPgm, GLuint newVertHandle, GLuint newFragHa
     helperCheckOpenGLStatus ( __FILE__, __LINE__ );
 
     for ( int i = 0; i < count; i++ ) { glDetachShader ( shaderPgm, shaders [ i ] ); }
-
-    // Bind index 0 to the shader input variable "VerPos"
-    glBindAttribLocation ( shaderPgm, 0, "VerPos" );
-    // Bind index 1 to the shader input variable "VerClr"
-    glBindAttribLocation ( shaderPgm, 1, "VerClr" );
-    helperCheckOpenGLStatus ( __FILE__, __LINE__ );
     
 	glAttachShader ( shaderPgm, newVertHandle );
     glAttachShader ( shaderPgm, newFragHandle );
@@ -342,10 +318,8 @@ void helperLinkShader ( GLuint shaderPgm, GLuint newVertHandle, GLuint newFragHa
     
 	if ( GL_FALSE == helperCheckShaderLinkStatus ( shaderPgm ) )
     {
-		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-			"failed to relink shader, at line: %d in file: %s",
-			__LINE__, __FILE__ );
-		exit ( EXIT_FAILURE );
+		cerr << "Failed to relink shader program!" << endl;
+		exit(EXIT_FAILURE);
 	}
     helperCheckOpenGLStatus ( __FILE__, __LINE__ );
 };
@@ -356,9 +330,7 @@ void helperCreateShaderProgram ( GLuint *progHander )
 	*progHander = glCreateProgram ( );
 	if ( 0 == *progHander )
     {
-		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-			"failed to create shader, at line: %d in file: %s",
-			__LINE__, __FILE__ );
+		cerr << "Error create shader program" << endl;
 		exit ( EXIT_FAILURE );
 	}
 };
