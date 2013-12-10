@@ -53,8 +53,9 @@ int main(int argc, char ** argv)
 	visual   = new Visualization ( Client_X, Client_X, &activity );
 
 	// Set application title
-	activity->SetApplicationTitle ( L"Navigator - 1930b" );
-	activity->SetApplicationIcons ( APP_ICONS, APP_ICONS );
+	activity->SetAppClientInfo ( L"Navigator - 1930b", APP_ICONS, APP_ICONS );
+	//activity->SetApplicationTitle ( L"Navigator - 1930b" );
+	//activity->SetApplicationIcons ( APP_ICONS, APP_ICONS );
 			
 	// Register callback functions
 	activity->RegisterCreateFunc   ( visual->OnCreate   );
@@ -67,9 +68,6 @@ int main(int argc, char ** argv)
 
 	// Initialize window
 	activity->SetupRoutine();
-
-	// Display and run demo
-	activity->MainLoop();
 
 	return 0;
 };

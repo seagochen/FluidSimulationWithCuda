@@ -111,4 +111,18 @@
       <Filter>Resource Files\Icons</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\backface.frag">
+      <Filter>Resource Files\Shader</Filter>
+    </None>
+    <None Include="shader\backface.vert">
+      <Filter>Resource Files\Shader</Filter>
+    </None>
+    <None Include="shader\raycasting.frag">
+      <Filter>Resource Files\Shader</Filter>
+    </None>
+    <None Include="shader\raycasting.vert">
+      <Filter>Resource Files\Shader</Filter>
+    </None>
+  </ItemGroup>
 </Project>

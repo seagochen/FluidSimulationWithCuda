@@ -34,7 +34,7 @@ using namespace sge;
 static _mouse        *m_mouse;
 static _fps          *m_fps;
 static _viewMatrix   *m_view;
-static FreeType      *m_font;
+//static FreeType      *m_font;
 static GLfloat        m_width, m_height;
 static bool           m_density;
 
@@ -72,13 +72,13 @@ void InitFPS ( void )
 void InitFont ( void )
 {
 	// Initialize the font source, otherwise arise the exception
-	if ( m_font->Init ( "EHSMB.TTF", 12 ) != SGRUNTIMEMSG::SG_RUNTIME_OK )
-	{
-		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
-			"Cannot init FreeType and load TTF file at line: %d of file %s",
-			__LINE__, __FILE__ );
-		exit ( 1 );
-	};
+//	if ( m_font->Init ( "EHSMB.TTF", 12 ) != SGRUNTIMEMSG::SG_RUNTIME_OK )
+//	{
+//		Logfile.SaveStringToFile ( "errormsg.log", SG_FILE_OPEN_APPEND, 
+//			"Cannot init FreeType and load TTF file at line: %d of file %s",
+//			__LINE__, __FILE__ );
+//		exit ( 1 );
+//	};
 }
 
 
@@ -182,17 +182,19 @@ void CountFPS ( void )
 		m_fps->dwLastUpdateTime = m_fps->dwCurrentTime;
 	}
 
-	glPushMatrix();
-	{
-		glLoadIdentity();									// Reset The Current Modelview Matrix
-		glTranslatef(0.0f,0.0f,-1.0f);						// Move One Unit Into The Screen
-		
-		// White Text
-		glColor3f(0.0f, 1.0f, 0.0f);
-		m_font->EnableFreeType();
-		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", m_fps->FPS);
-		m_font->DisableFreeType();
-	}
+//	glPushMatrix();
+//	{
+//		glLoadIdentity();									// Reset The Current Modelview Matrix
+//		glTranslatef(0.0f,0.0f,-1.0f);						// Move One Unit Into The Screen
+//		
+//		// White Text
+//		glColor3f(0.0f, 1.0f, 0.0f);
+//		m_font->EnableFreeType();
+//		m_font->PrintText(*m_font, 10, 10, "Current's FPS:   %d", m_fps->FPS);
+//		m_font->DisableFreeType();
+//	}
+	system ("cls");
+	printf ("Current's FPS:   %d", m_fps->FPS);
 	glPopMatrix();
 }
 
@@ -423,8 +425,8 @@ void Visual::OnResize ( GLuint width, GLuint height )
 */
 void Visual::OnIdle ( void )
 {
-	VelocitySolver ( host_u, host_v, host_w, host_u0, host_v0, host_w0 );
-	DensitySolver ( host_den, host_den0, host_u, host_v, host_w );
+//	VelocitySolver ( host_u, host_v, host_w, host_u0, host_v0, host_w0 );
+//	DensitySolver ( host_den, host_den0, host_u, host_v, host_w );
 };
 
 
@@ -571,8 +573,8 @@ void Visual::OnDestroy ( void )
 	SAFE_DELT_PTR ( m_fps );
 	SAFE_DELT_PTR ( m_view );
 
-	if ( m_font != NULL )	m_font->Clean ( );
-	SAFE_DELT_PTR ( m_font );
+//	if ( m_font != NULL )	m_font->Clean ( );
+//	SAFE_DELT_PTR ( m_font );
 };
 
 
@@ -592,7 +594,7 @@ Visual::Visual ( GLuint width, GLuint height, MainActivity **hActivity )
 	m_mouse    = new _mouse;
 	m_fps      = new _fps;
 	m_view     = new _viewMatrix;
-	m_font     = new FreeType;
+//	m_font     = new FreeType;
 	*hActivity = new MainActivity ( width, height, false );
 
 	m_width    = width;

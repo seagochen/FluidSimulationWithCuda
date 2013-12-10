@@ -49,6 +49,12 @@
   <ItemGroup>
     <Image Include="resource\app.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\backface.frag" />
+    <None Include="shader\backface.vert" />
+    <None Include="shader\raycasting.frag" />
+    <None Include="shader\raycasting.vert" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}</ProjectGuid>
     <RootNamespace>cfd</RootNamespace>
