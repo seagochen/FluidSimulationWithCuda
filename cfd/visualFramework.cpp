@@ -46,32 +46,84 @@
 #include "GLSLHelper.h"
 
 using namespace std;
-
-GLuint g_cluster;
-GLuint g_programHandle;
-GLuint g_width  = 400;
-GLuint g_height = 400;
-GLint  g_angle = 0;
-GLuint g_frameBuffer;
-float  g_stepSize  = 0.001f;
-
-// transfer function
-GLuint g_tffTexObj;
-GLuint g_bfTexObj;
-GLuint g_volTexObj;
-GLuint g_rcVertHandle;
-GLuint g_rcFragHandle;
-GLuint g_bfVertHandle;
-GLuint g_bfFragHandle;
-
 using namespace sge;
+
+
+// shader and texture handle
+static GLuint         m_tffTexObj;    /* 1-D ray casting texture */
+static GLuint         m_bfTexObj;     /* 2-D backface texture */
+static GLuint         m_volTexObj;    /* 3-D volume data texture */
+static GLuint         m_rcVertHandle; /* vertex shader of rc */
+static GLuint         m_rcFragHandle; /* fragment shader of rc */
+static GLuint         m_bfVertHandle; /* vertex shader of bf */
+static GLuint         m_bfFragHandle; /* fragment shader of bf */
+
 
 static _mouse        *m_mouse;
 static _fps          *m_fps;
 static _viewMatrix   *m_view;
-//static FreeType      *m_font;
-static GLfloat        m_width, m_height;
+static GLint          m_width, m_height;
 static bool           m_density;
+static GLuint         m_cluster;
+static GLuint         m_programHandle;
+static GLint          m_angle = 0;
+static GLuint         m_frameBuffer;
+
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function Visual
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    width, height, hActivity
+* @return   NULL
+* @bref     Constructor
+-----------------------------------------------------------------------------------------------------------
+*/
+Visual::Visual ( GLuint width, GLuint height, MainActivity **hActivity )
+{
+	// Materialized , and the assignment
+	m_mouse    = new _mouse;
+	m_fps      = new _fps;
+	m_view     = new _viewMatrix;
+//	m_font     = new FreeType;
+	*hActivity = new MainActivity ( width, height, false );
+
+	m_width    = width;
+	m_height   = height;
+	m_density  = false;
+
+	extern SGRUNTIMEMSG AllocateResourcePtrs ();
+	extern void FreeResourcePtrs ();
+	extern void ZeroData ();
+
+	// etc.
+	if ( AllocateResourcePtrs ( ) != SG_RUNTIME_OK )
+	{
+		FreeResourcePtrs ( );
+	}
+	else
+	{
+		ZeroData ( );
+	}
+};
+
+
+/*
+-----------------------------------------------------------------------------------------------------------
+* @function ~Visual
+* @author   Orlando Chen
+* @date     Nov 6, 2013
+* @input    NULL
+* @return   NULL
+* @bref     Desconstructor   
+-----------------------------------------------------------------------------------------------------------
+*/
+Visual::~Visual ( void )
+{
+	OnDestroy();
+};
 
 
 
@@ -164,8 +216,8 @@ GLuint initVol3DTex ( const char* filename, GLuint w, GLuint h, GLuint d )
     fclose ( fp );
 
 	// Generate 3D textuer
-    glGenTextures(1, &g_volTexObj);
-    glBindTexture(GL_TEXTURE_3D, g_volTexObj);
+    glGenTextures(1, &m_volTexObj);
+    glBindTexture(GL_TEXTURE_3D, m_volTexObj);
 
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -179,7 +231,7 @@ GLuint initVol3DTex ( const char* filename, GLuint w, GLuint h, GLuint d )
 
     delete []data;
     cout << "volume texture created" << endl;
-    return g_volTexObj;
+    return m_volTexObj;
 };
 
 
@@ -192,8 +244,8 @@ void initFrameBuffer ( GLuint texObj, GLuint texWidth, GLuint texHeight )
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, texWidth, texHeight);
 
     // Attach the texture and the depth buffer to the framebuffer
-    glGenFramebuffers(1, &g_frameBuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, g_frameBuffer);
+    glGenFramebuffers(1, &m_frameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
 	
@@ -211,16 +263,16 @@ void initShader ( void )
 {
 	// To create backface shader for first pass
 	helperInitPairShadersObj ( 
-		&g_bfVertHandle, "shader/backface.vert", 
-		&g_bfFragHandle, "shader/backface.frag" );
+		&m_bfVertHandle, "shader/backface.vert", 
+		&m_bfFragHandle, "shader/backface.frag" );
 
 	// To create raycasting shader for second pass
 	helperInitPairShadersObj ( 
-		&g_rcVertHandle, "shader/raycasting.vert", 
-		&g_rcFragHandle, "shader/raycasting.frag" );
+		&m_rcVertHandle, "shader/raycasting.vert", 
+		&m_rcFragHandle, "shader/raycasting.frag" );
 
 	// Link shader program
-	helperCreateShaderProgram ( &g_programHandle );
+	helperCreateShaderProgram ( &m_programHandle );
 };
 
 
@@ -239,11 +291,11 @@ void initShader ( void )
 void SetVolumeInfoUinforms ( void )
 {
 	// Set the uniform of screen size
-    GLint screenSizeLoc = glGetUniformLocation ( g_programHandle, "ScreenSize" );
+    GLint screenSizeLoc = glGetUniformLocation ( m_programHandle, "ScreenSize" );
     if ( screenSizeLoc >= 0 )
     {
 		// Incoming two value, width and height
-		glUniform2f ( screenSizeLoc, (float)g_width, (float)g_height );
+		glUniform2f ( screenSizeLoc, (float)m_width, (float)m_height );
     }
     else
     {
@@ -251,11 +303,11 @@ void SetVolumeInfoUinforms ( void )
     }
 
 	// Set the step length
-    GLint stepSizeLoc = glGetUniformLocation ( g_programHandle, "StepSize" );
+    GLint stepSizeLoc = glGetUniformLocation ( m_programHandle, "StepSize" );
 	if ( stepSizeLoc >= 0 )
     {
 		// Incoming one value, the step size
-		glUniform1f ( stepSizeLoc, g_stepSize );
+		glUniform1f ( stepSizeLoc, StepSize );
     }
     else
     {
@@ -263,7 +315,7 @@ void SetVolumeInfoUinforms ( void )
     }
     
 	// Set the transfer function
-	GLint transferFuncLoc = glGetUniformLocation ( g_programHandle, "TransferFunc" );
+	GLint transferFuncLoc = glGetUniformLocation ( m_programHandle, "TransferFunc" );
     if ( transferFuncLoc >= 0 )
 	{
 		/**
@@ -273,7 +325,7 @@ void SetVolumeInfoUinforms ( void )
 		* The number of texture units an implementation supports is implementation dependent, but must be at least 80.
 		*/
 		glActiveTexture ( GL_TEXTURE0 );
-		glBindTexture ( GL_TEXTURE_1D, g_tffTexObj );
+		glBindTexture ( GL_TEXTURE_1D, m_tffTexObj );
 		glUniform1i ( transferFuncLoc, 0 );
     }
     else
@@ -282,11 +334,11 @@ void SetVolumeInfoUinforms ( void )
     }
 
 	// Set the back face as exit point for ray casting
-	GLint backFaceLoc = glGetUniformLocation ( g_programHandle, "ExitPoints" );
+	GLint backFaceLoc = glGetUniformLocation ( m_programHandle, "ExitPoints" );
 	if ( backFaceLoc >= 0 )
     {
 		glActiveTexture ( GL_TEXTURE1 );
-		glBindTexture(GL_TEXTURE_2D, g_bfTexObj);
+		glBindTexture(GL_TEXTURE_2D, m_bfTexObj);
 		glUniform1i(backFaceLoc, 1);
     }
     else
@@ -295,11 +347,11 @@ void SetVolumeInfoUinforms ( void )
     }
 
 	// Set the uniform to hold the data of volumetric data
-	GLint volumeLoc = glGetUniformLocation(g_programHandle, "VolumeTex");
+	GLint volumeLoc = glGetUniformLocation(m_programHandle, "VolumeTex");
 	if (volumeLoc >= 0)
     {
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_3D, g_volTexObj);
+		glBindTexture(GL_TEXTURE_3D, m_volTexObj);
 		glUniform1i(volumeLoc, 2);
     }
     else
@@ -333,7 +385,7 @@ void RenderingFace ( GLenum cullFace )
     glClear ( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
 	//  Set projection and lookat matrix
-    mat4 projection = perspective ( 60.0f, (GLfloat)g_width/g_height, 0.1f, 400.f );
+    mat4 projection = perspective ( 60.0f, (GLfloat)m_width/m_height, 0.1f, 400.f );
     mat4 view = lookAt (
 		vec3(0.0f, 0.0f, 2.0f),
 		vec3(0.0f, 0.0f, 0.0f), 
@@ -341,7 +393,7 @@ void RenderingFace ( GLenum cullFace )
 
 	// Set model view matrix
     mat4 model = mat4(1.0f);
-	model = model * rotate ( (float)g_angle, vec3(0.0f, 1.0f, 0.0f) );
+	model = model * rotate ( (float)m_angle, vec3(0.0f, 1.0f, 0.0f) );
     
 	// Rotate and translate the view matrix, let object seems to "stand up"
 	// Because, original volumetric data is "lying down" on ground.
@@ -353,7 +405,7 @@ void RenderingFace ( GLenum cullFace )
     mat4 mvp = projection * view * model;
 
 	// Returns an integer that represents the location of a specific uniform variable within a shader program
-    GLuint mvpIdx = glGetUniformLocation ( g_programHandle, "MVP" );
+    GLuint mvpIdx = glGetUniformLocation ( m_programHandle, "MVP" );
     
 	if ( mvpIdx >= 0 )
     {
@@ -370,7 +422,7 @@ void RenderingFace ( GLenum cullFace )
 	// Draw agent box
 	glEnable ( GL_CULL_FACE );
 	glCullFace ( cullFace );
-	glBindVertexArray ( g_cluster );
+	glBindVertexArray ( m_cluster );
 	glDrawElements ( GL_TRIANGLES, 36, GL_UNSIGNED_INT, (GLuint *)NULL );
 	glDisable ( GL_CULL_FACE );
 
@@ -495,13 +547,13 @@ void Setup ( void )
 		exit ( 1 );
 	}
 
-	helperInitVerticesBufferObj ( &g_cluster );
+	helperInitVerticesBufferObj ( &m_cluster );
     initShader ( );
-    g_tffTexObj = initTFF1DTex  ( "tff.dat" );
-	g_bfTexObj  = initFace2DTex ( g_width, g_height );
-    g_volTexObj = initVol3DTex  ( "head256.raw", 256, 256, 225 );
+    m_tffTexObj = initTFF1DTex  ( "tff.dat" );
+	m_bfTexObj  = initFace2DTex ( m_width, m_height );
+    m_volTexObj = initVol3DTex  ( "head256.raw", 256, 256, 225 );
     helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
-    initFrameBuffer ( g_bfTexObj, g_width, g_height );
+    initFrameBuffer ( m_bfTexObj, m_width, m_height );
     helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
 };
 
@@ -744,8 +796,8 @@ void Visual::OnResize ( GLuint width, GLuint height )
 //	glLoadIdentity ( );
 //	gluOrtho2D ( 0.0, 1.0, 0.0, 1.0 );
 //	glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
-//	g_width  = width;
-//	g_height = height;
+//	m_width  = width;
+//	m_height = height;
 };
 
 
@@ -763,7 +815,7 @@ void Visual::OnIdle ( void )
 {
 //	VelocitySolver ( host_u, host_v, host_w, host_u0, host_v0, host_w0 );
 //	DensitySolver ( host_den, host_den0, host_u, host_v, host_w );
-	g_angle = (g_angle + 1) % 360;
+	m_angle = (m_angle + 1) % 360;
 };
 
 
@@ -785,26 +837,26 @@ void Visual::OnDisplay ( void )
 	helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
 	
 	// Bind index 0 to the shader input variable "VerPos"
-	glBindAttribLocation ( g_programHandle, 0, "VerPos" );
+	glBindAttribLocation ( m_programHandle, 0, "VerPos" );
 	// Bind index 1 to the shader input variable "VerClr"
-	glBindAttribLocation ( g_programHandle, 1, "VerClr" );
+	glBindAttribLocation ( m_programHandle, 1, "VerClr" );
 
     /// Do Render Now!
-    glBindFramebuffer ( GL_DRAW_FRAMEBUFFER, g_frameBuffer ); // Chose which framebuffer to render
-	glViewport ( 0, 0, g_width, g_height );
-    helperLinkShader ( g_programHandle, g_bfVertHandle, g_bfFragHandle ); // Linking shader...
+    glBindFramebuffer ( GL_DRAW_FRAMEBUFFER, m_frameBuffer ); // Chose which framebuffer to render
+	glViewport ( 0, 0, m_width, m_height );
+    helperLinkShader ( m_programHandle, m_bfVertHandle, m_bfFragHandle ); // Linking shader...
 	helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
-    glUseProgram ( g_programHandle ); // Use the shader for rendering the texture
+    glUseProgram ( m_programHandle ); // Use the shader for rendering the texture
 	RenderingFace ( GL_FRONT );   // From front face
     glUseProgram ( 0 );    // Release the shader
 	helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
 
 
     glBindFramebuffer ( GL_FRAMEBUFFER, 0 ); // To break the binding
-    glViewport ( 0, 0, g_width, g_height );
-    helperLinkShader ( g_programHandle, g_rcVertHandle, g_rcFragHandle );
+    glViewport ( 0, 0, m_width, m_height );
+    helperLinkShader ( m_programHandle, m_rcVertHandle, m_rcFragHandle );
 	helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
-    glUseProgram ( g_programHandle );
+    glUseProgram ( m_programHandle );
     SetVolumeInfoUinforms ( );
 	helperCheckOpenGLStatus ( __FILE__, __LINE__ );
     RenderingFace ( GL_BACK );
@@ -928,57 +980,5 @@ void Visual::OnDestroy ( void )
 //	if ( m_font != NULL )	m_font->Clean ( );
 //	SAFE_DELT_PTR ( m_font );
 };
-
-
-/*
------------------------------------------------------------------------------------------------------------
-* @function Visual
-* @author   Orlando Chen
-* @date     Nov 6, 2013
-* @input    width, height, hActivity
-* @return   NULL
-* @bref     Constructor
------------------------------------------------------------------------------------------------------------
-*/
-Visual::Visual ( GLuint width, GLuint height, MainActivity **hActivity )
-{
-	// Materialized , and the assignment
-	m_mouse    = new _mouse;
-	m_fps      = new _fps;
-	m_view     = new _viewMatrix;
-//	m_font     = new FreeType;
-	*hActivity = new MainActivity ( width, height, false );
-
-	m_width    = width;
-	m_height   = height;
-	m_density  = false;
-
-	// etc.
-	if ( AllocateResourcePtrs ( ) != SG_RUNTIME_OK )
-	{
-		FreeResourcePtrs ( );
-	}
-	else
-	{
-		ZeroData ( );
-	}
-};
-
-
-/*
------------------------------------------------------------------------------------------------------------
-* @function ~Visual
-* @author   Orlando Chen
-* @date     Nov 6, 2013
-* @input    NULL
-* @return   NULL
-* @bref     Desconstructor   
------------------------------------------------------------------------------------------------------------
-*/
-Visual::~Visual ( void )
-{
-	OnDestroy();
-};
-
 
 #endif

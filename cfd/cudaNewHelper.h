@@ -75,7 +75,7 @@
 
 #define DIS_SIZE             Grids_X * Grids_X /*----------------------- buffer size for rendering */
 #define Client_X             512 /* ------------------------------------ client size, unit: pixel */
-
+#define StepSize             0.001f /* --------------------------------- volume rendering step size */
 
 /*
   -----------------------------------------------------------------------------------------------------------
