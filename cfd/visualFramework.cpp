@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Sep 13, 2013
-* <Last>		Nov 6, 2013
+* <Last>		Nov 10, 2013
 * <File>        visual_framework.cpp
 */
 
@@ -126,7 +126,6 @@ Visual::~Visual ( void )
 };
 
 
-
 GLuint initTFF1DTex ( const char* filename )
 {
     // Read in the user defined data of transfer function
@@ -185,6 +184,27 @@ GLuint initFace2DTex ( GLuint bfTexWidth, GLuint bfTexHeight )
     
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, bfTexWidth, bfTexHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 
+    // Create a depth buffer for framebuffer
+    GLuint depthBuffer;
+    glGenRenderbuffers(1, &depthBuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, bfTexWidth, bfTexHeight);
+
+    // Attach the texture and the depth buffer to the framebuffer
+    glGenFramebuffers(1, &m_frameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, backFace2DTex, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+	
+	// Check Framebuffer status
+	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+    {
+		cout << "framebuffer is not complete" << endl;
+		exit(EXIT_FAILURE);
+    }
+    glEnable(GL_DEPTH_TEST);    
+
+
 	return backFace2DTex;
 };
 
@@ -227,35 +247,12 @@ GLuint initVol3DTex ( const char* filename, GLuint w, GLuint h, GLuint d )
     
 	// pixel transfer happens here from client to OpenGL server
     glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_INTENSITY, w, h, d, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE,data);
+    glTexImage3D (GL_TEXTURE_3D, 0, GL_INTENSITY, w, h, d, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
 
     delete []data;
     cout << "volume texture created" << endl;
+
     return m_volTexObj;
-};
-
-
-void initFrameBuffer ( GLuint texObj, GLuint texWidth, GLuint texHeight )
-{
-    // Create a depth buffer for framebuffer
-    GLuint depthBuffer;
-    glGenRenderbuffers(1, &depthBuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, texWidth, texHeight);
-
-    // Attach the texture and the depth buffer to the framebuffer
-    glGenFramebuffers(1, &m_frameBuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
-	
-	// Check Framebuffer status
-	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
-    {
-		cout << "framebuffer is not complete" << endl;
-		exit(EXIT_FAILURE);
-    }
-    glEnable(GL_DEPTH_TEST);    
 };
 
 
@@ -350,7 +347,7 @@ void SetVolumeInfoUinforms ( void )
 	GLint volumeLoc = glGetUniformLocation(m_programHandle, "VolumeTex");
 	if (volumeLoc >= 0)
     {
-		glActiveTexture(GL_TEXTURE2);
+		glActiveTexture ( GL_TEXTURE2 );
 		glBindTexture(GL_TEXTURE_3D, m_volTexObj);
 		glUniform1i(volumeLoc, 2);
     }
@@ -552,9 +549,6 @@ void Setup ( void )
     m_tffTexObj = initTFF1DTex  ( "tff.dat" );
 	m_bfTexObj  = initFace2DTex ( m_width, m_height );
     m_volTexObj = initVol3DTex  ( "head256.raw", 256, 256, 225 );
-    helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
-    initFrameBuffer ( m_bfTexObj, m_width, m_height );
-    helperCheckOpenGLStatus ( __FILE__, __LINE__ ); // Check OpenGL runtime error
 };
 
 
@@ -867,7 +861,7 @@ void Visual::OnDisplay ( void )
 //		DrawDensity ( );
 //	else
 //		DrawVelocity ( );
-//
+
 	// Print FPS
 	CountFPS();
 };
