@@ -19,6 +19,21 @@
     <ClCompile Include="GLSLHelper.cpp">
       <Filter>Source Files\Helper</Filter>
     </ClCompile>
+    <ClCompile Include="loadResource.cpp">
+      <Filter>Source Files\Framework Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="setUniform.cpp">
+      <Filter>Source Files\Framework Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="initParam.cpp">
+      <Filter>Source Files\Framework Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="visualAux.cpp">
+      <Filter>Source Files\Framework Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parallelAux.cpp">
+      <Filter>Source Files\Framework Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cudaNewHelper.h">

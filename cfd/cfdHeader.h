@@ -108,6 +108,27 @@ std::vector <float*> buffer_host_list; /* ------------------------ a vector for 
 std::vector <float*> buffer_dev_list;  /* ------------------------ a vector for storing buffer ptr on device */
 sge::FileManager    Logfile;           /* ------------------------ SGE file manager, for runtime message */
 
+// shader and texture handle
+GLuint m_tffTexObj;    /* 1-D ray casting texture */
+GLuint m_bfTexObj;     /* 2-D backface texture */
+GLuint m_volTexObj;    /* 3-D volume data texture */
+GLuint m_rcVertHandle; /* vertex shader of rc */
+GLuint m_rcFragHandle; /* fragment shader of rc */
+GLuint m_bfVertHandle; /* vertex shader of bf */
+GLuint m_bfFragHandle; /* fragment shader of bf */
+
+GLuint m_programHandle;
+GLuint m_frameBuffer;
+
+sge::_mouse        *m_mouse;
+sge::_fps          *m_fps;
+sge::_viewMatrix   *m_view;
+
+GLint  m_width, m_height;
+bool   m_density;
+GLuint m_cluster;
+GLint  m_angle;
+
 #else
 
 extern std::vector <float*> dev_list;         /* ----------------- declaration of device vector */
@@ -115,6 +136,26 @@ extern std::vector <float*> host_list;        /* ----------------- declaration o
 extern std::vector <float*> buffer_host_list; /* ----------------- declaration of host buffer */
 extern std::vector <float*> buffer_dev_list;  /* ----------------- declaration of device buffer*/
 extern sge::FileManager    Logfile;           /* ----------------- declaration of SGE file manager */
+
+extern GLuint m_tffTexObj;    /* 1-D ray casting texture */
+extern GLuint m_bfTexObj;     /* 2-D backface texture */
+extern GLuint m_volTexObj;    /* 3-D volume data texture */
+extern GLuint m_rcVertHandle; /* vertex shader of rc */
+extern GLuint m_rcFragHandle; /* fragment shader of rc */
+extern GLuint m_bfVertHandle; /* vertex shader of bf */
+extern GLuint m_bfFragHandle; /* fragment shader of bf */
+
+extern GLuint m_programHandle;
+extern GLuint m_frameBuffer;
+
+extern sge::_mouse        *m_mouse;
+extern sge::_fps          *m_fps;
+extern sge::_viewMatrix   *m_view;
+
+extern GLint  m_width, m_height;
+extern bool   m_density;
+extern GLuint m_cluster;
+extern GLint  m_angle;
 
 #endif
 
@@ -186,5 +227,23 @@ extern sge::FileManager    Logfile;           /* ----------------- declaration o
 	if ( k >= sim_header and k <= sim_tailer ) {
 
 #define EndSimArea() }
+
+/*
+  -----------------------------------------------------------------------------------------------------------
+   etc.
+  -----------------------------------------------------------------------------------------------------------
+*/
+
+extern void initShader ( void );
+extern GLuint initVol3DTex ( const char* filename, GLuint w, GLuint h, GLuint d );
+extern GLuint initFace2DTex ( GLuint bfTexWidth, GLuint bfTexHeight );
+extern GLuint initTFF1DTex ( const char* filename );
+extern sge::SGRUNTIMEMSG AllocateResourcePtrs ();
+extern void FreeResourcePtrs ();
+extern void ZeroData ();
+extern void InitViewMatrix(), InitFont(), InitFPS(), InitMouseStatus(), Setup();
+extern void RenderingFace ( GLenum cullFace );
+extern void SetVolumeInfoUinforms ( void );
+extern void CountFPS ( void );
 
 #endif

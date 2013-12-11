@@ -30,8 +30,13 @@
     <ClCompile Include="DensitySolver.cpp" />
     <ClCompile Include="glew32.cpp" />
     <ClCompile Include="GLSLHelper.cpp" />
+    <ClCompile Include="initParam.cpp" />
     <ClCompile Include="launchMain.cpp" />
+    <ClCompile Include="loadResource.cpp" />
+    <ClCompile Include="parallelAux.cpp" />
+    <ClCompile Include="setUniform.cpp" />
     <ClCompile Include="VelocitySolver.cpp" />
+    <ClCompile Include="visualAux.cpp" />
     <ClCompile Include="visualFramework.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -49,7 +54,9 @@
     <Image Include="resource\app.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader\backface.frag" />
+    <None Include="shader\backface.frag">
+      <FileType>Document</FileType>
+    </None>
     <None Include="shader\backface.vert" />
     <None Include="shader\raycasting.frag" />
     <None Include="shader\raycasting.vert" />
