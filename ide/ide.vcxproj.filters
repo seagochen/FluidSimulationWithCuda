@@ -15,31 +15,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CFD_FuncPrototypes.h">
+    <ClInclude Include="glew32.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CFD_Params.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CFD_Visualization.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Macro_Funcs.h">
+    <ClInclude Include="glew32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CFD_InteractionEvents.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CFD_Main.cpp">
+    <ClCompile Include="ShaderHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CFD_Solver.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CFD_Visualization.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shader\simple.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
