@@ -15,6 +15,7 @@
     <ClInclude Include="glew32.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shader\simple.frag" />
     <None Include="Shader\simple.vert">
       <DeploymentContent>true</DeploymentContent>
     </None>

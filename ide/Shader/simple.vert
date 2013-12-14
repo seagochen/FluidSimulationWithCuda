@@ -1,22 +1,14 @@
-// for raycasting
+// simple toon vertex shader
+// www.lighthouse3d.com
 #version 400
-
-uniform float t;  // Time
-uniform mat4 MVP; // Combined modelview and projection matrices
-in vec4 pos;      // Particle position
-in vec4 vel;      // Particle velocity
-
-// Gravitational acceleration
-const vec4 g = vec4 (0.0, -9.8, 0.0);
-
-
 void main()
 {
-	vec4 position = pos;
-
-	/// <latex> P^{'} = P_{o} + t^{2}\cdot g </latex>
-	position += t * vel + t * t * g;
-
-	// Copy data into device register
-	gl_Position = MVP * position;
+	float PI = 3.14159265358979323846264;
+	float angle = 45.0;
+	float rad_angle = angle*PI/180.0;
+	vec4 a = gl_Vertex;
+	vec4 b = a;
+	b.x = a.x*cos(rad_angle) - a.y*sin(rad_angle);
+	b.y = a.y*cos(rad_angle) + a.x*sin(rad_angle);
+	gl_Position = gl_ModelViewProjectionMatrix*b;
 }
