@@ -11,10 +11,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="glew32.h" />
-    <ClInclude Include="glew32.hpp" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Shader\simple.frag" />
     <None Include="Shader\simple.vert">
       <DeploymentContent>true</DeploymentContent>

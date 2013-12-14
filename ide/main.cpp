@@ -1,6 +1,5 @@
-#define __main_cpp_
-
-#include "glew32.h"
+#define INCLUDE_GLEW32_CODE
+#include <GL\glew32.h>
 #include <GL\freeglut.h>
 
 #include <SGE\SGUtils.h>
