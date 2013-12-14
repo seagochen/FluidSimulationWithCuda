@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cfd", "cfd\cfd.vcxproj", "{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ide", "ide\ide.vcxproj", "{D21363BD-2D8E-443E-AB6C-741C766F4EEF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +21,12 @@ Global
 		{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}.Release|Win32.Build.0 = Release|Win32
 		{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}.Release|x64.ActiveCfg = Release|x64
 		{C0A8E9D2-9A6E-4BC2-B804-CAEA4C14070A}.Release|x64.Build.0 = Release|x64
+		{D21363BD-2D8E-443E-AB6C-741C766F4EEF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D21363BD-2D8E-443E-AB6C-741C766F4EEF}.Debug|Win32.Build.0 = Debug|Win32
+		{D21363BD-2D8E-443E-AB6C-741C766F4EEF}.Debug|x64.ActiveCfg = Debug|Win32
+		{D21363BD-2D8E-443E-AB6C-741C766F4EEF}.Release|Win32.ActiveCfg = Release|Win32
+		{D21363BD-2D8E-443E-AB6C-741C766F4EEF}.Release|Win32.Build.0 = Release|Win32
+		{D21363BD-2D8E-443E-AB6C-741C766F4EEF}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
