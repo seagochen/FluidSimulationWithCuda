@@ -63,34 +63,17 @@ void CreateShaders
 // Sets 1-D texture for transfer function
 GLuint Create1DTransFunc ( void )
 {
-    // Read in the user defined data of transfer function
-    ifstream inFile ( ".\\res\\tff.dat", ifstream::in );
-	if ( !inFile )
-    {
-		cerr << "Error openning file: " << "tff.dat" << endl;
-		exit (1);
-    }
-    
-    const int MAX_CNT = 10000;
-    GLubyte *tff = (GLubyte *) calloc(MAX_CNT, sizeof(GLubyte));
-    inFile.read ( reinterpret_cast<char *>(tff), MAX_CNT );
-
-	// File is end?
-    if (inFile.eof())
-    {
-		size_t bytecnt = inFile.gcount();
-		*(tff + bytecnt) = '\0';
-		cout << "bytecnt " << bytecnt << endl;
+	// Define the transfer function
+	GLubyte *tff = (GLubyte*) malloc ( sizeof(GLubyte) * 256 * 4 );
+	for ( int i = 0; i < 256; i++ )
+	{
+		tff [ i * 4 + 0 ] = i;
+		tff [ i * 4 + 1 ] = i;
+		tff [ i * 4 + 2 ] = i;
+		tff [ i * 4 + 3 ] = 1;
 	}
-    else if(inFile.fail())
-    {
-		cout << "tff.dat " << "read failed " << endl;
-    }
-    else
-    {
-		cout << "tff.dat " << "is too large" << endl;
-    }
-	
+
+
 	GLuint tff1DTex;
     glGenTextures(1, &tff1DTex);
     glBindTexture(GL_TEXTURE_1D, tff1DTex);
