@@ -20,22 +20,22 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shader\backface.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shader\backface.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shader\raycasting.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shader\raycasting.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="main.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\backface.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shader\backface.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shader\raycasting.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shader\raycasting.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

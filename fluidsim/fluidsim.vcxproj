@@ -23,13 +23,13 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shader\backface.frag" />
-    <None Include="Shader\backface.vert" />
-    <None Include="Shader\raycasting.frag" />
-    <None Include="Shader\raycasting.vert" />
+    <ClInclude Include="main.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="main.h" />
+    <None Include="shader\backface.frag" />
+    <None Include="shader\backface.vert" />
+    <None Include="shader\raycasting.frag" />
+    <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{76EABAA3-BE33-4291-BCDC-CE994EAB1CD3}</ProjectGuid>
