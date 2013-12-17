@@ -19,17 +19,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="helper.cpp" />
+    <ClCompile Include="cfd.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="volume.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="main.h" />
+    <ClInclude Include="cfd.h" />
+    <ClInclude Include="cudabox.h" />
+    <ClInclude Include="funcdef.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\backface.frag" />
     <None Include="shader\backface.vert" />
     <None Include="shader\raycasting.frag" />
     <None Include="shader\raycasting.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{76EABAA3-BE33-4291-BCDC-CE994EAB1CD3}</ProjectGuid>
