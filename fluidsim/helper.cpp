@@ -1,3 +1,11 @@
+#include <GL\glew.h>
+#include <GL\freeglut.h>
+
+#include <GLM\glm.hpp>
+#include <GLM\gtc\matrix_transform.hpp>
+#include <GLM\gtx\transform2.hpp>
+#include <GLM\gtc\type_ptr.hpp>
+
 #include "main.h"
 
 
@@ -89,7 +97,7 @@ GLuint Create1DTransFunc ( void )
 };
 
 // Sets 2-D texture for backface
-GLuint Create2DBackFace ( void )
+GLuint Create2DBackFace ( GLint width, GLint height )
 {
     GLuint backFace2DTex;
     glGenTextures(1, &backFace2DTex);
@@ -100,7 +108,7 @@ GLuint Create2DBackFace ( void )
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, BACKFACE_SIZE_X, BACKFACE_SIZE_X, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 
 	cout << "2D backface created" << endl;
 
@@ -108,13 +116,13 @@ GLuint Create2DBackFace ( void )
 };
 
 // Sets 3-D texture for volumetric data 
-GLuint Create3DVolumetric ( void )
+GLuint Create3DVolumetric ( const char *filename, GLint width, GLint height, GLint depth )
 {
     FILE *fp;
     size_t size = 256 * 256 * 225; // width * length * depth
     GLubyte *data = new GLubyte[size];
  
-	if ( !(fp = fopen(".\\res\\head256.raw", "rb")) )
+	if ( !(fp = fopen ( filename, "rb" )) )
     {
         cout << "Error: opening .raw file failed" << endl;
         exit ( 1 );
@@ -141,7 +149,7 @@ GLuint Create3DVolumetric ( void )
     
 	// pixel transfer happens here from client to OpenGL server
     glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_INTENSITY, 256, 256, 225, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_INTENSITY, width, height, depth, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
 
     delete []data;
 
@@ -151,23 +159,23 @@ GLuint Create3DVolumetric ( void )
 };
 
 
-GLuint CreateFrameBuffer ( GLuint texObj )
+GLuint CreateFrameBuffer ( GLuint texObj, GLint width, GLint height )
 {
     // Create a depth buffer for framebuffer
     GLuint depthBuffer;
-    glGenRenderbuffers(1, &depthBuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, BACKFACE_SIZE_X, BACKFACE_SIZE_X);
+    glGenRenderbuffers ( 1, &depthBuffer );
+    glBindRenderbuffer ( GL_RENDERBUFFER, depthBuffer );
+    glRenderbufferStorage ( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height );
 
     // Attach the texture and the depth buffer to the framebuffer
 	GLuint framebuffer;
-    glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+    glGenFramebuffers ( 1, &framebuffer );
+    glBindFramebuffer ( GL_FRAMEBUFFER, framebuffer );
+    glFramebufferTexture2D ( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj, 0 );
+    glFramebufferRenderbuffer ( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer );
 	
 	// Check Framebuffer status
-	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+	if ( glCheckFramebufferStatus ( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
     {
 		cout << "framebuffer is not complete" << endl;
 		exit(EXIT_FAILURE);
@@ -180,13 +188,7 @@ GLuint CreateFrameBuffer ( GLuint texObj )
 };
 
 
-#include <GLM\glm.hpp>
-#include <GLM\gtc\matrix_transform.hpp>
-#include <GLM\gtx\transform2.hpp>
-#include <GLM\gtc\type_ptr.hpp>
-
-
-void RenderingFace ( GLenum cullFace, GLfloat angle, GLuint program, GLuint cluster )
+void RenderingFace ( GLenum cullFace, GLfloat angle, GLuint program, GLuint cluster, GLint width, GLint height )
 {
 	using namespace glm;
 	
@@ -195,7 +197,7 @@ void RenderingFace ( GLenum cullFace, GLfloat angle, GLuint program, GLuint clus
     glClear ( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
 	//  Set projection and lookat matrix
-    mat4 projection = perspective ( 60.0f, (GLfloat)BACKFACE_SIZE_X/BACKFACE_SIZE_X, 0.1f, 400.f );
+    mat4 projection = perspective ( 60.0f, (GLfloat)width/(GLfloat)height, 0.1f, 400.f );
     mat4 view = lookAt (
 		vec3(0.0f, 0.0f, 2.0f),
 		vec3(0.0f, 0.0f, 0.0f), 
