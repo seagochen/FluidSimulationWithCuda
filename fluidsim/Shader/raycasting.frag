@@ -1,6 +1,4 @@
 #version 400
-// 杜绝声明未使用的变量，避免bug的产生。
-
 
 in vec3 EntryPoint;
 in vec4 ExitPointCoord;
@@ -10,7 +8,8 @@ uniform sampler3D VolumeTex;
 uniform sampler1D TransferFunc;  
 uniform float     StepSize;
 uniform vec2      ScreenSize;
-layout (location = 0) out vec4 FragColor;
+
+out vec4 FragColor;
 
 void main()
 {

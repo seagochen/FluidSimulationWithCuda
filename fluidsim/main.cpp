@@ -97,8 +97,6 @@ void onDisplay ()
 	
 	// Bind index 0 to the shader input variable "VerPos"
 	glBindAttribLocation ( fluid.hProgram, 0, "VerPos" );
-	// Bind index 1 to the shader input variable "VerClr"
-	glBindAttribLocation ( fluid.hProgram, 1, "VerClr" );
 
     /// Do Render Now!
 	glBindFramebuffer ( GL_DRAW_FRAMEBUFFER, fluid.hFramebuffer ); // Chose which framebuffer to render

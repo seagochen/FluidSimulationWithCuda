@@ -394,141 +394,79 @@ void SetVolumeInfoUinforms ( fluidsim *fluid )
 
 GLuint InitVerticesBufferObj ( void )
 {
+#pragma region attributes of vertex
 	// How agent cube looks like by specified the coordinate positions of vertices
-    GLfloat vertices[24] = 
-	{
-		0.0, 0.0, 0.0,
-		0.0, 0.0, 1.0,
-		0.0, 1.0, 0.0,
-		0.0, 1.0, 1.0,
-		1.0, 0.0, 0.0,
-		1.0, 0.0, 1.0,
-		1.0, 1.0, 0.0,
-		1.0, 1.0, 1.0
+	GLfloat vertices[24] = 
+	{                    // (x, y, z)
+		0.0, 0.0, 0.0,   // (0, 0, 0)
+		0.0, 0.0, 1.0,   // (0, 0, 1)
+		0.0, 1.0, 0.0,   // (0, 1, 0)
+		0.0, 1.0, 1.0,   // (0, 1, 1)
+		1.0, 0.0, 0.0,   // (1, 0, 0)
+		1.0, 0.0, 1.0,   // (1, 0, 1)
+		1.0, 1.0, 0.0,   // (1, 1, 0)
+		1.0, 1.0, 1.0    // (1, 1, 1)
 	};
-	
+
 	// Drawing six faces of agent cube with triangles by counter clockwise
-	// <Front> 1 5 7 3
-	// <Back> 0 2 6 4
-	// <Left> 0 1 3 2
-	// <Right> 7 5 4 6
-	// <Up> 2 3 7 6
-	// <Down> 1 0 4 5
-    GLuint indices[36] = 
+	GLuint indices[36] = 
 	{
+		/// <front> 1 5 7 3 </front>///
 		1,5,7,
 		7,3,1,
+		/// <back> 0 2 6 4 </back> ///
 		0,2,6,
 		6,4,0,
+		/// <left> 0 1 3 2 </left> ///
 		0,1,3,
 		3,2,0,
+		/// <right> 7 5 4 6 </right> ///
 		7,5,4,
 		4,6,7,
+		/// <up> 2 3 7 6 </up> ///
 		2,3,7,
 		7,6,2,
+		/// <down> 1 0 4 5 </down> ///
 		1,0,4,
 		4,5,1
-	};
+	};  
+#pragma endregion
+	
+#pragma region create vertex buffer object
+	/// Create Vertex Buffer Object (vbo) ///
+	// Generate the buffer indices, and 
+	GLuint GenBufferList[2];
+	glGenBuffers ( 2, GenBufferList );
+	GLuint ArrayBufferData  = GenBufferList [ 0 ];
+	GLuint ElementArrayData = GenBufferList [ 1 ];
 
-	// Generate the buffer indices
-    GLuint GenBufferList[2];
-    glGenBuffers ( 2, GenBufferList );
-    GLuint ArrayBufferData  = GenBufferList [ 0 ];
-    GLuint ElementArrayData = GenBufferList [ 1 ];
-
-	/*
-	* void glBindBuffer(GLenum target, GLuint buffer);
-	* void glBufferData(GLenum target, GLsizeiptr size, const GLvoid * data, GLenum usage);
-	*
-	* ----------------------------------------------------------------------------------------------------------------------------
-	*
-	* glBindBuffer binds a buffer object to the specified buffer binding point.
-	* Calling glBindBuffer with target set to one of the accepted symbolic constants and 
-	* buffer set to the name of a buffer object binds that buffer object name to the target.
-	* If no buffer object with name buffer exists, one is created with that name.
-	* When a buffer object is bound to a target, the previous binding for that target is automatically broken.
-	*
-	* Buffer object names are unsigned integers. The value zero is reserved, but there is no default
-	* buffer object for each buffer object target. Instead, buffer set to zero effectively unbinds any buffer 
-	* object previously bound, and restores client memory usage for that buffer object target (if supported for that target).
-	* Buffer object names and the corresponding buffer object contents are local to the shared object space of the
-	* current GL rendering context; two rendering contexts share buffer object names only if they explicitly 
-	* enable sharing between contexts through the appropriate GL windows interfaces functions.
-	*
-	* glGenBuffers must be used to generate a set of unused buffer object names.
-	* 
-	* ----------------------------------------------------------------------------------------------------------------------------
-	*
-	* glBufferData creates a new data store for the buffer object currently bound to target.
-	* Any pre-existing data store is deleted. The new data store is created with the specified size in bytes and usage.
-	* If data is not NULL, the data store is initialized with data from this pointer. 
-	* In its initial state, the new data store is not mapped, it has a NULL mapped pointer, and its mapped access is GL_READ_WRITE.
-	*
-	* usage is a hint to the GL implementation as to how a buffer object's data store will be accessed.
-	* This enables the GL implementation to make more intelligent decisions that may significantly impact buffer object performance.
-	* It does not, however, constrain the actual usage of the data store. 
-	* usage can be broken down into two parts: 
-	* first, the frequency of access (modification and usage),
-	* and second, the nature of that access.
-	*/
-	// Bind display array list, vertices list used here that indicates the coordinate position of vertices
+	// Bind vertex array list
 	glBindBuffer ( GL_ARRAY_BUFFER, ArrayBufferData );
 	glBufferData ( GL_ARRAY_BUFFER, 24 * sizeof(GLfloat), vertices, GL_STATIC_DRAW );
-    
-	// Bind element array list, indices used here that indicates the triangles drawing sequence
-    glBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, ElementArrayData );
-    glBufferData ( GL_ELEMENT_ARRAY_BUFFER, 36 * sizeof(GLuint), indices, GL_STATIC_DRAW );
-	
-	// After that, we use a cluster for keeping the information of GenBufferList
-	/*
-	* void glGenVertexArrays(GLsizei n, GLuint *arrays);
-	*
-	* glGenVertexArrays returns n vertex array object names in arrays.
-	* There is no guarantee that the names form a contiguous set of integers;
-	* however, it is guaranteed that none of the returned names was in use immediately before the call to glGenVertexArrays.
-	*
-	* Vertex array object names returned by a call to glGenVertexArrays are not returned by subsequent calls,
-	* unless they are first deleted with glDeleteVertexArrays.
-	*
-	* The names returned in arrays are marked as used, for the purposes of glGenVertexArrays only, 
-	* but they acquire state and type only when they are first bound.
-	*/
+
+	// Bind element array list
+	glBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, ElementArrayData );
+	glBufferData ( GL_ELEMENT_ARRAY_BUFFER, 36 * sizeof(GLuint), indices, GL_STATIC_DRAW );
+
+	/// vbo finished ///
+
+	/// Upload attributes of vertex ///
+	// Use a cluster for keeping the attributes of vertex
 	GLuint cluster;
-    glGenVertexArrays ( 1, &cluster );
-    glBindVertexArray ( cluster );
+	glGenVertexArrays ( 1, &cluster );
+	glBindVertexArray ( cluster );
 
-	/*
-	* void glEnableVertexAttribArray(GLuint index);
-	* void glDisableVertexAttribArray(GLuint index);
-	*
-	* glEnableVertexAttribArray enables the generic vertex attribute array specified by index.
-	* 
-	* glDisableVertexAttribArray disables the generic vertex attribute array specified by index.
-	* By default, all client-side capabilities are disabled, including all generic vertex attribute arrays. 
-	* If enabled, the values in the generic vertex attribute array will be accessed and used for rendering 
-	* when calls are made to vertex array commands such as 
-	* glDrawArrays, glDrawElements, glDrawRangeElements, glMultiDrawElements, or glMultiDrawArrays.
-	*/
-    glEnableVertexAttribArray ( 0 ); // Enable ArrayBufferData
-    glEnableVertexAttribArray ( 1 ); // Enable ElementArrayData
+	glEnableVertexAttribArray ( 0 ); // Enable vertex array with index 0
+//	glEnableVertexAttribArray ( 1 ); // Enable vertex array with index 1
 
-    // the vertex location is the same as the vertex color
-    glBindBuffer ( GL_ARRAY_BUFFER, ArrayBufferData );
-	/*
-	* void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid * pointer);
-	* void glVertexAttribIPointer(GLuint index, GLint size, GLenum type, GLsizei stride, const GLvoid * pointer);
-	* void glVertexAttribLPointer(GLuint index, GLint size, GLenum type, GLsizei stride, const GLvoid * pointer);
-	*
-	* glVertexAttribPointer, glVertexAttribIPointer and glVertexAttribLPointer 
-	* specify the location and data format of the array of generic vertex attributes at index index to use when rendering.
-	* size specifies the number of components per attribute and must be 1, 2, 3, 4, or GL_BGRA. 
-	* type specifies the data type of each component,
-	* and stride specifies the byte stride from one attribute to the next,
-	* allowing vertices and attributes to be packed into a single array or stored in separate arrays.
-	*/
-    glVertexAttribPointer ( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLfloat *)NULL );
-    glVertexAttribPointer ( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLfloat *)NULL );
-    glBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, ElementArrayData );
+	// Binding the vbo, and set the vertex location is the same as the vertex color
+	// Reserved the null pointer, because we no need to transfer data to shader, vbo was instead.
+	// Color will generated by shader
+	glBindBuffer ( GL_ARRAY_BUFFER, ArrayBufferData );
+	glVertexAttribPointer ( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLfloat *)NULL ); // define the index 0 without any data
+//	glVertexAttribPointer ( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLfloat *)NULL ); // define the index 1 without any data
+	glBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, ElementArrayData );  
+#pragma endregion
 
 	cout << "agent object finished" << endl;
 
