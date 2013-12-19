@@ -96,7 +96,7 @@ void onDisplay ()
 	glEnable ( GL_DEPTH_TEST );
 	
 	// Bind index 0 to the shader input variable "VerPos"
-	glBindAttribLocation ( fluid.hProgram, 0, "VerPos" );
+	glBindAttribLocation ( fluid.hProgram, 0, "vertices" );
 
     /// Do Render Now!
 	glBindFramebuffer ( GL_DRAW_FRAMEBUFFER, fluid.hFramebuffer ); // Chose which framebuffer to render

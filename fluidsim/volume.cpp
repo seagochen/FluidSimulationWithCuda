@@ -260,7 +260,7 @@ void RenderingFace ( GLenum cullFace, fluidsim *fluid )
 	using namespace glm;
 	
 	// Clear background color and depth buffer
-    glClearColor ( 0.2f,0.2f,0.2f,1.0f );
+    glClearColor ( 0.f, 0.f, 0.f, 0.f );
     glClear ( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
 	//  Set projection and lookat matrix
@@ -284,7 +284,7 @@ void RenderingFace ( GLenum cullFace, fluidsim *fluid )
     mat4 mvp = projection * view * model;
 
 	// Returns an integer that represents the location of a specific uniform variable within a shader program
-    GLuint mvpIdx = glGetUniformLocation ( program, "MVP" );
+    GLuint mvpIdx = glGetUniformLocation ( program, "mvp" );
     
 	if ( mvpIdx >= 0 )
     {
@@ -319,7 +319,7 @@ void SetVolumeInfoUinforms ( fluidsim *fluid )
 	GLubyte *data     = fluid->ptrData;
 
 	// Set the uniform of screen size
-    GLint screenSizeLoc = glGetUniformLocation ( program, "ScreenSize" );
+    GLint screenSizeLoc = glGetUniformLocation ( program, "screensize" );
     if ( screenSizeLoc >= 0 )
     {
 		// Incoming two value, width and height
@@ -331,7 +331,7 @@ void SetVolumeInfoUinforms ( fluidsim *fluid )
     }
 
 	// Set the step length
-    GLint stepSizeLoc = glGetUniformLocation ( program, "StepSize" );
+    GLint stepSizeLoc = glGetUniformLocation ( program, "stride" );
 	if ( stepSizeLoc >= 0 )
     {
 		// Incoming one value, the step size
@@ -343,7 +343,7 @@ void SetVolumeInfoUinforms ( fluidsim *fluid )
     }
     
 	// Set the transfer function
-	GLint transferFuncLoc = glGetUniformLocation ( program, "TransferFunc" );
+	GLint transferFuncLoc = glGetUniformLocation ( program, "transfer" );
     if ( transferFuncLoc >= 0 )
 	{
 		glActiveTexture ( GL_TEXTURE0 );
@@ -356,7 +356,7 @@ void SetVolumeInfoUinforms ( fluidsim *fluid )
     }
 
 	// Set the back face as exit point for ray casting
-	GLint backFaceLoc = glGetUniformLocation ( program, "ExitPoints" );
+	GLint backFaceLoc = glGetUniformLocation ( program, "stopface" );
 	if ( backFaceLoc >= 0 )
     {
 		glActiveTexture ( GL_TEXTURE1 );
@@ -369,7 +369,7 @@ void SetVolumeInfoUinforms ( fluidsim *fluid )
     }
 
 	// Set the uniform to hold the data of volumetric data
-	GLint volumeLoc = glGetUniformLocation(program, "VolumeTex");
+	GLint volumeLoc = glGetUniformLocation(program, "volumetric");
 	if (volumeLoc >= 0)
     {
 		glActiveTexture(GL_TEXTURE2);

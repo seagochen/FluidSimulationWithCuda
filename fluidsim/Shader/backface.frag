@@ -1,11 +1,10 @@
-// for raycasting
 #version 400
 
-in vec3 Color;
+in vec3 fragColor;
+out vec4 pixel;
 
-out vec4 FragColor;
 
 void main()
 {
-    FragColor = vec4(Color, 1.0);
+	pixel = vec4 ( fragColor, 1.0 );
 }

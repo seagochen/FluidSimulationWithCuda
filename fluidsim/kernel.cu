@@ -536,7 +536,6 @@ __global__ void kernelInterpolation ( float *dens, unsigned char *data )
 	GetIndex();
 
 	int temp = (int) ceil ( dens [ Index (i, j, k) ] );
-	temp *= 10;
 	data [ Index (i, j, k) ] = (unsigned char) temp;
 };
 

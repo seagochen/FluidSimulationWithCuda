@@ -1,76 +1,80 @@
 #version 400
 
-in vec3 EntryPoint;
-in vec4 ExitPointCoord;
+in vec3 raystart;
+uniform sampler1D transfer;
+uniform sampler2D stopface;
+uniform sampler3D volumetric;
+uniform float     stride;
+uniform vec2      screensize;
+out     vec4      pixel;
 
-uniform sampler2D ExitPoints;
-uniform sampler3D VolumeTex;
-uniform sampler1D TransferFunc;  
-uniform float     StepSize;
-uniform vec2      ScreenSize;
 
-out vec4 FragColor;
+const vec4  bgColor = vec4 ( 0.f );
 
-void main()
+void main ()
 {
-    // ExitPointCoord 的坐标是设备规范化坐标
-    // 出现了和纹理坐标有关的问题。
-    vec3 exitPoint = texture(ExitPoints, gl_FragCoord.st/ScreenSize).xyz;
-    // that will actually give you clip-space coordinates rather than
-    // normalised device coordinates, since you're not performing the perspective
-    // division which happens during the rasterisation process (between the vertex
-    // shader and fragment shader
-    // vec2 exitFragCoord = (ExitPointCoord.xy / ExitPointCoord.w + 1.0)/2.0;
-    // vec3 exitPoint  = texture(ExitPoints, exitFragCoord).xyz;
-    if (EntryPoint == exitPoint)
-    	//background need no raycasting
-    	discard;
-    vec3 dir = exitPoint - EntryPoint;
-    float len = length(dir); // the length from front to back is calculated and used to terminate the ray
-    vec3 deltaDir = normalize(dir) * StepSize;
-    float deltaDirLen = length(deltaDir);
-    vec3 voxelCoord = EntryPoint;
-    vec4 colorAcum = vec4(0.0); // The dest color
-    float alphaAcum = 0.0;                // The  dest alpha for blending
-    /* 定义颜色查找的坐标 */
-    float intensity;
-    float lengthAcum = 0.0;
-    vec4 colorSample; // The src color 
-    float alphaSample; // The src alpha
-    // backgroundColor
-    vec4 bgColor = vec4(1.0, 1.0, 1.0, 0.0);
- 
-    for(int i = 0; i < 1600; i++)
-    {
-    	// 获得体数据中的标量值scaler value
-    	intensity =  texture(VolumeTex, voxelCoord).x;
-    	// 查找传输函数中映射后的值
-    	// 依赖性纹理读取  
-    	colorSample = texture(TransferFunc, intensity);
-    	// modulate the value of colorSample.a
-    	// front-to-back integration
-    	if (colorSample.a > 0.0) {
-    	    // accomodate for variable sampling rates (base interval defined by mod_compositing.frag)
-    	    colorSample.a = 1.0 - pow(1.0 - colorSample.a, StepSize*200.0f);
-    	    colorAcum.rgb += (1.0 - colorAcum.a) * colorSample.rgb * colorSample.a;
-    	    colorAcum.a += (1.0 - colorAcum.a) * colorSample.a;
-    	}
-    	voxelCoord += deltaDir;
-    	lengthAcum += deltaDirLen;
-    	if (lengthAcum >= len )
-    	{	
-    	    colorAcum.rgb = colorAcum.rgb*colorAcum.a + (1 - colorAcum.a)*bgColor.rgb;		
-    	    break;  // terminate if opacity > 1 or the ray is outside the volume	
-    	}	
-    	else if (colorAcum.a > 1.0)
-    	{
-    	    colorAcum.a = 1.0;
-    	    break;
-    	}
-    }
-    FragColor = colorAcum;
-    // for test
-    // FragColor = vec4(EntryPoint, 1.0);
-    // FragColor = vec4(exitPoint, 1.0);
-   
+	// We will use the following method to calculate the intersection of ray from far to near 
+	// with the screen.
+	vec3 raystop = texture ( stopface, gl_FragCoord.st / screensize ).xyz;
+
+	// Before starting ray-casting, we need check the starting point whether is someplace on
+	// background. If it is, discarding the process.
+	if ( raystop == raystart )
+		discard;
+
+	// Ray-casting will start soon, but before that, we need to do some preparation work.
+	// We still need the length of radiation from starting to ending, and the direction.
+	// After that, do ray-casting need to increasing the sampling depth gradually, therefore
+	// we also need to normalize the ray, and set the step size manually.
+	// Thus...
+	vec3 direction = raystop - raystart;
+	float rayLength = length ( direction );
+	vec3  dtDir = normalize ( direction ) * stride;
+	float dtLen = length ( dtDir );
+
+	// Declare some variables, such as voxel coordination, accumulated color and length
+	vec3  voxelCoord  = raystart;
+	vec4  accumColor  = vec4 ( 0.f );
+	float accumLength = 0.f;
+
+	// Still needs some mark
+	float intensityMark = 0.f;
+	vec4  colorMark = vec4 ( 0.f );
+
+	// Start ray-casting
+	// Circulation as much as possible, in order to interpolate the samples as much as possible.
+	for ( int i = 0; i < 1600; i++ ) 
+	{
+		// Sampled the volumtric at somewhere, and draw back the intensity
+		intensityMark = texture ( volumetric, voxelCoord ).x;
+
+		// Look up the color info related to intensity in transfer function
+		colorMark = texture ( transfer, intensityMark );
+
+		// Modulate the value by front to back integration
+		if ( colorMark.a > 0.f )
+		{
+			colorMark.a = 1.f - pow ( 1.f - colorMark.a, stride * 100.f );
+			accumColor.rgb +=  ( 1.f - accumColor.a ) * colorMark.rgb;
+			accumColor.a += colorMark.a;
+		}
+
+		// Increase the depth
+		voxelCoord += dtDir;
+		accumLength += dtLen;
+
+		if ( accumLength >= rayLength )
+		{
+			accumColor.rgb = accumColor.rgb * accumColor.a + ( 1 - accumColor.a ) * bgColor.rgb;	
+			break;
+		}
+		else if ( accumColor.a > 1.0 )
+		{
+			accumColor.a = 1.0;
+			break;
+		}
+	}
+
+	// Yield the final color to pixel
+	pixel = accumColor;
 }

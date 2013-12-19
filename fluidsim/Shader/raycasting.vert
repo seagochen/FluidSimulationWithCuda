@@ -1,18 +1,11 @@
 #version 400
 
-in vec3 VerPos;
-
-uniform mat4 MVP;
-
-out vec3 EntryPoint;
-out vec4 ExitPointCoord;
-
+in vec3 vertices;
+uniform mat4 mvp;
+out vec3 raystart;
 
 void main()
 {
-//    EntryPoint = VerClr;
-	EntryPoint = VerPos;
-    gl_Position = MVP * vec4(VerPos,1.0);
-    // ExitPointCoord 输入到fragment shader 的过程中经过rasterization， interpolation, assembly primitive
-    ExitPointCoord = gl_Position;  
+	raystart = vertices;
+    gl_Position = mvp * vec4 ( vertices, 1.0 );
 }
