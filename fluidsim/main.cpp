@@ -37,14 +37,13 @@ fluidsim fluid;
 
 void initParam ()
 {
-	fluid.nScrHeight = 400;  // default height is 400 px
-	fluid.nScrWidth  = 400;  // default width is 400 px
-//	fluid.nVolWidth  = 256;  // default volume width is 256
-//	fluid.nVolHeight = 256;  // default volume height is 256
-//	fluid.nVolDepth  = 225;  // default volume depth is 225
+	fluid.nScrWidth  = 800;  // default width is 800 px
+	fluid.nScrHeight = 600;  // default height is 600 px
 	fluid.nVolWidth  = Grids_X;
 	fluid.nVolHeight = Grids_X;
 	fluid.nVolDepth  = Grids_X;
+	fluid.nCanvasWidth  = 600;
+	fluid.nCanvasHeight = 600;
 
 	fluid.fStepsize  = 0.001f;
 	fluid.nAngle     = 0;
@@ -77,7 +76,6 @@ void onCreate ()
 	// Create texture objects
 	fluid.hTexture1D = Create1DTransFunc ();
 	fluid.hTexture2D = Create2DBackFace ( &fluid );
-	//fluid.hTexture3D = Create3DVolumetric ( ".\\res\\head256.raw", &fluid );
 	fluid.hTexture3D = Create3DVolumetric ();
 
 	// Create vertex buffer

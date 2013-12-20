@@ -46,6 +46,7 @@ struct fluidsim
 	GLubyte *ptrData;
 	GLint    nAngle, nVolWidth, nVolHeight, nVolDepth;
 	GLint    nScrWidth, nScrHeight;
+	GLint    nCanvasWidth, nCanvasHeight;
 	GLfloat  fStepsize;
 };
 
@@ -59,9 +60,6 @@ extern GLuint Create1DTransFunc ( void );
 
 // Sets 2-D texture for backface
 extern GLuint Create2DBackFace ( fluidsim *fluid );
-
-// Sets 3-D texture for volumetric data 
-extern GLuint Create3DVolumetric ( const char *filename, fluidsim *fluid );
 
 // Sets 3-D texture for volumetric data 
 extern GLuint Create3DVolumetric ( void );

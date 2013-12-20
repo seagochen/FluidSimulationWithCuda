@@ -140,58 +140,11 @@ GLuint Create2DBackFace ( fluidsim *fluid )
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, fluid->nScrWidth, fluid->nScrHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, fluid->nCanvasWidth, fluid->nCanvasHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 
 	cout << "2D backface created" << endl;
 
 	return backFace2DTex;
-};
-
-
-GLuint Create3DVolumetric ( const char *filename, fluidsim *fluid )
-{
-	// Create temporary value
-	size_t width  = fluid->nVolWidth;
-	size_t height = fluid->nVolHeight;
-	size_t depth  = fluid->nVolDepth;
-
-
-    FILE *fp;
-	size_t size = width * height * depth; // width * length * depth
-    GLubyte *data = new GLubyte[size];
-	 
-	if ( !(fp = fopen ( filename, "rb" )) )
-    {
-        cout << "Error: opening .raw file failed" << endl;
-        exit ( 1 );
-    }
-
-    if ( fread(data, sizeof(char), size, fp)!= size) 
-    {
-        cout << "Error: read .raw file failed" << endl;
-        exit ( 1 );
-    }
-
-    fclose ( fp );
-
-	// Generate 3D textuer
-	GLuint volTex;
-    glGenTextures(1, &volTex);
-    glBindTexture(GL_TEXTURE_3D, volTex);
-
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-
-	fluid->ptrData = data;
-
-//    delete []data;
-
-    cout << "3D volume texture created" << endl;
-
-    return volTex;
 };
 
 
