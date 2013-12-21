@@ -12,28 +12,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="volume.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cfd.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="funcdef.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cfd.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cudabox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="shader\backface.frag">
       <Filter>Resource Files</Filter>
     </None>
@@ -48,8 +26,19 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="kernel.cu">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
-    </CudaCompile>
+    </ClCompile>
+    <ClCompile Include="volumeHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="fluidsim.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="volumeHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

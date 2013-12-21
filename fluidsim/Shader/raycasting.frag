@@ -55,7 +55,7 @@ void main ()
 		if ( colorMark.a > 0.f )
 		{
 			colorMark.a = 1.f - pow ( 1.f - colorMark.a, stride * 100.f );
-			accumColor.rgb +=  ( 1.f - accumColor.a ) * colorMark.rgb;
+			accumColor.rgb +=  ( 1.f - accumColor.a ) * colorMark.rgb * colorMark.a;
 			accumColor.a += colorMark.a;
 		}
 

@@ -1,161 +1,115 @@
-/**
-*
-* Copyright (C) <2013> <Orlando Chen>
-* Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-* associated documentation files (the "Software"), to deal in the Software without restriction, 
-* including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-* and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, 
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all copies or substantial
-* portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT 
-* NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
-* <Author>      Orlando Chen
-* <First>       Dec 12, 2013
-* <Last>		Dec 18, 2013
-* <File>        main.cpp
-*/
-
-#define __main_cpp_
-
 #include <GL\glew32c.h>
 #include <GL\freeglut.h>
+#include <SGE\SGUtils.h>
+#include <GLM\glm.hpp>
+#include <GLM\gtc\matrix_transform.hpp>
+#include <GLM\gtx\transform2.hpp>
+#include <GLM\gtc\type_ptr.hpp>
+#include <iostream>
 
-#include "funcdef.h"
-#include "cfd.h"
+#include "fluidsim.h"
+#include "volumeHelper.h"
 
-fluidsim fluid;
+using namespace sge;
+using namespace std;
 
+fluidsim     m_fluid;
+VolumeHelper m_vh;
 
-void initParam ()
+void initialize ()
 {
-	fluid.nScrWidth  = 800;  // default width is 800 px
-	fluid.nScrHeight = 600;  // default height is 600 px
-	fluid.nVolWidth  = Grids_X;
-	fluid.nVolHeight = Grids_X;
-	fluid.nVolDepth  = Grids_X;
-	fluid.nCanvasWidth  = 600;
-	fluid.nCanvasHeight = 600;
-
-	fluid.fStepsize  = 0.001f;
-	fluid.nAngle     = 0;
-
-	fluid.ptrShader  = new Shader();
-
-	cout << "parameters initialize finished" << endl;
-}
+	m_fluid.fStepsize = 0.001f;
+	m_fluid.nAngle = 0;
+	m_fluid.nCanvasWidth  = 600;
+	m_fluid.nCanvasHeight = 600;
+	m_fluid.nVolWidth    = param::nGrids_X;
+	m_fluid.nVolHeight   = param::nGrids_X;
+	m_fluid.nVolDepth    = param::nGrids_X;
+	m_fluid.szCanvasVert = ".\\shader\\backface.vert";
+	m_fluid.szCanvasFrag = ".\\shader\\backface.frag";
+	m_fluid.szVolumVert  = ".\\shader\\raycasting.vert";
+	m_fluid.szVolumFrag  = ".\\shader\\raycasting.frag";
+};
 
 
-void initRuntime ()
+void onCreate ()
 {
+	/// Initialize glew ///
 	GLenum error = glewInit ();
 	if ( error != GLEW_OK )
 	{
 		cout << "glewInit failed: " << glewGetErrorString (error) << endl;
 		exit (1);
 	}
-}
 
+	/// Initialize the shader program and textures ///
+	m_vh.CreateShaderProg ( &m_fluid );
+	m_fluid.hTexture1D = m_vh.Create1DTransFunc ( m_vh.DefaultTransFunc () );
+	m_fluid.hTexture2D = m_vh.Create2DCanvas ( &m_fluid );
+	m_fluid.hTexture3D = m_vh.Create3DVolumetric ();
+	m_fluid.hCluster = m_vh.InitVerticesBufferObj ();
+	m_fluid.hFramebuffer = m_vh.Create2DFrameBuffer ( &m_fluid );
+	m_fluid.ptrData = (GLubyte*) calloc (param::nSim_Size, sizeof(GLubyte));
 
-void onCreate ()
-{
-	// Initialize glew
-	initRuntime ();
-
-	// Create shader and program objects
-	CreateShaders ( &fluid );
-
-	// Create texture objects
-	fluid.hTexture1D = Create1DTransFunc ();
-	fluid.hTexture2D = Create2DBackFace ( &fluid );
-	fluid.hTexture3D = Create3DVolumetric ();
-
-	// Create vertex buffer
-	fluid.hCluster = InitVerticesBufferObj ();
-
-	// Create frame buffer
-	fluid.hFramebuffer = CreateFrameBuffer ( &fluid );
-
-	cout << "initialize finished, sge will work soon!" << endl;
+	cout << "initialize finished, sge will start soon!" << endl;
 };
-
 
 
 void onDisplay ()
 {
 	glEnable ( GL_DEPTH_TEST );
 	
-	// Bind index 0 to the shader input variable "VerPos"
-	glBindAttribLocation ( fluid.hProgram, 0, "vertices" );
+	// Bind the vertex buffer object to shader with attribute "vertices"
+	glBindAttribLocation ( m_fluid.hProgram, 0, "vertices" );
 
     /// Do Render Now!
-	glBindFramebuffer ( GL_DRAW_FRAMEBUFFER, fluid.hFramebuffer ); // Chose which framebuffer to render
-	glViewport ( 0, 0, fluid.nScrWidth, fluid.nScrHeight );
-	fluid.ptrShader->LinkShaders ( fluid.hProgram, 2, fluid.hBFVert, fluid.hBFFrag );
-	fluid.ptrShader->ActiveProgram ( fluid.hProgram );
-	RenderingFace ( GL_FRONT, &fluid );   // From front face
-	fluid.ptrShader->DeactiveProgram ( fluid.hProgram );
+	glBindFramebuffer ( GL_DRAW_FRAMEBUFFER, m_fluid.hFramebuffer );
+	glViewport ( 0, 0, m_fluid.nCanvasWidth, m_fluid.nCanvasHeight );
+	m_fluid.ptrShader->LinkShaders ( m_fluid.hProgram, 2, m_fluid.hBFVert, m_fluid.hBFFrag );
+	m_fluid.ptrShader->ActiveProgram ( m_fluid.hProgram );
+	m_vh.RenderingFace ( GL_FRONT, &m_fluid );
+	m_fluid.ptrShader->DeactiveProgram ( m_fluid.hProgram );
 
 
-    glBindFramebuffer ( GL_FRAMEBUFFER, 0 ); // To break the binding
-    glViewport ( 0, 0, fluid.nScrWidth, fluid.nScrHeight );
-	fluid.ptrShader->LinkShaders ( fluid.hProgram, 2, fluid.hRCFrag, fluid.hRCVert );
-	fluid.ptrShader->ActiveProgram ( fluid.hProgram );
-	SetVolumeInfoUinforms ( &fluid );
-	RenderingFace ( GL_BACK, &fluid );
-	fluid.ptrShader->DeactiveProgram ( fluid.hProgram );
+    glBindFramebuffer ( GL_FRAMEBUFFER, 0 );
 
-	fluid.nAngle = (fluid.nAngle + 1) % 360;
+	glViewport ( 0, 0, m_fluid.nCanvasWidth, m_fluid.nCanvasHeight );
+	m_fluid.ptrShader->LinkShaders ( m_fluid.hProgram, 2, m_fluid.hRCVert, m_fluid.hRCFrag );
+	m_fluid.ptrShader->ActiveProgram ( m_fluid.hProgram );
+	m_vh.SetVolumeInfoUinforms ( &m_fluid );
+	m_vh.RenderingFace ( GL_BACK, &m_fluid );
+	m_fluid.ptrShader->DeactiveProgram ( m_fluid.hProgram );
+
+	m_fluid.nAngle = (m_fluid.nAngle + 1) % 360;
+};
+
+
+void onDestroy ()
+{
+	SAFE_FREE_PTR ( m_fluid.ptrData );
+	SAFE_FREE_PTR ( m_fluid.ptrShader );
+	cout << "memory freed, program exits..." << endl;
 };
 
 
 void onIdle ()
 {
-	// Solving the density
-	DensitySolver ( host_den, host_den0, host_u, host_v, host_w );
-	// Solving the velocity
-	VelocitySolver ( host_u, host_v, host_w, host_u0, host_v0, host_w0 );
-	// Interpolation
-	DensityItp ( host_den, dataset );
 
-	fluid.ptrData = dataset;
 };
 
 
 int main()
 {
-	// initialize parameters
-	initParam ();
+	initialize ();
 
-	// initialize the device array and push them into stack
-	if ( AllocateResourcePtrs () != SG_RUNTIME_OK ) 
-	{
-		cout << "allocate the memory and cache failed" << endl;
-		exit (1);
-	}
-	else
-	{
-		ZeroData ();
-		// Prepare the stage for fluid simulation
-		InitSimGrid ( host_den, host_u, host_v, host_w );
-		cout << "fluid simulation stage prepared" << endl;
-	}
-
-	MainActivity *activity = new MainActivity ( fluid.nScrWidth, fluid.nScrHeight );
+	MainActivity *activity = new MainActivity ( m_fluid.nCanvasWidth, m_fluid.nCanvasHeight );
 
 	activity->SetAppClientInfo ( L"Excalibur OTL 0.00.00.001" );
 
 	activity->RegisterCreateFunc ( onCreate );
-	activity->RegisterIdleFunc ( onIdle );
 	activity->RegisterDisplayFunc ( onDisplay );
+	activity->RegisterDestroyFunc ( onDestroy );
+	activity->RegisterIdleFunc ( onIdle );
 	
-	activity->SetupRoutine ();
+	activity->SetupRoutine();
 }
