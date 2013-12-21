@@ -261,10 +261,6 @@ void VolumeHelper::RenderingFace ( GLenum cullFace, fluidsim *fluid )
 	// Set model view matrix
     mat4 model = mat4(1.0f);
 	model = model * rotate ( (float)angle, vec3(0.0f, 1.0f, 0.0f) );
-    
-	// Rotate and translate the view matrix, let object seems to "stand up"
-	// Because, original volumetric data is "lying down" on ground.
-	model = model * rotate ( 90.0f, vec3(1.0f, 0.0f, 0.0f) );
 	model = model * translate ( vec3(-0.5f, -0.5f, -0.5f) ); 
     
 	// Finally, we focus on setting the Model View Projection Matrix (MVP matrix)
