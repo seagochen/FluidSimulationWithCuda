@@ -37,7 +37,7 @@
 
 #pragma region definitions
 
-#define DELTA_TIME           0.1f /* -------------------------------------- 0.1 second */
+#define DELTA_TIME           0.01f/* -------------------------------------- 0.1 second */
 #define DIFFUSION            0.1f /* -------------------------------------- diffusion */
 #define VISCOSITY            0.0f /* -------------------------------------- viscosity */
 #define FORCE                5.0f /* -------------------------------------- external force */
@@ -137,13 +137,13 @@
 
 #define gst_header       0             /* (ghost, halo) the header cell of grid */
 #define sim_header       1             /* (actually) the second cell of grid */
-#define gst_tailer       Grids_X - 1   /* (ghost, halo) the last cell of grid */
-#define sim_tailer       Grids_X - 2   /* (actually) the second last cell of grid */
+#define gst_trailer       Grids_X - 1   /* (ghost, halo) the last cell of grid */
+#define sim_trailer       Grids_X - 2   /* (actually) the second last cell of grid */
 
 #define BeginSimArea() \
-	if ( i >= sim_header and i <= sim_tailer ) \
-	if ( j >= sim_header and j <= sim_tailer ) \
-	if ( k >= sim_header and k <= sim_tailer ) {
+	if ( i >= sim_header and i <= sim_trailer ) \
+	if ( j >= sim_header and j <= sim_trailer ) \
+	if ( k >= sim_header and k <= sim_trailer ) {
 
 #define EndSimArea() }
 
@@ -184,10 +184,10 @@ struct param
 {
 	const static int nGrids_X  = Grids_X;
 	const static int nSim_Size = SIM_SIZE;
-	const static int nGridGhostHeader = 0;
-	const static int nGridGhostTail = Grids_X - 1;
-	const static int nGridSimHeader = 1;
-	const static int nGridSimTail   = nGridGhostTail - 1;
+	const static int nGridGhostHeader = gst_header;
+	const static int nGridGhostTrailer = gst_trailer;
+	const static int nGridSimHeader = sim_header;
+	const static int nGridSimTail   = sim_trailer;
 };  
 
 #pragma endregion

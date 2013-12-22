@@ -1,4 +1,4 @@
-/**
+﻿/**
 *
 * Copyright (C) <2013> <Orlando Chen>
 * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -143,31 +143,316 @@ __global__ void kernelAddVelocity ( float *devU, float *devV, float *devW )
 
 #pragma region kernels for boundary condition
 
-__device__ void subkelCheckIntensity ( float *dens )
+/**
+* condition can be one of the following
+* 0 -------- density solver
+* 1 -------- velocity u solver
+* 2 -------- velocity v solver
+* 3 -------- velocity w solver
+*/
+__device__ void subkernelCheckBoundary ( float *grid, const int condition )
 {
-	// Get index of GPU-thread
+	/// Get index of GPU-thread ///
 	GetIndex ();
 
-	// Boundary condition
 	BeginSimArea ();
 	{
+		switch ( condition )
+		{
+		case 0: // density
+			/// density, simply copy the data ///
+			grid [ Index(gst_header, j, k) ] = grid [ Index(sim_header, j, k) ];
+			grid [ Index(i, gst_header, k) ] = grid [ Index(i, sim_header, k) ];
+			grid [ Index(i, j, gst_header) ] = grid [ Index(i, j, sim_header) ];
+			grid [ Index(gst_trailer, j, k) ] = grid [ Index(sim_trailer, j, k) ];
+			grid [ Index(i, gst_trailer, k) ] = grid [ Index(i, sim_trailer, k) ];
+			grid [ Index(i, j, gst_trailer) ] = grid [ Index(i, j, sim_trailer) ];
+			break;
 
+		case 1: // velocity u
+			/// plane ik will keep the same as vector u ///
+			grid [ Index(i, gst_header, k) ] = grid [ Index(i, sim_header, k) ];
+			grid [ Index(i, gst_trailer, k) ] = grid [ Index(i, sim_trailer, k) ];
+			/// as vector u is perpendicular to plane jk ///
+			if ( grid [ Index(sim_header, j, k) ] > 0 )
+				grid [ Index(gst_header, j, k) ] = grid [ Index(sim_header, j, k) ];
+			else
+				grid [ Index(gst_header, j, k) ] = -grid [ Index(sim_header, j, k) ];
+			if ( grid [ Index(sim_trailer, j, k) ] > 0 )
+				grid [ Index(gst_trailer, j, k) ] = -grid [ Index(sim_trailer, j, k) ];
+			else
+				grid [ Index(gst_trailer, j, k) ] = grid [ Index(sim_trailer, j, k) ];
+			/// plane ij is the same as plane ik ///
+			grid [ Index(i, j, gst_header) ] = grid [ Index(i, j, sim_header) ];			
+			grid [ Index(i, j, gst_trailer) ] = grid [ Index(i, j, sim_trailer) ];
+			break;
+
+		case 2: // velocity v
+			/// vector v is perpendicular to plane ik ///
+			if ( grid [ Index(i, sim_header, k) > 0 ] )
+				grid [ Index(i, gst_header, k) ] = grid [ Index(i, sim_header, k) ];
+			else
+				grid [ Index(i, gst_header, k) ] = -grid [ Index(i, sim_header, k) ];
+			if ( grid [ Index(i, sim_trailer, k) ] > 0 )
+				grid [ Index(i, gst_trailer, k) ] = -grid [ Index(i, sim_trailer, k) ];
+			else 
+				grid [ Index(i, gst_trailer, k) ] = grid [ Index(i, sim_trailer, k) ];
+			/// vector v parallel to the plane ij, jk ///
+			grid [ Index(gst_header, j, k) ] = grid [ Index(sim_header, j, k) ];
+			grid [ Index(i, j, gst_header) ] = grid [ Index(i, j, sim_header) ];
+			grid [ Index(gst_trailer, j, k) ] = grid [ Index(sim_trailer, j, k) ];
+			grid [ Index(i, j, gst_trailer) ] = grid [ Index(i, j, sim_trailer) ];
+			break;
+
+		case 3: // velocity w
+			/// vector w is perpendicular to plane ij ///
+			if ( grid [ Index(i, j, sim_header) ] > 0 )
+				grid [ Index(i, j, gst_header) ] = grid [ Index(i, j, sim_header) ];
+			else
+				grid [ Index(i, j, gst_header) ] = -grid [ Index(i, j, sim_header) ];
+			if ( grid [ Index(i, j, sim_trailer) ] > 0 )
+				grid [ Index(i, j, gst_trailer) ] = -grid [ Index(i, j, sim_trailer) ];
+			else
+				grid [ Index(i, j, gst_trailer) ] = grid [ Index(i, j, sim_trailer) ];
+			/// vector w is parallel to the plane jk, ik ///
+			grid [ Index(gst_header, j, k) ] = grid [ Index(sim_header, j, k) ];
+			grid [ Index(i, gst_header, k) ] = grid [ Index(i, sim_header, k) ];
+			grid [ Index(gst_trailer, j, k) ] = grid [ Index(sim_trailer, j, k) ];
+			grid [ Index(i, gst_trailer, k) ] = grid [ Index(i, sim_trailer, k) ];
+			break;
+
+		default:
+			break;
+		}
 	}
 	EndSimArea ();
+
+		/// eight corner cells ///
+		grid [ Index(gst_header, gst_header, gst_header) ] = (          // at (0, 0, 0)
+			grid [ Index(sim_header, gst_header, gst_header) ] +          // --right
+			grid [ Index(gst_header, sim_header, gst_header) ] +          // --up
+			grid [ Index(gst_header, gst_header, sim_header) ] ) / 3.f;   // --in
+		grid [ Index(gst_header, gst_trailer, gst_header) ] = (         // at (0, 1, 0)
+			grid [ Index(gst_header, sim_trailer, gst_header) ] +         // --down
+			grid [ Index(sim_header, gst_trailer, gst_header) ] +         // --right
+			grid [ Index(gst_header, gst_trailer, sim_header) ]) / 3.f;   // --in
+		grid [ Index(gst_trailer, gst_trailer, gst_header) ] = (        // at (1, 1, 0)
+			grid [ Index(sim_trailer, gst_trailer, gst_header) ] +        // --left
+			grid [ Index(gst_trailer, sim_trailer, gst_header) ] +        // --down
+			grid [ Index(gst_trailer, gst_trailer, sim_header) ]) / 3.f;  // --in
+		grid [ Index(gst_trailer, gst_header, gst_header) ] = (         // at (1, 0, 0)
+			grid [ Index(sim_trailer, gst_header, gst_header) ] +         // --left 
+			grid [ Index(gst_trailer, sim_header, gst_header) ] +         // --up
+			grid [ Index(gst_trailer, gst_header, sim_header) ] ) / 3.f;  // --in
+		grid [ Index(gst_header, gst_header, gst_trailer) ] = (         // at (0, 0, 1)
+			grid [ Index(gst_header, gst_header, sim_trailer) ] +         // --out
+			grid [ Index(gst_header, sim_header, gst_trailer) ] +         // --up
+			grid [ Index(sim_header, gst_header, gst_trailer) ]) / 3.f;   // --right
+		grid [ Index(gst_header, gst_trailer, gst_trailer) ] = (        // at (0, 1, 1)
+			grid [ Index(gst_header, gst_trailer, sim_trailer) ] +        // --out
+			grid [ Index(gst_header, sim_trailer, gst_trailer) ] +        // --down
+			grid [ Index(sim_header, gst_trailer, gst_trailer) ]) / 3.f;  // --right
+		grid [ Index(gst_trailer, gst_trailer, gst_trailer) ] = (       // at (1, 1, 1)
+			grid [ Index(sim_trailer, gst_trailer, gst_trailer) ] +       // --left
+			grid [ Index(gst_trailer, sim_trailer, gst_trailer) ] +       // --down
+			grid [ Index(gst_trailer, gst_trailer, sim_trailer) ]) / 3.f; // --out
+		grid [ Index(gst_trailer, gst_header, gst_trailer) ] = (        // at (1, 0, 1)
+			grid [ Index(gst_trailer, gst_header, sim_trailer) ] +        // --out 
+			grid [ Index(gst_trailer, sim_header, gst_trailer) ] +        // --up 
+			grid [ Index(sim_trailer, gst_header, gst_trailer) ]) / 3.f;  // --left
 };
 
 __global__ void kernelCheckBoundary ( float *dens, float *velU, float *velV, float *velW )
 {
-	subkelCheckIntensity ( dens );
+	if ( dens != NULL )
+		subkernelCheckBoundary ( dens, 0 );
+	if ( velU != NULL )
+		subkernelCheckBoundary ( velU, 1 );
+	if ( velV != NULL )
+		subkernelCheckBoundary ( velV, 2 );
+	if ( velW != NULL )
+		subkernelCheckBoundary ( velW, 3 );
 }
 
 #pragma endregion
 
 
+#pragma region kernels for advection
 
-#pragma region kernels for advect source and velocity
+__device__ float subInterpolation ( float v0, float v1, float w0, float w1 )
+{
+	return v0 * w0 + v1 * w1;
+};
+
+__global__ void kernelAdvect ( float *den_out, float const *dens_in, float const *u_in, float const *v_in, float const *w_in )
+{
+	// Get index of GPU-thread
+	GetIndex ( );
+	
+	float dt0 = DELTA_TIME * Grids_X;
+
+	BeginSimArea ( );
+	{
+		// <latex>{P}' = P_o - \bigtriangleup h \cdot \vec{U}</latex>, 計算單位時間內P點移動的位置
+		float x = i - dt0 * u_in [ Index ( i, j, k ) ];
+		float y = j - dt0 * v_in [ Index ( i, j, k ) ];
+		float z = k - dt0 * w_in [ Index ( i, j, k ) ];
+
+		// 考慮到系統是封閉區域，所以需要做邊界檢測
+		if ( x < 0.5f ) x = 0.5f;
+		if ( y < 0.5f ) y = 0.5f;
+		if ( z < 0.5f ) z = 0.5f;
+		if ( x > SimArea_X + 0.5f ) x = SimArea_X + 0.5f;		
+		if ( y > SimArea_X + 0.5f ) y = SimArea_X + 0.5f;
+		if ( z > SimArea_X + 0.5f ) z = SimArea_X + 0.5f;
+
+		// 新位置<latex>{P}'</latex>的附加格點位置
+		int i0 = (int)x; 
+		int j0 = (int)y;
+		int k0 = (int)z;
+		int i1 = i0 + 1;
+		int j1 = j0 + 1;
+		int k1 = k0 + 1;
+		
+		// 計算插值所需的權重
+		float u1 = x - i0;
+		float u0 = 1 - u1;
+		float v1 = y - j0;
+		float v0 = 1 - v1;
+		float w1 = z - k0;
+		float w0 = 1 - w1;
+
+		// 對點<latex>{P}'</latex>，w方向做插值計算
+		float tempi0j0 = subInterpolation ( dens_in [ Index (i0, j0, k0) ], dens_in [ Index (i0, j0, k1) ], w0, w1 );
+		float tempi0j1 = subInterpolation ( dens_in [ Index (i0, j1, k0) ], dens_in [ Index (i0, j1, k1) ], w0, w1 );
+		float tempi1j0 = subInterpolation ( dens_in [ Index (i1, j0, k0) ], dens_in [ Index (i1, j0, k1) ], w0, w1 );
+		float tempi1j1 = subInterpolation ( dens_in [ Index (i1, j1, k0) ], dens_in [ Index (i1, j1, k1) ], w0, w1 );
+
+		// 對點<latex>{P}'</latex>，v方向做插值計算
+		float tempi0   = subInterpolation ( tempi0j0, tempi0j1, v0, v1 );
+		float tempi1   = subInterpolation ( tempi1j0, tempi1j1, v0, v1 );
+
+		// 對點<latex>{P}'</latex>，u方向做插值計算, 並獲得最終結果
+		den_out [ Index(i, j, k) ] = subInterpolation ( tempi0, tempi1, u0, u1 );
+	}
+	EndSimArea();
+
+};
+
+#pragma endregion
 
 
+#pragma region visocity and diffuse solver
+
+__device__ float subDivergence ( float *grid_in, int i, int j, int k )
+{
+	return
+		grid_in[Index(i-1, j, k)] + grid_in[Index(i+1, j, k)] + 
+		grid_in[Index(i, j-1, k)] + grid_in[Index(i, j+1, k)] +
+		grid_in[Index(i, j, k-1)] + grid_in[Index(i, j, k+1)];
+};
+
+
+__global__ void kernelDiffuse ( float *grid_out, float const *grid_in )
+{
+	// Get index of GPU-thread
+	GetIndex ( );
+	float ratio = DELTA_TIME * DIFFUSION * SimArea_X * SimArea_X;
+	float div   = 1.f + 6.f * ratio;
+
+	BeginSimArea ( );
+	{
+		grid_out [ Index(i, j, k) ] = ( grid_in [ Index(i, j, k) ] + ratio * ( subDivergence (grid_out, i, j, k) )) / div;
+	}
+	EndSimArea ( );
+};
+
+
+__global__ void kernelVisocity ( float *grid_out, float const *grid_in )
+{
+	// Get index of GPU-thread
+	GetIndex ( );
+	float ratio = DELTA_TIME * VISCOSITY * SimArea_X * SimArea_X;
+	float div   = 1.f + 6.f * ratio;
+
+	BeginSimArea ( );
+	{
+		grid_out [ Index(i, j, k) ] = ( grid_in [ Index(i, j, k) ] + ratio * ( subDivergence (grid_out, i, j, k) )) / div;
+	}
+	EndSimArea ( );
+};
+
+#pragma endregion
+
+
+#pragma region velocity projection
+
+__global__ void kernelDivergence ( float *grad_out, float *proj_out, float const *u_in, float const *v_in, float const *w_in )
+{
+	// Get the thread ID
+	GetIndex ( );
+
+	float h = 1.0 / Grids_X;
+
+	BeginSimArea ( );
+	{
+		grad_out [ Index( i, j, k ) ] = -0.5 * h * ( 
+			u_in [ Index( i+1, j, k ) ] - u_in [ Index( i-1, j, k ) ] + // gradient of u
+			v_in [ Index( i, j+1, k ) ] - v_in [ Index( i, j-1, k ) ] + // gradient of v
+			w_in [ Index( i, j, k+1 ) ] - w_in [ Index( i, j, k-1 ) ]); // gradient of w
+
+		proj_out[ Index( i, j, k ) ] = 0.f;
+	}
+	EndSimArea ( );
+};
+
+
+__global__ void kernelConservField ( float const *grad_in, float *proj_out, float const *u_in, float const *v_in, float const *w_in )
+{
+	// Get the thread ID
+	GetIndex ( );
+
+	float h = 1.0 / Grids_X;
+
+	BeginSimArea ( );
+	{
+		proj_out [ Index ( i, j, k ) ] = ( grad_in [ Index ( i, j, k ) ] + 
+			proj_out [ Index ( i-1, j, k ) ] + proj_out [ Index ( i+1, j, k ) ] +
+			proj_out [ Index ( i, j-1, k ) ] + proj_out [ Index ( i, j+1, k ) ] +
+			proj_out [ Index ( i, j, k-1 ) ] + proj_out [ Index ( i, j, k+1 ) ]) / 6.f;
+	}
+	EndSimArea ( );
+};
+
+
+__global__ void kernelProjectVelocity ( float const *grad_in, float const *proj_in, float *u_out, float *v_out, float *w_out )
+{
+	// Get the thread ID
+	GetIndex ( );
+
+	float h = 1.0 / Grids_X;
+
+	BeginSimArea ( );
+	{
+		u_out [ Index ( i, j, k ) ] -= 0.5f * ( proj_in [ Index ( i+1, j, k ) ] - proj_in [ Index ( i-1, j, k ) ] ) / h;
+		v_out [ Index ( i, j, k ) ] -= 0.5f * ( proj_in [ Index ( i, j+1, k ) ] - proj_in [ Index ( i, j-1, k ) ] ) / h;
+		w_out [ Index ( i, j, k ) ] -= 0.5f * ( proj_in [ Index ( i, j, k+1 ) ] - proj_in [ Index ( i, j, k-1 ) ] ) / h;
+	}
+	EndSimArea ( );
+};
+
+
+__host__ void cudaProjectField ( float *grad_in, float *proj_out, float *u_in, float *v_in, float *w_in, dim3 *gridDim, dim3 *blockDim )
+{
+	kernelDivergence cudaDevice(*gridDim, *blockDim) (grad_in, proj_out, u_in, v_in, w_in);
+
+	for ( int i = 0; i < 20; i++ )
+	{
+		kernelConservField cudaDevice(*gridDim, *blockDim) (grad_in, proj_out, u_in, v_in, w_in);
+	}
+
+	kernelProjectVelocity cudaDevice(*gridDim, *blockDim) (grad_in, proj_out, u_in, v_in, w_in);
+};
 
 #pragma endregion
 
@@ -234,6 +519,26 @@ void FluidSim::FluidSimSolver ( fluidsim *fluid )
 	// Define the computing unit size
 	cudaDeviceDim3D ();
 
+// density solver
+//	cudaAddSource ( dev_den, NULL, NULL, NULL, &gridDim, &blockDim );
+//	swap( dev_den, dev_den0 );
+//	cudaDiffuse ( dev_den, dev_den0, 0, &gridDim, &blockDim ); swap( dev_den, dev_den0 );
+//  cudaDensAdvect (dev_den, dev_den0, 0, dev_u, dev_v, dev_w, &gridDim, &blockDim );
+
+// velocity solver
+/*
+	cudaAddSource (NULL, dev_u, dev_v, dev_w, &gridDim, &blockDim );  
+	swap ( dev_u0, dev_u ); cudaViscosity ( dev_u, dev_u0, 1, &gridDim, &blockDim );
+	swap ( dev_v0, dev_v ); cudaViscosity ( dev_v, dev_v0, 2, &gridDim, &blockDim );
+
+	cudaProjectField ( dev_grid, dev_grid0, dev_u, dev_v, dev_w, &gridDim, &blockDim );
+	swap ( dev_u0, dev_u ); swap ( dev_v0, dev_v );
+
+	cudaVelAdvect ( dev_u, dev_u0, 1, dev_u0, dev_v0, dev_w0, &gridDim, &blockDim );
+	cudaVelAdvect ( dev_v, dev_v0, 2, dev_u0, dev_v0, dev_w0, &gridDim, &blockDim );
+	
+	cudaProjectField ( dev_grid, dev_grid0, dev_u, dev_v, dev_w, &gridDim, &blockDim );
+*/    
 	kernelPickData cudaDevice ( gridDim, blockDim ) ( dev_den, dev_data );
 
 	if ( cudaDeviceSynchronize () != cudaSuccess )
