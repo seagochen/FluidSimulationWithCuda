@@ -38,6 +38,7 @@
 using namespace sge;
 using namespace std;
 
+
 #pragma region free, zero, and allocate memory
 
 void FluidSim::FreeResourcePtrs ( void )
@@ -122,7 +123,7 @@ __global__ void kernelAddSource ( float *grid )
 
 	if ( i > half - 10 && i < half + 10 ) if ( j < 5 ) if ( k > half - 10 && k < half + 10 )
 	{
-		grid [ Index(i,j,k) ] = SOURCE;
+		grid [ Index(i,j,k) ] = 10.f;
 	}
 };
 
@@ -134,7 +135,7 @@ __global__ void kernelAddVelocity ( float *devU, float *devV, float *devW )
 
 	if ( i > half - 10 && i < half + 10 ) if ( j < 5 ) if ( k > half - 10 && k < half + 10 )
 	{
-		devV [ Index(i,j,k) ] = 0.01f;
+		devV [ Index(i,j,k) ] = 1.f;
 	}
 };
 
@@ -150,7 +151,7 @@ __global__ void kernelAddVelocity ( float *devU, float *devV, float *devW )
 * 2 -------- velocity v solver
 * 3 -------- velocity w solver
 */
-__device__ void subkernelCheckBoundary ( float *grid, const int condition )
+__device__ void subCheckBoundary ( float *grid, const int condition )
 {
 	/// Get index of GPU-thread ///
 	GetIndex ();
@@ -265,13 +266,13 @@ __device__ void subkernelCheckBoundary ( float *grid, const int condition )
 __global__ void kernelCheckBoundary ( float *dens, float *velU, float *velV, float *velW )
 {
 	if ( dens != NULL )
-		subkernelCheckBoundary ( dens, 0 );
+		subCheckBoundary ( dens, 0 );
 	if ( velU != NULL )
-		subkernelCheckBoundary ( velU, 1 );
+		subCheckBoundary ( velU, 1 );
 	if ( velV != NULL )
-		subkernelCheckBoundary ( velV, 2 );
+		subCheckBoundary ( velV, 2 );
 	if ( velW != NULL )
-		subkernelCheckBoundary ( velW, 3 );
+		subCheckBoundary ( velW, 3 );
 }
 
 #pragma endregion
@@ -284,7 +285,7 @@ __device__ float subInterpolation ( float v0, float v1, float w0, float w1 )
 	return v0 * w0 + v1 * w1;
 };
 
-__global__ void kernelAdvect ( float *den_out, float const *dens_in, float const *u_in, float const *v_in, float const *w_in )
+__global__ void kernelAdvect ( float *grid_out, float const *grid_in, float const *u_in, float const *v_in, float const *w_in )
 {
 	// Get index of GPU-thread
 	GetIndex ( );
@@ -323,17 +324,22 @@ __global__ void kernelAdvect ( float *den_out, float const *dens_in, float const
 		float w0 = 1 - w1;
 
 		// 對點<latex>{P}'</latex>，w方向做插值計算
-		float tempi0j0 = subInterpolation ( dens_in [ Index (i0, j0, k0) ], dens_in [ Index (i0, j0, k1) ], w0, w1 );
-		float tempi0j1 = subInterpolation ( dens_in [ Index (i0, j1, k0) ], dens_in [ Index (i0, j1, k1) ], w0, w1 );
-		float tempi1j0 = subInterpolation ( dens_in [ Index (i1, j0, k0) ], dens_in [ Index (i1, j0, k1) ], w0, w1 );
-		float tempi1j1 = subInterpolation ( dens_in [ Index (i1, j1, k0) ], dens_in [ Index (i1, j1, k1) ], w0, w1 );
+		float tempi0j0 = subInterpolation ( grid_in [ Index (i0, j0, k0) ], grid_in [ Index (i0, j0, k1) ], w0, w1 );
+		float tempi0j1 = subInterpolation ( grid_in [ Index (i0, j1, k0) ], grid_in [ Index (i0, j1, k1) ], w0, w1 );
+		float tempi1j0 = subInterpolation ( grid_in [ Index (i1, j0, k0) ], grid_in [ Index (i1, j0, k1) ], w0, w1 );
+		float tempi1j1 = subInterpolation ( grid_in [ Index (i1, j1, k0) ], grid_in [ Index (i1, j1, k1) ], w0, w1 );
 
 		// 對點<latex>{P}'</latex>，v方向做插值計算
 		float tempi0   = subInterpolation ( tempi0j0, tempi0j1, v0, v1 );
 		float tempi1   = subInterpolation ( tempi1j0, tempi1j1, v0, v1 );
 
 		// 對點<latex>{P}'</latex>，u方向做插值計算, 並獲得最終結果
-		den_out [ Index(i, j, k) ] = subInterpolation ( tempi0, tempi1, u0, u1 );
+		grid_out [ Index(i, j, k) ] = subInterpolation ( tempi0, tempi1, u0, u1 );
+
+//		grid_out [ Index(i0,j0,k0) ] = ( grid_in [ Index(i0,j0,k0) ] + 
+//			grid_in [ Index(i0+1,j0,k0) ] + grid_in [ Index(i0-1,j0,k0) ] + 
+//			grid_in [ Index(i0,j0+1,k0) ] + grid_in [ Index(i0,j0-1,k0) ] +
+//			grid_in [ Index(i0,j0,k0+1) ] + grid_in [ Index(i0,j0,k0-1) ] ) / 7.f;
 	}
 	EndSimArea();
 
@@ -344,40 +350,43 @@ __global__ void kernelAdvect ( float *den_out, float const *dens_in, float const
 
 #pragma region visocity and diffuse solver
 
-__device__ float subDivergence ( float *grid_in, int i, int j, int k )
+__device__ float subDivergence ( const float *grid_in, int i, int j, int k )
 {
+	/**
+	* As delta x, delta y, and delta z is strictly equal to 1 
+	* which results the computation is simplified as the following 
+	*/
 	return
 		grid_in[Index(i-1, j, k)] + grid_in[Index(i+1, j, k)] + 
 		grid_in[Index(i, j-1, k)] + grid_in[Index(i, j+1, k)] +
 		grid_in[Index(i, j, k-1)] + grid_in[Index(i, j, k+1)];
 };
 
-
-__global__ void kernelDiffuse ( float *grid_out, float const *grid_in )
+__global__ void kernelDiffuse ( float *grid_out, const float *grid_in )
 {
-	// Get index of GPU-thread
-	GetIndex ( );
+	GetIndex ();
+
 	float ratio = DELTA_TIME * DIFFUSION * SimArea_X * SimArea_X;
 	float div   = 1.f + 6.f * ratio;
 
-	BeginSimArea ( );
+	BeginSimArea ();
 	{
-		grid_out [ Index(i, j, k) ] = ( grid_in [ Index(i, j, k) ] + ratio * ( subDivergence (grid_out, i, j, k) )) / div;
+//		grid_out [ Index(i, j, k) ] = ( grid_in [ Index(i, j, k) ] + ratio * ( subDivergence (grid_out, i, j, k) )) / div;
+		grid_out [ Index(i,j,k) ] = ( grid_in [ Index(i,j,k) ] + ratio * ( subDivergence (grid_in, i, j, k) )) / div;
 	}
-	EndSimArea ( );
+	EndSimArea ();
 };
-
 
 __global__ void kernelVisocity ( float *grid_out, float const *grid_in )
 {
-	// Get index of GPU-thread
 	GetIndex ( );
 	float ratio = DELTA_TIME * VISCOSITY * SimArea_X * SimArea_X;
 	float div   = 1.f + 6.f * ratio;
 
 	BeginSimArea ( );
 	{
-		grid_out [ Index(i, j, k) ] = ( grid_in [ Index(i, j, k) ] + ratio * ( subDivergence (grid_out, i, j, k) )) / div;
+//		grid_out [ Index(i, j, k) ] = ( grid_in [ Index(i, j, k) ] + ratio * ( subDivergence (grid_out, i, j, k) )) / div;
+		grid_out [ Index(i, j, k) ] = ( grid_in [ Index(i, j, k) ] + ratio * ( subDivergence (grid_in, i, j, k) )) / div;
 	}
 	EndSimArea ( );
 };
@@ -389,7 +398,6 @@ __global__ void kernelVisocity ( float *grid_out, float const *grid_in )
 
 __global__ void kernelDivergence ( float *grad_out, float *proj_out, float const *u_in, float const *v_in, float const *w_in )
 {
-	// Get the thread ID
 	GetIndex ( );
 
 	float h = 1.0 / Grids_X;
@@ -406,10 +414,8 @@ __global__ void kernelDivergence ( float *grad_out, float *proj_out, float const
 	EndSimArea ( );
 };
 
-
-__global__ void kernelConservField ( float const *grad_in, float *proj_out, float const *u_in, float const *v_in, float const *w_in )
+__global__ void kernelConservField ( float *proj_out, float const *grad_in, float const *u_in, float const *v_in, float const *w_in )
 {
-	// Get the thread ID
 	GetIndex ( );
 
 	float h = 1.0 / Grids_X;
@@ -424,10 +430,8 @@ __global__ void kernelConservField ( float const *grad_in, float *proj_out, floa
 	EndSimArea ( );
 };
 
-
-__global__ void kernelProjectVelocity ( float const *grad_in, float const *proj_in, float *u_out, float *v_out, float *w_out )
+__global__ void kernelProjectVelocity ( float *u_out, float *v_out, float *w_out, float const *grad_in, float const *proj_in )
 {
-	// Get the thread ID
 	GetIndex ( );
 
 	float h = 1.0 / Grids_X;
@@ -439,19 +443,6 @@ __global__ void kernelProjectVelocity ( float const *grad_in, float const *proj_
 		w_out [ Index ( i, j, k ) ] -= 0.5f * ( proj_in [ Index ( i, j, k+1 ) ] - proj_in [ Index ( i, j, k-1 ) ] ) / h;
 	}
 	EndSimArea ( );
-};
-
-
-__host__ void cudaProjectField ( float *grad_in, float *proj_out, float *u_in, float *v_in, float *w_in, dim3 *gridDim, dim3 *blockDim )
-{
-	kernelDivergence cudaDevice(*gridDim, *blockDim) (grad_in, proj_out, u_in, v_in, w_in);
-
-	for ( int i = 0; i < 20; i++ )
-	{
-		kernelConservField cudaDevice(*gridDim, *blockDim) (grad_in, proj_out, u_in, v_in, w_in);
-	}
-
-	kernelProjectVelocity cudaDevice(*gridDim, *blockDim) (grad_in, proj_out, u_in, v_in, w_in);
 };
 
 #pragma endregion
@@ -470,6 +461,32 @@ __global__ void kernelPickData ( float *grid, unsigned char *data )
 	unsigned char value = (unsigned char) temp;
 
 	data [ Index (i, j, k) ] = value;
+};
+
+#pragma endregion
+
+
+#pragma region buffer operations
+
+__global__ void kernelZeroBuffer ( float *grid )
+{
+	GetIndex ();
+
+	grid [ Index(i,j,k) ] = 0.f;
+};
+
+__global__ void kernelCopyBuffer ( float *grid_out, const float *grid_in )
+{
+	GetIndex ();
+	grid_out [ Index(i,j,k) ] = grid_in [ Index(i,j,k) ];
+};
+
+__global__ void kernelSwapBuffer ( float *grid0, float *grid1 )
+{
+	GetIndex ();
+	float temp = grid0 [ Index(i,j,k) ];
+	grid0 [ Index(i,j,k) ] = grid1 [ Index(i,j,k) ];
+	grid1 [ Index(i,j,k) ] = temp;
 };
 
 #pragma endregion
@@ -514,37 +531,94 @@ FluidSim::FluidSim ( fluidsim *fluid )
 };
 
 
-void FluidSim::FluidSimSolver ( fluidsim *fluid )
+void FluidSim::DensitySolver ( void )
 {
-	// Define the computing unit size
+	/// Define the computing unit size ///
 	cudaDeviceDim3D ();
 
-// density solver
-//	cudaAddSource ( dev_den, NULL, NULL, NULL, &gridDim, &blockDim );
-//	swap( dev_den, dev_den0 );
-//	cudaDiffuse ( dev_den, dev_den0, 0, &gridDim, &blockDim ); swap( dev_den, dev_den0 );
-//  cudaDensAdvect (dev_den, dev_den0, 0, dev_u, dev_v, dev_w, &gridDim, &blockDim );
+	/// Zero origin buffer first ///
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_den0 );
+	/// Advection ///
+	kernelAdvect cudaDevice(gridDim, blockDim) ( dev_den0, dev_den, dev_u, dev_v, dev_w );
+	/// Check boundary condtion ///
+	kernelCheckBoundary cudaDevice(gridDim, blockDim) ( dev_den0, NULL, NULL, NULL );
+	/// Copy the buffer ///
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_den, dev_den0 );
+	// Diffusion
+	kernelDiffuse cudaDevice(gridDim, blockDim) ( dev_den0, dev_den );
+	/// Check boundary condtion ///
+	kernelCheckBoundary cudaDevice(gridDim, blockDim) ( dev_den0, NULL, NULL, NULL );
+	/// Swap buffer ///
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_den, dev_den0 );
+	/// Zero origin buffer ///
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_den0 );
+};
 
-// velocity solver
-/*
-	cudaAddSource (NULL, dev_u, dev_v, dev_w, &gridDim, &blockDim );  
-	swap ( dev_u0, dev_u ); cudaViscosity ( dev_u, dev_u0, 1, &gridDim, &blockDim );
-	swap ( dev_v0, dev_v ); cudaViscosity ( dev_v, dev_v0, 2, &gridDim, &blockDim );
 
-	cudaProjectField ( dev_grid, dev_grid0, dev_u, dev_v, dev_w, &gridDim, &blockDim );
-	swap ( dev_u0, dev_u ); swap ( dev_v0, dev_v );
+void FluidSim::VelocitySolver ( void )
+{
+	/// Define the computing unit size ///
+	cudaDeviceDim3D ();
 
-	cudaVelAdvect ( dev_u, dev_u0, 1, dev_u0, dev_v0, dev_w0, &gridDim, &blockDim );
-	cudaVelAdvect ( dev_v, dev_v0, 2, dev_u0, dev_v0, dev_w0, &gridDim, &blockDim );
-	
-	cudaProjectField ( dev_grid, dev_grid0, dev_u, dev_v, dev_w, &gridDim, &blockDim );
-*/    
+	/// Zero origin buffer first ///
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_u0 );
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_v0 );
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_w0 );
+	/// Visocity ///
+	kernelVisocity cudaDevice(gridDim, blockDim) ( dev_u0, dev_u ); 
+	kernelVisocity cudaDevice(gridDim, blockDim) ( dev_v0, dev_v );
+	kernelVisocity cudaDevice(gridDim, blockDim) ( dev_w0, dev_w );
+	kernelCheckBoundary cudaDevice(gridDim, blockDim) ( NULL, dev_u0, dev_v0, dev_w0 );
+	/// Copy buffer ///
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_u, dev_u0 );
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_v, dev_v0 );
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_w, dev_w0 );
+	/// Zero buffer ///
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_u0 ); 
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_v0 );
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_w0 ); 
+	/// Project field ///
+	kernelDivergence cudaDevice(gridDim, blockDim) ( dev_grid, dev_grid0, dev_u, dev_v, dev_w );
+	kernelConservField cudaDevice(gridDim, blockDim) (dev_grid, dev_grid0, dev_u, dev_v, dev_w );
+	kernelProjectVelocity cudaDevice(gridDim, blockDim) ( dev_u, dev_v, dev_w, dev_grid, dev_grid0 );
+	/// Velocity update ///
+	kernelAdvect cudaDevice(gridDim, blockDim) ( dev_u0, dev_u, dev_u, dev_v, dev_w );
+	kernelAdvect cudaDevice(gridDim, blockDim) ( dev_v0, dev_v, dev_u, dev_v, dev_w );
+	kernelAdvect cudaDevice(gridDim, blockDim) ( dev_w0, dev_w, dev_u, dev_v, dev_w );
+	kernelCheckBoundary cudaDevice(gridDim, blockDim) ( NULL, dev_u0, dev_v0, dev_w0 );
+	/// Copy buffer ///
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_u, dev_u0 );
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_v, dev_v0 );
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_w, dev_w0 );
+	/// Project field again ///
+	kernelDivergence cudaDevice(gridDim, blockDim) ( dev_grid, dev_grid0, dev_u, dev_v, dev_w );
+	kernelConservField cudaDevice(gridDim, blockDim) (dev_grid, dev_grid0, dev_u, dev_v, dev_w );
+	kernelProjectVelocity cudaDevice(gridDim, blockDim) ( dev_u, dev_v, dev_w, dev_grid, dev_grid0 );
+	/// Zero buffer ///
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_u0 ); 
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_v0 );
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_w0 ); 
+};
+
+
+void FluidSim::FluidSimSolver ( fluidsim *fluid )
+{
+	// Solving the fluid simulation
+	VelocitySolver ();
+	DensitySolver ();
+
+	// Define the computing unit size
+	cudaDeviceDim3D ();
+   
 	kernelPickData cudaDevice ( gridDim, blockDim ) ( dev_den, dev_data );
 
 	if ( cudaDeviceSynchronize () != cudaSuccess )
 		cudaCheckErrors ( "cudaDeviceSynchronize was failed" );
 	
 	if ( cudaMemcpy ( data, dev_data, sizeof(unsigned char) * SIM_SIZE, cudaMemcpyDeviceToHost ) != cudaSuccess )
+		cudaCheckErrors ( "cudaMemcpy was failed" );
+	
+	if ( cudaMemcpy ( host_den, dev_den, sizeof(float) * SIM_SIZE, cudaMemcpyDeviceToHost ) != cudaSuccess )
 		cudaCheckErrors ( "cudaMemcpy was failed" );
 
 	fluid->ptrData = data;

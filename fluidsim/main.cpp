@@ -25,6 +25,9 @@ void initialize ()
 	m_fluid.nAngle = 0;
 	m_fluid.nCanvasWidth  = 600;
 	m_fluid.nCanvasHeight = 600;
+	m_fluid.bContinue     = true;
+	m_fluid.bFullScreen   = false;
+
 #if K_ON
 	m_fluid.nVolWidth    = param::nGrids_X;
 	m_fluid.nVolHeight   = param::nGrids_X;
@@ -33,17 +36,15 @@ void initialize ()
 	m_fluid.nVolWidth    = 256;
 	m_fluid.nVolHeight   = 256;
 	m_fluid.nVolDepth    = 225;
+	m_vh.LoadVolumeSource ( ".\\res\\head256.raw", &m_fluid );
 #endif
+
 	m_fluid.szCanvasVert = ".\\shader\\backface.vert";
 	m_fluid.szCanvasFrag = ".\\shader\\backface.frag";
 	m_fluid.szVolumVert  = ".\\shader\\raycasting.vert";
 	m_fluid.szVolumFrag  = ".\\shader\\raycasting.frag";
 
 	m_fluid.ptrData = (GLubyte*) calloc (param::nSim_Size, sizeof(GLubyte));
-
-#if !K_ON
-	m_vh.LoadVolumeSource ( ".\\res\\head256.raw", &m_fluid );
-#endif
 
 	/// Prepare the fluid simulation stage ///
 	m_fs = new FluidSim ( &m_fluid );
@@ -55,8 +56,11 @@ void initialize ()
 DWORD WINAPI cudaCFD ( LPVOID lpParam )
 {
 #if K_ON
-	/// Solve the fluid simulation ///
-	m_fs->FluidSimSolver ( &m_fluid );
+	while ( m_fluid.bContinue )
+	{
+		/// Solve the fluid simulation ///
+		m_fs->FluidSimSolver ( &m_fluid );
+	}
 #endif
 
 	return 0;
@@ -131,6 +135,9 @@ void onDisplay ()
 
 void onDestroy ()
 {
+	m_fluid.bContinue = false;
+	m_fs->FreeResourcePtrs ();
+	SAFE_FREE_PTR ( m_fs );
 	SAFE_FREE_PTR ( m_fluid.ptrData );
 	SAFE_FREE_PTR ( m_fluid.ptrShader );
 
@@ -143,6 +150,7 @@ void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 {
 	if ( keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN )
 	{
+		m_fluid.bContinue = false;
 		void onDestroy ();
 		exit (1);
 	}

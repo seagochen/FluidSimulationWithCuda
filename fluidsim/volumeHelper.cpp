@@ -87,33 +87,40 @@ GLubyte* VolumeHelper::DefaultTransFunc ()
 	GLubyte *tff = (GLubyte *) calloc ( 1024, sizeof(GLubyte) );
 	for ( int i = 0; i < 256; i++ )
 	{
+		if ( i > 0 )
+		{
+			tff [ i * 4 + 0 ] = 190;
+			tff [ i * 4 + 1 ] = 190;
+			tff [ i * 4 + 2 ] = 30;
+			tff [ i * 4 + 3 ] = 8;
+		}
 		if ( i > 10 )
 		{
-			tff [ i * 4 + 0 ] = 90;
-			tff [ i * 4 + 1 ] = 17;
-			tff [ i * 4 + 2 ] = 199;
-			tff [ i * 4 + 3 ] = 2;
+			tff [ i * 4 + 0 ] = 190;
+			tff [ i * 4 + 1 ] = 190;
+			tff [ i * 4 + 2 ] = 30;
+			tff [ i * 4 + 3 ] = 10;
 		}
 		if ( i > 15 )
 		{
-			tff [ i * 4 + 0 ] = 110;
-			tff [ i * 4 + 1 ] = 24;
-			tff [ i * 4 + 2 ] = 222;
-			tff [ i * 4 + 3 ] = 4;
+			tff [ i * 4 + 0 ] = 190;
+			tff [ i * 4 + 1 ] = 190;
+			tff [ i * 4 + 2 ] = 30;
+			tff [ i * 4 + 3 ] = 15;
 		}
 		if ( i > 21 )
 		{
-			tff [ i * 4 + 0 ] = 150;
-			tff [ i * 4 + 1 ] = 33;
-			tff [ i * 4 + 2 ] = 200;
-			tff [ i * 4 + 3 ] = 8;
+			tff [ i * 4 + 0 ] = 190;
+			tff [ i * 4 + 1 ] = 190;
+			tff [ i * 4 + 2 ] = 30;
+			tff [ i * 4 + 3 ] = 20;
 		}
 		if ( i > 30 )
 		{
-			tff [ i * 4 + 0 ] = 155;
-			tff [ i * 4 + 1 ] = 40;
-			tff [ i * 4 + 2 ] = 225;
-			tff [ i * 4 + 3 ] = 11;
+			tff [ i * 4 + 0 ] = 190;
+			tff [ i * 4 + 1 ] = 190;
+			tff [ i * 4 + 2 ] = 30;
+			tff [ i * 4 + 3 ] = 30;
 		}
 	}
 

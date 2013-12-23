@@ -37,14 +37,14 @@
 
 #pragma region definitions
 
-#define DELTA_TIME           0.01f/* -------------------------------------- 0.1 second */
+#define DELTA_TIME           0.1f /* -------------------------------------- 0.1 second */
 #define DIFFUSION            0.1f /* -------------------------------------- diffusion */
 #define VISCOSITY            0.0f /* -------------------------------------- viscosity */
 #define FORCE                5.0f /* -------------------------------------- external force */
 #define SOURCE               150  /* -------------------------------------- indensity */
 #define SIM_SIZE             Grids_X * Grids_X * Grids_X /* ----------- CFD dimension of grid */
-#define Grids_X              64   /* ----------------------------------- grids number on each dimension */
-#define SimArea_X            62   /* ----------------------------------- number of grids without ghost cells */
+#define Grids_X              128   /* ----------------------------------- grids number on each dimension */
+#define SimArea_X            126   /* ----------------------------------- number of grids without ghost cells */
 #define Threads_X            512  /* ----------------------------------- number of threads enabled */
 #define Tile_X               16   /* ----------------------------------- ties 16x16 gpu threads as a block */
 
@@ -170,7 +170,7 @@ struct fluidsim
 	char *szCanvasVert, *szCanvasFrag, *szVolumVert, *szVolumFrag;
 	/// Screen parameters ///	
 	GLint nAngle;
-	bool  bFullScreen;
+	bool  bFullScreen, bContinue;
 	/// Canvas information ///
 	GLint nCanvasWidth, nCanvasHeight;
 	/// Stride of ray casting ///
@@ -210,6 +210,8 @@ namespace sge
 
 	private:
 		SGRUNTIMEMSG AllocateResourcePtrs ( void );
+		void DensitySolver ( void );
+		void VelocitySolver ( void );
 
 	private:
 		GLubyte *data;
