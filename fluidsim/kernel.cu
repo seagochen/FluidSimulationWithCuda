@@ -20,7 +20,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Dec 12, 2013
-* <Last>		Dec 21, 2013
+* <Last>		Dec 23, 2013
 * <File>        kernel.cu
 */
 
@@ -113,37 +113,60 @@ SGRUNTIMEMSG FluidSim::AllocateResourcePtrs ( void )
 #pragma endregion
 
 
-#pragma region kernels for add source and velocity
+#pragma region buffer operations
 
-__global__ void kernelAddSource ( float *grid )
+__global__ void kernelPickData ( float *grid, unsigned char *data )
 {
 	GetIndex();
 
-	const int half = Grids_X / 2;
+	float temp = grid [ Index (i, j, k) ];
+	if ( temp > 256.f ) temp = 256.f;
+	else if ( temp < 0.f ) temp = 0.f;
 
-	if ( i > half - 10 && i < half + 10 ) if ( j < 5 ) if ( k > half - 10 && k < half + 10 )
-	{
-		grid [ Index(i,j,k) ] = 10.f;
-	}
+	data [ Index (i, j, k) ] = (unsigned char) temp;
 };
 
-__global__ void kernelAddVelocity ( float *devU, float *devV, float *devW )
+__global__ void kernelZeroBuffer ( float *grid )
 {
-	GetIndex();
-	
-	const int half = Grids_X / 2;
+	GetIndex ();
 
-	if ( i > half - 10 && i < half + 10 ) if ( j < 5 ) if ( k > half - 10 && k < half + 10 )
-	{
-		devV [ Index(i,j,k) ] = 1.f;
-	}
+	grid [ Index(i,j,k) ] = 0.f;
+};
+
+__global__ void kernelCopyBuffer ( float *grid_out, const float *grid_in )
+{
+	GetIndex ();
+	grid_out [ Index(i,j,k) ] = grid_in [ Index(i,j,k) ];
+};
+
+__global__ void kernelSwapBuffer ( float *grid0, float *grid1 )
+{
+	GetIndex ();
+	float temp = grid0 [ Index(i,j,k) ];
+	grid0 [ Index(i,j,k) ] = grid1 [ Index(i,j,k) ];
+	grid1 [ Index(i,j,k) ] = temp;
 };
 
 #pragma endregion
 
 
-#pragma region kernels for boundary condition
+__global__ void kernelAddSource ( float *dens, float *u, float *v, float*w )
+{
+	GetIndex();
 
+	const int half = Grids_X / 2;
+	if ( i > half - 10 && i < half + 10 ) if ( j < 2 ) if ( k > half - 10 && k < half + 10 )
+	{
+		if ( dens != NULL )
+			dens [ Index(i,j,k) ] = SOURCE * DELTA_TIME;
+		if ( v != NULL )
+			v [ Index(i,j,k) ] = SOURCE * DELTA_TIME;
+	}
+};
+
+
+__device__ void subCheckBoundary ( float *grid, const int condition )
+{
 /**
 * condition can be one of the following
 * 0 -------- density solver
@@ -151,9 +174,6 @@ __global__ void kernelAddVelocity ( float *devU, float *devV, float *devW )
 * 2 -------- velocity v solver
 * 3 -------- velocity w solver
 */
-__device__ void subCheckBoundary ( float *grid, const int condition )
-{
-	/// Get index of GPU-thread ///
 	GetIndex ();
 
 	BeginSimArea ();
@@ -263,6 +283,7 @@ __device__ void subCheckBoundary ( float *grid, const int condition )
 			grid [ Index(sim_trailer, gst_header, gst_trailer) ]) / 3.f;  // --left
 };
 
+
 __global__ void kernelCheckBoundary ( float *dens, float *velU, float *velV, float *velW )
 {
 	if ( dens != NULL )
@@ -275,15 +296,12 @@ __global__ void kernelCheckBoundary ( float *dens, float *velU, float *velV, flo
 		subCheckBoundary ( velW, 3 );
 }
 
-#pragma endregion
-
-
-#pragma region kernels for advection
 
 __device__ float subInterpolation ( float v0, float v1, float w0, float w1 )
 {
 	return v0 * w0 + v1 * w1;
 };
+
 
 __global__ void kernelAdvect ( float *grid_out, float const *grid_in, float const *u_in, float const *v_in, float const *w_in )
 {
@@ -345,10 +363,6 @@ __global__ void kernelAdvect ( float *grid_out, float const *grid_in, float cons
 
 };
 
-#pragma endregion
-
-
-#pragma region visocity and diffuse solver
 
 __device__ float subDivergence ( const float *grid_in, int i, int j, int k )
 {
@@ -361,6 +375,7 @@ __device__ float subDivergence ( const float *grid_in, int i, int j, int k )
 		grid_in[Index(i, j-1, k)] + grid_in[Index(i, j+1, k)] +
 		grid_in[Index(i, j, k-1)] + grid_in[Index(i, j, k+1)];
 };
+
 
 __global__ void kernelDiffuse ( float *grid_out, const float *grid_in )
 {
@@ -377,6 +392,7 @@ __global__ void kernelDiffuse ( float *grid_out, const float *grid_in )
 	EndSimArea ();
 };
 
+
 __global__ void kernelVisocity ( float *grid_out, float const *grid_in )
 {
 	GetIndex ( );
@@ -391,10 +407,6 @@ __global__ void kernelVisocity ( float *grid_out, float const *grid_in )
 	EndSimArea ( );
 };
 
-#pragma endregion
-
-
-#pragma region velocity projection
 
 __global__ void kernelDivergence ( float *grad_out, float *proj_out, float const *u_in, float const *v_in, float const *w_in )
 {
@@ -414,6 +426,7 @@ __global__ void kernelDivergence ( float *grad_out, float *proj_out, float const
 	EndSimArea ( );
 };
 
+
 __global__ void kernelConservField ( float *proj_out, float const *grad_in, float const *u_in, float const *v_in, float const *w_in )
 {
 	GetIndex ( );
@@ -430,6 +443,7 @@ __global__ void kernelConservField ( float *proj_out, float const *grad_in, floa
 	EndSimArea ( );
 };
 
+
 __global__ void kernelProjectVelocity ( float *u_out, float *v_out, float *w_out, float const *grad_in, float const *proj_in )
 {
 	GetIndex ( );
@@ -444,52 +458,6 @@ __global__ void kernelProjectVelocity ( float *u_out, float *v_out, float *w_out
 	}
 	EndSimArea ( );
 };
-
-#pragma endregion
-
-
-#pragma region retrieve data from buffer
-
-__global__ void kernelPickData ( float *grid, unsigned char *data )
-{
-	GetIndex();
-
-	float temp = ceil ( grid [ Index (i, j, k) ] );
-	if ( temp > 256.f ) temp = 256.f;
-	else if ( temp < 0.f ) temp = 0.f;
-
-	unsigned char value = (unsigned char) temp;
-
-	data [ Index (i, j, k) ] = value;
-};
-
-#pragma endregion
-
-
-#pragma region buffer operations
-
-__global__ void kernelZeroBuffer ( float *grid )
-{
-	GetIndex ();
-
-	grid [ Index(i,j,k) ] = 0.f;
-};
-
-__global__ void kernelCopyBuffer ( float *grid_out, const float *grid_in )
-{
-	GetIndex ();
-	grid_out [ Index(i,j,k) ] = grid_in [ Index(i,j,k) ];
-};
-
-__global__ void kernelSwapBuffer ( float *grid0, float *grid1 )
-{
-	GetIndex ();
-	float temp = grid0 [ Index(i,j,k) ];
-	grid0 [ Index(i,j,k) ] = grid1 [ Index(i,j,k) ];
-	grid1 [ Index(i,j,k) ] = temp;
-};
-
-#pragma endregion
 
 
 FluidSim::FluidSim ( fluidsim *fluid )
@@ -514,14 +482,13 @@ FluidSim::FluidSim ( fluidsim *fluid )
 	
 	first = false;
 
-	cout << "fluid simulation ready, zero the data and prepare the stage now" << endl;
+	cout << "fluid simulation ready, zero the data and preparing the stage now" << endl;
 	ZeroData ();
 	
 #pragma region do add source and velocity first
 	cudaDeviceDim3D ();
 	
-	kernelAddSource cudaDevice ( gridDim, blockDim ) ( dev_den );
-	kernelAddVelocity cudaDevice ( gridDim, blockDim ) ( dev_u, dev_v, dev_w );
+	kernelAddSource cudaDevice ( gridDim, blockDim ) ( dev_den, dev_u, dev_v, dev_w );
 	
 	if ( cudaDeviceSynchronize () != cudaSuccess )
 		cudaCheckErrors ( "cudaDeviceSynchronize was failed" );

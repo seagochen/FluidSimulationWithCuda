@@ -41,7 +41,7 @@
 #define DIFFUSION            0.1f /* -------------------------------------- diffusion */
 #define VISCOSITY            0.0f /* -------------------------------------- viscosity */
 #define FORCE                5.0f /* -------------------------------------- external force */
-#define SOURCE               150  /* -------------------------------------- indensity */
+#define SOURCE               100  /* -------------------------------------- indensity */
 #define SIM_SIZE             Grids_X * Grids_X * Grids_X /* ----------- CFD dimension of grid */
 #define Grids_X              128   /* ----------------------------------- grids number on each dimension */
 #define SimArea_X            126   /* ----------------------------------- number of grids without ghost cells */
