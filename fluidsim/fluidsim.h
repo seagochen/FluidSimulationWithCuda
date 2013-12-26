@@ -46,7 +46,7 @@
 #define VELOCITY            100 // 1.0 velocity
 
 #define Grids_X             128 // 128 grids per coordination
-#define Simul_Size      2097152 // 128 x 128 x 128
+#define Simul_Size      2097152 // 256 x 256 x 256
 #define Threads_X           512 // 512 threads
 #define Tile_X               16 // 16 x 16 threads as a block
 
@@ -131,12 +131,12 @@
   -----------------------------------------------------------------------------------------------------------
 */
 
-#define eqt              ==            /* equal to */
-#define and              &&            /* logical and */
-#define or               ||            /* logical or */
+#define eqt               ==            /* equal to */
+#define and               &&            /* logical and */
+#define or                ||            /* logical or */
 
-#define gst_header       0             /* (ghost, halo) the header cell of grid */
-#define sim_header       1             /* (actually) the second cell of grid */
+#define gst_header        0             /* (ghost, halo) the header cell of grid */
+#define sim_header        1             /* (actually) the second cell of grid */
 #define gst_trailer       Grids_X - 1  /* (ghost, halo) the last cell of grid */
 #define sim_trailer       Grids_X - 2  /* (actually) the second last cell of grid */
 

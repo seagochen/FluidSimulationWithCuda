@@ -36,13 +36,41 @@
 #include <cuda.h>
 #include <device_launch_parameters.h>
 #include "fluidsim.h"
+#include "bufferOp.h"
 #include "myMath.h"
 
 using namespace sge;
 using namespace std;
 
+
+__global__ void kernelAddSource ( int *dens, int *vel_u, int *vel_v, int *vel_w )
+{
+	GetIndex();
+
+	vel_u [ Index(i,j,k) ] = i;
+	vel_v [ Index(i,j,k) ] = j;
+	vel_w [ Index(i,j,k) ] = k;
+};
+
+
 void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 {
 	if ( !fluid->bContinue )
 		return ;
+
+	cudaDeviceDim3D();
+
+	kernelAddSource <<< gridDim, blockDim >>> ( NULL, dev_u, dev_v, dev_w );
+	kernelPickData  <<< gridDim, blockDim >>> ( dev_data, dev_v );
+
+	if ( cudaMemcpy (host_data, dev_data, 
+		sizeof(unsigned char) * (fluid->nVolDepth * fluid->nVolHeight * fluid->nVolWidth), 
+		cudaMemcpyDeviceToHost ) != cudaSuccess )
+	{
+		cudaCheckErrors ("cudaMemcpy failed");
+		FreeResourcePtrs ();
+		exit (1);
+	};
+
+	fluid->ptrData = host_data;
 };

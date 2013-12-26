@@ -87,26 +87,54 @@ GLubyte* VolumeHelper::DefaultTransFunc ()
 	GLubyte *tff = (GLubyte *) calloc ( 1024, sizeof(GLubyte) );
 	for ( int i = 0; i < 256; i++ )
 	{
-		if ( i > 0 && i < 20 )
+		if ( i < 25 ) // red
 		{
 			tff [ i * 4 + 0 ] = 255;
 			tff [ i * 4 + 1 ] = 0;
 			tff [ i * 4 + 2 ] = 0;
-			tff [ i * 4 + 3 ] = 30;
+			tff [ i * 4 + 3 ] = 10;
 		}
-		if ( i >= 20 && i < 30 )
+		if ( i >= 25 and i < 50 ) // green
 		{
 			tff [ i * 4 + 0 ] = 0;
 			tff [ i * 4 + 1 ] = 255;
 			tff [ i * 4 + 2 ] = 0;
-			tff [ i * 4 + 3 ] = 30;
+			tff [ i * 4 + 3 ] = 10;
 		}
-		if ( i >= 30 )
+		if ( i >= 50 and i < 75 ) // blue
 		{
 			tff [ i * 4 + 0 ] = 0;
 			tff [ i * 4 + 1 ] = 0;
 			tff [ i * 4 + 2 ] = 255;
-			tff [ i * 4 + 3 ] = 30;
+			tff [ i * 4 + 3 ] = 10;
+		}
+		if ( i >= 75 and i < 100 ) // purple
+		{
+			tff [ i * 4 + 0 ] = 255;
+			tff [ i * 4 + 1 ] = 0;
+			tff [ i * 4 + 2 ] = 255;
+			tff [ i * 4 + 3 ] = 10;
+		}
+		if ( i >= 100 and i < 125 ) // pink and blue 
+		{
+			tff [ i * 4 + 0 ] = 0;
+			tff [ i * 4 + 1 ] = 255;
+			tff [ i * 4 + 2 ] = 255;
+			tff [ i * 4 + 3 ] = 10;
+		}
+		if ( i >= 125 and i < 150 ) // yellow
+		{
+			tff [ i * 4 + 0 ] = 255;
+			tff [ i * 4 + 1 ] = 255;
+			tff [ i * 4 + 2 ] = 0;
+			tff [ i * 4 + 3 ] = 10;
+		}
+		if ( i >= 150 ) // white
+		{
+			tff [ i * 4 + 0 ] = 255;
+			tff [ i * 4 + 1 ] = 255;
+			tff [ i * 4 + 2 ] = 255;
+			tff [ i * 4 + 3 ] = 10;
 		}
 	}
 
