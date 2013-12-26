@@ -87,39 +87,25 @@ GLubyte* VolumeHelper::DefaultTransFunc ()
 	GLubyte *tff = (GLubyte *) calloc ( 1024, sizeof(GLubyte) );
 	for ( int i = 0; i < 256; i++ )
 	{
-		if ( i > 0 )
+		if ( i > 0 && i < 20 )
 		{
-			tff [ i * 4 + 0 ] = 190;
-			tff [ i * 4 + 1 ] = 190;
-			tff [ i * 4 + 2 ] = 30;
-			tff [ i * 4 + 3 ] = 8;
+			tff [ i * 4 + 0 ] = 255;
+			tff [ i * 4 + 1 ] = 0;
+			tff [ i * 4 + 2 ] = 0;
+			tff [ i * 4 + 3 ] = 30;
 		}
-		if ( i > 10 )
+		if ( i >= 20 && i < 30 )
 		{
-			tff [ i * 4 + 0 ] = 190;
-			tff [ i * 4 + 1 ] = 190;
-			tff [ i * 4 + 2 ] = 30;
-			tff [ i * 4 + 3 ] = 10;
+			tff [ i * 4 + 0 ] = 0;
+			tff [ i * 4 + 1 ] = 255;
+			tff [ i * 4 + 2 ] = 0;
+			tff [ i * 4 + 3 ] = 30;
 		}
-		if ( i > 15 )
+		if ( i >= 30 )
 		{
-			tff [ i * 4 + 0 ] = 190;
-			tff [ i * 4 + 1 ] = 190;
-			tff [ i * 4 + 2 ] = 30;
-			tff [ i * 4 + 3 ] = 15;
-		}
-		if ( i > 21 )
-		{
-			tff [ i * 4 + 0 ] = 190;
-			tff [ i * 4 + 1 ] = 190;
-			tff [ i * 4 + 2 ] = 30;
-			tff [ i * 4 + 3 ] = 20;
-		}
-		if ( i > 30 )
-		{
-			tff [ i * 4 + 0 ] = 190;
-			tff [ i * 4 + 1 ] = 190;
-			tff [ i * 4 + 2 ] = 30;
+			tff [ i * 4 + 0 ] = 0;
+			tff [ i * 4 + 1 ] = 0;
+			tff [ i * 4 + 2 ] = 255;
 			tff [ i * 4 + 3 ] = 30;
 		}
 	}
@@ -255,7 +241,7 @@ void VolumeHelper::RenderingFace ( GLenum cullFace, fluidsim *fluid )
 	using namespace glm;
 	
 	// Clear background color and depth buffer
-    glClearColor ( 0.f, 0.f, 0.f, 0.0f );
+    glClearColor ( 0.0f, 0.f, 0.0f, 0.0f );
     glClear ( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
 	//  Set projection and lookat matrix

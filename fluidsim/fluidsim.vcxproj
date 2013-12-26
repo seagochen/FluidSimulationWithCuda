@@ -25,17 +25,23 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="fluidSimImp.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="volumeHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fluidsim.h" />
+    <ClInclude Include="helper_math.h" />
+    <ClInclude Include="myMath.h" />
     <ClInclude Include="volumeHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="kernel.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="functions.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{76EABAA3-BE33-4291-BCDC-CE994EAB1CD3}</ProjectGuid>

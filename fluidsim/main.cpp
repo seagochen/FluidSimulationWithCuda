@@ -13,9 +13,9 @@
 using namespace sge;
 using namespace std;
 
-fluidsim     m_fluid;
-VolumeHelper m_vh;
-FluidSim    *m_fs;
+fluidsim      m_fluid;
+VolumeHelper  m_vh;
+FluidSimProc *m_fs;
 
 #define K_ON 100
 
@@ -27,6 +27,7 @@ void initialize ()
 	m_fluid.nCanvasHeight = 600;
 	m_fluid.bContinue     = true;
 	m_fluid.bFullScreen   = false;
+	m_fluid.bContinue     = true;
 
 #if K_ON
 	m_fluid.nVolWidth    = param::nGrids_X;
@@ -47,7 +48,7 @@ void initialize ()
 	m_fluid.ptrData = (GLubyte*) calloc (param::nSim_Size, sizeof(GLubyte));
 
 	/// Prepare the fluid simulation stage ///
-	m_fs = new FluidSim ( &m_fluid );
+	m_fs = new FluidSimProc ( &m_fluid );
 
 	cout << "initial stage finished" << endl;
 };

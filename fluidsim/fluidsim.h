@@ -37,38 +37,38 @@
 
 #pragma region definitions
 
-#define DELTA_TIME           0.1f /* -------------------------------------- 0.1 second */
-#define DIFFUSION            0.1f /* -------------------------------------- diffusion */
-#define VISCOSITY            0.0f /* -------------------------------------- viscosity */
-#define FORCE                5.0f /* -------------------------------------- external force */
-#define SOURCE               100  /* -------------------------------------- indensity */
-#define SIM_SIZE             Grids_X * Grids_X * Grids_X /* ----------- CFD dimension of grid */
-#define Grids_X              128   /* ----------------------------------- grids number on each dimension */
-#define SimArea_X            126   /* ----------------------------------- number of grids without ghost cells */
-#define Threads_X            512  /* ----------------------------------- number of threads enabled */
-#define Tile_X               16   /* ----------------------------------- ties 16x16 gpu threads as a block */
+#define DELTA_TIME           10 // 0.1 second
+#define DIFFUSION            10 // 0.1 diffusion
+#define VISOCITY              0 // 0.0 visocity
+#define EXT_FORCE            50 // 0.5 external force 
+#define INDENSITY         10000 // 100 indensity
+#define STRIDE              100 // 1.0 stride
+#define VELOCITY            100 // 1.0 velocity
 
-#define DevListNum    10
-#define dev_u         dev_list [ 0 ] /* -------------------------- u of U, on CUDA */
-#define dev_v         dev_list [ 1 ] /* -------------------------- v of U, on CUDA */
-#define dev_w         dev_list [ 2 ] /* -------------------------- w of U, on CUDA */
-#define dev_u0        dev_list [ 3 ] /* -------------------------- original u of U, on CUDA */
-#define dev_v0        dev_list [ 4 ] /* -------------------------- original v of U, on CUDA */
-#define dev_w0        dev_list [ 5 ] /* -------------------------- original w of U, on CUDA */
-#define dev_den       dev_list [ 6 ] /* -------------------------- density, on CUDA */
-#define dev_den0      dev_list [ 7 ] /* -------------------------- original density, on CUDA */
-#define dev_grid      dev_list [ 8 ] /* -------------------------- temporary grid, on CUDA */
-#define dev_grid0     dev_list [ 9 ] /* -------------------------- original temporary grid, on CUDA */
+#define Grids_X             128 // 128 grids per coordination
+#define Simul_Size      2097152 // 128 x 128 x 128
+#define Threads_X           512 // 512 threads
+#define Tile_X               16 // 16 x 16 threads as a block
 
-#define HostListNum   8
-#define host_u        host_list [ 0 ] /* ------------------------- component u of flow U on x-axis (left to right) */
-#define host_v        host_list [ 1 ] /* ------------------------- component v of flow U on y-axis (up to down) */
-#define host_w        host_list [ 2 ] /* ------------------------- component w of flow U on z-axis (near to far) */
-#define host_u0       host_list [ 3 ] /* ------------------------- original u */
-#define host_v0       host_list [ 4 ] /* ------------------------- original v */
-#define host_w0       host_list [ 5 ] /* ------------------------- original w */
-#define host_den      host_list [ 6 ] /* ------------------------- scalar field of density */
-#define host_den0     host_list [ 7 ] /* ------------------------- original density */
+#define DevListNum           11
+#define dev_u                dev_list [ 0 ]
+#define dev_v                dev_list [ 1 ]
+#define dev_w                dev_list [ 2 ]
+#define dev_u0               dev_list [ 3 ]
+#define dev_v0               dev_list [ 4 ]
+#define dev_w0               dev_list [ 5 ]
+#define dev_den              dev_list [ 6 ]
+#define dev_den0             dev_list [ 7 ]
+#define dev_grid1            dev_list [ 8 ]
+#define dev_grid2            dev_list [ 9 ]
+#define dev_grid3            dev_list [ 10 ]
+
+#define HostListNum          5
+#define host_u               host_list [ 0 ]
+#define host_v               host_list [ 1 ]
+#define host_w               host_list [ 2 ]
+#define host_den             host_list [ 3 ]
+#define host_den0            host_list [ 4 ]
 
 /*
   -----------------------------------------------------------------------------------------------------------
@@ -137,8 +137,8 @@
 
 #define gst_header       0             /* (ghost, halo) the header cell of grid */
 #define sim_header       1             /* (actually) the second cell of grid */
-#define gst_trailer       Grids_X - 1   /* (ghost, halo) the last cell of grid */
-#define sim_trailer       Grids_X - 2   /* (actually) the second last cell of grid */
+#define gst_trailer       Grids_X - 1  /* (ghost, halo) the last cell of grid */
+#define sim_trailer       Grids_X - 2  /* (actually) the second last cell of grid */
 
 #define BeginSimArea() \
 	if ( i >= sim_header and i <= sim_trailer ) \
@@ -183,7 +183,7 @@ struct fluidsim
 struct param
 {
 	const static int nGrids_X  = Grids_X;
-	const static int nSim_Size = SIM_SIZE;
+	const static int nSim_Size = Simul_Size;
 	const static int nGridGhostHeader = gst_header;
 	const static int nGridGhostTrailer = gst_trailer;
 	const static int nGridSimHeader = sim_header;
@@ -195,28 +195,26 @@ struct param
 
 namespace sge
 {
-	class FluidSim
+	class FluidSimProc
 	{
 	private:
-		std::vector <float*> dev_list;         /* ------------------------ a vector for storing device ptr */
-		std::vector <float*> host_list;        /* ------------------------ a vector for storing host ptr */
+		std::vector <int*> dev_list;
+		std::vector <int*> host_list;
+		GLubyte *host_data;
+		unsigned char *dev_data;
+		int times;
 
 	public:
-		FluidSim ( fluidsim *fluid );
+		FluidSimProc ( fluidsim *fluid );
 
 		void FluidSimSolver ( fluidsim *fluid );
 		void FreeResourcePtrs ( void );
 		void ZeroData ( void );
 
 	private:
-		SGRUNTIMEMSG AllocateResourcePtrs ( void );
+		SGRUNTIMEMSG AllocateResourcePtrs ( fluidsim *fluid );
 		void DensitySolver ( void );
 		void VelocitySolver ( void );
-
-	private:
-		GLubyte *data;
-		unsigned char* dev_data;
-		bool first;
 	};
 };
 
