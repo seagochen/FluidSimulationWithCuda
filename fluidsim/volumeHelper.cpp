@@ -42,21 +42,21 @@ bool VolumeHelper::CheckHandleError ( int nShaderObjs, ... )
 void VolumeHelper::CreateShaderProg ( fluidsim *fluid )
 {
 #pragma region temporary variables
-	GLuint *prog_out   = &fluid->hProgram;
-	GLuint *bfVert_out = &fluid->hBFVert;
-	GLuint *bfFrag_out = &fluid->hBFFrag;
-	GLuint *rcVert_out = &fluid->hRCVert;
-	GLuint *rcFrag_out = &fluid->hRCFrag;
+	GLuint *prog_out   = &fluid->shader.hProgram;
+	GLuint *bfVert_out = &fluid->shader.hBFVert;
+	GLuint *bfFrag_out = &fluid->shader.hBFFrag;
+	GLuint *rcVert_out = &fluid->shader.hRCVert;
+	GLuint *rcFrag_out = &fluid->shader.hRCFrag;
 #pragma endregion
 
 	// Create shader helper
 	Shader *shader_out = new Shader();
 
 	// Create shader objects from source
-	shader_out->CreateShaderObj ( fluid->szCanvasVert, SG_VERTEX,   bfVert_out );
-	shader_out->CreateShaderObj ( fluid->szCanvasFrag, SG_FRAGMENT, bfFrag_out );
-	shader_out->CreateShaderObj ( fluid->szVolumVert,  SG_VERTEX,   rcVert_out );
-	shader_out->CreateShaderObj ( fluid->szVolumFrag,  SG_FRAGMENT, rcFrag_out );
+	shader_out->CreateShaderObj ( fluid->shader.szCanvasVert, SG_VERTEX,   bfVert_out );
+	shader_out->CreateShaderObj ( fluid->shader.szCanvasFrag, SG_FRAGMENT, bfFrag_out );
+	shader_out->CreateShaderObj ( fluid->shader.szVolumVert,  SG_VERTEX,   rcVert_out );
+	shader_out->CreateShaderObj ( fluid->shader.szVolumFrag,  SG_FRAGMENT, rcFrag_out );
 
 	// Check error
 	if ( !CheckHandleError ( 4, *bfVert_out, *bfFrag_out, *rcVert_out, *rcFrag_out ) )
@@ -75,7 +75,7 @@ void VolumeHelper::CreateShaderProg ( fluidsim *fluid )
 		exit (1);
 	}
 
-	fluid->ptrShader = shader_out;
+	fluid->shader.ptrShader = shader_out;
 
 	cout << "shader program created" << endl;
 }
@@ -174,7 +174,8 @@ GLuint VolumeHelper::Create2DCanvas ( fluidsim *fluid )
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, fluid->nCanvasWidth, fluid->nCanvasHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 
+		fluid->drawing.nCanvasWidth, fluid->drawing.nCanvasHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 
 	cout << "canvas created" << endl;
 
@@ -185,7 +186,7 @@ GLuint VolumeHelper::Create2DCanvas ( fluidsim *fluid )
 void VolumeHelper::LoadVolumeSource ( const char *szRawFile, fluidsim *fluid )
 {
 	FILE *fp;
-	size_t size = fluid->nVolDepth * fluid->nVolHeight * fluid->nVolWidth;
+	size_t size = fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth;
     GLubyte *data = new GLubyte[size];
  
 	if ( !(fp = fopen(".\\res\\head256.raw", "rb")) )
@@ -201,7 +202,7 @@ void VolumeHelper::LoadVolumeSource ( const char *szRawFile, fluidsim *fluid )
     }
     fclose ( fp );
 
-	fluid->ptrData = data;
+	fluid->volume.ptrData = data;
 
 	cout << "volume resource loaded" << endl;
 };
@@ -232,13 +233,15 @@ GLuint VolumeHelper::Create2DFrameBuffer ( fluidsim *fluid )
     GLuint depthBuffer;
     glGenRenderbuffers(1, &depthBuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, fluid->nCanvasWidth, fluid->nCanvasHeight);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 
+		fluid->drawing.nCanvasWidth, fluid->drawing.nCanvasHeight);
 
     // Attach the texture and the depth buffer to the framebuffer
 	GLuint framebuffer;
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fluid->hTexture2D, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 
+		fluid->textures.hTexture2D, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
 	
 	// Check Framebuffer status
@@ -258,11 +261,11 @@ GLuint VolumeHelper::Create2DFrameBuffer ( fluidsim *fluid )
 void VolumeHelper::RenderingFace ( GLenum cullFace, fluidsim *fluid )
 {
 #pragma region temporary variables
-	GLfloat angle  = fluid->nAngle;
-	GLuint program = fluid->hProgram;
-	GLuint cluster = fluid->hCluster;
-	GLuint width   = fluid->nCanvasWidth;
-	GLuint height  = fluid->nCanvasHeight;
+	GLfloat angle  = fluid->drawing.nAngle;
+	GLuint program = fluid->shader.hProgram;
+	GLuint cluster = fluid->drawing.hCluster;
+	GLuint width   = fluid->drawing.nCanvasWidth;
+	GLuint height  = fluid->drawing.nCanvasHeight;
 	//GLint width = fluid->
 #pragma endregion
 
@@ -312,13 +315,13 @@ void VolumeHelper::RenderingFace ( GLenum cullFace, fluidsim *fluid )
 void VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
 {
 #pragma region temporary variables
-	GLuint program    = fluid->hProgram;
-	GLuint Tex1DTrans = fluid->hTexture1D;
-	GLuint Tex2DBF    = fluid->hTexture2D;
-	GLuint Tex3DVol   = fluid->hTexture3D;
-	GLfloat width     = fluid->nCanvasWidth;
-	GLfloat height    = fluid->nCanvasHeight;
-	GLfloat stepsize  = fluid->fStepsize;
+	GLuint program    = fluid->shader.hProgram;
+	GLuint Tex1DTrans = fluid->textures.hTexture1D;
+	GLuint Tex2DBF    = fluid->textures.hTexture2D;
+	GLuint Tex3DVol   = fluid->textures.hTexture3D;
+	GLfloat width     = fluid->drawing.nCanvasWidth;
+	GLfloat height    = fluid->drawing.nCanvasHeight;
+	GLfloat stepsize  = fluid->drawing.fStepsize;
 #pragma endregion
 
 	// Set the uniform of screen size
@@ -379,8 +382,8 @@ void VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
 		glBindTexture(GL_TEXTURE_3D, Tex3DVol);
 		glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 		glTexImage3D(GL_TEXTURE_3D, 0, GL_INTENSITY, 
-			fluid->nVolWidth, fluid->nVolHeight, fluid->nVolDepth,
-			0, GL_LUMINANCE, GL_UNSIGNED_BYTE, fluid->ptrData);
+			fluid->volume.nVolWidth, fluid->volume.nVolHeight, fluid->volume.nVolDepth,
+			0, GL_LUMINANCE, GL_UNSIGNED_BYTE, fluid->volume.ptrData);
 		glUniform1i(volumeLoc, 2);
     }
     else

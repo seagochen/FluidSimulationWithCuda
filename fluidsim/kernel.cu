@@ -55,7 +55,7 @@ __global__ void kernelAddSource ( int *dens, int *vel_u, int *vel_v, int *vel_w 
 
 void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 {
-	if ( !fluid->bContinue )
+	if ( !fluid->drawing.bContinue )
 		return ;
 
 	cudaDeviceDim3D();
@@ -64,7 +64,7 @@ void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 	kernelPickData  <<< gridDim, blockDim >>> ( dev_data, dev_v );
 
 	if ( cudaMemcpy (host_data, dev_data, 
-		sizeof(unsigned char) * (fluid->nVolDepth * fluid->nVolHeight * fluid->nVolWidth), 
+		sizeof(unsigned char) * (fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth), 
 		cudaMemcpyDeviceToHost ) != cudaSuccess )
 	{
 		cudaCheckErrors ("cudaMemcpy failed");
@@ -72,5 +72,5 @@ void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 		exit (1);
 	};
 
-	fluid->ptrData = host_data;
+	fluid->volume.ptrData = host_data;
 };

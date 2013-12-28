@@ -21,31 +21,31 @@ FluidSimProc *m_fs;
 
 void initialize ()
 {
-	m_fluid.fStepsize = 0.001f;
-	m_fluid.nAngle = 0;
-	m_fluid.nCanvasWidth  = 600;
-	m_fluid.nCanvasHeight = 600;
-	m_fluid.bContinue     = true;
-	m_fluid.bFullScreen   = false;
-	m_fluid.bContinue     = true;
+	m_fluid.drawing.fStepsize = 0.001f;
+	m_fluid.drawing.nAngle = 0;
+	m_fluid.drawing.nCanvasWidth  = 600;
+	m_fluid.drawing.nCanvasHeight = 600;
+	m_fluid.drawing.bContinue     = true;
+	m_fluid.drawing.bFullScreen   = false;
+	m_fluid.drawing.bContinue     = true;
 
 #if K_ON
-	m_fluid.nVolWidth    = param::nGrids_X;
-	m_fluid.nVolHeight   = param::nGrids_X;
-	m_fluid.nVolDepth    = param::nGrids_X;
+	m_fluid.volume.nVolWidth    = param::nGrids_X;
+	m_fluid.volume.nVolHeight   = param::nGrids_X;
+	m_fluid.volume.nVolDepth    = param::nGrids_X;
 #else
-	m_fluid.nVolWidth    = 256;
-	m_fluid.nVolHeight   = 256;
-	m_fluid.nVolDepth    = 225;
+	m_fluid.volume.nVolWidth    = 256;
+	m_fluid.volume.nVolHeight   = 256;
+	m_fluid.volume.nVolDepth    = 225;
 	m_vh.LoadVolumeSource ( ".\\res\\head256.raw", &m_fluid );
 #endif
 
-	m_fluid.szCanvasVert = ".\\shader\\backface.vert";
-	m_fluid.szCanvasFrag = ".\\shader\\backface.frag";
-	m_fluid.szVolumVert  = ".\\shader\\raycasting.vert";
-	m_fluid.szVolumFrag  = ".\\shader\\raycasting.frag";
+	m_fluid.shader.szCanvasVert = ".\\shader\\backface.vert";
+	m_fluid.shader.szCanvasFrag = ".\\shader\\backface.frag";
+	m_fluid.shader.szVolumVert  = ".\\shader\\raycasting.vert";
+	m_fluid.shader.szVolumFrag  = ".\\shader\\raycasting.frag";
 
-	m_fluid.ptrData = (GLubyte*) calloc (param::nSim_Size, sizeof(GLubyte));
+	m_fluid.volume.ptrData = (GLubyte*) calloc (param::nSim_Size, sizeof(GLubyte));
 
 	/// Prepare the fluid simulation stage ///
 	m_fs = new FluidSimProc ( &m_fluid );
@@ -57,7 +57,7 @@ void initialize ()
 DWORD WINAPI cudaCFD ( LPVOID lpParam )
 {
 #if K_ON
-	while ( m_fluid.bContinue )
+	while ( m_fluid.drawing.bContinue )
 	{
 		/// Solve the fluid simulation ///
 		m_fs->FluidSimSolver ( &m_fluid );
@@ -81,15 +81,15 @@ void onCreate ()
 	}
 
 	/// Create sub-thread function ///
-	m_fluid.hThread = CreateThread ( 
+	m_fluid.thread.hThread = CreateThread ( 
             NULL,                   // default security attributes
             0,                      // use default stack size  
             cudaCFD,                // thread function name
             NULL,                   // argument to thread function 
             0,                      // use default creation flags 
-			&m_fluid.dwThreadId);   // returns the thread identifier
+			&m_fluid.thread.dwThreadId);   // returns the thread identifier
 
-	 if ( m_fluid.hThread == NULL )
+	 if ( m_fluid.thread.hThread == NULL )
 	 {
 		 cout << "create sub-thread failed" << endl;
 		 exit (1);
@@ -97,11 +97,11 @@ void onCreate ()
 
 	/// Initialize the shader program and textures ///
 	m_vh.CreateShaderProg ( &m_fluid );
-	m_fluid.hTexture1D = m_vh.Create1DTransFunc ( m_vh.DefaultTransFunc () );
-	m_fluid.hTexture2D = m_vh.Create2DCanvas ( &m_fluid );
-	m_fluid.hTexture3D = m_vh.Create3DVolumetric ();
-	m_fluid.hCluster = m_vh.InitVerticesBufferObj ();
-	m_fluid.hFramebuffer = m_vh.Create2DFrameBuffer ( &m_fluid );
+	m_fluid.textures.hTexture1D = m_vh.Create1DTransFunc ( m_vh.DefaultTransFunc () );
+	m_fluid.textures.hTexture2D = m_vh.Create2DCanvas ( &m_fluid );
+	m_fluid.textures.hTexture3D = m_vh.Create3DVolumetric ();
+	m_fluid.drawing.hCluster = m_vh.InitVerticesBufferObj ();
+	m_fluid.textures.hFramebuffer = m_vh.Create2DFrameBuffer ( &m_fluid );
 
 	cout << "initialize finished, sge will start soon!" << endl;
 };
@@ -111,38 +111,38 @@ void onDisplay ()
 	glEnable ( GL_DEPTH_TEST );
 	
 	/// Bind the vertex buffer object to shader with attribute "vertices" ///
-	glBindAttribLocation ( m_fluid.hProgram, 0, "vertices" );
+	glBindAttribLocation ( m_fluid.shader.hProgram, 0, "vertices" );
 
     /// Do Render Now! ///
-	glBindFramebuffer ( GL_DRAW_FRAMEBUFFER, m_fluid.hFramebuffer );
-	glViewport ( 0, 0, m_fluid.nCanvasWidth, m_fluid.nCanvasHeight );
-	m_fluid.ptrShader->LinkShaders ( m_fluid.hProgram, 2, m_fluid.hBFVert, m_fluid.hBFFrag );
-	m_fluid.ptrShader->ActiveProgram ( m_fluid.hProgram );
+	glBindFramebuffer ( GL_DRAW_FRAMEBUFFER, m_fluid.textures.hFramebuffer );
+	glViewport ( 0, 0, m_fluid.drawing.nCanvasWidth, m_fluid.drawing.nCanvasHeight );
+	m_fluid.shader.ptrShader->LinkShaders ( m_fluid.shader.hProgram, 2, m_fluid.shader.hBFVert, m_fluid.shader.hBFFrag );
+	m_fluid.shader.ptrShader->ActiveProgram ( m_fluid.shader.hProgram );
 	m_vh.RenderingFace ( GL_FRONT, &m_fluid );
-	m_fluid.ptrShader->DeactiveProgram ( m_fluid.hProgram );
+	m_fluid.shader.ptrShader->DeactiveProgram ( m_fluid.shader.hProgram );
 
 	/// Do not bind the framebuffer now ///
     glBindFramebuffer ( GL_FRAMEBUFFER, 0 );
 
-	glViewport ( 0, 0, m_fluid.nCanvasWidth, m_fluid.nCanvasHeight );
-	m_fluid.ptrShader->LinkShaders ( m_fluid.hProgram, 2, m_fluid.hRCVert, m_fluid.hRCFrag );
-	m_fluid.ptrShader->ActiveProgram ( m_fluid.hProgram );
+	glViewport ( 0, 0, m_fluid.drawing.nCanvasWidth, m_fluid.drawing.nCanvasHeight );
+	m_fluid.shader.ptrShader->LinkShaders ( m_fluid.shader.hProgram, 2, m_fluid.shader.hRCVert, m_fluid.shader.hRCFrag );
+	m_fluid.shader.ptrShader->ActiveProgram ( m_fluid.shader.hProgram );
 	m_vh.SetVolumeInfoUinforms ( &m_fluid );
 	m_vh.RenderingFace ( GL_BACK, &m_fluid );
-	m_fluid.ptrShader->DeactiveProgram ( m_fluid.hProgram );
+	m_fluid.shader.ptrShader->DeactiveProgram ( m_fluid.shader.hProgram );
 
-	m_fluid.nAngle = (m_fluid.nAngle + 1) % 360;
+	m_fluid.drawing.nAngle = (m_fluid.drawing.nAngle + 1) % 360;
 };
 
 void onDestroy ()
 {
-	m_fluid.bContinue = false;
+	m_fluid.drawing.bContinue = false;
 	m_fs->FreeResourcePtrs ();
 	SAFE_FREE_PTR ( m_fs );
-	SAFE_FREE_PTR ( m_fluid.ptrData );
-	SAFE_FREE_PTR ( m_fluid.ptrShader );
+	SAFE_FREE_PTR ( m_fluid.volume.ptrData );
+	SAFE_FREE_PTR ( m_fluid.shader.ptrShader );
 
-	CloseHandle ( m_fluid.hThread );
+	CloseHandle ( m_fluid.thread.hThread );
 
 	cout << "memory freed, program exits..." << endl;
 };
@@ -151,7 +151,7 @@ void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 {
 	if ( keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN )
 	{
-		m_fluid.bContinue = false;
+		m_fluid.drawing.bContinue = false;
 		void onDestroy ();
 		exit (1);
 	}
@@ -164,7 +164,7 @@ int main()
 {
 	initialize ();
 
-	MainActivity *activity = new MainActivity ( m_fluid.nCanvasWidth, m_fluid.nCanvasHeight );
+	MainActivity *activity = new MainActivity ( m_fluid.drawing.nCanvasWidth, m_fluid.drawing.nCanvasHeight );
 
 	activity->SetAppClientInfo ( L"Excalibur OTL 0.00.02.01" );
 

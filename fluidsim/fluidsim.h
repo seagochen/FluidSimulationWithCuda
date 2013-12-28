@@ -150,35 +150,68 @@
 #pragma endregion
 
 
-#pragma region structures
-
 struct fluidsim
 {
-	/// Handles for shader objects, and programs ///
-	GLuint hProgram, hBFVert, hBFFrag, hRCVert, hRCFrag;
-	/// Handles for vertices buffer object ///
-	GLuint hCluster;
-	/// Handles for textures, and frame buffer ///
-	GLuint hTexture1D, hTexture2D, hTexture3D, hFramebuffer;
-	/// Shader Helper ///
-	sge::Shader *ptrShader;
-	/// 3-D volumetric data ///
-	GLubyte *ptrData;
-	/// 3-D volumetric data information ///
-	GLint nVolWidth, nVolHeight, nVolDepth;
-	/// Source files for GLSL ///
-	char *szCanvasVert, *szCanvasFrag, *szVolumVert, *szVolumFrag;
-	/// Screen parameters ///	
-	GLint nAngle;
-	bool  bFullScreen, bContinue;
-	/// Canvas information ///
-	GLint nCanvasWidth, nCanvasHeight;
-	/// Stride of ray casting ///
-	GLfloat  fStepsize;
-	/// Thread ID and handle ///
-	DWORD   dwThreadId;
-	HANDLE  hThread;
+	static struct shader
+	{
+		/// Handles for shader objects, and programs ///
+		GLuint hProgram, hBFVert, hBFFrag, hRCVert, hRCFrag;
+		/// Shader Helper ///
+		sge::Shader *ptrShader;
+		/// Source files for GLSL ///
+		char *szCanvasVert, *szCanvasFrag, *szVolumVert, *szVolumFrag;
+	};
+	
+	struct textures
+	{
+		/// Handles for textures, and frame buffer ///
+		GLuint hTexture1D, hTexture2D, hTexture3D, hFramebuffer;
+	};
+
+	struct volume
+	{
+		/// 3-D volumetric data ///
+		GLubyte *ptrData;
+		/// 3-D volumetric data information ///
+		GLint nVolWidth, nVolHeight, nVolDepth;
+	};
+
+	struct drawing
+	{
+		/// Handles for vertices buffer object ///
+		GLuint hCluster;
+		/// Screen parameters ///
+		GLint nAngle;
+		bool  bFullScreen, bContinue;
+		/// Canvas information ///
+		GLint nCanvasWidth, nCanvasHeight;
+		/// Stride of ray casting ///
+		GLfloat  fStepsize;
+	};
+
+	struct thread
+	{
+		DWORD   dwThreadId;
+		HANDLE  hThread;
+	};
+
+	struct fps
+	{
+		DWORD dwFrames;
+		DWORD dwCurrentTime;
+		DWORD dwLastUpdateTime;
+		DWORD dwElapsedTime;
+		UINT  FPS;
+	};
+
+	shader   shader;
+	textures textures;
+	volume   volume;
+	drawing  drawing;
+	thread   thread;
+	fps      fps;
 };
+
 
 struct param
 {
@@ -189,8 +222,6 @@ struct param
 	const static int nGridSimHeader = sim_header;
 	const static int nGridSimTail   = sim_trailer;
 };  
-
-#pragma endregion
 
 
 namespace sge

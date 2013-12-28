@@ -52,8 +52,10 @@ SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
 		dev_list.push_back(ptr);
 	}
 	
-	host_data = (GLubyte*) malloc (sizeof(GLubyte) * (fluid->nVolDepth * fluid->nVolHeight * fluid->nVolWidth));
-	if ( cudaMalloc ((void**)&dev_data, sizeof(unsigned char) * (fluid->nVolDepth * fluid->nVolHeight * fluid->nVolWidth)) != cudaSuccess )
+	host_data = (GLubyte*) malloc (sizeof(GLubyte) * 
+		(fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth));
+	if ( cudaMalloc ((void**)&dev_data, sizeof(unsigned char) * 
+		(fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth)) != cudaSuccess )
 	{
 		cudaCheckErrors ( "cudaMalloc failed!" );
 		return SG_RUNTIME_FALSE;
