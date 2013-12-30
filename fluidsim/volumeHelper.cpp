@@ -87,7 +87,7 @@ GLubyte* VolumeHelper::DefaultTransFunc ()
 	GLubyte *tff = (GLubyte *) calloc ( 1024, sizeof(GLubyte) );
 	for ( int i = 0; i < 256; i++ )
 	{
-		if ( i < 25 ) // red
+		if ( i> 0 and i < 25 ) // red
 		{
 			tff [ i * 4 + 0 ] = 255;
 			tff [ i * 4 + 1 ] = 0;
@@ -129,11 +129,11 @@ GLubyte* VolumeHelper::DefaultTransFunc ()
 			tff [ i * 4 + 2 ] = 0;
 			tff [ i * 4 + 3 ] = 10;
 		}
-		if ( i >= 150 ) // white
+		if ( i >= 150 ) // dark purple
 		{
-			tff [ i * 4 + 0 ] = 255;
-			tff [ i * 4 + 1 ] = 255;
-			tff [ i * 4 + 2 ] = 255;
+			tff [ i * 4 + 0 ] = 155;
+			tff [ i * 4 + 1 ] = 40;
+			tff [ i * 4 + 2 ] = 225;
 			tff [ i * 4 + 3 ] = 10;
 		}
 	}

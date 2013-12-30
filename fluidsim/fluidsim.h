@@ -37,13 +37,10 @@
 
 #pragma region definitions
 
-#define DELTA_TIME           10 // 0.1 second
-#define DIFFUSION            10 // 0.1 diffusion
-#define VISOCITY              0 // 0.0 visocity
-#define EXT_FORCE            50 // 0.5 external force 
-#define INDENSITY         10000 // 100 indensity
-#define STRIDE              100 // 1.0 stride
-#define VELOCITY            100 // 1.0 velocity
+#define DELTA_TIME          1.0 // 1 second
+#define DIFFUSION           0.1 // 0.1 diffusion
+#define VISOCITY            0.0 // 0.0 visocity
+#define INDENSITY           100 // 100 indensity
 
 #define Grids_X             128 // 128 grids per coordination
 #define Simul_Size      2097152 // 256 x 256 x 256
@@ -76,54 +73,52 @@
   -----------------------------------------------------------------------------------------------------------
 */
 
-#define cudaCheckErrors(msg) \
-	do { \
-		cudaError_t __err = cudaGetLastError(); \
-		if (__err != cudaSuccess) { \
-			std::cout << "in file: " << __FILE__ << ", at line: " << __LINE__ << std::endl; \
-			std::cout << "error: " << cudaGetErrorString(__err) << std::endl; \
-			std::cout << msg << std::endl; } \
-	} while(0); \
+#include <stdio.h>
+#include <cuda_runtime.h>
 
-#define cudaDevice(gridDim, blockDim) <<<gridDim, blockDim>>>
-
-#define cudaIndex2D(i, j, elements_x) ((j) * (elements_x) + (i))
-
-#define cudaTrans2DTo3D(i, j, k, elements_x) { \
-	k = cudaIndex2D(i, j, elements_x) / ((elements_x) * (elements_x)) ; \
-	i = i % elements_x; \
-	j = j % elements_x; \
+inline void cudaCheckErrors ( const char* msg, const char *file, const int line )
+{
+	cudaError_t __err = cudaGetLastError();
+	if (__err != cudaSuccess) 
+	{ 
+		printf ( "<<< file: %s, line %d >>> \n", file, line );
+		printf ( "*error: %s \n", cudaGetErrorString(__err) );
+		printf ( "%s \n", msg );
 	}
+};
 
-#define cudaIndex3D(i, j, k, elements_x) ((k) * elements_x * elements_x + (j) * elements_x + (i))
+#define cudaDevice(gridDim,blockDim) <<<gridDim,blockDim>>>
 
-/*
-  -----------------------------------------------------------------------------------------------------------
-   Function Definitions
-  -----------------------------------------------------------------------------------------------------------
-*/
+#define cudaIndex2D(i,j,elements_x) ((j)*(elements_x)+(i))
 
-#define Index(i, j, k)      cudaIndex3D(i, j, k, Grids_X)
+#define cudaIndex3D(i,j,k,elements_x) ((k)*elements_x*elements_x+(j)*elements_x+(i))
+
+#define Index(i,j,k) cudaIndex3D(i,j,k,Grids_X)
+
+#define cudaTrans2DTo3D(i,j,k,elements_x) \
+	k = cudaIndex2D(i,j,(elements_x)) / ((elements_x)*(elements_x)); \
+	i = i % (elements_x); \
+	j = j % (elements_x); \
 
 #define cudaDeviceDim2D() \
 	dim3 blockDim, gridDim; \
 	blockDim.x = Tile_X; \
 	blockDim.y = Tile_X; \
 	gridDim.x  = Grids_X / Tile_X; \
-	gridDim.y  = Grids_X / Tile_X;
+	gridDim.y  = Grids_X / Tile_X; \
 
 #define cudaDeviceDim3D() \
 	dim3 blockDim, gridDim; \
 	blockDim.x = (Grids_X / Tile_X); \
 	blockDim.y = (Threads_X / Tile_X); \
 	gridDim.x  = (Grids_X / blockDim.x); \
-	gridDim.y  = (Grids_X * Grids_X * Grids_X) / (blockDim.x * blockDim.y * (Grids_X / blockDim.x));
+	gridDim.y  = (Grids_X * Grids_X * Grids_X) / (blockDim.x * blockDim.y * (Grids_X / blockDim.x)); \
 
 #define GetIndex()  \
 	int i = blockIdx.x * blockDim.x + threadIdx.x; \
 	int j = blockIdx.y * blockDim.y + threadIdx.y; \
 	int k = 0; \
-	cudaTrans2DTo3D ( i, j, k, Grids_X );
+	cudaTrans2DTo3D ( i, j, k, Grids_X ); \
 
 /*
   -----------------------------------------------------------------------------------------------------------
@@ -229,11 +224,10 @@ namespace sge
 	class FluidSimProc
 	{
 	private:
-		std::vector <int*> dev_list;
-		std::vector <int*> host_list;
+		std::vector <double*> dev_list;
+		std::vector <double*> host_list;
 		GLubyte *host_data;
 		unsigned char *dev_data;
-		int times;
 
 	public:
 		FluidSimProc ( fluidsim *fluid );
@@ -246,6 +240,10 @@ namespace sge
 		SGRUNTIMEMSG AllocateResourcePtrs ( fluidsim *fluid );
 		void DensitySolver ( void );
 		void VelocitySolver ( void );
+		void AddSource ( void );
+		void PickData ( fluidsim *fluid );
+		void CopyDataToHost ( void );
+		void CopyDataToDevice ( void );
 	};
 };
 

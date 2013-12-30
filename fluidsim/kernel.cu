@@ -34,6 +34,7 @@
 #include <SGE\SGUtils.h>
 
 #include <cuda.h>
+#include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include "fluidsim.h"
 #include "bufferOp.h"
@@ -43,14 +44,47 @@ using namespace sge;
 using namespace std;
 
 
-__global__ void kernelAddSource ( int *dens, int *vel_u, int *vel_v, int *vel_w )
+__global__ void kernelAddSource ( double *dens, double *vel_u, double *vel_v, double *vel_w )
 {
 	GetIndex();
 
-	vel_u [ Index(i,j,k) ] = i;
-	vel_v [ Index(i,j,k) ] = j;
-	vel_w [ Index(i,j,k) ] = k;
+	if ( dens != NULL && j < 10 )
+		dens [ Index(i,j,k) ] = INDENSITY;
+
+	if ( vel_v != NULL && j < 10 )
+		vel_v [ Index(i,j,k) ] = 1.f;
 };
+
+
+__global__ void kernelGridAdvection ( double *grid_out, double const *grid_in, double const *u_in, double const *v_in, double const *w_in )
+{
+	GetIndex();
+
+	double u = i - u_in [ Index(i,j,k) ] * DELTA_TIME;
+	double v = j - v_in [ Index(i,j,k) ] * DELTA_TIME;
+	double w = k - w_in [ Index(i,j,k) ] * DELTA_TIME;
+
+	grid_out [ Index(i,j,k) ] = trilinear ( grid_in, u, v, w );
+};
+
+
+void FluidSimProc::AddSource ( void )
+{
+	cudaDeviceDim3D ();
+	kernelAddSource <<<gridDim, blockDim>>> ( dev_den, dev_u, dev_v, dev_w );
+};
+
+
+void FluidSimProc::VelocitySolver ( void )
+{
+	cudaDeviceDim3D ();
+	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_den0, dev_den, dev_u, dev_v, dev_w );
+	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_den0, dev_den );
+};
+
+
+void FluidSimProc::DensitySolver ( void )
+{};
 
 
 void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
@@ -58,19 +92,37 @@ void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 	if ( !fluid->drawing.bContinue )
 		return ;
 
-	cudaDeviceDim3D();
+	CopyDataToDevice();
 
-	kernelAddSource <<< gridDim, blockDim >>> ( NULL, dev_u, dev_v, dev_w );
-	kernelPickData  <<< gridDim, blockDim >>> ( dev_data, dev_v );
+	// Fluid process
+	VelocitySolver ();
+	DensitySolver ();
+	PickData ( fluid );
+
+	// Synchronize the device
+	if ( cudaDeviceSynchronize() != cudaSuccess )
+	{
+		cudaCheckErrors ("cudaDeviceSynchronize failed", __FILE__, __LINE__);
+		FreeResourcePtrs ();
+		exit (1);
+	}
+
+	CopyDataToHost();
+
+	fluid->volume.ptrData = host_data;
+};
+
+void FluidSimProc::PickData ( fluidsim *fluid )
+{
+	cudaDeviceDim3D ();
+	kernelPickData  <<<gridDim, blockDim>>> ( dev_data, dev_den );
 
 	if ( cudaMemcpy (host_data, dev_data, 
 		sizeof(unsigned char) * (fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth), 
 		cudaMemcpyDeviceToHost ) != cudaSuccess )
 	{
-		cudaCheckErrors ("cudaMemcpy failed");
+		cudaCheckErrors ("cudaMemcpy failed", __FILE__, __LINE__);
 		FreeResourcePtrs ();
 		exit (1);
-	};
-
-	fluid->volume.ptrData = host_data;
+	}
 };

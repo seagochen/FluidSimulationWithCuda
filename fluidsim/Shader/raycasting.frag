@@ -54,9 +54,9 @@ void main ()
 		// Modulate the value by front to back integration
 		if ( colorMark.a > 0.f )
 		{
-			colorMark.a = 1.f - pow ( 1.f - colorMark.a, stride * 100.f );
-			accumColor.rgb +=  ( 1.f - accumColor.a ) * colorMark.rgb * colorMark.a;
-			accumColor.a += colorMark.a;
+			colorMark.a     = 1.f - pow ( 1.f - colorMark.a, stride * 100.f );
+			accumColor.rgb += ( 1.f - accumColor.a ) * colorMark.rgb * colorMark.a;
+			accumColor.a   += colorMark.a;
 		}
 
 		// Increase the depth
@@ -68,7 +68,7 @@ void main ()
 			accumColor.rgb = accumColor.rgb * accumColor.a + ( 1 - accumColor.a ) * bgColor.rgb;	
 			break;
 		}
-		else if ( accumColor.a > 1.0 )
+		if ( accumColor.a > 1.0 )
 		{
 			accumColor.a = 1.0;
 			break;

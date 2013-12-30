@@ -13,7 +13,11 @@ FluidSimProc::FluidSimProc ( fluidsim *fluid )
 		exit (1);
 	}
 
-	times = 0;
+	fluid->fps.dwCurrentTime = 0;
+	fluid->fps.dwElapsedTime = 0;
+	fluid->fps.dwFrames = 0;
+	fluid->fps.dwLastUpdateTime = 0;
+	fluid->fps.FPS = 0;
 
 	std::cout << "fluid simulation ready, zero the data and preparing the stage now" << std::endl;
 	ZeroData ();
@@ -23,13 +27,13 @@ SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
 {
 	// Choose which GPU to run on, change this on a multi-GPU system.
 	if ( cudaSetDevice ( 0 ) != cudaSuccess )
-		cudaCheckErrors ( "cudaSetDevices" );
+		cudaCheckErrors ( "cudaSetDevices", __FILE__, __LINE__ );
 
 	// Allocate memory on host
 	for ( int i = 0; i < HostListNum; i++ )
 	{
-		static int *ptr;
-		ptr = (int*) malloc ( Simul_Size * sizeof(float) );
+		static double *ptr;
+		ptr = (double*) malloc ( Simul_Size * sizeof(double) );
 		host_list.push_back ( ptr );
 
 		// Alarm if null pointer
@@ -43,10 +47,10 @@ SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
 	for ( int i = 0; i < DevListNum; i++ )
 	{
 		// Alarm if cudaMalloc failed
-		static int *ptr;
-		if ( cudaMalloc( (void **) &ptr, Simul_Size * sizeof(int) ) != cudaSuccess )
+		static double *ptr;
+		if ( cudaMalloc( (void **) &ptr, Simul_Size * sizeof(double) ) != cudaSuccess )
 		{
-			cudaCheckErrors ( "cudaMalloc failed!" );
+			cudaCheckErrors ( "cudaMalloc failed!", __FILE__, __LINE__ );
 			return SG_RUNTIME_FALSE;
 		}
 		dev_list.push_back(ptr);
@@ -57,7 +61,7 @@ SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
 	if ( cudaMalloc ((void**)&dev_data, sizeof(unsigned char) * 
 		(fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth)) != cudaSuccess )
 	{
-		cudaCheckErrors ( "cudaMalloc failed!" );
+		cudaCheckErrors ( "cudaMalloc failed!", __FILE__, __LINE__ );
 		return SG_RUNTIME_FALSE;
 	}
 
@@ -94,32 +98,76 @@ void FluidSimProc::ZeroData ( void )
 		host_den0 [ i ] = 0;
 	}
 
-	cudaDeviceDim3D();
-
-	if ( cudaMemcpy (dev_u, host_u, sizeof(int) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	if ( cudaMemcpy (dev_u, host_u, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_u0, host_u, sizeof(int) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	if ( cudaMemcpy (dev_u0, host_u, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_v, host_v, sizeof(int) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	if ( cudaMemcpy (dev_v, host_v, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_v0, host_v, sizeof(int) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	if ( cudaMemcpy (dev_v0, host_v, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_w, host_w, sizeof(int) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	if ( cudaMemcpy (dev_w, host_w, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_w0, host_w, sizeof(int) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	if ( cudaMemcpy (dev_w0, host_w, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_den, host_den, sizeof(int) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	if ( cudaMemcpy (dev_den, host_den, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_den0, host_den, sizeof(int) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	if ( cudaMemcpy (dev_den0, host_den, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
 
 	goto Success;
 
 Error:
-	cudaCheckErrors ( "cudaMemcpy failed" );
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
 	FreeResourcePtrs ();
 	exit(1);
 
 Success:
 	;
 }
+
+
+void FluidSimProc::CopyDataToDevice ( void )
+{
+	if ( cudaMemcpy (dev_u, host_u, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (dev_v, host_v, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (dev_w, host_w, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (dev_den, host_den, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;	
+};
+
+
+void FluidSimProc::CopyDataToHost ( void )
+{
+	if ( cudaMemcpy (host_u, dev_u, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (host_v, dev_v, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (host_w, dev_w, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (host_den, dev_den, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
+		goto Error;
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;	
+};

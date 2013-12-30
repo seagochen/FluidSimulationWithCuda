@@ -6,6 +6,7 @@
 #include <GLM\gtx\transform2.hpp>
 #include <GLM\gtc\type_ptr.hpp>
 #include <iostream>
+#include <memory>
 
 #include "fluidsim.h"
 #include "volumeHelper.h"
@@ -16,6 +17,7 @@ using namespace std;
 fluidsim      m_fluid;
 VolumeHelper  m_vh;
 FluidSimProc *m_fs;
+MainActivity *activity;
 
 #define K_ON 100
 
@@ -57,15 +59,35 @@ void initialize ()
 DWORD WINAPI cudaCFD ( LPVOID lpParam )
 {
 #if K_ON
+	/// Solve the fluid simulation ///
 	while ( m_fluid.drawing.bContinue )
 	{
-		/// Solve the fluid simulation ///
 		m_fs->FluidSimSolver ( &m_fluid );
 	}
 #endif
 
 	return 0;
 };
+
+
+std::string string_format(const std::string fmt_str, ...) {
+    int final_n, n = fmt_str.size() * 2; /* reserve 2 times as much as the length of the fmt_str */
+    std::string str;
+    std::unique_ptr<char[]> formatted;
+    va_list ap;
+    while(1) {
+        formatted.reset(new char[n]); /* wrap the plain char array into the unique_ptr */
+        strcpy(&formatted[0], fmt_str.c_str());
+        va_start(ap, fmt_str);
+        final_n = vsnprintf(&formatted[0], n, fmt_str.c_str(), ap);
+        va_end(ap);
+        if (final_n < 0 || final_n >= n)
+            n += abs(final_n - n + 1);
+        else
+            break;
+    }
+    return std::string(formatted.get());
+}
 
 
 #pragma region callback functions
@@ -106,6 +128,24 @@ void onCreate ()
 	cout << "initialize finished, sge will start soon!" << endl;
 };
 
+void CountFPS()
+{
+	// Counting FPS
+	m_fluid.fps.dwFrames ++;
+	m_fluid.fps.dwCurrentTime = GetTickCount();
+	m_fluid.fps.dwElapsedTime = m_fluid.fps.dwCurrentTime - m_fluid.fps.dwLastUpdateTime;
+
+	// 1 second
+	if ( m_fluid.fps.dwElapsedTime >= 1000 )
+	{
+		m_fluid.fps.FPS = m_fluid.fps.dwFrames * 1000 / m_fluid.fps.dwElapsedTime;
+		m_fluid.fps.dwFrames = 0;
+		m_fluid.fps.dwLastUpdateTime = m_fluid.fps.dwCurrentTime;
+	}
+
+	SetWindowText (	activity->GetHWND(), string_format ( "Excalibur OTL 0.00.02.01 ---- Current FPS: %d", m_fluid.fps.FPS ).c_str() );
+}
+
 void onDisplay ()
 {
 	glEnable ( GL_DEPTH_TEST );
@@ -132,6 +172,8 @@ void onDisplay ()
 	m_fluid.shader.ptrShader->DeactiveProgram ( m_fluid.shader.hProgram );
 
 	m_fluid.drawing.nAngle = (m_fluid.drawing.nAngle + 1) % 360;
+
+	CountFPS ();
 };
 
 void onDestroy ()
@@ -164,7 +206,7 @@ int main()
 {
 	initialize ();
 
-	MainActivity *activity = new MainActivity ( m_fluid.drawing.nCanvasWidth, m_fluid.drawing.nCanvasHeight );
+	activity = new MainActivity ( m_fluid.drawing.nCanvasWidth, m_fluid.drawing.nCanvasHeight );
 
 	activity->SetAppClientInfo ( L"Excalibur OTL 0.00.02.01" );
 
