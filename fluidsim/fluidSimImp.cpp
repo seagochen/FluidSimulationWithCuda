@@ -91,11 +91,12 @@ void FluidSimProc::ZeroData ( void )
 {
 	for ( int i = 0; i < Simul_Size; i++ )
 	{
-		host_u [ i ] = 0;
-		host_v [ i ] = 0;
-		host_w [ i ] = 0;
-		host_den [ i ] = 0;
-		host_den0 [ i ] = 0;
+		host_u [ i ] = 0.f;
+		host_v [ i ] = 0.f;
+		host_w [ i ] = 0.f;
+		host_den [ i ] = 0.f;
+		host_div [ i ] = 0.f;
+		host_p [ i ] = 0.f;
 	}
 
 	if ( cudaMemcpy (dev_u, host_u, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
@@ -113,6 +114,10 @@ void FluidSimProc::ZeroData ( void )
 	if ( cudaMemcpy (dev_den, host_den, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
 	if ( cudaMemcpy (dev_den0, host_den, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (dev_div, host_div, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (dev_p, host_p, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
 
 	goto Success;
@@ -137,6 +142,10 @@ void FluidSimProc::CopyDataToDevice ( void )
 		goto Error;
 	if ( cudaMemcpy (dev_den, host_den, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
+	if ( cudaMemcpy (dev_div, host_div, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (dev_p, host_p, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
 
 	goto Success;
 
@@ -159,6 +168,10 @@ void FluidSimProc::CopyDataToHost ( void )
 	if ( cudaMemcpy (host_w, dev_w, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
 		goto Error;
 	if ( cudaMemcpy (host_den, dev_den, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (host_div, dev_div, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost ) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (host_p, dev_p, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost ) != cudaSuccess )
 		goto Error;
 
 	goto Success;

@@ -56,16 +56,17 @@
 #define dev_w0               dev_list [ 5 ]
 #define dev_den              dev_list [ 6 ]
 #define dev_den0             dev_list [ 7 ]
-#define dev_grid1            dev_list [ 8 ]
-#define dev_grid2            dev_list [ 9 ]
-#define dev_grid3            dev_list [ 10 ]
+#define dev_div              dev_list [ 8 ]
+#define dev_p            dev_list [ 9 ]
+#define dev_grid            dev_list [ 10 ]
 
-#define HostListNum          5
+#define HostListNum          6
 #define host_u               host_list [ 0 ]
 #define host_v               host_list [ 1 ]
 #define host_w               host_list [ 2 ]
 #define host_den             host_list [ 3 ]
-#define host_den0            host_list [ 4 ]
+#define host_div             host_list [ 4 ]
+#define host_p               host_list [ 5 ]
 
 /*
   -----------------------------------------------------------------------------------------------------------

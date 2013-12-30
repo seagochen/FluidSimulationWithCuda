@@ -139,5 +139,4 @@ inline __host__ __device__  double trilinear ( double const *grid, double const 
 	return c;
 };
 
-
 #endif

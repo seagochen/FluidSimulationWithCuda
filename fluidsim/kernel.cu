@@ -66,6 +66,69 @@ __global__ void kernelGridAdvection ( double *grid_out, double const *grid_in, d
 	grid_out [ Index(i,j,k) ] = trilinear ( grid_in, u, v, w );
 };
 
+__global__ void kernelDivergence ( double *div, double const *u, double const *v, double const *w )
+{
+	GetIndex();
+
+	// Get velocity values from neighboring cells
+	double fieldL = atCell (u, i-1, j, k); // left
+	double fieldR = atCell (u, i+1, j, k); // right
+	double fieldB = atCell (w, i, j, k-1); // back
+	double fieldF = atCell (w, i, j, k+1); // front
+	double fieldU = atCell (v, i, j+1, k); // up
+	double fieldD = atCell (v, i, j-1, k); // down
+
+	div [ Index(i,j,k) ] = 0.5 * ( 
+		( fieldR - fieldL ) +
+		( fieldU - fieldD ) + 
+		( fieldF - fieldB ) );
+};
+
+__global__ void kernelJacobi ( double *p, double const *pressure, double const *div )
+{
+	GetIndex();
+
+	// Get the divergence at the current cell
+	double dC = div [ Index(i,j,k) ];
+
+	// Get pressure value from neighboring cells
+	double pL = atCell ( pressure, i-1, j, k ); // left
+	double pR = atCell ( pressure, i+1, j, k ); // right
+	double pD = atCell ( pressure, i, j-1, k ); // down
+	double pU = atCell ( pressure, i, j+1, k ); // up
+	double pF = atCell ( pressure, i, j, k+1 ); // front
+	double pB = atCell ( pressure, i, j, k-1 ); // back
+
+	p [ Index(i,j,k) ] = (pL + pR + pU + pD + pF + pB - dC) / 6.f;
+};
+
+__global__ void kernelProject 
+	( double *u_out, double *v_out, double *w_out,
+	double const *u_in, double const *v_in, double const *w_in, 
+	double const *pressure )
+{
+	GetIndex();
+
+	// Compute the gradient of pressure at the current cell by
+	// taking central differences of neighboring pressure values
+	double pL = atCell ( pressure, i-1, j, k ); // left
+	double pR = atCell ( pressure, i+1, j, k ); // right
+	double pD = atCell ( pressure, i, j-1, k ); // down
+	double pU = atCell ( pressure, i, j+1, k ); // up
+	double pF = atCell ( pressure, i, j, k+1 ); // front
+	double pB = atCell ( pressure, i, j, k-1 ); // back
+
+	double gradPx = 0.5f * ( pR - pL );
+	double gradPy = 0.5f * ( pU - pD );
+	double gradPz = 0.5f * ( pF - pB );
+
+	// Project the velocity onto its divergence-free component by
+	// subtracting the gradient of pressure
+	u_out [ Index(i,j,k) ] = u_in [ Index(i,j,k) ] - gradPx;
+	v_out [ Index(i,j,k) ] = v_in [ Index(i,j,k) ] - gradPy;
+	w_out [ Index(i,j,k) ] = w_in [ Index(i,j,k) ] - gradPz;
+};
+
 void FluidSimProc::VelocitySolver ( void )
 {
 	cudaDeviceDim3D ();
