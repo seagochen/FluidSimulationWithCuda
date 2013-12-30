@@ -52,6 +52,9 @@
     <ClInclude Include="bufferOp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="kernel.cu">
@@ -60,5 +63,15 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="functions.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="fluidsim.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icons\main.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

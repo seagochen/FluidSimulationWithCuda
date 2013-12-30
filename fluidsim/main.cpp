@@ -10,6 +10,7 @@
 
 #include "fluidsim.h"
 #include "volumeHelper.h"
+#include "resource.h"
 
 using namespace sge;
 using namespace std;
@@ -55,7 +56,6 @@ void initialize ()
 	cout << "initial stage finished" << endl;
 };
 
-
 DWORD WINAPI cudaCFD ( LPVOID lpParam )
 {
 #if K_ON
@@ -68,7 +68,6 @@ DWORD WINAPI cudaCFD ( LPVOID lpParam )
 
 	return 0;
 };
-
 
 std::string string_format(const std::string fmt_str, ...) {
     int final_n, n = fmt_str.size() * 2; /* reserve 2 times as much as the length of the fmt_str */
@@ -88,7 +87,6 @@ std::string string_format(const std::string fmt_str, ...) {
     }
     return std::string(formatted.get());
 }
-
 
 #pragma region callback functions
 
@@ -201,15 +199,13 @@ void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 
 #pragma endregion
 
-
 int main()
 {
 	initialize ();
 
 	activity = new MainActivity ( m_fluid.drawing.nCanvasWidth, m_fluid.drawing.nCanvasHeight );
 
-	activity->SetAppClientInfo ( L"Excalibur OTL 0.00.02.01" );
-
+	activity->SetAppClientInfo ( IDI_ICON1, IDI_ICON1 );
 	activity->RegisterCreateFunc ( onCreate );
 	activity->RegisterDisplayFunc ( onDisplay );
 	activity->RegisterDestroyFunc ( onDestroy );

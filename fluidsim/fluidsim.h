@@ -144,7 +144,6 @@ inline void cudaCheckErrors ( const char* msg, const char *file, const int line 
 
 #pragma endregion
 
-
 struct fluidsim
 {
 	static struct shader
@@ -207,7 +206,6 @@ struct fluidsim
 	fps      fps;
 };
 
-
 struct param
 {
 	const static int nGrids_X  = Grids_X;
@@ -217,7 +215,6 @@ struct param
 	const static int nGridSimHeader = sim_header;
 	const static int nGridSimTail   = sim_trailer;
 };  
-
 
 namespace sge
 {
@@ -240,7 +237,6 @@ namespace sge
 		SGRUNTIMEMSG AllocateResourcePtrs ( fluidsim *fluid );
 		void DensitySolver ( void );
 		void VelocitySolver ( void );
-		void AddSource ( void );
 		void PickData ( fluidsim *fluid );
 		void CopyDataToHost ( void );
 		void CopyDataToDevice ( void );

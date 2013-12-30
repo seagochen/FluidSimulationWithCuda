@@ -55,7 +55,6 @@ __global__ void kernelAddSource ( double *dens, double *vel_u, double *vel_v, do
 		vel_v [ Index(i,j,k) ] = 1.f;
 };
 
-
 __global__ void kernelGridAdvection ( double *grid_out, double const *grid_in, double const *u_in, double const *v_in, double const *w_in )
 {
 	GetIndex();
@@ -67,31 +66,56 @@ __global__ void kernelGridAdvection ( double *grid_out, double const *grid_in, d
 	grid_out [ Index(i,j,k) ] = trilinear ( grid_in, u, v, w );
 };
 
-
-void FluidSimProc::AddSource ( void )
-{
-	cudaDeviceDim3D ();
-	kernelAddSource <<<gridDim, blockDim>>> ( dev_den, dev_u, dev_v, dev_w );
-};
-
-
 void FluidSimProc::VelocitySolver ( void )
 {
 	cudaDeviceDim3D ();
+
+	kernelAddSource <<<gridDim, blockDim>>> ( NULL, dev_u, dev_v, dev_w );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
 	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_den0, dev_den, dev_u, dev_v, dev_w );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
 	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_den0, dev_den );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ("cudaThreadSynchronize failed", __FILE__, __LINE__);
+	FreeResourcePtrs ();
+	exit (1);
+
+Success:
+	;
 };
 
-
 void FluidSimProc::DensitySolver ( void )
-{};
+{
+	cudaDeviceDim3D ();
 
+	kernelAddSource <<<gridDim, blockDim>>> ( dev_den0, NULL, NULL, NULL );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
+	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_den0, dev_den );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ("cudaThreadSynchronize failed", __FILE__, __LINE__);
+	FreeResourcePtrs ();
+	exit (1);
+
+Success:
+	;
+};
 
 void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 {
-	if ( !fluid->drawing.bContinue )
-		return ;
+	if ( !fluid->drawing.bContinue ) return ;
 
+	// For fluid simulation, copy the data to device
 	CopyDataToDevice();
 
 	// Fluid process
@@ -100,15 +124,20 @@ void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 	PickData ( fluid );
 
 	// Synchronize the device
-	if ( cudaDeviceSynchronize() != cudaSuccess )
-	{
-		cudaCheckErrors ("cudaDeviceSynchronize failed", __FILE__, __LINE__);
-		FreeResourcePtrs ();
-		exit (1);
-	}
+	if ( cudaDeviceSynchronize() != cudaSuccess ) goto Error;
 
+	// After simulation process, retrieve data back to host, in order to 
+	// avoid data flipping
 	CopyDataToHost();
 
+	goto Success;
+
+Error:
+	cudaCheckErrors ("cudaDeviceSynchronize failed", __FILE__, __LINE__);
+	FreeResourcePtrs ();
+	exit (1);
+
+Success:
 	fluid->volume.ptrData = host_data;
 };
 

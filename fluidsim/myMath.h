@@ -74,6 +74,15 @@ inline __host__ __device__  int sgfloor(double x)
 	}
 };
 
+inline __host__ __device__ int sgfabs(int value)
+{
+	return (value >= 0) ? value : -value;
+};
+
+inline __host__ __device__ double sgfabs(double value)
+{
+	return (value >= 0.f) ? value : -value;
+};
 
 inline __host__ __device__  double atCell (double const *grid, int const x, int const y, int const z)
 {
@@ -86,7 +95,6 @@ inline __host__ __device__  double atCell (double const *grid, int const x, int 
 
 	return grid[ Index(x,y,z) ];
 };
-
 
 inline __host__ __device__  void vertices (
 	double *c000, double *c001, double *c011, double *c010,
@@ -106,7 +114,6 @@ inline __host__ __device__  void vertices (
 	*c111 = atCell ( grid, i+1, j+1, k+1 );
 	*c110 = atCell ( grid, i+1, j, k+1 );
 }
-
 
 inline __host__ __device__  double trilinear ( double const *grid, double const x, double const y, double const z )
 {
