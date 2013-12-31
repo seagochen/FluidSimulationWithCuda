@@ -43,29 +43,27 @@
 using namespace sge;
 using namespace std;
 
-
-__global__ void kernelAddSource ( double *dens, double *vel_u, double *vel_v, double *vel_w )
+__global__ void kernelAddSource ( double *dens, double *pressure, double *vel_u, double *vel_v, double *vel_w )
 {
 	GetIndex();
 
 	const int half = Grids_X / 2;
 
 	// hint density
-	if ( dens != NULL )
-	{
-		// Create a 3x3x3 cube, and filling something
-		if ( i < half + 1 && i >= half -1 ) if ( k < half + 1 && k >= half -1 ) if ( j < 3 )
+	if ( dens != NULL and j < 3 )
+		if ( i >= half-1 and i <= half+1 ) if ( k >= half-1 and k <= half+1 )
 			dens [ Index(i,j,k) ] = VOLUME;
-	}
+	
+	// pressure
+	if ( pressure != NULL and j < 3 )
+		if ( i >= half-1 and i <= half+1 ) if ( k >= half-1 and k <= half+1 )
+			pressure [ Index(i,j,k) ] = VOLUME * DELTA_TIME;
 
 	// hint velocity v
-	if ( vel_v != NULL )
+	if ( vel_v != NULL and j < 3 )
 	{
-		if ( i < half + 1 && i >= half -1 ) if ( k < half + 1 && k >= half -1 ) if ( j < 3 )
-			vel_v [ Index(i,j,k) ] = VOLUME * DELTA_TIME;
+		vel_v [ Index(i,j,k) ] = VOLUME * DELTA_TIME;
 	}
-
-	// no more else
 };
 
 __global__ void kernelGridAdvection ( double *grid_out, double const *grid_in, double const *u_in, double const *v_in, double const *w_in )
@@ -152,17 +150,19 @@ void FluidSimProc::VelocitySolver ( void )
 	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_v0 );
 	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_w0 );
 
-	kernelAddSource <<<gridDim, blockDim>>> ( NULL, NULL, dev_v, NULL );
+	kernelAddSource <<<gridDim, blockDim>>> ( NULL, dev_p, NULL, dev_v, NULL );
 	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
 
 	kernelDivergence <<<gridDim, blockDim>>> ( dev_div, dev_u, dev_v, dev_w );
 	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
 
-	kernelJacobi <<<gridDim, blockDim>>> ( dev_grid, dev_p, dev_div );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-
-	kernelCopyBuffer <<<gridDim, blockDim>>> ( dev_p, dev_grid );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+	for ( int i = 0; i < 5; i++ )
+	{
+		kernelJacobi <<<gridDim, blockDim>>> ( dev_grid, dev_p, dev_div );
+		if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+		kernelCopyBuffer <<<gridDim, blockDim>>> ( dev_p, dev_grid );
+		if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+	}
 
 	kernelProject <<<gridDim, blockDim>>> ( dev_u0, dev_v0, dev_w0, dev_u, dev_v, dev_w, dev_p );
 	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
@@ -209,7 +209,7 @@ void FluidSimProc::DensitySolver ( void )
 
 	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_den0 );
 
-	kernelAddSource <<<gridDim, blockDim>>> ( dev_den, NULL, NULL, NULL );
+	kernelAddSource <<<gridDim, blockDim>>> ( dev_den, NULL, NULL, NULL, NULL );
 	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
 
 	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_den0, dev_den, dev_u, dev_v, dev_w );
