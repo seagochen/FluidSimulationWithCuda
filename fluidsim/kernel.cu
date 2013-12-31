@@ -48,11 +48,24 @@ __global__ void kernelAddSource ( double *dens, double *vel_u, double *vel_v, do
 {
 	GetIndex();
 
-	if ( dens != NULL && j < 10 )
-		dens [ Index(i,j,k) ] = INDENSITY;
+	const int half = Grids_X / 2;
 
-	if ( vel_v != NULL && j < 10 )
-		vel_v [ Index(i,j,k) ] = 1.f;
+	// hint density
+	if ( dens != NULL )
+	{
+		// Create a 3x3x3 cube, and filling something
+		if ( i < half + 1 && i >= half -1 ) if ( k < half + 1 && k >= half -1 ) if ( j < 3 )
+			dens [ Index(i,j,k) ] = VOLUME;
+	}
+
+	// hint velocity v
+	if ( vel_v != NULL )
+	{
+		if ( i < half + 1 && i >= half -1 ) if ( k < half + 1 && k >= half -1 ) if ( j < 3 )
+			vel_v [ Index(i,j,k) ] = VOLUME * DELTA_TIME;
+	}
+
+	// no more else
 };
 
 __global__ void kernelGridAdvection ( double *grid_out, double const *grid_in, double const *u_in, double const *v_in, double const *w_in )
@@ -129,17 +142,54 @@ __global__ void kernelProject
 	w_out [ Index(i,j,k) ] = w_in [ Index(i,j,k) ] - gradPz;
 };
 
+
 void FluidSimProc::VelocitySolver ( void )
 {
 	cudaDeviceDim3D ();
 
-	kernelAddSource <<<gridDim, blockDim>>> ( NULL, dev_u, dev_v, dev_w );
+	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_grid );
+	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_u0 );
+	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_v0 );
+	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_w0 );
+
+	kernelAddSource <<<gridDim, blockDim>>> ( NULL, NULL, dev_v, NULL );
 	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
 
-	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_den0, dev_den, dev_u, dev_v, dev_w );
+	kernelDivergence <<<gridDim, blockDim>>> ( dev_div, dev_u, dev_v, dev_w );
 	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
 
-	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_den0, dev_den );
+	kernelJacobi <<<gridDim, blockDim>>> ( dev_grid, dev_p, dev_div );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
+	kernelCopyBuffer <<<gridDim, blockDim>>> ( dev_p, dev_grid );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
+	kernelProject <<<gridDim, blockDim>>> ( dev_u0, dev_v0, dev_w0, dev_u, dev_v, dev_w, dev_p );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
+	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_u0, dev_u );
+	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_v0, dev_v );
+	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_w0, dev_w );
+	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_u0 );
+	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_v0 );
+	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_w0 );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
+	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_u0, dev_u, dev_u, dev_v, dev_w );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
+	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_v0, dev_v, dev_u, dev_v, dev_w );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
+	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_w0, dev_w, dev_u, dev_v, dev_w );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
+	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_u0, dev_u );
+	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_v0, dev_v );
+	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_w0, dev_w );
+	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_u0 );
+	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_v0 );
+	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_w0 );
 	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
 
 	goto Success;
@@ -157,7 +207,12 @@ void FluidSimProc::DensitySolver ( void )
 {
 	cudaDeviceDim3D ();
 
-	kernelAddSource <<<gridDim, blockDim>>> ( dev_den0, NULL, NULL, NULL );
+	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_den0 );
+
+	kernelAddSource <<<gridDim, blockDim>>> ( dev_den, NULL, NULL, NULL );
+	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+
+	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_den0, dev_den, dev_u, dev_v, dev_w );
 	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
 
 	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_den0, dev_den );
