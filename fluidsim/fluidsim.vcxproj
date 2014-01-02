@@ -43,9 +43,6 @@
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="functions.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="fluidsim.rc" />
   </ItemGroup>
   <ItemGroup>

@@ -40,7 +40,7 @@
 #define DELTA_TIME          0.1 // 0.1 second
 #define DIFFUSION           0.1 // 0.1 diffusion
 #define VISOCITY            0.0 // 0.0 visocity
-#define VOLUME              200 // 200
+#define VOLUME              100 // 100
 
 #define Grids_X             128 // 128 grids per coordination
 #define Simul_Size      2097152 // 256 x 256 x 256

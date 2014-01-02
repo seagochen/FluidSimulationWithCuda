@@ -43,7 +43,7 @@
 using namespace sge;
 using namespace std;
 
-__global__ void kernelAddSource ( double *dens, double *pressure, double *vel_u, double *vel_v, double *vel_w )
+__global__ void kernelAddSource ( double *dens, double *vel_u, double *vel_v, double *vel_w )
 {
 	GetIndex();
 
@@ -52,18 +52,12 @@ __global__ void kernelAddSource ( double *dens, double *pressure, double *vel_u,
 	// hint density
 	if ( dens != NULL and j < 3 )
 		if ( i >= half-1 and i <= half+1 ) if ( k >= half-1 and k <= half+1 )
-			dens [ Index(i,j,k) ] = VOLUME;
-	
-	// pressure
-	if ( pressure != NULL and j < 3 )
-		if ( i >= half-1 and i <= half+1 ) if ( k >= half-1 and k <= half+1 )
-			pressure [ Index(i,j,k) ] = VOLUME * DELTA_TIME;
+			dens [ Index(i,j,k) ] += 30.f;
 
 	// hint velocity v
 	if ( vel_v != NULL and j < 3 )
-	{
-		vel_v [ Index(i,j,k) ] = VOLUME * DELTA_TIME;
-	}
+		if ( i >= half-1 and i <= half+1 ) if ( k >= half-1 and k <= half+1 )
+			vel_v [ Index(i,j,k) ] += 5.f;
 };
 
 __global__ void kernelGridAdvection ( double *grid_out, double const *grid_in, double const *u_in, double const *v_in, double const *w_in )
@@ -144,53 +138,8 @@ __global__ void kernelProject
 void FluidSimProc::VelocitySolver ( void )
 {
 	cudaDeviceDim3D ();
-
-	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_grid );
-	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_u0 );
-	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_v0 );
-	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_w0 );
-
-	kernelAddSource <<<gridDim, blockDim>>> ( NULL, dev_p, NULL, dev_v, NULL );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-
-	kernelDivergence <<<gridDim, blockDim>>> ( dev_div, dev_u, dev_v, dev_w );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-
-	for ( int i = 0; i < 5; i++ )
-	{
-		kernelJacobi <<<gridDim, blockDim>>> ( dev_grid, dev_p, dev_div );
-		if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-		kernelCopyBuffer <<<gridDim, blockDim>>> ( dev_p, dev_grid );
-		if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-	}
-
-	kernelProject <<<gridDim, blockDim>>> ( dev_u0, dev_v0, dev_w0, dev_u, dev_v, dev_w, dev_p );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-
-	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_u0, dev_u );
-	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_v0, dev_v );
-	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_w0, dev_w );
-	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_u0 );
-	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_v0 );
-	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_w0 );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-
-	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_u0, dev_u, dev_u, dev_v, dev_w );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-
-	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_v0, dev_v, dev_u, dev_v, dev_w );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-
-	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_w0, dev_w, dev_u, dev_v, dev_w );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-
-	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_u0, dev_u );
-	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_v0, dev_v );
-	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_w0, dev_w );
-	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_u0 );
-	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_v0 );
-	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_w0 );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+	
+	// ...
 
 	goto Success;
 
@@ -207,16 +156,7 @@ void FluidSimProc::DensitySolver ( void )
 {
 	cudaDeviceDim3D ();
 
-	kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_den0 );
-
-	kernelAddSource <<<gridDim, blockDim>>> ( dev_den, NULL, NULL, NULL, NULL );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-
-	kernelGridAdvection <<<gridDim, blockDim>>> ( dev_den0, dev_den, dev_u, dev_v, dev_w );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
-
-	kernelSwapBuffer <<<gridDim, blockDim>>> ( dev_den0, dev_den );
-	if ( cudaThreadSynchronize() != cudaSuccess )  goto Error;
+	// ...
 
 	goto Success;
 
@@ -228,6 +168,11 @@ Error:
 Success:
 	;
 };
+
+
+
+
+#pragma region fixed region
 
 void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 {
@@ -273,3 +218,5 @@ void FluidSimProc::PickData ( fluidsim *fluid )
 		exit (1);
 	}
 };
+
+#pragma endregion
