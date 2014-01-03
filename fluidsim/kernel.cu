@@ -62,12 +62,12 @@ void kernelAddSource ( double *grid, int const number )
 	{
 	case 0: // density
 		if ( j < 3 ) 
-			if ( i >= half-1 and i <= half+1 ) if ( k >= half-1 and k <= half+1 )
+			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
 				grid [ Index(i,j,k) ] = 100.f;
 	case 1: // velocity v
 		if ( j < 3 ) 
-			if ( i >= half-1 and i <= half+1 ) if ( k >= half-1 and k <= half+1 )
-				grid [ Index(i,j,k) ] = 10.f;
+			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
+				grid [ Index(i,j,k) ] = 100.f;
 
 	default: // add external force if need
 		break;
