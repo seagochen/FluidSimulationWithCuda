@@ -92,7 +92,7 @@ GLubyte* VolumeHelper::DefaultTransFunc ()
 			tff [ i * 4 + 0 ] = 255;
 			tff [ i * 4 + 1 ] = 0;
 			tff [ i * 4 + 2 ] = 0;
-			tff [ i * 4 + 3 ] = 10;
+			tff [ i * 4 + 3 ] = 30;
 		}
 		if ( i >= 25 and i < 50 ) // green
 		{
@@ -106,35 +106,35 @@ GLubyte* VolumeHelper::DefaultTransFunc ()
 			tff [ i * 4 + 0 ] = 0;
 			tff [ i * 4 + 1 ] = 0;
 			tff [ i * 4 + 2 ] = 255;
-			tff [ i * 4 + 3 ] = 10;
+			tff [ i * 4 + 3 ] = 30;
 		}
 		if ( i >= 75 and i < 100 ) // purple
 		{
 			tff [ i * 4 + 0 ] = 255;
 			tff [ i * 4 + 1 ] = 0;
 			tff [ i * 4 + 2 ] = 255;
-			tff [ i * 4 + 3 ] = 10;
+			tff [ i * 4 + 3 ] = 30;
 		}
 		if ( i >= 100 and i < 125 ) // pink and blue 
 		{
 			tff [ i * 4 + 0 ] = 0;
 			tff [ i * 4 + 1 ] = 255;
 			tff [ i * 4 + 2 ] = 255;
-			tff [ i * 4 + 3 ] = 10;
+			tff [ i * 4 + 3 ] = 30;
 		}
 		if ( i >= 125 and i < 150 ) // yellow
 		{
 			tff [ i * 4 + 0 ] = 255;
 			tff [ i * 4 + 1 ] = 255;
 			tff [ i * 4 + 2 ] = 0;
-			tff [ i * 4 + 3 ] = 10;
+			tff [ i * 4 + 3 ] = 30;
 		}
 		if ( i >= 150 ) // dark purple
 		{
 			tff [ i * 4 + 0 ] = 155;
 			tff [ i * 4 + 1 ] = 40;
 			tff [ i * 4 + 2 ] = 225;
-			tff [ i * 4 + 3 ] = 10;
+			tff [ i * 4 + 3 ] = 30;
 		}
 	}
 

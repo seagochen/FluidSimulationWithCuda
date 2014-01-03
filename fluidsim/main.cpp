@@ -189,11 +189,25 @@ void onDestroy ()
 
 void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 {
-	if ( keys == SG_KEYS::SG_KEY_ESCAPE && status == SG_KEY_STATUS::SG_KEY_DOWN )
+	if ( status == SG_KEY_STATUS::SG_KEY_DOWN )
+	switch (keys)
 	{
+	case sge::SG_KEY_ESCAPE:
 		m_fluid.drawing.bContinue = false;
 		void onDestroy ();
 		exit (1);
+		break;
+	case sge::SG_KEY_C:
+		m_fs->ZeroData();
+		break;
+	case sge::SG_KEY_Q:
+		m_fluid.drawing.bContinue = false;
+		void onDestroy ();
+		exit (1);
+		break;
+
+	default:
+		break;
 	}
 };
 

@@ -9,7 +9,7 @@ uniform vec2      screensize;
 out     vec4      pixel;
 
 
-const vec4  bgColor = vec4 ( 1.f, 1.f, 1.f, 0.f );
+const vec4  bgColor = vec4 ( 0.f, 0.f, 0.f, 0.f );
 
 void main ()
 {
