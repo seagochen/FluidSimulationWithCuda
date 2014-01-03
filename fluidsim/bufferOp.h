@@ -66,4 +66,10 @@ __global__ void kernelZeroBuffer ( double *grid )
 	grid [ Index(i,j,k) ] = 0.f;
 };
 
+__host__ void hostSwapBuffer ( double *grid1, double *grid2 )
+{
+	cudaDeviceDim3D();
+	kernelSwapBuffer cudaDevice(gridDim, blockDim) (grid1, grid2);
+};
+
 #endif

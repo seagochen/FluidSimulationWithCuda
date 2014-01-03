@@ -34,18 +34,19 @@
 #include <SGE\SGUtils.h>
 #include <Windows.h>
 
+#define DELTA_TIME          0.5f 
+#define DIFFUSION           0.1f
+#define VISOCITY            0.0f 
+#define VOLUME              100f
+
+#define Grids_X             128
+#define Threads_X           512
+#define Tile_X               16
+
 
 #pragma region definitions
 
-#define DELTA_TIME          0.1 // 0.1 second
-#define DIFFUSION           0.1 // 0.1 diffusion
-#define VISOCITY            0.0 // 0.0 visocity
-#define VOLUME              100 // 100
-
-#define Grids_X             128 // 128 grids per coordination
-#define Simul_Size      2097152 // 256 x 256 x 256
-#define Threads_X           512 // 512 threads
-#define Tile_X               16 // 16 x 16 threads as a block
+#define Simul_Size          Grids_X*Grids_X*Grids_X
 
 #define DevListNum           11
 #define dev_u                dev_list [ 0 ]
@@ -57,8 +58,8 @@
 #define dev_den              dev_list [ 6 ]
 #define dev_den0             dev_list [ 7 ]
 #define dev_div              dev_list [ 8 ]
-#define dev_p            dev_list [ 9 ]
-#define dev_grid            dev_list [ 10 ]
+#define dev_p                dev_list [ 9 ]
+#define dev_grid             dev_list [ 10 ]
 
 #define HostListNum          6
 #define host_u               host_list [ 0 ]
@@ -127,14 +128,14 @@ inline void cudaCheckErrors ( const char* msg, const char *file, const int line 
   -----------------------------------------------------------------------------------------------------------
 */
 
-#define eqt               ==            /* equal to */
-#define and               &&            /* logical and */
-#define or                ||            /* logical or */
+#define eqt               ==
+#define and               &&
+#define or                ||
 
-#define gst_header        0             /* (ghost, halo) the header cell of grid */
-#define sim_header        1             /* (actually) the second cell of grid */
-#define gst_trailer       Grids_X - 1  /* (ghost, halo) the last cell of grid */
-#define sim_trailer       Grids_X - 2  /* (actually) the second last cell of grid */
+#define gst_header        0              /* (ghost, halo) the header cell of grid */
+#define sim_header        1              /* (actually) the second cell of grid */
+#define gst_trailer       Grids_X - 1    /* (ghost, halo) the last cell of grid */
+#define sim_trailer       Grids_X - 2    /* (actually) the second last cell of grid */
 
 #define BeginSimArea() \
 	if ( i >= sim_header and i <= sim_trailer ) \
@@ -207,6 +208,7 @@ struct fluidsim
 	fps      fps;
 };
 
+
 struct param
 {
 	const static int nGrids_X  = Grids_X;
@@ -216,6 +218,7 @@ struct param
 	const static int nGridSimHeader = sim_header;
 	const static int nGridSimTail   = sim_trailer;
 };  
+
 
 namespace sge
 {
