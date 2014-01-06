@@ -39,8 +39,8 @@
 #define VISOCITY            0.0f 
 #define VOLUME              100f
 
-#define Grids_X             128
 #define Threads_X           512
+#define Grids_X             128
 #define Tile_X               16
 
 
