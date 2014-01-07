@@ -27,7 +27,7 @@
 
 #pragma region definitions
 
-#define Simul_Size          Grids_X*Grids_X*Grids_X
+#define Sim_Size     Grids_X*Grids_X*Grids_X
 
 #define DevListNum           12
 #define dev_u                dev_list [ 0 ]
@@ -194,11 +194,20 @@ namespace sge
 	struct constparam
 	{
 		const static int nGrids_X          = Grids_X;
-		const static int nSim_Size         = Simul_Size;
+		const static int nSim_Size         = Sim_Size;
 		const static int nGridGhostHeader  = gst_header;
 		const static int nGridGhostTrailer = gst_trailer;
 		const static int nGridSimHeader    = sim_header;
 		const static int nGridSimTail      = sim_trailer;
+		const static int nGlobalI          = 1;
+		const static int nGlobalJ          = 1;
+		const static int nGlobalK          = 1;
+	};
+
+	struct dataset 
+	{
+		uchar *host_visual, *dev_visual;
+		double *big_den, *big_u, *big_v, *big_w;
 	};
 	
 	class FluidSimProc
@@ -206,6 +215,7 @@ namespace sge
 	private:
 		std::vector <double*> dev_list;
 		std::vector <double*> host_list;
+		dataset data;
 		uchar *host_data, *dev_data;
 
 	public:

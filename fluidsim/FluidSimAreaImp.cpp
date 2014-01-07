@@ -37,7 +37,7 @@ sge::SGRUNTIMEMSG sge::FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
 	for ( int i = 0; i < HostListNum; i++ )
 	{
 		static double *ptr;
-		ptr = (double*) malloc ( Simul_Size * sizeof(double) );
+		ptr = (double*) malloc ( Sim_Size * sizeof(double) );
 		host_list.push_back ( ptr );
 
 		// Alarm if null pointer
@@ -52,7 +52,7 @@ sge::SGRUNTIMEMSG sge::FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
 	{
 		// Alarm if cudaMalloc failed
 		static double *ptr;
-		if ( cudaMalloc( (void **) &ptr, Simul_Size * sizeof(double) ) != cudaSuccess )
+		if ( cudaMalloc( (void **) &ptr, Sim_Size * sizeof(double) ) != cudaSuccess )
 		{
 			cudaCheckErrors ( "cudaMalloc failed!", __FILE__, __LINE__ );
 			return SG_RUNTIME_FALSE;
@@ -96,9 +96,9 @@ void sge::FluidSimProc::ZeroData ( void )
 {
 	for ( int i = 0; i < HostListNum; i++ )
 	{
-		for ( int j = 0; j < Simul_Size; j++ ) host_list[i][j] = 0.f;
+		for ( int j = 0; j < Sim_Size; j++ ) host_list[i][j] = 0.f;
 		if ( cudaMemcpy (dev_list[i], host_list[i], 
-			sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+			sizeof(double) * Sim_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 			goto Error;
 	}
 
@@ -119,7 +119,7 @@ void sge::FluidSimProc::CopyDataToDevice ( void )
 	for ( int i = 0; i < HostListNum; i++ )
 	{
 		if ( cudaMemcpy (dev_list[i], host_list[i], 
-			sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+			sizeof(double) * Sim_Size, cudaMemcpyHostToDevice) != cudaSuccess )
 			goto Error;
 	}
 
@@ -140,7 +140,7 @@ void sge::FluidSimProc::CopyDataToHost ( void )
 	for ( int i = 0; i < HostListNum; i++ )
 	{
 		if ( cudaMemcpy (host_list[i], dev_list[i], 
-			sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
+			sizeof(double) * Sim_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
 			goto Error;
 	}
 

@@ -187,37 +187,44 @@ void onDisplay ()
 void onDestroy ()
 {
 	m_fluid.drawing.bContinue = false;
-	m_fs->FreeResourcePtrs ();
-	SAFE_FREE_PTR ( m_fs );
-	SAFE_FREE_PTR ( m_fluid.volume.ptrData );
-	SAFE_FREE_PTR ( m_fluid.shader.ptrShader );
-
+	WaitForSingleObject ( m_fluid.thread.hThread, INFINITE );
 	CloseHandle ( m_fluid.thread.hThread );
 
+	m_fs->FreeResourcePtrs();  
+	SAFE_FREE_PTR ( m_fs );
+	SAFE_FREE_PTR ( m_fluid.shader.ptrShader );
+
 	cout << "memory freed, program exits..." << endl;
+	exit(1);
 };
 
 void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 {
 	if ( status == SG_KEY_STATUS::SG_KEY_DOWN )
-	switch (keys)
 	{
-	case sge::SG_KEY_ESCAPE:
-		m_fluid.drawing.bContinue = false;
-		void onDestroy ();
-		exit (1);
-		break;
-	case sge::SG_KEY_C:
-		m_fs->ZeroData();
-		break;
-	case sge::SG_KEY_Q:
-		m_fluid.drawing.bContinue = false;
-		void onDestroy ();
-		exit (1);
-		break;
+		switch (keys)
+		{
+		case sge::SG_KEY_Q:
+		case sge::SG_KEY_ESCAPE:
+			m_fluid.drawing.bContinue = false;
+			onDestroy();
+			break;
+		
+		case sge::SG_KEY_C:
+			m_fs->ZeroData();
+			break;
+		
+		default:
+			break;
+		}
+	}
+};
 
-	default:
-		break;
+void onMouse ( SG_MOUSE mouse, uint x, uint y, int degree )
+{
+	if ( mouse eqt SG_MOUSE_WHEEL_FORWARD or mouse eqt SG_MOUSE_WHEEL_BACKWARD )
+	{
+		m_fluid.drawing.nAngle = (m_fluid.drawing.nAngle + degree) % 360;
 	}
 };
 
@@ -232,6 +239,7 @@ int main()
 	activity->SetAppClientInfo ( IDI_ICON1, IDI_ICON1 );
 	activity->RegisterCreateFunc ( onCreate );
 	activity->RegisterDisplayFunc ( onDisplay );
+	activity->RegisterMouseFunc ( onMouse );
 	activity->RegisterDestroyFunc ( onDestroy );
 	activity->RegisterKeyboardFunc ( onKeyboard );
 	
