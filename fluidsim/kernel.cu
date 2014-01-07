@@ -1,23 +1,4 @@
 ﻿/**
-*
-* Copyright (C) <2013> <Orlando Chen>
-* Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-* associated documentation files (the "Software"), to deal in the Software without restriction, 
-* including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-* and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, 
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all copies or substantial
-* portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT 
-* NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
 * <Author>      Orlando Chen
 * <First>       Dec 12, 2013
 * <Last>		Dec 23, 2013
@@ -36,13 +17,12 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include "fluidsim.h"
-#include "bufferOp.h"
-#include "myMath.h"
+#include "FluidSimArea.h"
+#include "FluidMathLib.h"
+#include "Operations.h"
 
 using namespace sge;
 using namespace std;
-
 
 #pragma region void hostAddSource ( double *dens, double *vel_u, double *vel_v, double *vel_w  )
 /** 
@@ -63,11 +43,12 @@ void kernelAddSource ( double *grid, int const number )
 	case 0: // density
 		if ( j < 3 ) 
 			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
-				grid [ Index(i,j,k) ] = 100.f;
+				grid [ Index(i,j,k) ] = VOLUME;
+
 	case 1: // velocity v
 		if ( j < 3 ) 
 			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
-				grid [ Index(i,j,k) ] = 100.f;
+				grid [ Index(i,j,k) ] = VOLUME * 2.f;
 
 	default: // add external force if need
 		break;
@@ -243,23 +224,23 @@ void FluidSimProc::VelocitySolver ( void )
 	hostAddSource ( NULL, NULL, dev_v, NULL );
 
 	// diffuse the velocity field (per axis):
-	hostDiffusion ( dev_u0, dev_u, 1, VISOCITY );
-	hostDiffusion ( dev_v0, dev_v, 2, VISOCITY );
-	hostDiffusion ( dev_w0, dev_w, 3, VISOCITY );
-	hostSwapBuffer ( dev_u0, dev_u );
-	hostSwapBuffer ( dev_v0, dev_v );
-	hostSwapBuffer ( dev_w0, dev_w );
+	hostDiffusion ( dev_0, dev_u, 1, VISOCITY );
+	hostDiffusion ( dev_1, dev_v, 2, VISOCITY );
+	hostDiffusion ( dev_2, dev_w, 3, VISOCITY );
+	hostSwapBuffer ( dev_0, dev_u );
+	hostSwapBuffer ( dev_1, dev_v );
+	hostSwapBuffer ( dev_2, dev_w );
 
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
 	hostProject ( dev_u, dev_v, dev_w, dev_div, dev_p );
 	
 	// advect the velocity field (per axis):
-	hostAdvection ( dev_u0, dev_u, 1, dev_u, dev_v, dev_w );
-	hostAdvection ( dev_v0, dev_v, 2, dev_u, dev_v, dev_w );
-	hostAdvection ( dev_w0, dev_w, 3, dev_u, dev_v, dev_w );
-	hostSwapBuffer ( dev_u0, dev_u );
-	hostSwapBuffer ( dev_v0, dev_v );
-	hostSwapBuffer ( dev_w0, dev_w );
+	hostAdvection ( dev_0, dev_u, 1, dev_u, dev_v, dev_w );
+	hostAdvection ( dev_1, dev_v, 2, dev_u, dev_v, dev_w );
+	hostAdvection ( dev_2, dev_w, 3, dev_u, dev_v, dev_w );
+	hostSwapBuffer ( dev_0, dev_u );
+	hostSwapBuffer ( dev_1, dev_v );
+	hostSwapBuffer ( dev_2, dev_w );
 	
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
 	hostProject ( dev_u, dev_v, dev_w, dev_div, dev_p );
@@ -268,14 +249,38 @@ void FluidSimProc::VelocitySolver ( void )
 void FluidSimProc::DensitySolver ( void )
 {
 	hostAddSource ( dev_den, NULL, NULL, NULL );
-	hostDiffusion ( dev_den0, dev_den, 0, DIFFUSION );
-	hostSwapBuffer ( dev_den0, dev_den );
-	hostAdvection ( dev_den, dev_den0, 0, dev_u, dev_v, dev_w );
+	hostDiffusion ( dev_0, dev_den, 0, DIFFUSION );
+	hostSwapBuffer ( dev_0, dev_den );
+	hostAdvection ( dev_den, dev_0, 0, dev_u, dev_v, dev_w );
 };
+
+
+void FluidSimProc::PickData ( fluidsim *fluid )
+{
+	cudaDeviceDim3D ();
+	kernelPickData  <<<gridDim, blockDim>>> ( dev_data, dev_den );
+
+	if ( cudaMemcpy (host_data, dev_data, 
+		sizeof(uchar) * (fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth), 
+		cudaMemcpyDeviceToHost ) != cudaSuccess )
+	{
+		cudaCheckErrors ("cudaMemcpy failed", __FILE__, __LINE__);
+		FreeResourcePtrs ();
+		exit (1);
+	}
+};
+
 
 void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 {
 	if ( !fluid->drawing.bContinue ) return ;
+	
+	// Zero buffer first
+	cudaDeviceDim3D();
+	for ( int i = 0; i < DevListNum; i++ )
+	{
+		kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_list[i] );
+	}
 
 	// For fluid simulation, copy the data to device
 	CopyDataToDevice();
@@ -301,21 +306,6 @@ Error:
 
 Success:
 	fluid->volume.ptrData = host_data;
-};
-
-void FluidSimProc::PickData ( fluidsim *fluid )
-{
-	cudaDeviceDim3D ();
-	kernelPickData  <<<gridDim, blockDim>>> ( dev_data, dev_den );
-
-	if ( cudaMemcpy (host_data, dev_data, 
-		sizeof(unsigned char) * (fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth), 
-		cudaMemcpyDeviceToHost ) != cudaSuccess )
-	{
-		cudaCheckErrors ("cudaMemcpy failed", __FILE__, __LINE__);
-		FreeResourcePtrs ();
-		exit (1);
-	}
 };
 
 #pragma endregion

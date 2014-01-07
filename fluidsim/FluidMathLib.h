@@ -1,3 +1,10 @@
+/**
+* <Author>      Orlando Chen
+* <First>       Nov 21, 2013
+* <Last>		Jan 07, 2014
+* <File>        FluidMathLib.h
+*/
+
 #ifndef __my_math_h_
 #define __my_math_h_
 
@@ -5,7 +12,7 @@
 
 #include <cuda_runtime.h>
 #include "helper_math.h"
-#include "fluidsim.h"
+#include "FluidSimArea.h"
 
 inline __host__ __device__ int sgrand( int *seed )
 {

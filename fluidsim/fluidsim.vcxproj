@@ -25,17 +25,17 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="fluidSimImp.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="volumeHelper.cpp" />
+    <ClCompile Include="FluidSimAreaImp.cpp" />
+    <ClCompile Include="LaunchMain.cpp" />
+    <ClCompile Include="VolumeRendering.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="bufferOp.h" />
-    <ClInclude Include="fluidsim.h" />
+    <ClInclude Include="FluidSimArea.h" />
     <ClInclude Include="helper_math.h" />
-    <ClInclude Include="myMath.h" />
+    <ClInclude Include="FluidMathLib.h" />
+    <ClInclude Include="Operations.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="volumeHelper.h" />
+    <ClInclude Include="VolumeRendering.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="kernel.cu">

@@ -1,18 +1,22 @@
+/**
+* <Author>      Orlando Chen
+* <First>       Nov 12, 2013
+* <Last>		Jan 07, 2013
+* <File>        kernel.cu
+*/
+
 #include <SGE\SGUtils.h>
 #include <GLM\glm.hpp>
 #include <GLM\gtc\matrix_transform.hpp>
 #include <GLM\gtx\transform2.hpp>
 #include <GLM\gtc\type_ptr.hpp>
 #include <iostream>
+#include "FluidSimArea.h"
+#include "VolumeRendering.h"
 
-#include "fluidsim.h"
-#include "volumeHelper.h"
-
-using namespace sge;
 using namespace std;
 
-
-bool VolumeHelper::CheckHandleError ( int nShaderObjs, ... )
+bool sge::VolumeHelper::CheckHandleError ( int nShaderObjs, ... )
 {
 	if ( nShaderObjs < 1 )
 	{
@@ -39,7 +43,7 @@ bool VolumeHelper::CheckHandleError ( int nShaderObjs, ... )
 };
 
 
-void VolumeHelper::CreateShaderProg ( fluidsim *fluid )
+void sge::VolumeHelper::CreateShaderProg ( fluidsim *fluid )
 {
 #pragma region temporary variables
 	GLuint *prog_out   = &fluid->shader.hProgram;
@@ -81,60 +85,18 @@ void VolumeHelper::CreateShaderProg ( fluidsim *fluid )
 }
 
 
-GLubyte* VolumeHelper::DefaultTransFunc ()
+GLubyte* sge::VolumeHelper::DefaultTransFunc ()
 {
 	// Hardcode the transfer function
 	GLubyte *tff = (GLubyte *) calloc ( 1024, sizeof(GLubyte) );
 	for ( int i = 0; i < 256; i++ )
 	{
-		if ( i> 0 and i < 25 ) // red
+		if ( i > 0 )
 		{
-			tff [ i * 4 + 0 ] = 255;
-			tff [ i * 4 + 1 ] = 0;
-			tff [ i * 4 + 2 ] = 0;
-			tff [ i * 4 + 3 ] = 30;
-		}
-		if ( i >= 25 and i < 50 ) // green
-		{
-			tff [ i * 4 + 0 ] = 0;
-			tff [ i * 4 + 1 ] = 255;
-			tff [ i * 4 + 2 ] = 0;
-			tff [ i * 4 + 3 ] = 10;
-		}
-		if ( i >= 50 and i < 75 ) // blue
-		{
-			tff [ i * 4 + 0 ] = 0;
-			tff [ i * 4 + 1 ] = 0;
-			tff [ i * 4 + 2 ] = 255;
-			tff [ i * 4 + 3 ] = 30;
-		}
-		if ( i >= 75 and i < 100 ) // purple
-		{
-			tff [ i * 4 + 0 ] = 255;
-			tff [ i * 4 + 1 ] = 0;
-			tff [ i * 4 + 2 ] = 255;
-			tff [ i * 4 + 3 ] = 30;
-		}
-		if ( i >= 100 and i < 125 ) // pink and blue 
-		{
-			tff [ i * 4 + 0 ] = 0;
-			tff [ i * 4 + 1 ] = 255;
-			tff [ i * 4 + 2 ] = 255;
-			tff [ i * 4 + 3 ] = 30;
-		}
-		if ( i >= 125 and i < 150 ) // yellow
-		{
-			tff [ i * 4 + 0 ] = 255;
-			tff [ i * 4 + 1 ] = 255;
-			tff [ i * 4 + 2 ] = 0;
-			tff [ i * 4 + 3 ] = 30;
-		}
-		if ( i >= 150 ) // dark purple
-		{
-			tff [ i * 4 + 0 ] = 155;
-			tff [ i * 4 + 1 ] = 40;
-			tff [ i * 4 + 2 ] = 225;
-			tff [ i * 4 + 3 ] = 30;
+			tff [ i * 4 + 0 ] = i;
+			tff [ i * 4 + 1 ] = (i) % 100 + 40;
+			tff [ i * 4 + 2 ] = (i) % 55 + 30;
+			tff [ i * 4 + 3 ] = 7;
 		}
 	}
 
@@ -144,7 +106,7 @@ GLubyte* VolumeHelper::DefaultTransFunc ()
 }
 
 
-GLuint VolumeHelper::Create1DTransFunc ( GLubyte *transfer )
+GLuint sge::VolumeHelper::Create1DTransFunc ( GLubyte *transfer )
 {
 	GLuint tff1DTex;
     glGenTextures(1, &tff1DTex);
@@ -163,7 +125,7 @@ GLuint VolumeHelper::Create1DTransFunc ( GLubyte *transfer )
 };
 
 
-GLuint VolumeHelper::Create2DCanvas ( fluidsim *fluid )
+GLuint sge::VolumeHelper::Create2DCanvas ( fluidsim *fluid )
 {
     GLuint backFace2DTex;
     glGenTextures(1, &backFace2DTex);
@@ -183,7 +145,7 @@ GLuint VolumeHelper::Create2DCanvas ( fluidsim *fluid )
 };
 
 
-void VolumeHelper::LoadVolumeSource ( const char *szRawFile, fluidsim *fluid )
+void sge::VolumeHelper::LoadVolumeSource ( const char *szRawFile, fluidsim *fluid )
 {
 	FILE *fp;
 	size_t size = fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth;
@@ -208,7 +170,7 @@ void VolumeHelper::LoadVolumeSource ( const char *szRawFile, fluidsim *fluid )
 };
 
 
-GLuint VolumeHelper::Create3DVolumetric ( void )
+GLuint sge::VolumeHelper::Create3DVolumetric ( void )
 {
 	// Generate 3D textuer
 	GLuint volTex;
@@ -227,7 +189,7 @@ GLuint VolumeHelper::Create3DVolumetric ( void )
 };
 
 
-GLuint VolumeHelper::Create2DFrameBuffer ( fluidsim *fluid )
+GLuint sge::VolumeHelper::Create2DFrameBuffer ( fluidsim *fluid )
 {
     // Create a depth buffer for framebuffer
     GLuint depthBuffer;
@@ -258,7 +220,7 @@ GLuint VolumeHelper::Create2DFrameBuffer ( fluidsim *fluid )
 };
 
 
-void VolumeHelper::RenderingFace ( GLenum cullFace, fluidsim *fluid )
+void sge::VolumeHelper::RenderingFace ( GLenum cullFace, fluidsim *fluid )
 {
 #pragma region temporary variables
 	GLfloat angle  = fluid->drawing.nAngle;
@@ -312,7 +274,7 @@ void VolumeHelper::RenderingFace ( GLenum cullFace, fluidsim *fluid )
 }
 
 
-void VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
+void sge::VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
 {
 #pragma region temporary variables
 	GLuint program    = fluid->shader.hProgram;
@@ -393,7 +355,7 @@ void VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
 };
 
 
-GLuint VolumeHelper::InitVerticesBufferObj ( void )
+GLuint sge::VolumeHelper::InitVerticesBufferObj ( void )
 {
 #pragma region attributes of vertex
 	// How agent cube looks like by specified the coordinate positions of vertices

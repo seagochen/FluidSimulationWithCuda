@@ -1,3 +1,10 @@
+/**
+* <Author>      Orlando Chen
+* <First>       Oct 16, 2013
+* <Last>		Jan 07, 2014
+* <File>        LaunchMain.cu
+*/
+
 #include <GL\glew32c.h>
 #include <GL\freeglut.h>
 #include <SGE\SGUtils.h>
@@ -8,8 +15,8 @@
 #include <iostream>
 #include <memory>
 
-#include "fluidsim.h"
-#include "volumeHelper.h"
+#include "FluidSimArea.h"
+#include "VolumeRendering.h"
 #include "resource.h"
 
 using namespace sge;
@@ -20,12 +27,13 @@ VolumeHelper  m_vh;
 FluidSimProc *m_fs;
 MainActivity *activity;
 
-#define K_ON 100
+#define K_ON     1
+#define ROTATION 0
 
 void initialize ()
 {
-	m_fluid.drawing.fStepsize = 0.001f;
-	m_fluid.drawing.nAngle = 0;
+	m_fluid.drawing.fStepsize     = 0.001f;
+	m_fluid.drawing.nAngle        = 0;
 	m_fluid.drawing.nCanvasWidth  = 600;
 	m_fluid.drawing.nCanvasHeight = 600;
 	m_fluid.drawing.bContinue     = true;
@@ -33,9 +41,9 @@ void initialize ()
 	m_fluid.drawing.bContinue     = true;
 
 #if K_ON
-	m_fluid.volume.nVolWidth    = param::nGrids_X;
-	m_fluid.volume.nVolHeight   = param::nGrids_X;
-	m_fluid.volume.nVolDepth    = param::nGrids_X;
+	m_fluid.volume.nVolWidth    = constparam::nGrids_X;
+	m_fluid.volume.nVolHeight   = constparam::nGrids_X;
+	m_fluid.volume.nVolDepth    = constparam::nGrids_X;
 #else
 	m_fluid.volume.nVolWidth    = 256;
 	m_fluid.volume.nVolHeight   = 256;
@@ -48,7 +56,7 @@ void initialize ()
 	m_fluid.shader.szVolumVert  = ".\\shader\\raycasting.vert";
 	m_fluid.shader.szVolumFrag  = ".\\shader\\raycasting.frag";
 
-	m_fluid.volume.ptrData = (GLubyte*) calloc (param::nSim_Size, sizeof(GLubyte));
+	m_fluid.volume.ptrData = (GLubyte*) calloc ( constparam::nSim_Size, sizeof(GLubyte) );
 
 	/// Prepare the fluid simulation stage ///
 	m_fs = new FluidSimProc ( &m_fluid );
@@ -141,7 +149,8 @@ void CountFPS()
 		m_fluid.fps.dwLastUpdateTime = m_fluid.fps.dwCurrentTime;
 	}
 
-	SetWindowText (	activity->GetHWND(), string_format ( "Excalibur OTL 0.00.02.01 ---- Current FPS: %d", m_fluid.fps.FPS ).c_str() );
+	const char *szTitle = "Excalibur OTL 1.00.00 alpha test  |  FPS: %d  |  dynamic tracking  |";
+	SetWindowText (	activity->GetHWND(), string_format ( szTitle, m_fluid.fps.FPS ).c_str() );
 }
 
 void onDisplay ()
@@ -169,8 +178,9 @@ void onDisplay ()
 	m_vh.RenderingFace ( GL_BACK, &m_fluid );
 	m_fluid.shader.ptrShader->DeactiveProgram ( m_fluid.shader.hProgram );
 
+#if ROTATION
 	m_fluid.drawing.nAngle = (m_fluid.drawing.nAngle + 1) % 360;
-
+#endif
 	CountFPS ();
 };
 
