@@ -17,11 +17,11 @@ sge::FluidSimProc::FluidSimProc ( fluidsim *fluid )
 		exit (1);
 	}
 
-	fluid->fps.dwCurrentTime = 0;
-	fluid->fps.dwElapsedTime = 0;
-	fluid->fps.dwFrames = 0;
+	fluid->fps.dwCurrentTime    = 0;
+	fluid->fps.dwElapsedTime    = 0;
+	fluid->fps.dwFrames         = 0;
 	fluid->fps.dwLastUpdateTime = 0;
-	fluid->fps.FPS = 0;
+	fluid->fps.uFPS             = 0;
 
 	std::cout << "fluid simulation ready, zero the data and preparing the stage now" << std::endl;
 	ZeroData ();
@@ -59,12 +59,12 @@ sge::SGRUNTIMEMSG sge::FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
 		}
 		dev_list.push_back(ptr);
 	}
-	
-	host_data = (uchar*) malloc ( sizeof(uchar) * 
-		(fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth) );
 
-	if ( cudaMalloc ((void**)&dev_data, sizeof(uchar) * 
-		(fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth)) != cudaSuccess )
+	size_t size = fluid->volume.uWidth * fluid->volume.uHeight * fluid->volume.uDepth;
+	
+	host_visual = (uchar*) malloc ( sizeof(uchar) * size );
+
+	if ( cudaMalloc ((void**)&dev_visual, sizeof(uchar) * size ) != cudaSuccess )
 	{
 		cudaCheckErrors ( "cudaMalloc failed!", __FILE__, __LINE__ );
 		return SG_RUNTIME_FALSE;
@@ -88,8 +88,8 @@ void sge::FluidSimProc::FreeResourcePtrs ( void )
 	}
 	dev_list.empty ( );
 
-	SAFE_FREE_PTR (host_data);
-	cudaFree (dev_data);
+	SAFE_FREE_PTR( host_visual );
+	cudaFree ( dev_visual );
 }
 
 void sge::FluidSimProc::ZeroData ( void )

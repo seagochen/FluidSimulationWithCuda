@@ -138,7 +138,7 @@ GLuint sge::VolumeHelper::Create2DCanvas ( fluidsim *fluid )
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 
-		fluid->drawing.nCanvasWidth, fluid->drawing.nCanvasHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+		fluid->ray.uCanvasWidth, fluid->ray.uCanvasHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 
 	cout << "canvas created" << endl;
 
@@ -149,7 +149,7 @@ GLuint sge::VolumeHelper::Create2DCanvas ( fluidsim *fluid )
 void sge::VolumeHelper::LoadVolumeSource ( const char *szRawFile, fluidsim *fluid )
 {
 	FILE *fp;
-	size_t size = fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth;
+	size_t size   = fluid->volume.uDepth * fluid->volume.uHeight * fluid->volume.uWidth;
     GLubyte *data = new GLubyte[size];
  
 	if ( !(fp = fopen(".\\res\\head256.raw", "rb")) )
@@ -197,7 +197,7 @@ GLuint sge::VolumeHelper::Create2DFrameBuffer ( fluidsim *fluid )
     glGenRenderbuffers(1, &depthBuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 
-		fluid->drawing.nCanvasWidth, fluid->drawing.nCanvasHeight);
+		fluid->ray.uCanvasWidth, fluid->ray.uCanvasHeight);
 
     // Attach the texture and the depth buffer to the framebuffer
 	GLuint framebuffer;
@@ -224,11 +224,11 @@ GLuint sge::VolumeHelper::Create2DFrameBuffer ( fluidsim *fluid )
 void sge::VolumeHelper::RenderingFace ( GLenum cullFace, fluidsim *fluid )
 {
 #pragma region temporary variables
-	GLfloat angle  = fluid->drawing.nAngle;
+	GLfloat angle  = fluid->ray.nAngle;
 	GLuint program = fluid->shader.hProgram;
-	GLuint cluster = fluid->drawing.hCluster;
-	GLuint width   = fluid->drawing.nCanvasWidth;
-	GLuint height  = fluid->drawing.nCanvasHeight;
+	GLuint cluster = fluid->ray.hCluster;
+	GLuint width   = fluid->ray.uCanvasWidth;
+	GLuint height  = fluid->ray.uCanvasHeight;
 	//GLint width = fluid->
 #pragma endregion
 
@@ -282,9 +282,9 @@ void sge::VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
 	GLuint Tex1DTrans = fluid->textures.hTexture1D;
 	GLuint Tex2DBF    = fluid->textures.hTexture2D;
 	GLuint Tex3DVol   = fluid->textures.hTexture3D;
-	GLfloat width     = fluid->drawing.nCanvasWidth;
-	GLfloat height    = fluid->drawing.nCanvasHeight;
-	GLfloat stepsize  = fluid->drawing.fStepsize;
+	GLfloat width     = fluid->ray.uCanvasWidth;
+	GLfloat height    = fluid->ray.uCanvasHeight;
+	GLfloat stepsize  = fluid->ray.fStepsize;
 #pragma endregion
 
 	// Set the uniform of screen size
@@ -345,7 +345,7 @@ void sge::VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
 		glBindTexture(GL_TEXTURE_3D, Tex3DVol);
 		glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 		glTexImage3D(GL_TEXTURE_3D, 0, GL_INTENSITY, 
-			fluid->volume.nVolWidth, fluid->volume.nVolHeight, fluid->volume.nVolDepth,
+			fluid->volume.uWidth, fluid->volume.uHeight, fluid->volume.uDepth,
 			0, GL_LUMINANCE, GL_UNSIGNED_BYTE, fluid->volume.ptrData);
 		glUniform1i(volumeLoc, 2);
     }

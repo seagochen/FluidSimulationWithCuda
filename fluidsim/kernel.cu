@@ -260,10 +260,10 @@ void FluidSimProc::DensitySolver ( void )
 void FluidSimProc::PickData ( fluidsim *fluid )
 {
 	cudaDeviceDim3D ();
-	kernelPickData  <<<gridDim, blockDim>>> ( dev_data, dev_den );
+	kernelPickData  <<<gridDim, blockDim>>> ( dev_visual, dev_den );
 
-	if ( cudaMemcpy (host_data, dev_data, 
-		sizeof(uchar) * (fluid->volume.nVolDepth * fluid->volume.nVolHeight * fluid->volume.nVolWidth), 
+	if ( cudaMemcpy (host_visual, dev_visual, 
+		sizeof(uchar) * (fluid->volume.uWidth * fluid->volume.uHeight * fluid->volume.uDepth ), 
 		cudaMemcpyDeviceToHost ) != cudaSuccess )
 	{
 		cudaCheckErrors ("cudaMemcpy failed", __FILE__, __LINE__);
@@ -275,7 +275,7 @@ void FluidSimProc::PickData ( fluidsim *fluid )
 
 void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 {
-	if ( !fluid->drawing.bContinue ) return ;
+	if ( !fluid->ray.bRun ) return ;
 	
 	// Zero buffer first
 	cudaDeviceDim3D();
@@ -307,7 +307,7 @@ Error:
 	exit (1);
 
 Success:
-	fluid->volume.ptrData = host_data;
+	fluid->volume.ptrData = host_visual;
 };
 
 #pragma endregion
