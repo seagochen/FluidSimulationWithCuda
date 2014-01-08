@@ -163,7 +163,8 @@ void onDisplay ()
     /// Do Render Now! ///
 	glBindFramebuffer ( GL_DRAW_FRAMEBUFFER, m_fluid.textures.hFramebuffer );
 	glViewport ( 0, 0, m_fluid.drawing.nCanvasWidth, m_fluid.drawing.nCanvasHeight );
-	m_fluid.shader.ptrShader->LinkShaders ( m_fluid.shader.hProgram, 2, m_fluid.shader.hBFVert, m_fluid.shader.hBFFrag );
+	m_fluid.shader.ptrShader->LinkShaders 
+		( m_fluid.shader.hProgram, 2, m_fluid.shader.hBFVert, m_fluid.shader.hBFFrag );
 	m_fluid.shader.ptrShader->ActiveProgram ( m_fluid.shader.hProgram );
 	m_vh.RenderingFace ( GL_FRONT, &m_fluid );
 	m_fluid.shader.ptrShader->DeactiveProgram ( m_fluid.shader.hProgram );
@@ -172,7 +173,8 @@ void onDisplay ()
     glBindFramebuffer ( GL_FRAMEBUFFER, 0 );
 
 	glViewport ( 0, 0, m_fluid.drawing.nCanvasWidth, m_fluid.drawing.nCanvasHeight );
-	m_fluid.shader.ptrShader->LinkShaders ( m_fluid.shader.hProgram, 2, m_fluid.shader.hRCVert, m_fluid.shader.hRCFrag );
+	m_fluid.shader.ptrShader->LinkShaders 
+		( m_fluid.shader.hProgram, 2, m_fluid.shader.hRCVert, m_fluid.shader.hRCFrag );
 	m_fluid.shader.ptrShader->ActiveProgram ( m_fluid.shader.hProgram );
 	m_vh.SetVolumeInfoUinforms ( &m_fluid );
 	m_vh.RenderingFace ( GL_BACK, &m_fluid );

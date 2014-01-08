@@ -148,7 +148,8 @@ void hostAdvection ( double *grid_out, double const *grid_in, int const cd, doub
 #pragma endregion
 
 
-__host__ void hostDiffusion ( double *grid_out, double const *grid_in, int const cd, double const diffusion )
+__host__ void hostDiffusion ( double *grid_out,
+	double const *grid_in, int const cd, double const diffusion )
 {
 //	double rate = diffusion * Grids_X * Grids_X * Grids_X;
 	double rate = diffusion;
@@ -158,7 +159,8 @@ __host__ void hostDiffusion ( double *grid_out, double const *grid_in, int const
 
 #pragma region void hostProject ( double *vel_u, double *vel_v, double *vel_w, double *div, double *p )
 __global__
-void kernelGradient ( double *div, double *p, double const *vel_u, double const *vel_v, double const *vel_w )
+void kernelGradient ( double *div, double *p,
+	double const *vel_u, double const *vel_v, double const *vel_w )
 {
 	GetIndex();
 	BeginSimArea();
