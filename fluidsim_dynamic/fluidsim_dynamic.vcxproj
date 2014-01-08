@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FluidSimAreaDynamic.h" />
-    <ClInclude Include="FunctionHelper.h" />
+    <ClInclude Include="FunctionHelperDynamic.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="VolumeRenderingDynamic.h" />
   </ItemGroup>
