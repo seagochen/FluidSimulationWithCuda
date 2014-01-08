@@ -36,15 +36,16 @@ __global__ void kernelPickData ( unsigned char *data, double const *grid )
 {
 	GetIndex();
 
+	// Zero data first
 	data [ Index (i, j, k) ] = 0;
 
+	// retrieve data from grid
 	int temp = sground ( grid[ Index(i,j,k)] );
-	if ( temp > 250 ) temp = 254;
-	else if ( temp < 0 ) temp = 0;
-
-	data [ Index (i, j, k) ] = (unsigned char) temp;
+	if ( temp > 0 and temp < 250 )
+		data [ Index(i, j, k) ] = (unsigned char) temp;
 };
 
+/*
 __global__ void kernelPickData ( unsigned char *data, double const *grid1, double const *grid2, double const *grid3 )
 {
 	GetIndex();
@@ -68,7 +69,7 @@ __global__ void kernelPickData ( unsigned char *data, double const *grid1, doubl
 
 	data [ Index (i, j, k) ] += (unsigned char) temp;
 };
-
+*/
 
 __global__ void kernelCopyBuffer ( double *grid_out, double const *grid_in )
 {

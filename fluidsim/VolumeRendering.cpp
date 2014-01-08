@@ -16,6 +16,7 @@
 
 using namespace std;
 
+
 bool sge::VolumeHelper::CheckHandleError ( int nShaderObjs, ... )
 {
 	if ( nShaderObjs < 1 )
