@@ -19,8 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FluidMathLibDynamic.h" />
     <ClInclude Include="FluidSimAreaDynamic.h" />
     <ClInclude Include="FunctionHelperDynamic.h" />
+    <ClInclude Include="OperationsDynamic.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="VolumeRenderingDynamic.h" />
   </ItemGroup>
@@ -37,7 +39,10 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FluidSimAreaDynamic.cpp" />
+    <ClCompile Include="FunctionHelperDynamic.cpp" />
     <ClCompile Include="LaunchMainDynamic.cpp" />
+    <ClCompile Include="VolumeRenderingDynamic.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{57D32447-18E4-43F4-A35D-4BFC265E42B4}</ProjectGuid>
