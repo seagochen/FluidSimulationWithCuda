@@ -206,7 +206,6 @@ namespace sge
 		std::vector<double*> dev_list;
 		std::vector<double*> host_list;
 		std::vector<node>    node_list;
-		std::vector<node> actnode_list;
 		uchar  *host_visual, *dev_visual;
 		
 	public:
