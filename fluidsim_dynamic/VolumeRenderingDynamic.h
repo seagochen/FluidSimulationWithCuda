@@ -38,8 +38,6 @@ namespace sge
 
 		void CreateShaderProg ( fluidsim *fluid );
 
-		void LoadVolumeSource ( const char *szRawFile, fluidsim *fluid );
-
 	private:
 		bool CheckHandleError ( int nShaderObjs, ... );
 	};
