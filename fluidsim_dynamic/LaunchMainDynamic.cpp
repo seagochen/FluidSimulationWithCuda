@@ -155,7 +155,11 @@ void onDestroy ()
 	WaitForSingleObject ( m_fluid.thread.hThread, INFINITE );
 	CloseHandle ( m_fluid.thread.hThread );
 
-	m_fs->FreeResourcePtrs ();  
+	m_fs->FreeResourcePtrs ();
+	SAFE_DELT_PTR ( m_fluid.area.ptrDens );
+	SAFE_DELT_PTR ( m_fluid.area.ptrVelU );
+	SAFE_DELT_PTR ( m_fluid.area.ptrVelV );
+	SAFE_DELT_PTR ( m_fluid.area.ptrVelW );
 	SAFE_FREE_PTR ( m_fs );
 	SAFE_FREE_PTR ( m_fluid.shader.ptrShader );
 

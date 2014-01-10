@@ -41,6 +41,9 @@
   <ItemGroup>
     <ClCompile Include="FluidSimAreaDynamic.cpp" />
     <ClCompile Include="FunctionHelperDynamic.cpp" />
+    <CudaCompile Include="KernelDynamic.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
     <ClCompile Include="LaunchMainDynamic.cpp" />
     <ClCompile Include="VolumeRenderingDynamic.cpp" />
   </ItemGroup>

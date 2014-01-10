@@ -27,7 +27,8 @@
 
 #define Threads_X           512
 #define Grids_X             128
-#define Area_X      Grids_X * 2
+#define Dim                 2
+#define Area_X      Grids_X * Dim
 #define Tile_X               16
 #define Sim_Size     Grids_X*Grids_X*Grids_X
 
@@ -47,12 +48,6 @@
 #define dev_3                dev_list [ 9 ]
 #define dev_4                dev_list [ 10 ]
 #define dev_5                dev_list [ 11 ]
-
-#define HostListNum          4
-#define host_u               host_list [ 0 ]
-#define host_v               host_list [ 1 ]
-#define host_w               host_list [ 2 ]
-#define host_den             host_list [ 3 ]
 
 /*
   -------------------------------------------------------------------------------------------------------
@@ -204,9 +199,10 @@ namespace sge
 
 	private:
 		std::vector<double*> dev_list;
-		std::vector<double*> host_list;
 		std::vector<node>    node_list;
-		uchar  *host_visual, *dev_visual;
+		uchar  *host_visual, *dev_visual, *dev_smallv;
+		int IXi, IXj, IXk;
+		double *host_u, *host_v, *host_w, *host_den;
 		
 	public:
 		FluidSimProc ( fluidsim *fluid );
@@ -214,6 +210,7 @@ namespace sge
 		void FluidSimSolver ( fluidsim *fluid );
 		void FreeResourcePtrs ( void );
 		void ZeroData ( void );
+		void ActiveNode ( int i, int j, int k );
 
 	private:
 		SGRUNTIMEMSG AllocateResourcePtrs ( fluidsim *fluid );
