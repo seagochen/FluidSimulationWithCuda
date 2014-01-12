@@ -1,12 +1,12 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Nov 21, 2013
-* <Last>		Jan 07, 2014
-* <File>        VolumeRendering.h
+* <Last>		Jan 12, 2014
+* <File>        RenderingDynamic.h
 */
 
-#ifndef __volume_rendering_h_
-#define __volume_rendering_h_
+#ifndef __rendering_dynamic_h_
+#define __rendering_dynamic_h_
 
 #include <GL\glew.h>
 #include <GL\freeglut.h>
@@ -14,7 +14,7 @@
 
 #include <string>
 
-#include "FluidSimArea.h"
+#include "FluidSimAreaDynamic.h"
 
 namespace sge
 {

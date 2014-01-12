@@ -1,18 +1,17 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Nov 21, 2013
-* <Last>		Jan 07, 2014
-* <File>        FluidMathLib.h
+* <Last>		Jan 12, 2014
+* <File>        FluidMathLibDynamic.h
 */
 
-#ifndef __my_math_h_
-#define __my_math_h_
+#ifndef __fluid_math_lib_dynamic_h_
+#define __fluid_math_lib_dynamic_h_
 
 #pragma once
 
 #include <cuda_runtime.h>
-#include "helper_math.h"
-#include "FluidSimArea.h"
+#include "FluidSimAreaDynamic.h"
 
 inline __host__ __device__ int sgrand( int *seed )
 {

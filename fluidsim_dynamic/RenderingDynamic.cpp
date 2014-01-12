@@ -1,8 +1,8 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Nov 12, 2013
-* <Last>		Jan 07, 2014
-* <File>        kernel.cu
+* <Last>		Jan 12, 2014
+* <File>       RenderingDynamic.cpp
 */
 
 #include <SGE\SGUtils.h>
@@ -11,8 +11,8 @@
 #include <GLM\gtx\transform2.hpp>
 #include <GLM\gtc\type_ptr.hpp>
 #include <iostream>
-#include "FluidSimArea.h"
-#include "VolumeRendering.h"
+#include "FluidSimAreaDynamic.h"
+#include "RenderingDynamic.h"
 
 using namespace std;
 

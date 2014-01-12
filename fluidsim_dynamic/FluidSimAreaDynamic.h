@@ -1,12 +1,12 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Dec 15, 2013
-* <Last>		Jan 07, 2014
-* <File>        FluidSimArea.h
+* <Last>		Jan 12, 2014
+* <File>        FluidSimAreaDynamic.h
 */
 
-#ifndef __fluid_sim_h_
-#define __fluid_sim_h_
+#ifndef __fluid_sim_area_dynamic_h_
+#define __fluid_sim_area_dynamic_h_
 
 #include <vector>
 
@@ -15,20 +15,20 @@
 #include <SGE\SGUtils.h>
 #include <Windows.h>
 
-#define DELTA_TIME          0.4f 
+#define DELTA_TIME          0.5f
+#define STEPSIZE            0.01f
 #define DIFFUSION           0.1f
 #define VISOCITY            0.0f 
-#define VOLUME              15
-
+#define VOLUME              30
 #define Threads_X           512
 #define Grids_X             128
-#define Area_X          Grids_X
-#define Tile_X               16
-
+#define Tile_X              16
+#define Windows_X           650
+#define Canvas_X            600
+#define Node_X              2
+#define Sim_Size     Grids_X*Grids_X*Grids_X
 
 #pragma region get index, host & device list, simulation area control
-
-#define Sim_Size     Grids_X*Grids_X*Grids_X
 
 #define DevListNum           12
 #define dev_u                dev_list [ 0 ]
@@ -44,12 +44,6 @@
 #define dev_4                dev_list [ 10 ]
 #define dev_5                dev_list [ 11 ]
 
-#define HostListNum          4
-#define host_u               host_list [ 0 ]
-#define host_v               host_list [ 1 ]
-#define host_w               host_list [ 2 ]
-#define host_den             host_list [ 3 ]
-
 /*
   -------------------------------------------------------------------------------------------------------
    Custom CUDA Functions
@@ -58,17 +52,6 @@
 
 #include <stdio.h>
 #include <cuda_runtime.h>
-
-inline void cudaCheckErrors ( const char* msg, const char *file, const int line )
-{
-	cudaError_t __err = cudaGetLastError();
-	if (__err != cudaSuccess) 
-	{ 
-		printf ( "<<< file: %s, line %d >>> \n", file, line );
-		printf ( "*error: %s \n", cudaGetErrorString(__err) );
-		printf ( "%s \n", msg );
-	}
-};
 
 #define cudaDevice(gridDim,blockDim) <<<gridDim,blockDim>>>
 
@@ -138,7 +121,7 @@ typedef GLuint handler;
 
 namespace sge
 {
-	/// structure of fluidsim ///
+	/* structure of fluidsim */
 	struct fluidsim
 	{
 #pragma region definition of structures, such as shader, textures, volume, fps and etc.
@@ -201,23 +184,24 @@ namespace sge
 		fps      fps;
 	};
 
-	/// fluid simulation processor ///
+	/* fluid simulation processor */
 	class FluidSimProc
 	{
 		struct node
 		{
 			node    *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 			boolean  bActive;
-			size_t   uWidth, uHeight, uDepth;
+			int      i, j, k;
+			double  *ptrDens, *ptrVelU, *ptrVelV, *ptrVelW, *ptrP, *ptrDiv;
 		};
 
 	private:
 		std::vector <double*> dev_list;
-		std::vector <double*> host_list;
 		std::vector <node>    node_list;
 		uchar  *host_visual, *dev_visual;
 		
-		int nOffi, nOffj, nOffk; // offset, default value is 0
+		int offi, offj, offk; // offset, default value is 0
+		int IX;
 
 	public:
 		FluidSimProc ( fluidsim *fluid );
@@ -225,6 +209,8 @@ namespace sge
 		void FluidSimSolver ( fluidsim *fluid );
 		void FreeResourcePtrs ( void );
 		void ZeroData ( void );
+		void SelectNode ( int i, int j, int k );
+		void SelectNode ( int IX );
 
 	private:
 		SGRUNTIMEMSG AllocateResourcePtrs ( fluidsim *fluid );

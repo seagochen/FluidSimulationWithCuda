@@ -19,12 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BufferOperationDynamic.h" />
     <ClInclude Include="FluidMathLibDynamic.h" />
     <ClInclude Include="FluidSimAreaDynamic.h" />
     <ClInclude Include="FunctionHelperDynamic.h" />
-    <ClInclude Include="OperationsDynamic.h" />
+    <ClInclude Include="RenderingDynamic.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="VolumeRenderingDynamic.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="fluidsim_dynamic.rc" />
@@ -41,11 +41,11 @@
   <ItemGroup>
     <ClCompile Include="FluidSimAreaDynamic.cpp" />
     <ClCompile Include="FunctionHelperDynamic.cpp" />
-    <CudaCompile Include="KernelDynamic.cu">
-      <FileType>CppCode</FileType>
-    </CudaCompile>
-    <ClCompile Include="LaunchMainDynamic.cpp" />
-    <ClCompile Include="VolumeRenderingDynamic.cpp" />
+    <ClCompile Include="MainDynamic.cpp" />
+    <ClCompile Include="RenderingDynamic.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="FluidKernelDynamic.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{57D32447-18E4-43F4-A35D-4BFC265E42B4}</ProjectGuid>

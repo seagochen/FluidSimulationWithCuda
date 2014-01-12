@@ -1,8 +1,8 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Dec 12, 2013
-* <Last>		Dec 23, 2013
-* <File>        kernel.cu
+* <Last>		Jan 12, 2013
+* <File>        FluidKernelDynamic.cu
 */
 
 #include <iostream>
@@ -17,9 +17,9 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include "FluidSimArea.h"
-#include "FluidMathLib.h"
-#include "Operations.h"
+#include "FluidSimAreaDynamic.h"
+#include "FluidMathLibDynamic.h"
+#include "BufferOperationDynamic.h"
 
 using namespace sge;
 using namespace std;
@@ -48,7 +48,7 @@ void kernelAddSource ( double *grid, int const number )
 	case 1: // velocity v
 		if ( j < 3 ) 
 			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
-				grid [ Index(i,j,k) ] = VOLUME * 2.f;
+				grid [ Index(i,j,k) ] = VOLUME;
 
 	default: // add external force if need
 		break;
@@ -221,6 +221,8 @@ void hostProject ( double *vel_u, double *vel_v, double *vel_w, double *div, dou
 
 #pragma region velocity, density, fluid simulation solver and pick data
 
+#include "FunctionHelperDynamic.h"
+
 void FluidSimProc::VelocitySolver ( void )
 {
 	hostAddSource ( NULL, NULL, dev_v, NULL );
@@ -255,7 +257,6 @@ void FluidSimProc::DensitySolver ( void )
 	hostSwapBuffer ( dev_0, dev_den );
 	hostAdvection ( dev_den, dev_0, 0, dev_u, dev_v, dev_w );
 };
-
 
 void FluidSimProc::PickData ( fluidsim *fluid )
 {

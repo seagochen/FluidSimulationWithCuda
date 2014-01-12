@@ -25,19 +25,19 @@
     <ClInclude Include="resource.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
-    <ClInclude Include="VolumeRenderingDynamic.h">
+    <ClInclude Include="FluidMathLibDynamic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FluidSimAreaDynamic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BufferOperationDynamic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderingDynamic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="FunctionHelperDynamic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OperationsDynamic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FluidMathLibDynamic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -56,13 +56,13 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LaunchMainDynamic.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VolumeRenderingDynamic.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FluidSimAreaDynamic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MainDynamic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderingDynamic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FunctionHelperDynamic.cpp">
@@ -70,7 +70,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="KernelDynamic.cu">
+    <CudaCompile Include="FluidKernelDynamic.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>
