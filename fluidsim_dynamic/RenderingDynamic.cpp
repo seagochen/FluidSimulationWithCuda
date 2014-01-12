@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
-* <First>       Jan 08, 2014
-* <Last>		Jan 08, 2014
+* <First>       Nov 12, 2013
+* <Last>		Jan 07, 2014
 * <File>        kernel.cu
 */
 
@@ -11,15 +11,17 @@
 #include <GLM\gtx\transform2.hpp>
 #include <GLM\gtc\type_ptr.hpp>
 #include <iostream>
-#include "FluidSimAreaDynamic.h"
-#include "VolumeRenderingDynamic.h"
+#include "FluidSimArea.h"
+#include "VolumeRendering.h"
+
+using namespace std;
+
 
 bool sge::VolumeHelper::CheckHandleError ( int nShaderObjs, ... )
 {
 	if ( nShaderObjs < 1 )
 	{
-		std::cout << "call this function must specified the number of shader"
-			" objects first and then pass the value" << std::endl;
+		cout << "call this function must specified the number of shader objects first and then pass the value" << endl;
 		return false;
 	}
 	
@@ -31,7 +33,7 @@ bool sge::VolumeHelper::CheckHandleError ( int nShaderObjs, ... )
 			GLuint value = va_arg ( list, GLuint );
 			if ( value == 0 )
 			{
-				std::cout << "Error> the No." << i << " handle is null" << std::endl;
+				cout << "Error> the No." << i << " handle is null" << endl;
 				fin = false;
 			}
 		}
@@ -64,7 +66,7 @@ void sge::VolumeHelper::CreateShaderProg ( fluidsim *fluid )
 	// Check error
 	if ( !CheckHandleError ( 4, *bfVert_out, *bfFrag_out, *rcVert_out, *rcFrag_out ) )
 	{
-		std::cout << "create shaders object failed" << std::endl;
+		cout << "create shaders object failed" << endl;
 		exit (1);
 	}
 	
@@ -74,21 +76,20 @@ void sge::VolumeHelper::CreateShaderProg ( fluidsim *fluid )
 	// Check error
 	if ( !CheckHandleError ( 1, *prog_out) )
 	{
-		std::cout << "create program object failed" << std::endl;
+		cout << "create program object failed" << endl;
 		exit (1);
 	}
 
 	fluid->shader.ptrShader = shader_out;
 
-	std::cout << "shader program created" << std::endl;
+	cout << "shader program created" << endl;
 }
 
 
 GLubyte* sge::VolumeHelper::DefaultTransFunc ()
 {
 	// Hardcode the transfer function
-	size_t size = 4 * 256;
-	GLubyte *tff = (GLubyte *) calloc ( size, sizeof(GLubyte) );
+	GLubyte *tff = (GLubyte *) calloc ( 1024, sizeof(GLubyte) );
 	for ( int i = 0; i < 256; i++ )
 	{
 		if ( i > 0 )
@@ -100,7 +101,7 @@ GLubyte* sge::VolumeHelper::DefaultTransFunc ()
 		}
 	}
 
-	std::cout << "use default transfer function" << std::endl;
+	cout << "use default transfer function" << endl;
 
 	return tff;
 }
@@ -119,7 +120,7 @@ GLuint sge::VolumeHelper::Create1DTransFunc ( GLubyte *transfer )
     
 	SAFE_FREE_PTR (transfer);
 
-	std::cout << "transfer function created" << std::endl;
+	cout << "transfer function created" << endl;
     
 	return tff1DTex;
 };
@@ -139,9 +140,34 @@ GLuint sge::VolumeHelper::Create2DCanvas ( fluidsim *fluid )
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 
 		fluid->ray.uCanvasWidth, fluid->ray.uCanvasHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 
-	std::cout << "canvas created" << std::endl;
+	cout << "canvas created" << endl;
 
 	return backFace2DTex;
+};
+
+
+void sge::VolumeHelper::LoadVolumeSource ( const char *szRawFile, fluidsim *fluid )
+{
+	FILE *fp;
+	size_t size   = fluid->volume.uDepth * fluid->volume.uHeight * fluid->volume.uWidth;
+    GLubyte *data = new GLubyte[size];
+ 
+	if ( !(fp = fopen(".\\res\\head256.raw", "rb")) )
+    {
+        cout << "Error: opening .raw file failed" << endl;
+        exit ( 1 );
+    }
+
+    if ( fread(data, sizeof(char), size, fp)!= size) 
+    {
+        cout << "Error: read .raw file failed" << endl;
+        exit ( 1 );
+    }
+    fclose ( fp );
+
+	fluid->volume.ptrData = data;
+
+	cout << "volume resource loaded" << endl;
 };
 
 
@@ -158,7 +184,7 @@ GLuint sge::VolumeHelper::Create3DVolumetric ( void )
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
 
-	std::cout << "volumetric texture created" << std::endl;
+	cout << "volumetric texture created" << endl;
 
     return volTex;
 };
@@ -184,12 +210,12 @@ GLuint sge::VolumeHelper::Create2DFrameBuffer ( fluidsim *fluid )
 	// Check Framebuffer status
 	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
     {
-		std::cout << "framebuffer is not complete" << std::endl;
+		cout << "framebuffer is not complete" << endl;
 		exit(EXIT_FAILURE);
     }
     glEnable(GL_DEPTH_TEST);    
 
-	std::cout << "framebuffer created" << std::endl;
+	cout << "framebuffer created" << endl;
 	
 	return framebuffer;
 };
@@ -228,8 +254,7 @@ void sge::VolumeHelper::RenderingFace ( GLenum cullFace, fluidsim *fluid )
 	// Notice that the matrix multiplication order: reverse order of transform
     mat4 mvp = projection * view * model;
 
-	// Returns an integer that represents the location of a
-	// specific uniform variable within a shader program
+	// Returns an integer that represents the location of a specific uniform variable within a shader program
     GLuint mvpIdx = glGetUniformLocation ( program, "mvp" );
     
 	if ( mvpIdx >= 0 )
@@ -238,7 +263,7 @@ void sge::VolumeHelper::RenderingFace ( GLenum cullFace, fluidsim *fluid )
     }
     else
     {
-    	std::cerr << "can't get the MVP" << std::endl;
+    	cerr << "can't get the MVP" << endl;
     }
 	    
 	// Draw agent box
@@ -271,7 +296,7 @@ void sge::VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
     }
     else
     {
-		std::cout << "ScreenSize is not bind to the uniform" << std::endl;
+		cout << "ScreenSize is not bind to the uniform" << endl;
     }
 
 	// Set the step length
@@ -283,7 +308,7 @@ void sge::VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
     }
     else
     {
-		std::cout << "StepSize is not bind to the uniform" << std::endl;
+		cout << "StepSize is not bind to the uniform" << endl;
     }
     
 	// Set the transfer function
@@ -296,7 +321,7 @@ void sge::VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
     }
     else
     {
-		std::cout << "TransferFunc is not bind to the uniform" << std::endl;
+		cout << "TransferFunc is not bind to the uniform" << endl;
     }
 
 	// Set the back face as exit point for ray casting
@@ -309,7 +334,7 @@ void sge::VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
     }
     else
     {
-		std::cout << "ExitPoints is not bind to the uniform" << std::endl;
+		cout << "ExitPoints is not bind to the uniform" << endl;
     }
 
 	// Set the uniform to hold the data of volumetric data
@@ -326,7 +351,7 @@ void sge::VolumeHelper::SetVolumeInfoUinforms ( fluidsim *fluid )
     }
     else
     {
-		std::cout << "VolumeTex is not bind to the uniform" << std::endl;
+		cout << "VolumeTex is not bind to the uniform" << endl;
     }    
 };
 
@@ -396,16 +421,18 @@ GLuint sge::VolumeHelper::InitVerticesBufferObj ( void )
 	glBindVertexArray ( cluster );
 
 	glEnableVertexAttribArray ( 0 ); // Enable vertex array with index 0
+//	glEnableVertexAttribArray ( 1 ); // Enable vertex array with index 1
 
 	// Binding the vbo, and set the vertex location is the same as the vertex color
-	// Reserved the null pointer, because we no need to transfer data to shader,
-	// vbo was instead. Color will generated by shader
+	// Reserved the null pointer, because we no need to transfer data to shader, vbo was instead.
+	// Color will generated by shader
 	glBindBuffer ( GL_ARRAY_BUFFER, ArrayBufferData );
-	glVertexAttribPointer ( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLfloat *)NULL );
+	glVertexAttribPointer ( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLfloat *)NULL ); // define the index 0 without any data
+//	glVertexAttribPointer ( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLfloat *)NULL ); // define the index 1 without any data
 	glBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, ElementArrayData );  
 #pragma endregion
 
-	std::cout << "agent object created" << std::endl;
+	cout << "agent object created" << endl;
 
 	return cluster;
 };

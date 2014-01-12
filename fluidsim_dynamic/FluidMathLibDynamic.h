@@ -1,51 +1,52 @@
 /**
 * <Author>      Orlando Chen
-* <First>       Jan 09, 2014
-* <Last>		Jan 09, 2014
-* <File>        FluidMathLibDynamic.h
+* <First>       Nov 21, 2013
+* <Last>		Jan 07, 2014
+* <File>        FluidMathLib.h
 */
 
-#ifndef __my_math_dynamic_h_
-#define __my_math_dynamic_h_
+#ifndef __my_math_h_
+#define __my_math_h_
 
 #pragma once
 
 #include <cuda_runtime.h>
-#include "FluidSimAreaDynamic.h"
+#include "helper_math.h"
+#include "FluidSimArea.h"
 
 inline __host__ __device__ int sgrand( int *seed )
 {
-	*seed = ( 69069 * *seed + 1 );
+	*seed = (69069 * *seed + 1);
 	return *seed;
 };
 
 inline __host__ __device__ double sgrandom( int *seed ) 
 {
-	return ( sgrand ( seed ) & 0xffff ) / (double)0x10000;
+	return ( sgrand( seed ) & 0xffff ) / (double)0x10000;
 };
 
 inline __host__ __device__  double sgcrandom( int *seed )
 {
-	return 2.0 * ( sgrandom ( seed ) - 0.5 );
+	return 2.0 * ( sgrandom( seed ) - 0.5 );
 };
 
 inline __host__ __device__ double sginvsqrt ( double x ) 
 {
-	double xhalf = 0.5f * x;
-	int i = *( int* )&x;
-	i = 0x5f3759df - ( i >> 1 );
-	x = *( double* )&i;
-	x = x * ( 1.5f - xhalf * x * x );
+	double xhalf = 0.5f*x;
+	int i = *(int*)&x;
+	i = 0x5f3759df - (i>>1);
+	x = *(double*)&i;
+	x = x*(1.5f - xhalf*x*x);
 	return x;
 };
 
 inline __host__ __device__ double sgsqrt ( double x )
 {
 	double xhalf = 0.5f*x;
-	int i = *( int* )&x;
-	i = 0x5f3759df - ( i >> 1 );
-	x = *( double* )&i;
-	x = x * ( 1.5f - xhalf * x * x );
+	int i = *(int*)&x;
+	i = 0x5f3759df - (i>>1);
+	x = *(double*)&i;
+	x = x*(1.5f - xhalf*x*x);
 	return 1/x;
 };
 

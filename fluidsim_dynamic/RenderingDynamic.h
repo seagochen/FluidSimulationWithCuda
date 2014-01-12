@@ -1,18 +1,20 @@
 /**
 * <Author>      Orlando Chen
-* <First>       Jan 07, 2014
-* <Last>		Jan 08, 2014
-* <File>        VolumeRenderingDynamic.h
+* <First>       Nov 21, 2013
+* <Last>		Jan 07, 2014
+* <File>        VolumeRendering.h
 */
 
-#ifndef __volume_rendering_dynamic_h_
-#define __volume_rendering_dynamic_h_
+#ifndef __volume_rendering_h_
+#define __volume_rendering_h_
 
 #include <GL\glew.h>
 #include <GL\freeglut.h>
 #include <SGE\SGUtils.h>
 
 #include <string>
+
+#include "FluidSimArea.h"
 
 namespace sge
 {
@@ -37,6 +39,8 @@ namespace sge
 		void RenderingFace ( GLenum cullFace, fluidsim *fluid );
 
 		void CreateShaderProg ( fluidsim *fluid );
+
+		void LoadVolumeSource ( const char *szRawFile, fluidsim *fluid );
 
 	private:
 		bool CheckHandleError ( int nShaderObjs, ... );

@@ -1,15 +1,15 @@
 /**
 * <Author>      Orlando Chen
-* <First>       Jan 09, 2014
-* <Last>		Jan 09, 2014
-* <File>        OperationDynamic.h
+* <First>       Oct 10, 2013
+* <Last>		Dec 23, 2013
+* <File>        Operation.h
 */
 
-#ifndef __operation_dynamic_h_
-#define __operation_dynamic_h_
+#ifndef __operation_h_
+#define __operation_h_
 
-#include "FluidSimAreaDynamic.h"
-#include "FluidMathLibDynamic.h"
+#include "FluidSimArea.h"
+#include "FluidMathLib.h"
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
