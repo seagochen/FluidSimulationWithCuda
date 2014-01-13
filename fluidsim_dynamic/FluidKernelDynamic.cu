@@ -67,6 +67,20 @@ void hostAddSource ( double *dens, double *vel_u, double *vel_v, double *vel_w  
 };
 
 /**
+* face:
+* 0 ------- up
+* 1 ------- down 
+* 2 ------- left
+* 3 ------- right
+* 4 ------- front
+* 5 ------- back
+*/
+__device__ double checksum ( double const *grid, int const face )
+{
+
+};
+
+/**
 * cd:
 * 0 -------- solve density
 * 1 -------- solve velocity u
@@ -75,9 +89,9 @@ void hostAddSource ( double *dens, double *vel_u, double *vel_v, double *vel_w  
 */
 __global__ void kernelBoundary ( double *grid,
 	int const cd,
-	double const *up, double const *down, 
-	double const *left, double const *right,
-	double const *front, double const *back, 
+	double *up, double *down, 
+	double *left, double *right,
+	double *front, double *back, 
 	double const *obstacle )
 {
 	GetIndex();
@@ -114,9 +128,9 @@ __host__
 void hostJacobi ( double *grid_out, 
 	double const *grid_in, 
 	int const cd, double const diffusion, double const divisor,
-	double const *up, double const *down,
-	double const *left, double const *right,
-	double const *front, double const *back,
+	double *up, double *down, 
+	double *left, double *right,
+	double *front, double *back, 
 	double const *obstacle )
 {
 	cudaDeviceDim3D();
@@ -149,9 +163,9 @@ __host__
 void hostAdvection ( double *grid_out,
 	double const *grid_in, int const cd, 
 	double const *u_in, double const *v_in, double const *w_in,
-	double const *up, double const *down, 
-	double const *left, double const *right,
-	double const *front, double const *back,
+	double *up, double *down, 
+	double *left, double *right,
+	double *front, double *back, 
 	double const *obstacle )
 {
 	cudaDeviceDim3D();
@@ -164,10 +178,10 @@ void hostAdvection ( double *grid_out,
 
 __host__ void hostDiffusion ( double *grid_out,
 	double const *grid_in, int const cd, double const diffusion,
-	double const *up, double const *down, 
-	double const *left, double const *right,
-	double const *front, double const *back, 
-	double const *obstacle	)
+	double *up, double *down, 
+	double *left, double *right,
+	double *front, double *back, 
+	double const *obstacle 	)
 {
 	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
 	hostJacobi
@@ -213,8 +227,10 @@ void kernelSubtract ( double *vel_u, double *vel_v, double *vel_w, double const 
 
 __host__
 void hostProject ( double *vel_u, double *vel_v, double *vel_w, double *div, double *p,
-	double const *up, double const *down, double const *left, double const *right,
-	double const *front, double const *back, double const *obstacle )
+	double *up, double *down, 
+	double *left, double *right,
+	double *front, double *back, 
+	double const *obstacle  )
 {
 	cudaDeviceDim3D();
 
@@ -244,9 +260,6 @@ void hostProject ( double *vel_u, double *vel_v, double *vel_w, double *div, dou
 
 void FluidSimProc::VelocitySolver ( void )
 {
-	hostAddSource
-		( NULL, NULL, dev_v, NULL );
-
 	// diffuse the velocity field (per axis):
 	hostDiffusion
 		( dev_u0, dev_u, 1, VISOCITY, dev_0, dev_1, dev_2, dev_3, dev_4, dev_5, dev_obs );
@@ -286,8 +299,6 @@ void FluidSimProc::VelocitySolver ( void )
 
 void FluidSimProc::DensitySolver ( void )
 {
-	hostAddSource
-		( dev_den, NULL, NULL, NULL );
 	hostDiffusion
 		( dev_den0, dev_den, 0, DIFFUSION, dev_0, dev_1, dev_2, dev_3, dev_4, dev_5, dev_obs );
 	hostSwapBuffer
@@ -320,24 +331,36 @@ void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 {
 	if ( !fluid->ray.bRun ) return ;
 	
-	// Zero buffer first
-	ZeroDevData();
+	/* round robin if node is active */
+	for ( int i = 0; i < node_list.size(); i++ )
+	{
+		/* active! */
+		if ( node_list[i].bActive == true )
+		{
+			/* zero buffer first */
+			ZeroDevData();
+			
+			/* for fluid simulation, copy the data to device */
+			CopyDataToDevice();
 
-	// For fluid simulation, copy the data to device
-	CopyDataToDevice();
-
-	// Fluid process
-	VelocitySolver ();
-	DensitySolver ();
-	PickData ( fluid );
-
-	// Synchronize the device
-	if ( cudaDeviceSynchronize() != cudaSuccess ) goto Error;
-
-	// After simulation process, retrieve data back to host, in order to 
-	// avoid data flipping
-	CopyDataToHost();
-
+			/* add source if current node is active */
+			if ( i eqt 10 )
+			hostAddSource ( dev_den, NULL, dev_v, NULL );
+			
+			/* fluid process */
+			VelocitySolver ();
+			DensitySolver ();
+			PickData ( fluid );
+			
+			/* Synchronize the device */
+			if ( cudaDeviceSynchronize() != cudaSuccess ) goto Error;		
+			
+			/* after simulation process, retrieve data back to host, in order to 
+			* avoid data flipping 
+			*/
+			CopyDataToHost();
+		}
+	}
 	goto Success;
 
 Error:

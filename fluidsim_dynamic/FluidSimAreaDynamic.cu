@@ -21,6 +21,19 @@ __global__ void kernelZeroNode ( double *grid )
 	grid [ Index(i,j,k) ] = 0.f;
 };
 
+__global__ void kernelZeroVisual ( unsigned char *data,
+	int const offseti, int const offsetj, int const offsetk )
+{
+	GetIndex();
+
+	int di = offseti + i;
+	int dj = offsetj + j;
+	int dk = offsetk + k;
+
+	/* zero data first */
+	data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
+};
+
 #pragma endregion
 
 sge::FluidSimProc::FluidSimProc ( fluidsim *fluid )
@@ -38,7 +51,8 @@ sge::FluidSimProc::FluidSimProc ( fluidsim *fluid )
 	fluid->fps.uFPS             = 0;
 
 	std::cout << "fluid simulation ready, zero the data and preparing the stage now" << std::endl;
-	SelectNode (0, 0, 0);
+	IX = 0;
+	SelectNode(10);
 	ZeroAllBuffer ();
 };
 
@@ -192,7 +206,19 @@ void sge::FluidSimProc::ZeroAllBuffer ( void )
 		if ( cudaMemcpy (node_list[ i ].ptrVelW, dev_0,
 			sizeof(double) * SIMSIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
 			goto Error;
+		
+		/* and zero visual buffer */
+		int offseti = node_list[ i ].i * GRIDS_X;
+		int offsetj = node_list[ i ].j * GRIDS_X;
+		int offsetk = node_list[ i ].k * GRIDS_X;
+		kernelZeroVisual cudaDevice(gridDim, blockDim)
+			( dev_visual, offseti, offsetj, offsetk );
 	}
+
+	size_t size = VOLUME_X * VOLUME_X * VOLUME_X;
+	if ( cudaMemcpy (host_visual, dev_visual, sizeof(uchar) * size, 
+		cudaMemcpyDeviceToHost ) != cudaSuccess )
+		goto Error;
 
 	goto Success;
 
@@ -266,20 +292,29 @@ Success:
 
 void sge::FluidSimProc::SelectNode ( int i, int j, int k )
 {
+	node_list [ IX ].bActive = false;
+	printf ("node no.%d is deactive!\n", IX);
+
 	if ( i >= 0 and i < NODES_X ) 
-	if ( i >= 0 and i < NODES_X )
-	if ( i >= 0 and i < NODES_X )
+	if ( j >= 0 and j < NODES_X )
+	if ( k >= 0 and k < NODES_X )
 	{
-		offi = i;
-		offj = j;
-		offk = k;
-		IX = offi + offj * NODES_X + offk * NODES_X * NODES_X;
+		IX = i + j * NODES_X + k * NODES_X * NODES_X;
+		node_list [ IX ].bActive = true;
+		printf ("node no.%d is selected!\n", IX);
 	}	
 };
 
 void sge::FluidSimProc::SelectNode ( int index )
 {
+	node_list [ IX ].bActive = false;
+	printf ("node no.%d is deactive!\n", IX);
+
 	size_t size = NODES_X * NODES_X * NODES_X;
 	if ( index >= 0 and index < size )
+	{
 		IX = index;
+		node_list [ IX ].bActive = true;
+		printf ("node no.%d is selected!\n", IX);
+	}
 };

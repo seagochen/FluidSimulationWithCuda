@@ -180,9 +180,14 @@ void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 			index = (index + 1) % nodes;
 			m_fs->SelectNode ( index );
 			break;
+
+		case sge::SG_KEY_R:
+			printf("restore fluid simulation process!\n");
+			m_fs->SelectNode ( 10 );
+			m_fs->ZeroAllBuffer ();
 		
 		case sge::SG_KEY_C:
-			m_fs->ZeroAllBuffer();
+			m_fs->ZeroAllBuffer ();
 			break;
 		
 		default:

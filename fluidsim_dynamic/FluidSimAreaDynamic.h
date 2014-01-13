@@ -198,8 +198,6 @@ namespace sge
 		std::vector <double*> dev_list;
 		std::vector <node>    node_list;
 		uchar  *host_visual, *dev_visual;
-		
-		int offi, offj, offk; // offset, default value is 0
 		int IX;
 
 	public:
