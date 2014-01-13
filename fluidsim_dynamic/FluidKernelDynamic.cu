@@ -120,11 +120,12 @@ void hostJacobi ( double *grid_out,
 	double const *obstacle )
 {
 	cudaDeviceDim3D();
-	for ( int k=0; k<20; k++)
+	for ( int k = 0; k < 20; k++)
 	{
-		kernelJacobi cudaDevice(gridDim, blockDim) (grid_out, grid_in, cd, diffusion, divisor);
-		kernelBoundary cudaDevice(gridDim, blockDim) (grid_out, cd, 
-			up, down, left, right, front, back, obstacle );
+		kernelJacobi cudaDevice(gridDim, blockDim)
+			( grid_out, grid_in, cd, diffusion, divisor );
+		kernelBoundary cudaDevice(gridDim, blockDim) 
+			( grid_out, cd, up, down, left, right, front, back, obstacle );
 	}
 };
 
@@ -154,9 +155,10 @@ void hostAdvection ( double *grid_out,
 	double const *obstacle )
 {
 	cudaDeviceDim3D();
-	kernelGridAdvection cudaDevice(gridDim, blockDim) ( grid_out, grid_in, u_in, v_in, w_in );
-	kernelBoundary cudaDevice(gridDim, blockDim) ( grid_out, cd,
-		up, down, left, right, front, back, obstacle );
+	kernelGridAdvection cudaDevice(gridDim, blockDim)
+		( grid_out, grid_in, u_in, v_in, w_in );
+	kernelBoundary cudaDevice(gridDim, blockDim)
+		( grid_out, cd, up, down, left, right, front, back, obstacle );
 
 };
 
@@ -167,10 +169,9 @@ __host__ void hostDiffusion ( double *grid_out,
 	double const *front, double const *back, 
 	double const *obstacle	)
 {
-//	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
-	double rate = diffusion;
-	hostJacobi ( grid_out, grid_in, cd, rate, 1 + 6 * rate,
-		up, down, left, right, front, back, obstacle );
+	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
+	hostJacobi
+		( grid_out, grid_in, cd, rate, 1 + 6 * rate, up, down, left, right, front, back, obstacle );
 };
 
 __global__
@@ -298,7 +299,6 @@ void FluidSimProc::DensitySolver ( void )
 void FluidSimProc::PickData ( fluidsim *fluid )
 {
 	cudaDeviceDim3D ();
-//	kernelPickData  <<<gridDim, blockDim>>> ( dev_visual, dev_den );
 	int offseti = node_list[ IX ].i * GRIDS_X;
 	int offsetj = node_list[ IX ].j * GRIDS_X;
 	int offsetk = node_list[ IX ].k * GRIDS_X;
