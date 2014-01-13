@@ -33,19 +33,24 @@
 
 #pragma region get index, host & device list, simulation area control
 
-#define DevListNum           12
+#define DevListNum           17
 #define dev_u                dev_list [ 0 ]
 #define dev_v                dev_list [ 1 ]
 #define dev_w                dev_list [ 2 ]
 #define dev_den              dev_list [ 3 ]
-#define dev_div              dev_list [ 4 ]
-#define dev_p                dev_list [ 5 ]
-#define dev_0                dev_list [ 6 ]
-#define dev_1                dev_list [ 7 ]
-#define dev_2                dev_list [ 8 ]
-#define dev_3                dev_list [ 9 ]
-#define dev_4                dev_list [ 10 ]
-#define dev_5                dev_list [ 11 ]
+#define dev_obs              dev_list [ 4 ]
+#define dev_div              dev_list [ 5 ]
+#define dev_p                dev_list [ 6 ]
+#define dev_u0               dev_list [ 7 ]
+#define dev_v0               dev_list [ 8 ]
+#define dev_w0               dev_list [ 9 ]
+#define dev_den0             dev_list [ 10 ]
+#define dev_0                dev_list [ 11 ]
+#define dev_1                dev_list [ 12 ]
+#define dev_2                dev_list [ 13 ]
+#define dev_3                dev_list [ 14 ]
+#define dev_4                dev_list [ 15 ]
+#define dev_5                dev_list [ 16 ]
 
 /*
   -------------------------------------------------------------------------------------------------------
