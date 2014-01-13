@@ -22,7 +22,7 @@
 #define SOURCE              30
 
 #define GRIDS_X             64
-#define NODES_X             1
+#define NODES_X             3
 #define VOLUME_X            GRIDS_X*NODES_X
 #define THREADS_X           512
 #define TILE_X              16

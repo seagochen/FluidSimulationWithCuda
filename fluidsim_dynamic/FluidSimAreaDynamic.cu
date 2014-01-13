@@ -75,6 +75,7 @@ sge::SGRUNTIMEMSG sge::FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
 		dev_list.push_back(ptr);
 	}
 
+	/* allocate visual buffer */
 	size = fluid->volume.uWidth * fluid->volume.uHeight * fluid->volume.uDepth;	
 	host_visual = (uchar*) malloc ( sizeof(uchar) * size );
 	if ( cudaMalloc ((void**)&dev_visual, sizeof(uchar) * size ) != cudaSuccess )

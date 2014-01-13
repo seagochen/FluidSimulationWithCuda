@@ -165,6 +165,8 @@ void onDestroy ()
 
 void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 {
+	int nodes = NODES_X * NODES_X * NODES_X;
+
 	if ( status == SG_KEY_STATUS::SG_KEY_DOWN )
 	{
 		switch (keys)
@@ -175,7 +177,7 @@ void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 			break;
 
 		case sge::SG_KEY_T:
-			index = (index + 1) % 8;
+			index = (index + 1) % nodes;
 			m_fs->SelectNode ( index );
 			break;
 		

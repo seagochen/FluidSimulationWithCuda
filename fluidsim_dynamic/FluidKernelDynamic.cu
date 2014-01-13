@@ -260,10 +260,16 @@ void FluidSimProc::DensitySolver ( void )
 void FluidSimProc::PickData ( fluidsim *fluid )
 {
 	cudaDeviceDim3D ();
-	kernelPickData  <<<gridDim, blockDim>>> ( dev_visual, dev_den );
+//	kernelPickData  <<<gridDim, blockDim>>> ( dev_visual, dev_den );
+	int offseti = node_list[ IX ].i * GRIDS_X;
+	int offsetj = node_list[ IX ].j * GRIDS_X;
+	int offsetk = node_list[ IX ].k * GRIDS_X;
 
-	if ( cudaMemcpy (host_visual, dev_visual, 
-		sizeof(uchar) * (fluid->volume.uWidth * fluid->volume.uHeight * fluid->volume.uDepth ), 
+	kernelPickData cudaDevice(gridDim, blockDim) ( dev_visual, dev_den,
+		offseti, offsetj, offsetk );
+
+	size_t size = fluid->volume.uWidth * fluid->volume.uHeight * fluid->volume.uDepth;
+	if ( cudaMemcpy (host_visual, dev_visual, sizeof(uchar) * size, 
 		cudaMemcpyDeviceToHost ) != cudaSuccess )
 	{
 		cudaCheckErrors ("cudaMemcpy failed", __FILE__, __LINE__);
