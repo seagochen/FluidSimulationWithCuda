@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 16, 2013
-* <Last>		Jan 12, 2014
+* <Last>		Jan 13, 2014
 * <File>        MainDynamic.cpp
 */
 
@@ -171,7 +171,7 @@ void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 		{
 		case sge::SG_KEY_Q:
 		case sge::SG_KEY_ESCAPE:
-			onDestroy ();
+			onDestroy();
 			break;
 
 		case sge::SG_KEY_T:
@@ -180,7 +180,7 @@ void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 			break;
 		
 		case sge::SG_KEY_C:
-			m_fs->ZeroData ();
+			m_fs->ZeroAllBuffer();
 			break;
 		
 		default:

@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Dec 12, 2013
-* <Last>		Jan 12, 2013
+* <Last>		Jan 13, 2013
 * <File>        FluidKernelDynamic.cu
 */
 
@@ -14,8 +14,7 @@
 #include <GL\freeglut.h>
 #include <SGE\SGUtils.h>
 
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include "FluidSimAreaDynamic.h"
 #include "FluidMathLibDynamic.h"
@@ -279,11 +278,7 @@ void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 	if ( !fluid->ray.bRun ) return ;
 	
 	// Zero buffer first
-	cudaDeviceDim3D();
-	for ( int i = 0; i < DevListNum; i++ )
-	{
-		kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_list[i] );
-	}
+	ZeroDevData();
 
 	// For fluid simulation, copy the data to device
 	CopyDataToDevice();

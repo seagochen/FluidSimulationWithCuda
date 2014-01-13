@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Dec 15, 2013
-* <Last>		Jan 12, 2014
+* <Last>		Jan 13, 2014
 * <File>        FluidSimAreaDynamic.h
 */
 
@@ -202,7 +202,8 @@ namespace sge
 
 		void FluidSimSolver ( fluidsim *fluid );
 		void FreeResourcePtrs ( void );
-		void ZeroData ( void );
+		void ZeroAllBuffer ( void );
+		void ZeroDevData ( void );
 		void SelectNode ( int i, int j, int k );
 		void SelectNode ( int IX );
 

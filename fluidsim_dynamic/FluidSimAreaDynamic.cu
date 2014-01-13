@@ -14,14 +14,11 @@
 
 #pragma region helper kernel functions
 
-__global__ void kernelZeroNode ( double *u, double *v, double *w, double *dens )
+__global__ void kernelZeroNode ( double *grid )
 {
 	GetIndex();
 
-	int ind = Index(i,j,k);
-	u [ ind ] = 0.f;
-	v [ ind ] = 0.f;
-	w [ ind ] = 0.f;
+	grid [ Index(i,j,k) ] = 0.f;
 };
 
 #pragma endregion
@@ -42,7 +39,7 @@ sge::FluidSimProc::FluidSimProc ( fluidsim *fluid )
 
 	std::cout << "fluid simulation ready, zero the data and preparing the stage now" << std::endl;
 	SelectNode (0, 0, 0);
-	ZeroData ();
+	ZeroAllBuffer ();
 };
 
 sge::SGRUNTIMEMSG sge::FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
@@ -173,24 +170,25 @@ void sge::FluidSimProc::FreeResourcePtrs ( void )
 	cudaFree ( dev_visual );
 }
 
-void sge::FluidSimProc::ZeroData ( void )
+void sge::FluidSimProc::ZeroAllBuffer ( void )
 {
 	cudaDeviceDim3D();
-	kernelZeroNode cudaDevice(gridDim, blockDim) ( dev_u, dev_v, dev_w, dev_den );
+	for ( int i = 0; i < dev_list.size(); i++ )
+		kernelZeroNode cudaDevice(gridDim, blockDim) ( dev_list [ i ] );
 
 	/* zero each node one by one */
 	for ( int i = 0; i < node_list.size(); i++ )
 	{
-		if ( cudaMemcpy (node_list[ i ].ptrDens, dev_den,
+		if ( cudaMemcpy (node_list[ i ].ptrDens, dev_0,
 			sizeof(double) * SIMSIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy (node_list[ i ].ptrVelU, dev_u,
+		if ( cudaMemcpy (node_list[ i ].ptrVelU, dev_0,
 			sizeof(double) * SIMSIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy (node_list[ i ].ptrVelV, dev_v,
+		if ( cudaMemcpy (node_list[ i ].ptrVelV, dev_0,
 			sizeof(double) * SIMSIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy (node_list[ i ].ptrVelW, dev_w,
+		if ( cudaMemcpy (node_list[ i ].ptrVelW, dev_0,
 			sizeof(double) * SIMSIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
 			goto Error;
 	}
@@ -205,6 +203,13 @@ Error:
 Success:
 	;
 }
+
+void sge::FluidSimProc::ZeroDevData ( void )
+{
+	cudaDeviceDim3D();
+	for ( int i = 0; i < dev_list.size(); i++ )
+		kernelZeroNode cudaDevice(gridDim, blockDim) ( dev_list [ i ] );
+};
 
 void sge::FluidSimProc::CopyDataToDevice ( void )
 {
