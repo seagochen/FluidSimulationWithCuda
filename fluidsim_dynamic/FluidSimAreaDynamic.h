@@ -15,18 +15,21 @@
 #include <SGE\SGUtils.h>
 #include <Windows.h>
 
-#define DELTA_TIME          0.5f
-#define STEPSIZE            0.01f
+#define DELTATIME           0.3f
+#define STEPSIZE            0.001f
 #define DIFFUSION           0.1f
 #define VISOCITY            0.0f 
-#define VOLUME              30
-#define Threads_X           512
-#define Grids_X             128
-#define Tile_X              16
-#define Windows_X           650
-#define Canvas_X            600
-#define Node_X              2
-#define Sim_Size     Grids_X*Grids_X*Grids_X
+#define SOURCE              30
+
+#define GRIDS_X             64
+#define NODES_X             1
+#define VOLUME_X            GRIDS_X*NODES_X
+#define THREADS_X           512
+#define TILE_X              16
+#define WINDOWS_X           600
+#define CANVAS_X            600
+#define SIMSIZE_X           GRIDS_X*GRIDS_X*GRIDS_X
+
 
 #pragma region get index, host & device list, simulation area control
 
@@ -59,7 +62,7 @@
 
 #define cudaIndex3D(i,j,k,elements_x) ((k)*elements_x*elements_x+(j)*elements_x+(i))
 
-#define Index(i,j,k) cudaIndex3D(i,j,k,Grids_X)
+#define Index(i,j,k) cudaIndex3D(i,j,k,GRIDS_X)
 
 #define cudaTrans2DTo3D(i,j,k,elements_x) \
 	k = cudaIndex2D(i,j,(elements_x)) / ((elements_x)*(elements_x)); \
@@ -68,23 +71,23 @@
 
 #define cudaDeviceDim2D() \
 	dim3 blockDim, gridDim; \
-	blockDim.x = Tile_X; \
-	blockDim.y = Tile_X; \
-	gridDim.x  = Grids_X / Tile_X; \
-	gridDim.y  = Grids_X / Tile_X; \
+	blockDim.x = TILE_X; \
+	blockDim.y = TILE_X; \
+	gridDim.x  = GRIDS_X / TILE_X; \
+	gridDim.y  = GRIDS_X / TILE_X; \
 
 #define cudaDeviceDim3D() \
 	dim3 blockDim, gridDim; \
-	blockDim.x = (Grids_X / Tile_X); \
-	blockDim.y = (Threads_X / Tile_X); \
-	gridDim.x  = (Grids_X / blockDim.x); \
-	gridDim.y  = (Grids_X * Grids_X * Grids_X) / (blockDim.x * blockDim.y * (Grids_X / blockDim.x)); \
+	blockDim.x = (GRIDS_X / TILE_X); \
+	blockDim.y = (THREADS_X / TILE_X); \
+	gridDim.x  = (GRIDS_X / blockDim.x); \
+	gridDim.y  = (GRIDS_X * GRIDS_X * GRIDS_X) / (blockDim.x * blockDim.y * (GRIDS_X / blockDim.x)); \
 
 #define GetIndex()  \
 	int i = blockIdx.x * blockDim.x + threadIdx.x; \
 	int j = blockIdx.y * blockDim.y + threadIdx.y; \
 	int k = 0; \
-	cudaTrans2DTo3D ( i, j, k, Grids_X ); \
+	cudaTrans2DTo3D ( i, j, k, GRIDS_X ); \
 
 /*
   -------------------------------------------------------------------------------------------------------
@@ -98,8 +101,8 @@
 
 #define gst_header        0              /* (ghost, halo) the header cell of grid */
 #define sim_header        1              /* (actually) the second cell of grid */
-#define gst_trailer       Grids_X - 1    /* (ghost, halo) the last cell of grid */
-#define sim_trailer       Grids_X - 2    /* (actually) the second last cell of grid */
+#define gst_trailer       GRIDS_X - 1    /* (ghost, halo) the last cell of grid */
+#define sim_trailer       GRIDS_X - 2    /* (actually) the second last cell of grid */
 
 #define BeginSimArea() \
 	if ( i >= sim_header and i <= sim_trailer ) \
@@ -110,14 +113,13 @@
 
 #pragma endregion
 
-
-typedef GLuint handler;
-
 /*
   -------------------------------------------------------------------------------------------------------
    Dataset
   -------------------------------------------------------------------------------------------------------
 */
+
+typedef GLuint handler;
 
 namespace sge
 {
@@ -140,13 +142,6 @@ namespace sge
 		struct volume
 		{
 			uchar  *ptrData;
-			size_t  uWidth, uHeight, uDepth;
-		};
-
-		struct area
-		{
-			double *ptrVelU, *ptrVelV, *ptrVelW;
-			double *ptrDens;
 			size_t  uWidth, uHeight, uDepth;
 		};
 		
@@ -178,7 +173,6 @@ namespace sge
 		shader   shader;
 		textures textures;
 		volume   volume;
-		area     area;
 		rayc     ray;
 		thread   thread;
 		fps      fps;
@@ -192,7 +186,7 @@ namespace sge
 			node    *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 			boolean  bActive;
 			int      i, j, k;
-			double  *ptrDens, *ptrVelU, *ptrVelV, *ptrVelW, *ptrP, *ptrDiv;
+			double  *ptrDens, *ptrVelU, *ptrVelV, *ptrVelW;
 		};
 
 	private:

@@ -35,15 +35,12 @@ void initialize ()
 
 	m_fluid.ray.fStepsize     = STEPSIZE;
 	m_fluid.ray.nAngle        = 0;
-	m_fluid.ray.uCanvasWidth  = Canvas_X;
-	m_fluid.ray.uCanvasHeight = Canvas_X;
+	m_fluid.ray.uCanvasWidth  = CANVAS_X;
+	m_fluid.ray.uCanvasHeight = CANVAS_X;
 	m_fluid.ray.bRun          = true;
-	m_fluid.volume.uWidth     = Grids_X;
-	m_fluid.volume.uHeight    = Grids_X;
-	m_fluid.volume.uDepth     = Grids_X;
-	m_fluid.area.uWidth       = Grids_X;
-	m_fluid.area.uHeight      = Grids_X;
-	m_fluid.area.uDepth       = Grids_X;
+	m_fluid.volume.uWidth     = VOLUME_X;
+	m_fluid.volume.uHeight    = VOLUME_X;
+	m_fluid.volume.uDepth     = VOLUME_X;
 
 	m_fluid.shader.szCanvasVert = ".\\shader\\backface.vert";
 	m_fluid.shader.szCanvasFrag = ".\\shader\\backface.frag";
@@ -204,7 +201,7 @@ int main()
 {
 	initialize ();
 
-	activity = new MainActivity ( Windows_X, Windows_X );
+	activity = new MainActivity ( WINDOWS_X, WINDOWS_X );
 
 	activity->SetAppClientInfo ( IDI_ICON1, IDI_ICON1 );
 	activity->RegisterCreateFunc ( onCreate );

@@ -36,19 +36,19 @@ void kernelAddSource ( double *grid, int const number )
 	GetIndex();
 	BeginSimArea();
 
-	const int half = Grids_X / 2;
+	const int half = GRIDS_X / 2;
 
 	switch ( number )
 	{
 	case 0: // density
 		if ( j < 3 ) 
 			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
-				grid [ Index(i,j,k) ] = VOLUME;
+				grid [ Index(i,j,k) ] = SOURCE;
 
 	case 1: // velocity v
 		if ( j < 3 ) 
 			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
-				grid [ Index(i,j,k) ] = VOLUME;
+				grid [ Index(i,j,k) ] = SOURCE;
 
 	default: // add external force if need
 		break;
@@ -129,9 +129,9 @@ void kernelGridAdvection ( double *grid_out, double const *grid_in, double const
 	GetIndex();
 	BeginSimArea();
 
-	double u = i - u_in [ Index(i,j,k) ] * DELTA_TIME;
-	double v = j - v_in [ Index(i,j,k) ] * DELTA_TIME;
-	double w = k - w_in [ Index(i,j,k) ] * DELTA_TIME;
+	double u = i - u_in [ Index(i,j,k) ] * DELTATIME;
+	double v = j - v_in [ Index(i,j,k) ] * DELTATIME;
+	double w = k - w_in [ Index(i,j,k) ] * DELTATIME;
 	grid_out [ Index(i,j,k) ] = trilinear ( grid_in, u, v, w );
 
 	EndSimArea();
@@ -151,7 +151,7 @@ void hostAdvection ( double *grid_out, double const *grid_in, int const cd, doub
 __host__ void hostDiffusion ( double *grid_out,
 	double const *grid_in, int const cd, double const diffusion )
 {
-//	double rate = diffusion * Grids_X * Grids_X * Grids_X;
+//	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
 	double rate = diffusion;
 	hostJacobi ( grid_out, grid_in, cd, rate, 1+6*rate );
 };
@@ -165,7 +165,7 @@ void kernelGradient ( double *div, double *p,
 	GetIndex();
 	BeginSimArea();
 	
-	const double h = 1.f / Grids_X;
+	const double h = 1.f / GRIDS_X;
 
 	// previous instantaneous magnitude of velocity gradient 
 	//		= (sum of velocity gradients per axis)/2N:
@@ -188,9 +188,9 @@ void kernelSubtract ( double *vel_u, double *vel_v, double *vel_w, double const 
 
 	// gradient calculated by neighbors
 
-	vel_u [ Index(i, j, k) ] -= 0.5f * Grids_X * ( p [ Index(i+1, j, k) ] - p [ Index(i-1, j, k) ] );
-	vel_v [ Index(i, j, k) ] -= 0.5f * Grids_X * ( p [ Index(i, j+1, k) ] - p [ Index(i, j-1, k) ] );
-	vel_w [ Index(i, j, k) ] -= 0.5f * Grids_X * ( p [ Index(i, j, k+1) ] - p [ Index(i, j, k-1) ] );
+	vel_u [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i+1, j, k) ] - p [ Index(i-1, j, k) ] );
+	vel_v [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j+1, k) ] - p [ Index(i, j-1, k) ] );
+	vel_w [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j, k+1) ] - p [ Index(i, j, k-1) ] );
 
 	EndSimArea();
 };

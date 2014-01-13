@@ -56,9 +56,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FluidSimAreaDynamic.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MainDynamic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -71,6 +68,9 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="FluidKernelDynamic.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="FluidSimAreaDynamic.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>
