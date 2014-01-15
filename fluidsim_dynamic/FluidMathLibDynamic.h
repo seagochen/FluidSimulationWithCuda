@@ -1,11 +1,17 @@
-#ifndef __my_math_h_
-#define __my_math_h_
+/**
+* <Author>      Orlando Chen
+* <First>       Nov 21, 2013
+* <Last>		Jan 12, 2014
+* <File>        FluidMathLibDynamic.h
+*/
+
+#ifndef __fluid_math_lib_dynamic_h_
+#define __fluid_math_lib_dynamic_h_
 
 #pragma once
 
 #include <cuda_runtime.h>
-#include "helper_math.h"
-#include "fluidsim.h"
+#include "FluidSimAreaDynamic.h"
 
 inline __host__ __device__ int sgrand( int *seed )
 {
@@ -89,9 +95,9 @@ inline __host__ __device__  double atCell (double const *grid, int const x, int 
 	if ( x < gst_header ) return 0.f;
 	if ( y < gst_header ) return 0.f;
 	if ( z < gst_header ) return 0.f;
-	if ( x > gst_trailer ) return 0.f;
-	if ( y > gst_trailer ) return 0.f;
-	if ( z > gst_trailer ) return 0.f;
+	if ( x > gst_tailer ) return 0.f;
+	if ( y > gst_tailer ) return 0.f;
+	if ( z > gst_tailer ) return 0.f;
 
 	return grid[ Index(x,y,z) ];
 };

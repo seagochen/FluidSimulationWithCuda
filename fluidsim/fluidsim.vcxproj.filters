@@ -26,34 +26,34 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="FluidSimAreaImp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="volumeHelper.cpp">
+    <ClCompile Include="LaunchMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="fluidSimImp.cpp">
+    <ClCompile Include="VolumeRendering.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="fluidsim.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="volumeHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="helper_math.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="myMath.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="bufferOp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FluidSimArea.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Operations.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VolumeRendering.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FluidMathLib.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,7 +1,7 @@
-﻿/**
+/**
 * <Author>      Orlando Chen
-* <First>       Dec 12, 2013
-* <Last>		Dec 23, 2013
+* <First>       Jan 10, 2014
+* <Last>		Jan 10, 2014
 * <File>        kernel.cu
 */
 
@@ -17,9 +17,11 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include "FluidSimArea.h"
-#include "FluidMathLib.h"
-#include "Operations.h"
+#include "FluidSimAreaDynamic.h"
+#include "FluidMathLibDynamic.h"
+#include "OperationsDynamic.h"
+#include "FunctionHelperDynamic.h"
+
 
 using namespace sge;
 using namespace std;
@@ -217,6 +219,15 @@ void hostProject ( double *vel_u, double *vel_v, double *vel_w, double *div, dou
 #pragma endregion
 
 
+__global__ 
+void kernelReplaceData ( unsigned char* origin, unsigned const char* small,
+	int const offx, int const offy, int const offz )
+{
+	GetIndex();
+
+//	int index = Index( i + offx * Grids_X, j + offy * Grids_X, k + offz * Grids_X );
+	origin[Index(i,j,k)] = small[Index(i,j,k)];
+}
 
 
 #pragma region velocity, density, fluid simulation solver and pick data
@@ -260,11 +271,12 @@ void FluidSimProc::DensitySolver ( void )
 void FluidSimProc::PickData ( fluidsim *fluid )
 {
 	cudaDeviceDim3D ();
-	kernelPickData  <<<gridDim, blockDim>>> ( dev_visual, dev_den );
+	kernelPickData  <<<gridDim, blockDim>>> ( dev_smallv, dev_den );
+	kernelReplaceData <<<gridDim, blockDim>>> ( dev_visual, dev_smallv, IXi, IXj, IXk );
 
+	size_t size = fluid->volume.uWidth * fluid->volume.uHeight * fluid->volume.uDepth;
 	if ( cudaMemcpy (host_visual, dev_visual, 
-		sizeof(uchar) * (fluid->volume.uWidth * fluid->volume.uHeight * fluid->volume.uDepth ), 
-		cudaMemcpyDeviceToHost ) != cudaSuccess )
+		sizeof(uchar) * size, cudaMemcpyDeviceToHost ) != cudaSuccess )
 	{
 		cudaCheckErrors ("cudaMemcpy failed", __FILE__, __LINE__);
 		FreeResourcePtrs ();
