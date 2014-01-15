@@ -67,10 +67,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidKernelDynamic.cu">
+    <CudaCompile Include="FluidSimAreaDynamic.cpp">
       <Filter>Source Files</Filter>
     </CudaCompile>
-    <CudaCompile Include="FluidSimAreaDynamic.cu">
+    <CudaCompile Include="ExtFluidSimDynamic.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>

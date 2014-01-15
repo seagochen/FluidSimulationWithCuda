@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 10, 2013
-* <Last>		Jan 13, 2014
+* <Last>		Jan 15, 2014
 * <File>        BufferOperationDynamic.h
 */
 
@@ -13,7 +13,8 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
-__global__ void kernelPickData ( unsigned char *data, double const *grid, 
+__global__ 
+void kernelPickData ( unsigned char *data, double const *grid, 
 	int const offseti, int const offsetj, int const offsetk )
 {
 	GetIndex();
@@ -31,14 +32,16 @@ __global__ void kernelPickData ( unsigned char *data, double const *grid,
 		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (unsigned char) temp;
 };
 
-__global__ void kernelCopyBuffer ( double *grid_out, double const *grid_in )
+__global__ 
+void kernelCopyBuffer ( double *grid_out, double const *grid_in )
 {
 	GetIndex ();
 
 	grid_out [ Index(i,j,k) ] = grid_in [ Index(i, j, k) ];
 };
 
-__global__ void kernelSwapBuffer ( double *grid1, double *grid2 )
+__global__ 
+void kernelSwapBuffer ( double *grid1, double *grid2 )
 {
 	GetIndex ();
 
@@ -47,39 +50,68 @@ __global__ void kernelSwapBuffer ( double *grid1, double *grid2 )
 	grid2 [ Index(i,j,k) ] = temp;
 };
 
-__global__ void kernelZeroBuffer ( double *grid )
-{
-	GetIndex ();
-	grid [ Index(i,j,k) ] = 0.f;
-};
-
-__host__ void hostSwapBuffer ( double *grid1, double *grid2 )
+__host__ 
+void hostSwapBuffer ( double *grid1, double *grid2 )
 {
 	cudaDeviceDim3D();
 	kernelSwapBuffer cudaDevice(gridDim, blockDim) (grid1, grid2);
 };
 
-__device__ double i0j0k0 ( double *grid )
+__global__
+void kernelZeroBuffer ( double *grid )
 {
-	double temp = 0.f;
-	temp = grid [ Index(gst_header, gst_header, gst_header) ] + 
+	GetIndex();
+	grid[ Index(i,j,k) ] = 0.f;
+};
+
+__global__
+void kernelZeroBuffer ( unsigned char *grid, int const offi, int const offj, int const offk )
+{
+	GetIndex();
+	int di = offi + i;
+	int dj = offj + j;
+	int dk = offk + k;
+	grid [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;	
+};
+
+__host__
+void hostZeroBuffer ( double *grid )
+{
+	cudaDeviceDim3D();
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( grid );
+};
+
+__host__
+void hostZeroBuffer ( unsigned char *grid, int const offi, int const offj, int const offk )
+{
+	cudaDeviceDim3D();
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( grid, offi, offj, offk );
+};
+
+__device__ 
+double i0j0k0 ( double *grid )
+{
+	double temp =
+		grid [ Index(gst_header, gst_header, gst_header) ] + 
 		grid [ Index(sim_header, gst_header, gst_header) ] + 
 		grid [ Index(gst_header, sim_header, gst_header) ] +
 		grid [ Index(gst_header, gst_header, sim_header) ];
 	return temp / 4.f;
 };
 
-__device__ double i1j0k0 ( double *grid )
+__device__ 
+double i1j0k0 ( double *grid )
 {
-	double temp = 0.f;
-	temp = grid [ Index(gst_tailer, gst_header, gst_header) ] + 
+	double temp =
+		grid [ Index(gst_tailer, gst_header, gst_header) ] + 
 		grid [ Index(sim_tailer, gst_header, gst_header) ] + 
 		grid [ Index(gst_tailer, sim_header, gst_header) ] +
 		grid [ Index(gst_tailer, gst_header, sim_header) ];
 	return temp / 4.f;
 };
 
-__device__ double i0j1k0 ( double *grid )
+__device__ 
+double i0j1k0 ( double *grid )
 {
 	double temp = 0.f;
 	temp = grid [ Index(gst_header, gst_tailer, gst_header) ] + 
@@ -89,7 +121,8 @@ __device__ double i0j1k0 ( double *grid )
 	return temp / 4.f;
 };
 
-__device__ double i1j1k0 ( double *grid )
+__device__ 
+double i1j1k0 ( double *grid )
 {
 	double temp = 0.f;
 	temp = grid [ Index(gst_tailer, gst_tailer, gst_header) ] + 
@@ -99,7 +132,8 @@ __device__ double i1j1k0 ( double *grid )
 	return temp / 4.f;
 };
 
-__device__ double i0j0k1 ( double *grid )
+__device__ 
+double i0j0k1 ( double *grid )
 {
 	double temp = 0.f;
 	temp = grid [ Index(gst_header, gst_header, gst_tailer) ] +
@@ -109,7 +143,8 @@ __device__ double i0j0k1 ( double *grid )
 	return temp / 4.f;
 };
 
-__device__ double i1j0k1 ( double *grid )
+__device__ 
+double i1j0k1 ( double *grid )
 {
 	double temp = 0.f;
 	temp = grid [ Index(gst_tailer, gst_header, gst_tailer) ] +
@@ -119,7 +154,8 @@ __device__ double i1j0k1 ( double *grid )
 	return temp / 4.f;
 };
 
-__device__ double i0j1k1 ( double *grid )
+__device__ 
+double i0j1k1 ( double *grid )
 {
 	double temp = 0.f;
 	temp = grid [ Index(gst_header, gst_tailer, gst_tailer) ] +
@@ -129,7 +165,8 @@ __device__ double i0j1k1 ( double *grid )
 	return temp / 4.f;
 };
 
-__device__ double i1j1k1 ( double *grid )
+__device__ 
+double i1j1k1 ( double *grid )
 {
 	double temp = 0.f;
 	temp = grid [ Index(gst_tailer, gst_tailer, gst_tailer) ] +

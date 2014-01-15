@@ -2,7 +2,7 @@
 * <Author>      Orlando Chen
 * <First>       Dec 12, 2013
 * <Last>		Jan 15, 2013
-* <File>        FluidKernelDynamic.cu
+* <File>        ExtFluidSimDynamic.cu
 */
 
 #include <iostream>
@@ -89,7 +89,7 @@ void kernelChecksum ( double *grid, double *checksum )
 };
 
 __global__ 
-void kernelBoundary ( double *grid, double *mark
+void kernelBoundary ( double *grid, double *mark,
 	int const cd,
 	double *up, double *down, 
 	double *left, double *right,

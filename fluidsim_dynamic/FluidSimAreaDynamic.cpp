@@ -11,31 +11,6 @@
 #include "FluidSimAreaDynamic.h"
 #include "FunctionHelperDynamic.h"
 
-
-#pragma region helper kernel functions
-
-__global__ void kernelZeroNode ( double *grid )
-{
-	GetIndex();
-
-	grid [ Index(i,j,k) ] = 0.f;
-};
-
-__global__ void kernelZeroVisual ( unsigned char *data,
-	int const offseti, int const offsetj, int const offsetk )
-{
-	GetIndex();
-
-	int di = offseti + i;
-	int dj = offsetj + j;
-	int dk = offsetk + k;
-
-	/* zero data first */
-	data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
-};
-
-#pragma endregion
-
 sge::FluidSimProc::FluidSimProc( fluidsim *fluid )
 {
 	if ( AllocateResourcePtrs( fluid ) != SG_RUNTIME_OK )
@@ -206,9 +181,11 @@ void sge::FluidSimProc::FreeResourcePtrs( void )
 
 void sge::FluidSimProc::ZeroAllBuffer( void )
 {
-	cudaDeviceDim3D();
+	extern void hostZeroBuffer( double *grid );
+	extern void hostZeroBuffer( unsigned char *grid, int const offi, int const offj, int const offk );
+
 	for ( int i = 0; i < dev_list.size(); i++ )
-		kernelZeroNode cudaDevice(gridDim, blockDim) ( dev_list [ i ] );
+		hostZeroBuffer( dev_list [ i ] );
 
 	/* zero each node one by one */
 	for ( int i = 0; i < node_list.size(); i++ )
@@ -230,8 +207,7 @@ void sge::FluidSimProc::ZeroAllBuffer( void )
 		int offseti = node_list[ i ].i * GRIDS_X;
 		int offsetj = node_list[ i ].j * GRIDS_X;
 		int offsetk = node_list[ i ].k * GRIDS_X;
-		kernelZeroVisual cudaDevice(gridDim, blockDim)
-			( dev_visual, offseti, offsetj, offsetk );
+		hostZeroBuffer( dev_visual, offseti, offsetj, offsetk );
 	}
 
 	size_t size = VOLUME_X * VOLUME_X * VOLUME_X;
@@ -252,9 +228,10 @@ Success:
 
 void sge::FluidSimProc::ZeroDevData( void )
 {
-	cudaDeviceDim3D();
+	extern void hostZeroBuffer( double *grid );
+
 	for ( int i = 0; i < dev_list.size(); i++ )
-		kernelZeroNode cudaDevice(gridDim, blockDim) ( dev_list [ i ] );
+		hostZeroBuffer( dev_list [ i ] );
 };
 
 void sge::FluidSimProc::CopyDataToDevice( void )

@@ -39,7 +39,7 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimAreaDynamic.cu">
+    <CudaCompile Include="FluidSimAreaDynamic.cpp">
       <FileType>CppCode</FileType>
     </CudaCompile>
     <ClCompile Include="FunctionHelperDynamic.cpp" />
@@ -47,7 +47,7 @@
     <ClCompile Include="RenderingDynamic.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidKernelDynamic.cu">
+    <CudaCompile Include="ExtFluidSimDynamic.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
   </ItemGroup>
