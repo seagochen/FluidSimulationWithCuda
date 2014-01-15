@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Nov 15, 2013
-* <Last>		Jan 13, 2014
+* <Last>		Jan 15, 2014
 * <File>        FluidSimAreaDynamic.cpp
 */
 
@@ -36,12 +36,12 @@ __global__ void kernelZeroVisual ( unsigned char *data,
 
 #pragma endregion
 
-sge::FluidSimProc::FluidSimProc ( fluidsim *fluid )
+sge::FluidSimProc::FluidSimProc( fluidsim *fluid )
 {
-	if ( AllocateResourcePtrs ( fluid ) != SG_RUNTIME_OK )
+	if ( AllocateResourcePtrs( fluid ) != SG_RUNTIME_OK )
 	{
-		FreeResourcePtrs ();
-		exit (1);
+		FreeResourcePtrs();
+		exit(1);
 	}
 
 	fluid->fps.dwCurrentTime    = 0;
@@ -51,12 +51,21 @@ sge::FluidSimProc::FluidSimProc ( fluidsim *fluid )
 	fluid->fps.uFPS             = 0;
 
 	std::cout << "fluid simulation ready, zero the data and preparing the stage now" << std::endl;
-	IX = 0;
-	SelectNode(10);
-	ZeroAllBuffer ();
+	SelectNode( 10 );
+	ZeroAllBuffer();
+
+	// finally, zero the temporary variable buffer
+	for ( int i = 0; i < TPBUFFER_X; i++ )
+		host_buf[ i ] = 0.f;
+	if ( cudaMemcpy(dev_buf, host_buf, 
+		sizeof(double) * TPBUFFER_X, cudaMemcpyHostToDevice) != cudaSuccess )
+	{
+		cudaCheckErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		exit( 1 );
+	}
 };
 
-sge::SGRUNTIMEMSG sge::FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
+sge::SGRUNTIMEMSG sge::FluidSimProc::AllocateResourcePtrs( fluidsim *fluid )
 {
 	/* choose which GPU to run on, change this on a multi-GPU system. */
 	if ( cudaSetDevice ( 0 ) != cudaSuccess )
@@ -99,7 +108,6 @@ sge::SGRUNTIMEMSG sge::FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
 	}
 	
 #pragma endregion
-
 
 #pragma region assign node position
 
@@ -158,11 +166,20 @@ sge::SGRUNTIMEMSG sge::FluidSimProc::AllocateResourcePtrs ( fluidsim *fluid )
 
 #pragma endregion
 
+#pragma region allocate space for temporary buffers
+	host_buf = (double *) malloc ( sizeof(double) * TPBUFFER_X );
+	if ( cudaMalloc ( (void**)&dev_buf, sizeof(double) * TPBUFFER_X ) != cudaSuccess )
+	{
+		cudaCheckErrors ( "cudaMalloc failed!", __FILE__, __LINE__ );
+		return SG_RUNTIME_FALSE;
+	}
+#pragma endregion
+
 	/* finally */
 	return SG_RUNTIME_OK;
 }  
 
-void sge::FluidSimProc::FreeResourcePtrs ( void )
+void sge::FluidSimProc::FreeResourcePtrs( void )
 {
 	size_t size = NODES_X * NODES_X * NODES_X;
 
@@ -173,19 +190,21 @@ void sge::FluidSimProc::FreeResourcePtrs ( void )
 		SAFE_FREE_PTR ( node_list[ i ].ptrVelV );
 		SAFE_FREE_PTR ( node_list[ i ].ptrVelW );
 	}
-	node_list.empty ( );
+	node_list.empty ();
 
 	for ( int i = 0; i < DevListNum; i++ )
 	{
 		cudaFree ( dev_list [ i ] );
 	}
-	dev_list.empty ( );
+	dev_list.empty ();
 
-	SAFE_FREE_PTR( host_visual );
+	SAFE_FREE_PTR ( host_visual );
+	SAFE_FREE_PTR ( host_buf );
 	cudaFree ( dev_visual );
+	cudaFree ( dev_buf );
 }
 
-void sge::FluidSimProc::ZeroAllBuffer ( void )
+void sge::FluidSimProc::ZeroAllBuffer( void )
 {
 	cudaDeviceDim3D();
 	for ( int i = 0; i < dev_list.size(); i++ )
@@ -231,14 +250,14 @@ Success:
 	;
 }
 
-void sge::FluidSimProc::ZeroDevData ( void )
+void sge::FluidSimProc::ZeroDevData( void )
 {
 	cudaDeviceDim3D();
 	for ( int i = 0; i < dev_list.size(); i++ )
 		kernelZeroNode cudaDevice(gridDim, blockDim) ( dev_list [ i ] );
 };
 
-void sge::FluidSimProc::CopyDataToDevice ( void )
+void sge::FluidSimProc::CopyDataToDevice( void )
 {
 	if ( cudaMemcpy (dev_den, node_list[ IX ].ptrDens, 
 		sizeof(double) * SIMSIZE_X, cudaMemcpyHostToDevice) != cudaSuccess )
@@ -264,7 +283,7 @@ Success:
 	;	
 };
 
-void sge::FluidSimProc::CopyDataToHost ( void )
+void sge::FluidSimProc::CopyDataToHost( void )
 {
 	if ( cudaMemcpy (node_list[ IX ].ptrDens, dev_den,
 		sizeof(double) * SIMSIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
@@ -290,7 +309,7 @@ Success:
 	;	
 };
 
-void sge::FluidSimProc::SelectNode ( int i, int j, int k )
+void sge::FluidSimProc::SelectNode( int i, int j, int k )
 {
 	node_list [ IX ].bActive = false;
 	printf ("node no.%d is deactive!\n", IX);
@@ -305,7 +324,7 @@ void sge::FluidSimProc::SelectNode ( int i, int j, int k )
 	}	
 };
 
-void sge::FluidSimProc::SelectNode ( int index )
+void sge::FluidSimProc::SelectNode( int index )
 {
 	node_list [ IX ].bActive = false;
 	printf ("node no.%d is deactive!\n", IX);

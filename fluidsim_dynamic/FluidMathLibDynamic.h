@@ -95,9 +95,9 @@ inline __host__ __device__  double atCell (double const *grid, int const x, int 
 	if ( x < gst_header ) return 0.f;
 	if ( y < gst_header ) return 0.f;
 	if ( z < gst_header ) return 0.f;
-	if ( x > gst_trailer ) return 0.f;
-	if ( y > gst_trailer ) return 0.f;
-	if ( z > gst_trailer ) return 0.f;
+	if ( x > gst_tailer ) return 0.f;
+	if ( y > gst_tailer ) return 0.f;
+	if ( z > gst_tailer ) return 0.f;
 
 	return grid[ Index(x,y,z) ];
 };

@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Dec 15, 2013
-* <Last>		Jan 13, 2014
+* <Last>		Jan 15, 2014
 * <File>        FluidSimAreaDynamic.h
 */
 
@@ -29,6 +29,7 @@
 #define WINDOWS_X           600
 #define CANVAS_X            600
 #define SIMSIZE_X           GRIDS_X*GRIDS_X*GRIDS_X
+#define TPBUFFER_X          1024
 
 
 #pragma region get index, host & device list, simulation area control
@@ -106,13 +107,13 @@
 
 #define gst_header        0              /* (ghost, halo) the header cell of grid */
 #define sim_header        1              /* (actually) the second cell of grid */
-#define gst_trailer       GRIDS_X - 1    /* (ghost, halo) the last cell of grid */
-#define sim_trailer       GRIDS_X - 2    /* (actually) the second last cell of grid */
+#define gst_tailer       GRIDS_X - 1    /* (ghost, halo) the last cell of grid */
+#define sim_tailer       GRIDS_X - 2    /* (actually) the second last cell of grid */
 
 #define BeginSimArea() \
-	if ( i >= sim_header and i <= sim_trailer ) \
-	if ( j >= sim_header and j <= sim_trailer ) \
-	if ( k >= sim_header and k <= sim_trailer ) {
+	if ( i >= sim_header and i <= sim_tailer ) \
+	if ( j >= sim_header and j <= sim_tailer ) \
+	if ( k >= sim_header and k <= sim_tailer ) {
 
 #define EndSimArea() }
 
@@ -197,7 +198,12 @@ namespace sge
 	private:
 		std::vector <double*> dev_list;
 		std::vector <node>    node_list;
-		uchar  *host_visual, *dev_visual;
+
+	private:
+		uchar *host_visual, *dev_visual;
+		double *host_buf, *dev_buf;
+
+	private:
 		int IX;
 
 	public:

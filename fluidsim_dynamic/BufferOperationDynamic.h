@@ -59,4 +59,84 @@ __host__ void hostSwapBuffer ( double *grid1, double *grid2 )
 	kernelSwapBuffer cudaDevice(gridDim, blockDim) (grid1, grid2);
 };
 
+__device__ double i0j0k0 ( double *grid )
+{
+	double temp = 0.f;
+	temp = grid [ Index(gst_header, gst_header, gst_header) ] + 
+		grid [ Index(sim_header, gst_header, gst_header) ] + 
+		grid [ Index(gst_header, sim_header, gst_header) ] +
+		grid [ Index(gst_header, gst_header, sim_header) ];
+	return temp / 4.f;
+};
+
+__device__ double i1j0k0 ( double *grid )
+{
+	double temp = 0.f;
+	temp = grid [ Index(gst_tailer, gst_header, gst_header) ] + 
+		grid [ Index(sim_tailer, gst_header, gst_header) ] + 
+		grid [ Index(gst_tailer, sim_header, gst_header) ] +
+		grid [ Index(gst_tailer, gst_header, sim_header) ];
+	return temp / 4.f;
+};
+
+__device__ double i0j1k0 ( double *grid )
+{
+	double temp = 0.f;
+	temp = grid [ Index(gst_header, gst_tailer, gst_header) ] + 
+		grid [ Index(gst_header, sim_tailer, gst_header) ] + 
+		grid [ Index(sim_header, gst_tailer, gst_header) ] +
+		grid [ Index(gst_header, gst_tailer, sim_header) ];
+	return temp / 4.f;
+};
+
+__device__ double i1j1k0 ( double *grid )
+{
+	double temp = 0.f;
+	temp = grid [ Index(gst_tailer, gst_tailer, gst_header) ] + 
+		grid [ Index(sim_tailer, gst_tailer, gst_header) ] + 
+		grid [ Index(gst_tailer, sim_tailer, gst_header) ] +
+		grid [ Index(gst_tailer, gst_tailer, sim_header) ];
+	return temp / 4.f;
+};
+
+__device__ double i0j0k1 ( double *grid )
+{
+	double temp = 0.f;
+	temp = grid [ Index(gst_header, gst_header, gst_tailer) ] +
+		grid [ Index(gst_header, gst_header, sim_tailer) ] +
+		grid [ Index(gst_header, sim_header, gst_tailer) ] + 
+		grid [ Index(sim_header, gst_header, gst_tailer) ];
+	return temp / 4.f;
+};
+
+__device__ double i1j0k1 ( double *grid )
+{
+	double temp = 0.f;
+	temp = grid [ Index(gst_tailer, gst_header, gst_tailer) ] +
+		grid [ Index(sim_tailer, gst_header, gst_tailer) ] + 
+		grid [ Index(gst_tailer, sim_header, gst_tailer) ] + 
+		grid [ Index(gst_tailer, gst_header, sim_tailer) ];
+	return temp / 4.f;
+};
+
+__device__ double i0j1k1 ( double *grid )
+{
+	double temp = 0.f;
+	temp = grid [ Index(gst_header, gst_tailer, gst_tailer) ] +
+		grid [ Index(gst_header, gst_tailer, sim_tailer) ] + 
+		grid [ Index(gst_header, sim_tailer, gst_tailer) ] +
+		grid [ Index(sim_header, gst_tailer, gst_tailer) ];
+	return temp / 4.f;
+};
+
+__device__ double i1j1k1 ( double *grid )
+{
+	double temp = 0.f;
+	temp = grid [ Index(gst_tailer, gst_tailer, gst_tailer) ] +
+		grid [ Index(sim_tailer, gst_tailer, gst_tailer) ] +
+		grid [ Index(gst_tailer, sim_tailer, gst_tailer) ] +
+		grid [ Index(gst_tailer, gst_tailer, sim_tailer) ];
+	return temp / 4.f;
+};
+
 #endif
