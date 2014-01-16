@@ -32,21 +32,45 @@
 #define FACESIZE_X          GRIDS_X*GRIDS_X
 #define TPBUFFER_X          1024
 
-#define DevGridsNum         14
+#define DevGridsNum         32
 #define dev_u               dev_grids[ 0 ] // velocity u
 #define dev_v               dev_grids[ 1 ] // velocity v
 #define dev_w               dev_grids[ 2 ] // velocity w
-#define dev_den             dev_grids[ 3 ] // density
-#define dev_obs             dev_grids[ 4 ] // obstacle
+#define dev_d               dev_grids[ 3 ] // density
+#define dev_o               dev_grids[ 4 ] // obstacle
 #define dev_div             dev_grids[ 5 ] // divergence
 #define dev_p               dev_grids[ 6 ] // projection
 #define dev_t               dev_grids[ 7 ] // temporary
-#define dev_U               dev_grids[ 8 ] // up cell
-#define dev_D               dev_grids[ 9 ] // down cell
-#define dev_L               dev_grids[ 10 ] // left cell
-#define dev_R               dev_grids[ 11 ] // right cell
-#define dev_F               dev_grids[ 12 ] // front cell
-#define dev_B               dev_grids[ 13 ] // back cell
+
+#define dev_d_U             dev_grids[ 8 ] // up cell
+#define dev_u_U             dev_grids[ 9 ] //
+#define dev_v_U             dev_grids[ 10 ]//
+#define dev_w_U             dev_grids[ 11 ]//
+
+#define dev_d_D             dev_grids[ 12 ] // down cell
+#define dev_u_D             dev_grids[ 13 ] //
+#define dev_v_D             dev_grids[ 14 ] //
+#define dev_w_D             dev_grids[ 15 ] //
+
+#define dev_d_L             dev_grids[ 16 ] // left cell
+#define dev_u_L             dev_grids[ 17 ] //
+#define dev_v_L             dev_grids[ 18 ] //
+#define dev_w_L             dev_grids[ 19 ] //
+
+#define dev_d_R             dev_grids[ 20 ] // right cell
+#define dev_u_R             dev_grids[ 21 ] //
+#define dev_v_R             dev_grids[ 22 ] //
+#define dev_w_R             dev_grids[ 23 ] //
+
+#define dev_d_F             dev_grids[ 24 ] // front cell
+#define dev_u_F             dev_grids[ 25 ] //
+#define dev_v_F             dev_grids[ 26 ] //
+#define dev_w_F             dev_grids[ 27 ] //
+
+#define dev_d_B             dev_grids[ 28 ] // back cell
+#define dev_u_B             dev_grids[ 29 ] //
+#define dev_v_B             dev_grids[ 30 ] //
+#define dev_w_B             dev_grids[ 31 ] //
 
 #define DevFacesNum         6
 #define devt_U              dev_faces[ 0 ] // up face
@@ -147,26 +171,47 @@ namespace sge
 		double  *host_fbuf, *dev_fbuf;
 
 		/* target */
-		int index;
+		int m_index;
 
 	public:
-		FluidSimProc ( fluidsim *fluid );
+		FluidSimProc( fluidsim *fluid );
 
-		void FluidSimSolver ( fluidsim *fluid );
-		void FreeResourcePtrs ( void );
-		void ZeroAllBuffer ( void );
-		void ZeroDevData ( void );
-		void SelectNode ( int i, int j, int k );
-		void SelectNode ( int IX );
+		void FluidSimSolver( fluidsim *fluid );
+		void FreeResourcePtrs( void );
+		void ZeroAllBuffer( void );
+		void ZeroDevData( void );
+		void SelectNode( int i, int j, int k );
+		void SelectNode( int index );
 
 	private:
-		SGRUNTIMEMSG AllocateResourcePtrs ( fluidsim *fluid );
-		void DensitySolver ( void );
-		void VelocitySolver ( void );
-		void PickData ( fluidsim *fluid );
-		void CopyDataToHost ( void );
-		void CopyDataToDevice ( void );
-		void BuildStructure ( void );
+		SGRUNTIMEMSG AllocateResourcePtrs( fluidsim *fluid );
+		void DensitySolver( void );
+		void VelocitySolver( void );
+		void PickData( fluidsim *fluid );
+		void CopyDataToHost( void );
+		void CopyDataToDevice( void );
+
+	private:
+		/* building nodes-structure */
+		void BuildStructure( void );
+		/* left */
+		void LeftDataToHost( void );
+		void LeftDataToDevice( void );
+		/* right */
+		void RightDataToHost( void );
+		void RightDataToDevice( void );
+		/* up */
+		void UpDataToHost( void );
+		void UpDataToDevice( void );
+		/* down */
+		void DownDataToHost( void );
+		void DownDataToDevice( void );
+		/* front */
+		void FrontDataToHost( void );
+		void FrontDataToDevice( void );
+		/* back */
+		void BackDataToHost( void );
+		void BackDataToDevice( void );
 	};
 };
 

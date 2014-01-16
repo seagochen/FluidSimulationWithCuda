@@ -11,7 +11,9 @@
 #include "FluidSimAreaDynamic.h"
 #include "FunctionHelperDynamic.h"
 
-sge::FluidSimProc::FluidSimProc( fluidsim *fluid )
+using namespace sge;
+
+FluidSimProc::FluidSimProc( fluidsim *fluid )
 {
 	/* allocate the space for fluid simulation */
 	if ( AllocateResourcePtrs( fluid ) != SG_RUNTIME_OK )
@@ -39,7 +41,7 @@ sge::FluidSimProc::FluidSimProc( fluidsim *fluid )
 };
 
 
-sge::SGRUNTIMEMSG sge::FluidSimProc::AllocateResourcePtrs( fluidsim *fluid )
+SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs( fluidsim *fluid )
 {
 	/* choose which GPU to run on, change this on a multi-GPU system. */
 	if ( cudaSetDevice ( 0 ) != cudaSuccess )
@@ -146,7 +148,7 @@ sge::SGRUNTIMEMSG sge::FluidSimProc::AllocateResourcePtrs( fluidsim *fluid )
 }  
 
 
-void sge::FluidSimProc::BuildStructure( void )
+void FluidSimProc::BuildStructure( void )
 {
 	printf( "structure:\n" );
 	for ( int i = 0; i < NODES_X; i++ )
@@ -205,7 +207,7 @@ void sge::FluidSimProc::BuildStructure( void )
 };
 
 
-void sge::FluidSimProc::FreeResourcePtrs( void )
+void FluidSimProc::FreeResourcePtrs( void )
 {
 	/* release nodes list */
 	size_t size = NODES_X * NODES_X * NODES_X;
@@ -246,7 +248,7 @@ void sge::FluidSimProc::FreeResourcePtrs( void )
 };
 
 
-void sge::FluidSimProc::ZeroAllBuffer( void )
+void FluidSimProc::ZeroAllBuffer( void )
 {
 	extern void hostZeroBuffer( double *grid );
 	extern void hostZeroBuffer( unsigned char *grid, int const offi, int const offj, int const offk );
@@ -290,56 +292,33 @@ Success:
 }
 
 
-void sge::FluidSimProc::ZeroDevData( void )
+void FluidSimProc::ZeroDevData( void )
 {
 	extern void hostZeroBuffer( double *grid );
 
 	for ( int i = 0; i < dev_grids.size(); i++ ) hostZeroBuffer( dev_grids[ i ] );
 };
 
+#pragma region download & upload data between host and CUDA devices
 
-void sge::FluidSimProc::CopyDataToDevice( void )
+void FluidSimProc::LeftDataToDevice( void )
 {
-	/* draw data to current grid */
-	if ( cudaMemcpy (dev_den, host_nodes[ index ].ptrDens, sizeof(double) * CUBESIZE_X,
-		cudaMemcpyHostToDevice) != cudaSuccess ) goto Error;
-	if ( cudaMemcpy (dev_u, host_nodes[ index ].ptrVelU, sizeof(double) * CUBESIZE_X,
-		cudaMemcpyHostToDevice) != cudaSuccess ) goto Error;
-	if ( cudaMemcpy (dev_v, host_nodes[ index ].ptrVelV, sizeof(double) * CUBESIZE_X,
-		cudaMemcpyHostToDevice) != cudaSuccess ) goto Error;
-	if ( cudaMemcpy (dev_w, host_nodes[ index ].ptrVelW, sizeof(double) * CUBESIZE_X,
-		cudaMemcpyHostToDevice) != cudaSuccess ) goto Error;
+	size_t size = sizeof(double) * CUBESIZE_X;
+	/* upload data to grid */
+	if ( host_nodes[ m_index ].ptrLeft isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrLeft;
 
-	/* draw data to neighbouring cells */
-	if ( host_nodes[ index ].ptrLeft isnot NULL ) // left
-		if ( cudaMemcpy (dev_L, host_nodes[ index ].ptrLeft->ptrDens,
-			sizeof(double) * CUBESIZE_X, cudaMemcpyHostToDevice) != cudaSuccess )
+		/* copy data to grid */
+		if ( cudaMemcpy(dev_d_L, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
 			goto Error;
-
-	if ( host_nodes[ index ].ptrRight isnot NULL ) // right
-		if ( cudaMemcpy (dev_R, host_nodes[ index ].ptrRight->ptrDens,
-			sizeof(double) * CUBESIZE_X, cudaMemcpyHostToDevice) != cudaSuccess ) 
+		if ( cudaMemcpy(dev_u_L, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
 			goto Error;
-
-	if ( host_nodes[ index ].ptrUp isnot NULL ) // up
-		if ( cudaMemcpy (dev_U, host_nodes[ index ].ptrUp->ptrDens,
-			sizeof(double) * CUBESIZE_X, cudaMemcpyHostToDevice) != cudaSuccess ) 
+		if ( cudaMemcpy(dev_v_L, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
 			goto Error;
-
-	if ( host_nodes[ index ].ptrDown isnot NULL ) // down
-		if ( cudaMemcpy (dev_D, host_nodes[ index ].ptrDown->ptrDens,
-			sizeof(double) * CUBESIZE_X, cudaMemcpyHostToDevice) != cudaSuccess )
+		if ( cudaMemcpy(dev_w_L, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
 			goto Error;
-
-	if ( host_nodes[ index ].ptrFront isnot NULL ) // front
-		if ( cudaMemcpy (dev_F, host_nodes[ index ].ptrFront->ptrDens,
-			sizeof(double) * CUBESIZE_X, cudaMemcpyHostToDevice) != cudaSuccess )
-			goto Error;
-
-	if ( host_nodes[ index ].ptrBack isnot NULL ) // back
-		if ( cudaMemcpy (dev_B, host_nodes[ index ].ptrBack->ptrDens,
-			sizeof(double) * CUBESIZE_X, cudaMemcpyHostToDevice) != cudaSuccess )
-			goto Error;
+	}
 
 	goto Success;
 
@@ -352,20 +331,24 @@ Success:
 	;	
 };
 
-void sge::FluidSimProc::CopyDataToHost( void )
+void FluidSimProc::RightDataToDevice( void )
 {
-	if ( cudaMemcpy (node_list[ index ].ptrDens, dev_den,
-		sizeof(double) * SIMSIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (node_list[ index ].ptrVelU, dev_u,
-		sizeof(double) * SIMSIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (node_list[ index ].ptrVelV, dev_v,
-		sizeof(double) * SIMSIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (node_list[ index ].ptrVelW, dev_w,
-		sizeof(double) * SIMSIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
-		goto Error;
+	size_t size = sizeof(double) * CUBESIZE_X;
+	/* upload data to grid */
+	if ( host_nodes[ m_index ].ptrRight isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrRight;
+		
+		/* copy data to grid */
+		if ( cudaMemcpy(dev_d_R, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_u_R, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_v_R, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_w_R, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+	}
 
 	goto Success;
 
@@ -378,31 +361,404 @@ Success:
 	;	
 };
 
-void sge::FluidSimProc::SelectNode( int i, int j, int k )
+void FluidSimProc::UpDataToDevice( void )
 {
-	node_list [ IX ].bActive = false;
-	printf ("node no.%d is deactive!\n", IX);
+	size_t size = sizeof(double) * CUBESIZE_X;
+	/* upload data to grid */
+	if ( host_nodes[ m_index ].ptrUp isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrUp;
+
+		/* copy data to grid */
+		if ( cudaMemcpy(dev_d_U, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_u_U, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_v_U, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_w_U, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+	}
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;	
+};
+
+void FluidSimProc::DownDataToDevice( void )
+{
+	size_t size = sizeof(double) * CUBESIZE_X;
+	/* upload data to grid */
+	if ( host_nodes[ m_index ].ptrDown isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrDown;
+
+		/* copy data to grid */
+		if ( cudaMemcpy(dev_d_D, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_u_D, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_v_D, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_w_D, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+	}
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;	
+};
+
+void FluidSimProc::FrontDataToDevice( void )
+{
+	size_t size = sizeof(double) * CUBESIZE_X;
+	/* upload data to grid */
+	if ( host_nodes[ m_index ].ptrFront isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrFront;
+
+		/* copy data to grid */
+		if ( cudaMemcpy(dev_d_F, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_u_F, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_v_F, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_w_F, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+	}
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;
+};
+
+void FluidSimProc::BackDataToDevice( void )
+{
+	size_t size = sizeof(double) * CUBESIZE_X;
+	/* upload data to grid */
+	if ( host_nodes[ m_index ].ptrBack isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrBack;
+
+		/* copy data to grid */
+		if ( cudaMemcpy(dev_d_B, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_u_B, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_v_B, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy(dev_w_B, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+			goto Error;
+	}
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;
+};
+
+void FluidSimProc::LeftDataToHost( void )
+{
+	size_t size = sizeof(double) * CUBESIZE_X;
+
+	/* draw data back to host */
+	if ( host_nodes[ m_index ].ptrLeft isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrLeft;
+
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_L, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_L, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_L, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_L, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+	}
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;
+};
+
+void FluidSimProc::RightDataToHost( void )
+{
+	size_t size = sizeof(double) * CUBESIZE_X;
+
+	/* draw data back to host */
+	if ( host_nodes[ m_index ].ptrRight isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrRight;
+
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_R, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_R, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_R, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_R, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+	}
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;
+};
+
+void FluidSimProc::UpDataToHost( void )
+{
+	size_t size = sizeof(double) * CUBESIZE_X;
+
+	/* draw data back to host */
+	if ( host_nodes[ m_index ].ptrUp isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrUp;
+
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_U, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_U, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_U, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_U, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+	}
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;
+};
+
+void FluidSimProc::DownDataToHost( void )
+{
+	size_t size = sizeof(double) * CUBESIZE_X;
+
+	/* draw data back to host */
+	if ( host_nodes[ m_index ].ptrDown isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrDown;
+
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_D, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_D, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_D, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_D, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+	}
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;
+};
+
+void FluidSimProc::FrontDataToHost( void )
+{
+	size_t size = sizeof(double) * CUBESIZE_X;
+
+	/* draw data back to host */
+	if ( host_nodes[ m_index ].ptrFront isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrFront;
+		
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_F, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_F, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_F, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_F, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+	}
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;
+};
+
+void FluidSimProc::BackDataToHost( void )
+{
+	size_t size = sizeof(double) * CUBESIZE_X;
+
+	/* draw data back to host */
+	if ( host_nodes[ m_index ].ptrBack isnot NULL )
+	{
+		node *ptr = host_nodes[ m_index ].ptrBack;
+
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_B, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_B, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_B, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_B, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+			goto Error;
+	}
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;
+}
+
+#pragma endregion
+
+void FluidSimProc::CopyDataToDevice( void )
+{
+	/* upload data to current grid */
+	if ( cudaMemcpy (dev_d, host_nodes[ m_index ].ptrDens, sizeof(double) * CUBESIZE_X,
+		cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (dev_u, host_nodes[ m_index ].ptrVelU, sizeof(double) * CUBESIZE_X,
+		cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (dev_v, host_nodes[ m_index ].ptrVelV, sizeof(double) * CUBESIZE_X,
+		cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy (dev_w, host_nodes[ m_index ].ptrVelW, sizeof(double) * CUBESIZE_X,
+		cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+
+	/* upload data to neighbouring grids */
+	LeftDataToDevice();
+	RightDataToDevice();
+	UpDataToDevice();
+	DownDataToDevice();
+	FrontDataToDevice();
+	BackDataToDevice();
+
+	goto Success;
+
+Error:
+	cudaCheckErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs();
+	exit(1);
+
+Success:
+	;	
+};
+
+
+void FluidSimProc::CopyDataToHost( void )
+{
+	/* draw data back */
+	if ( cudaMemcpy( host_nodes[ m_index ].ptrDens, dev_d,
+		sizeof(double) * CUBESIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy( host_nodes[ m_index ].ptrVelU, dev_u,
+		sizeof(double) * CUBESIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy(host_nodes[ m_index ].ptrVelV, dev_v,
+		sizeof(double) * CUBESIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy(host_nodes[ m_index ].ptrVelW, dev_w,
+		sizeof(double) * CUBESIZE_X, cudaMemcpyDeviceToHost) != cudaSuccess )
+		goto Error;
+
+	/* draw data to neighbouring grids */
+	LeftDataToHost();
+	RightDataToHost();
+	UpDataToHost();
+	DownDataToHost();
+	FrontDataToHost();
+	BackDataToHost();
+
+	goto Success;
+
+Error:
+	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	FreeResourcePtrs ();
+	exit(1);
+
+Success:
+	;	
+};
+
+void FluidSimProc::SelectNode( int i, int j, int k )
+{
+	host_nodes[ m_index ].bActive = false;
+	printf ( "node no.%d is deactive!\n", m_index );
 
 	if ( i >= 0 and i < NODES_X ) 
 	if ( j >= 0 and j < NODES_X )
 	if ( k >= 0 and k < NODES_X )
 	{
-		IX = i + j * NODES_X + k * NODES_X * NODES_X;
-		node_list [ IX ].bActive = true;
-		printf ("node no.%d is selected!\n", IX);
+		m_index = cudaIndex3D( i, j, k, NODES_X );
+		host_nodes[ m_index ].bActive = true;
+		printf ("node no.%d is selected!\n", m_index);
 	}	
 };
 
-void sge::FluidSimProc::SelectNode( int index )
+void FluidSimProc::SelectNode( int index )
 {
-	node_list [ IX ].bActive = false;
-	printf ("node no.%d is deactive!\n", IX);
+	host_nodes[ m_index ].bActive = false;
+	printf( "node no.%d is deactive!\n", m_index );
 
 	size_t size = NODES_X * NODES_X * NODES_X;
 	if ( index >= 0 and index < size )
 	{
-		IX = index;
-		node_list [ IX ].bActive = true;
-		printf ("node no.%d is selected!\n", IX);
+		m_index = index;
+		host_nodes[ m_index ].bActive = true;
+		printf( "node no.%d is selected!\n", m_index );
 	}
 };
