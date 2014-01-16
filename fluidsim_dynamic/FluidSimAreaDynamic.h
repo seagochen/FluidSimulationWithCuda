@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Dec 15, 2013
-* <Last>		Jan 15, 2014
+* <Last>		Jan 16, 2014
 * <File>        FluidSimAreaDynamic.h
 */
 
@@ -28,96 +28,33 @@
 #define TILE_X              16
 #define WINDOWS_X           600
 #define CANVAS_X            600
-#define SIMSIZE_X           GRIDS_X*GRIDS_X*GRIDS_X
+#define CUBESIZE_X          GRIDS_X*GRIDS_X*GRIDS_X
+#define FACESIZE_X          GRIDS_X*GRIDS_X
 #define TPBUFFER_X          1024
 
+#define DevGridsNum         14
+#define dev_u               dev_grids[ 0 ] // velocity u
+#define dev_v               dev_grids[ 1 ] // velocity v
+#define dev_w               dev_grids[ 2 ] // velocity w
+#define dev_den             dev_grids[ 3 ] // density
+#define dev_obs             dev_grids[ 4 ] // obstacle
+#define dev_div             dev_grids[ 5 ] // divergence
+#define dev_p               dev_grids[ 6 ] // projection
+#define dev_t               dev_grids[ 7 ] // temporary
+#define dev_U               dev_grids[ 8 ] // up cell
+#define dev_D               dev_grids[ 9 ] // down cell
+#define dev_L               dev_grids[ 10 ] // left cell
+#define dev_R               dev_grids[ 11 ] // right cell
+#define dev_F               dev_grids[ 12 ] // front cell
+#define dev_B               dev_grids[ 13 ] // back cell
 
-#pragma region get index, host & device list, simulation area control
-
-#define DevListNum           17
-#define dev_u                dev_list [ 0 ]
-#define dev_v                dev_list [ 1 ]
-#define dev_w                dev_list [ 2 ]
-#define dev_den              dev_list [ 3 ]
-#define dev_obs              dev_list [ 4 ]
-#define dev_div              dev_list [ 5 ]
-#define dev_p                dev_list [ 6 ]
-#define dev_u0               dev_list [ 7 ]
-#define dev_v0               dev_list [ 8 ]
-#define dev_w0               dev_list [ 9 ]
-#define dev_den0             dev_list [ 10 ]
-#define dev_0                dev_list [ 11 ]
-#define dev_1                dev_list [ 12 ]
-#define dev_2                dev_list [ 13 ]
-#define dev_3                dev_list [ 14 ]
-#define dev_4                dev_list [ 15 ]
-#define dev_5                dev_list [ 16 ]
-
-/*
-  -------------------------------------------------------------------------------------------------------
-   Custom CUDA Functions
-  -------------------------------------------------------------------------------------------------------
-*/
-
-#include <stdio.h>
-#include <cuda_runtime.h>
-
-#define cudaDevice(gridDim,blockDim) <<<gridDim,blockDim>>>
-
-#define cudaIndex2D(i,j,elements_x) ((j)*(elements_x)+(i))
-
-#define cudaIndex3D(i,j,k,elements_x) ((k)*elements_x*elements_x+(j)*elements_x+(i))
-
-#define Index(i,j,k) cudaIndex3D(i,j,k,GRIDS_X)
-
-#define cudaTrans2DTo3D(i,j,k,elements_x) \
-	k = cudaIndex2D(i,j,(elements_x)) / ((elements_x)*(elements_x)); \
-	i = i % (elements_x); \
-	j = j % (elements_x); \
-
-#define cudaDeviceDim2D() \
-	dim3 blockDim, gridDim; \
-	blockDim.x = TILE_X; \
-	blockDim.y = TILE_X; \
-	gridDim.x  = GRIDS_X / TILE_X; \
-	gridDim.y  = GRIDS_X / TILE_X; \
-
-#define cudaDeviceDim3D() \
-	dim3 blockDim, gridDim; \
-	blockDim.x = (GRIDS_X / TILE_X); \
-	blockDim.y = (THREADS_X / TILE_X); \
-	gridDim.x  = (GRIDS_X / blockDim.x); \
-	gridDim.y  = (GRIDS_X * GRIDS_X * GRIDS_X) / (blockDim.x * blockDim.y * (GRIDS_X / blockDim.x)); \
-
-#define GetIndex()  \
-	int i = blockIdx.x * blockDim.x + threadIdx.x; \
-	int j = blockIdx.y * blockDim.y + threadIdx.y; \
-	int k = 0; \
-	cudaTrans2DTo3D ( i, j, k, GRIDS_X ); \
-
-/*
-  -------------------------------------------------------------------------------------------------------
-   Define something
-  -------------------------------------------------------------------------------------------------------
-*/
-
-#define eqt               ==
-#define and               &&
-#define or                ||
-
-#define gst_header        0              /* (ghost, halo) the header cell of grid */
-#define sim_header        1              /* (actually) the second cell of grid */
-#define gst_tailer       GRIDS_X - 1    /* (ghost, halo) the last cell of grid */
-#define sim_tailer       GRIDS_X - 2    /* (actually) the second last cell of grid */
-
-#define BeginSimArea() \
-	if ( i >= sim_header and i <= sim_tailer ) \
-	if ( j >= sim_header and j <= sim_tailer ) \
-	if ( k >= sim_header and k <= sim_tailer ) {
-
-#define EndSimArea() }
-
-#pragma endregion
+#define DevFacesNum         6
+#define devt_U              dev_faces[ 0 ] // up face
+#define devt_D              dev_faces[ 1 ] // down face
+#define devt_L              dev_faces[ 2 ] // left face
+#define devt_R              dev_faces[ 3 ] // right face
+#define devt_F              dev_faces[ 4 ] // front face
+#define devt_B              dev_faces[ 5 ] // back face
 
 /*
   -------------------------------------------------------------------------------------------------------
@@ -126,6 +63,7 @@
 */
 
 typedef GLuint handler;
+using std::vector;
 
 namespace sge
 {
@@ -196,15 +134,20 @@ namespace sge
 		};
 
 	private:
-		std::vector <double*> dev_list;
-		std::vector <node>    node_list;
+		/* vector list */
+		vector<double*> dev_grids;
+		vector<double*> dev_faces;
+		vector<node>    host_nodes;
 
-	private:
+		/* buffer for volume rendering */
 		uchar *host_visual, *dev_visual;
-		double *host_buf, *dev_buf;
 
-	private:
-		int IX;
+		/* buffer for temporary storing */
+		int     *host_ibuf, *dev_ibuf;
+		double  *host_fbuf, *dev_fbuf;
+
+		/* target */
+		int index;
 
 	public:
 		FluidSimProc ( fluidsim *fluid );
@@ -223,7 +166,80 @@ namespace sge
 		void PickData ( fluidsim *fluid );
 		void CopyDataToHost ( void );
 		void CopyDataToDevice ( void );
+		void BuildStructure ( void );
 	};
 };
+
+
+#pragma region cuda controllers
+
+/*
+  -------------------------------------------------------------------------------------------------------
+   Custom CUDA Functions
+  -------------------------------------------------------------------------------------------------------
+*/
+
+#include <stdio.h>
+#include <cuda_runtime.h>
+
+#define cudaDevice(gridDim,blockDim) <<<gridDim,blockDim>>>
+
+#define cudaIndex2D(i,j,elements_x) ((j)*(elements_x)+(i))
+
+#define cudaIndex3D(i,j,k,elements_x) ((k)*elements_x*elements_x+(j)*elements_x+(i))
+
+#define Index(i,j,k) cudaIndex3D(i,j,k,GRIDS_X)
+
+#define cudaTrans2DTo3D(i,j,k,elements_x) \
+	k = cudaIndex2D(i,j,(elements_x)) / ((elements_x)*(elements_x)); \
+	i = i % (elements_x); \
+	j = j % (elements_x); \
+
+#define cudaDeviceDim2D() \
+	dim3 blockDim, gridDim; \
+	blockDim.x = TILE_X; \
+	blockDim.y = TILE_X; \
+	gridDim.x  = GRIDS_X / TILE_X; \
+	gridDim.y  = GRIDS_X / TILE_X; \
+
+#define cudaDeviceDim3D() \
+	dim3 blockDim, gridDim; \
+	blockDim.x = (GRIDS_X / TILE_X); \
+	blockDim.y = (THREADS_X / TILE_X); \
+	gridDim.x  = (GRIDS_X / blockDim.x); \
+	gridDim.y  = (GRIDS_X * GRIDS_X * GRIDS_X) / (blockDim.x * blockDim.y * (GRIDS_X / blockDim.x)); \
+
+#define GetIndex()  \
+	int i = blockIdx.x * blockDim.x + threadIdx.x; \
+	int j = blockIdx.y * blockDim.y + threadIdx.y; \
+	int k = 0; \
+	cudaTrans2DTo3D ( i, j, k, GRIDS_X ); \
+
+/*
+  -------------------------------------------------------------------------------------------------------
+   Define something
+  -------------------------------------------------------------------------------------------------------
+*/
+
+#define eqt               ==
+#define and               &&
+#define or                ||
+#define is                ==
+#define isnot             !=
+#define not               !
+
+#define gst_header        0              /* (ghost, halo) the header cell of grid */
+#define sim_header        1              /* (actually) the second cell of grid */
+#define gst_tailer       GRIDS_X - 1    /* (ghost, halo) the last cell of grid */
+#define sim_tailer       GRIDS_X - 2    /* (actually) the second last cell of grid */
+
+#define BeginSimArea() \
+	if ( i >= sim_header and i <= sim_tailer ) \
+	if ( j >= sim_header and j <= sim_tailer ) \
+	if ( k >= sim_header and k <= sim_tailer ) {
+
+#define EndSimArea() }
+
+#pragma endregion
 
 #endif
