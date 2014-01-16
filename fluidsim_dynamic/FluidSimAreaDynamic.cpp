@@ -687,6 +687,14 @@ void FluidSimProc::CopyDataToDevice( void )
 	FrontDataToDevice();
 	BackDataToDevice();
 
+	/* upload temporary buffer to device */
+	if ( cudaMemcpy(dev_ibuf, host_ibuf, sizeof(int) * TPBUFFER_X, 
+		cudaMemcpyHostToDevice) isnot cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy(dev_fbuf, host_fbuf, sizeof(double) * TPBUFFER_X,
+		cudaMemcpyHostToDevice) isnot cudaSuccess )
+		goto Error;
+
 	goto Success;
 
 Error:
@@ -722,6 +730,14 @@ void FluidSimProc::CopyDataToHost( void )
 	DownDataToHost();
 	FrontDataToHost();
 	BackDataToHost();
+
+	/* draw temporary buffer back */
+	if ( cudaMemcpy( host_ibuf, dev_ibuf, sizeof(int) * TPBUFFER_X, 
+		cudaMemcpyHostToDevice) isnot cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy( host_fbuf, dev_fbuf, sizeof(double) * TPBUFFER_X,
+		cudaMemcpyHostToDevice ) isnot cudaSuccess )
+		goto Error;
 
 	goto Success;
 
