@@ -83,21 +83,6 @@ SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs( fluidsim *fluid )
 	}
 
 
-	/* allocate the buffer for temporary faces storing */
-	for ( int i = 0; i < DevFacesNum; i++ )
-	{
-		/* alarm if cudaMalloc failed */
-		static double *ptr;
-		if ( cudaMalloc( (void**)&ptr, FACESIZE_X * sizeof(double) ) isnot cudaSuccess )
-		{
-			cudaCheckErrors( "cudaMalloc failed!", __FILE__, __LINE__ );
-			return SG_MALLOC_SPACE_FAILED;
-		}
-		/* push faces to vector */
-		dev_faces.push_back( ptr );
-	}
-
-
 	/* allocate temporary storing buffer on both host and device */
 	host_ibuf = (int*) calloc( TPBUFFER_X, sizeof(int) );
 	host_fbuf = (double*) calloc( TPBUFFER_X, sizeof(double) );
@@ -226,11 +211,6 @@ void FluidSimProc::FreeResourcePtrs( void )
 	for ( int i = 0; i < DevGridsNum; i++ ) cudaFree( dev_grids[ i ] );
 	dev_grids.empty ();
 	printf( "device grids released!\n" );
-
-
-	/* release faces */
-	for ( int i = 0; i < DevFacesNum; i++ ) cudaFree( dev_faces[ i ] );
-	printf( "device faces released!\n" );
 
 	
 	/* release temproary buffers */

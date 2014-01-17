@@ -72,14 +72,6 @@
 #define dev_v_B             dev_grids[ 30 ] //
 #define dev_w_B             dev_grids[ 31 ] //
 
-#define DevFacesNum         6
-#define devt_U              dev_faces[ 0 ] // up face
-#define devt_D              dev_faces[ 1 ] // down face
-#define devt_L              dev_faces[ 2 ] // left face
-#define devt_R              dev_faces[ 3 ] // right face
-#define devt_F              dev_faces[ 4 ] // front face
-#define devt_B              dev_faces[ 5 ] // back face
-
 /*
   -------------------------------------------------------------------------------------------------------
    Dataset
@@ -160,7 +152,6 @@ namespace sge
 	private:
 		/* vector list */
 		vector<double*> dev_grids;
-		vector<double*> dev_faces;
 		vector<node>    host_nodes;
 
 		/* buffer for volume rendering */
