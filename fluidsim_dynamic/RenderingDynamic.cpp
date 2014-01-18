@@ -21,7 +21,7 @@ bool sge::VolumeHelper::CheckHandleError ( int nShaderObjs, ... )
 {
 	if ( nShaderObjs < 1 )
 	{
-		cout << "call this function must specified the number of shader objects first and then pass the value" << endl;
+		cout << "parameters error, check your code..." << endl;
 		return false;
 	}
 	
@@ -89,7 +89,7 @@ void sge::VolumeHelper::CreateShaderProg ( fluidsim *fluid )
 GLubyte* sge::VolumeHelper::DefaultTransFunc ()
 {
 	// Hardcode the transfer function
-	GLubyte *tff = (GLubyte *) calloc ( 1024, sizeof(GLubyte) );
+	GLubyte *tff = (GLubyte *) calloc ( TPBUFFER_X, sizeof(GLubyte) );
 	for ( int i = 0; i < 256; i++ )
 	{
 		if ( i > 0 )

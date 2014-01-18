@@ -8,9 +8,8 @@
 #ifndef __fluid_math_lib_dynamic_h_
 #define __fluid_math_lib_dynamic_h_
 
-#pragma once
-
-#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
+#include <device_launch_parameters.h>
 #include "FluidSimAreaDynamic.h"
 
 inline __host__ __device__ int sgrand( int *seed )
@@ -90,7 +89,19 @@ inline __host__ __device__ double sgfabs(double value)
 	return (value >= 0.f) ? value : -value;
 };
 
-inline __host__ __device__  double atCell (double const *grid, int const x, int const y, int const z)
+
+
+#define USE_UP_GRID     0
+#define USE_DOWN_GRID   1
+#define USE_LEFT_GRID   2
+#define USE_RIGHT_GRID  3
+#define USE_FRONT_GRID  4
+#define USE_BACK_GRID   5
+
+
+
+inline __device__ 
+double at_cell (double const *grid, int const x, int const y, int const z)
 {
 	if ( x < gst_header ) return 0.f;
 	if ( y < gst_header ) return 0.f;
@@ -102,40 +113,119 @@ inline __host__ __device__  double atCell (double const *grid, int const x, int 
 	return grid[ Index(x,y,z) ];
 };
 
-inline __host__ __device__  void vertices (
-	double *c000, double *c001, double *c011, double *c010,
-	double *c100, double *c101, double *c111, double *c110,
+__device__
+double at_global ( double const *grid, double const *extgrid, int x, int y, int z, int const FACE )
+{
+	switch ( FACE )
+	{
+	case USE_UP_GRID:
+		y = y - GRIDS_X;
+		return at_cell( extgrid, x, y, z );
+
+	case USE_DOWN_GRID:
+		y = y + GRIDS_X;
+		return at_cell( extgrid, x, y, z );
+		
+	case USE_LEFT_GRID:
+		x = x + GRIDS_X;
+		return at_cell( extgrid, x, y, z );
+
+	case USE_RIGHT_GRID:
+		x = x - GRIDS_X;
+		return at_cell( extgrid, x, y, z );
+
+	case USE_FRONT_GRID:
+		z = z - GRIDS_X;
+		return at_cell( extgrid, x, y, z );
+
+	case USE_BACK_GRID:
+		z = z + GRIDS_X;
+		return at_cell( extgrid, x, y, z );
+
+	default:
+		break;
+	}
+
+	return at_cell( grid, x, y, z );
+};
+
+__device__  
+void local_vertices( double *stores,
 	double const *grid, double const x, double const y, double const z )
 {
 	int i = (int)x;
 	int j = (int)y;
 	int k = (int)z;
 
-	*c000 = atCell ( grid, i, j, k );
-	*c001 = atCell ( grid, i, j+1, k );
-	*c011 = atCell ( grid, i, j+1, k+1 );
-	*c010 = atCell ( grid, i, j, k+1 );
-	*c100 = atCell ( grid, i+1, j, k );
-	*c101 = atCell ( grid, i+1, j+1, k );
-	*c111 = atCell ( grid, i+1, j+1, k+1 );
-	*c110 = atCell ( grid, i+1, j, k+1 );
+	stores[ 0 ] = at_cell( grid, i, j, k );      // v000
+	stores[ 1 ] = at_cell( grid, i, j+1, k );    // v001
+	stores[ 2 ] = at_cell( grid, i, j+1, k+1 );  // v011
+	stores[ 3 ] = at_cell( grid, i, j, k+1 );    // v010
+	stores[ 4 ] = at_cell( grid, i+1, j, k );    // v100
+	stores[ 5 ] = at_cell( grid, i+1, j+1, k );  // v101
+	stores[ 6 ] = at_cell( grid, i+1, j+1, k+1 );// v111
+	stores[ 7 ] = at_cell( grid, i+1, j, k+1 );  // v110
 }
 
-inline __host__ __device__  double trilinear ( double const *grid, double const x, double const y, double const z )
+__device__
+double local_trilinear( double *stores,
+	double const *grid, double const x, double const y, double const z )
 {
-	double v000, v001, v010, v011, v100, v101, v110, v111;
-	vertices ( &v000, &v001, &v011, &v010,
-		&v100, &v101, &v111, &v110,
-		grid, x, y, z );
+	local_vertices( stores, grid, x, y, z );
 
 	double dx = x - (int)(x);
 	double dy = y - (int)(y);
 	double dz = z - (int)(z);
 
-	double c00 = v000 * ( 1 - dx ) + v001 * dx;
-	double c10 = v010 * ( 1 - dx ) + v011 * dx;
-	double c01 = v100 * ( 1 - dx ) + v101 * dx;
-	double c11 = v110 * ( 1 - dx ) + v111 * dx;
+	double c00 = stores[ 0 ] * ( 1 - dx ) + stores[ 1 ] * dx;
+	double c10 = stores[ 3 ] * ( 1 - dx ) + stores[ 2 ] * dx;
+	double c01 = stores[ 4 ] * ( 1 - dx ) + stores[ 5 ] * dx;
+	double c11 = stores[ 7 ] * ( 1 - dx ) + stores[ 6 ] * dx;
+
+	double c0 = c00 * ( 1 - dy ) + c10 * dy;
+	double c1 = c01 * ( 1 - dy ) + c11 * dy;
+
+	double c = c0 * ( 1 - dz ) + c1 * dz;
+
+	return c;
+};
+
+__device__
+void global_vertices( double *stores, 
+	double const *grid,
+	double const *up,    double const *down, 
+	double const *left,  double const *right,
+	double const *front, double const *back,
+	double const x, double const y, double const z
+	)
+{
+	int i = (int)x;
+	int j = (int)y;
+	int k = (int)z;
+
+//	if ( i < 0 )
+};
+
+__device__
+double global_trilinear ( double *stores,
+	double const *grid,
+	double const *up,    double const *down, 
+	double const *left,  double const *right,
+	double const *front, double const *back,
+	double const x, double const y, double const z )
+{
+	global_vertices( stores, grid,
+		up, down, left, right, front, back, 
+		x, y, z );
+
+	double dx = x - (int)(x);
+	double dy = y - (int)(y);
+	double dz = z - (int)(z);
+
+	double c00 = stores[ 0 ] * ( 1 - dx ) + stores[ 1 ] * dx;
+	double c10 = stores[ 3 ] * ( 1 - dx ) + stores[ 2 ] * dx;
+	double c01 = stores[ 4 ] * ( 1 - dx ) + stores[ 5 ] * dx;
+	double c11 = stores[ 7 ] * ( 1 - dx ) + stores[ 6 ] * dx;
 
 	double c0 = c00 * ( 1 - dy ) + c10 * dy;
 	double c1 = c01 * ( 1 - dy ) + c11 * dy;
