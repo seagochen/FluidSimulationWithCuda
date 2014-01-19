@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Nov 21, 2013
-* <Last>		Jan 12, 2014
+* <Last>		Jan 19, 2014
 * <File>        FluidMathLibDynamic.h
 */
 
@@ -11,6 +11,8 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include "FluidSimAreaDynamic.h"
+
+#pragma region CUDA MATHLIB
 
 inline __host__ __device__ int sgrand( int *seed )
 {
@@ -89,18 +91,17 @@ inline __host__ __device__ double sgfabs(double value)
 	return (value >= 0.f) ? value : -value;
 };
 
+#pragma endregion
 
+#define USE_DEFAULT     0
+#define USE_UP_GRID     1
+#define USE_DOWN_GRID   2
+#define USE_LEFT_GRID   3
+#define USE_RIGHT_GRID  4
+#define USE_FRONT_GRID  5
+#define USE_BACK_GRID   6
 
-#define USE_UP_GRID     0
-#define USE_DOWN_GRID   1
-#define USE_LEFT_GRID   2
-#define USE_RIGHT_GRID  3
-#define USE_FRONT_GRID  4
-#define USE_BACK_GRID   5
-
-
-
-inline __device__ 
+__device__ 
 double at_cell (double const *grid, int const x, int const y, int const z)
 {
 	if ( x < gst_header ) return 0.f;
@@ -191,19 +192,73 @@ double local_trilinear( double *stores,
 };
 
 __device__
+double global_point(
+	double const *grid, int const x, int const y, int const z,
+	double const *up,    double const *down, 
+	double const *left,  double const *right,
+	double const *front, double const *back	)
+{
+	if ( x >= gst_header and x < gst_tailer )
+	{
+		if ( y >= gst_header and y < gst_tailer )
+		{
+			if ( z >= gst_header and z < gst_tailer )
+			{
+				return at_global( grid, grid, x, y, z, USE_DEFAULT );
+			}
+			elif ( z < gst_header )
+			{
+				return at_global( grid, back, x, y, z, USE_BACK_GRID );
+			}
+			else
+			{
+				return at_global( grid, front, x, y, z, USE_FRONT_GRID );
+			}
+		}
+		elif ( y < gst_header and
+			z >= gst_header and z < gst_tailer )
+		{
+			return at_global( grid, down, x, y, z, USE_DOWN_GRID );
+		}
+		elif ( y >= gst_tailer and
+			z >= gst_header and z < gst_tailer )
+		{
+			return at_global( grid, up, x, y, z, USE_UP_GRID );
+		}
+	}
+	elif ( x >= gst_tailer and 
+		y >= gst_header and y < gst_tailer and z >= gst_header and z < gst_tailer )
+	{
+		return at_global( grid, right, x, y, z, USE_RIGHT_GRID );
+	}
+	elif ( x < gst_header and
+		y >= gst_header and y < gst_tailer and z >= gst_header and z < gst_tailer )
+	{
+		return at_global( grid, left, x, y, z, USE_LEFT_GRID );
+	}
+};
+
+__device__
 void global_vertices( double *stores, 
 	double const *grid,
 	double const *up,    double const *down, 
 	double const *left,  double const *right,
 	double const *front, double const *back,
-	double const x, double const y, double const z
-	)
+	double const x, double const y, double const z )
 {
 	int i = (int)x;
 	int j = (int)y;
 	int k = (int)z;
 
-//	if ( i < 0 )
+	stores[ 0 ] = global_point( grid, i, j, k, up, down, left, right, front, back );      // v000
+	stores[ 1 ] = global_point( grid, i, j+1, k, up, down, left, right, front, back );    // v001
+	stores[ 2 ] = global_point( grid, i, j+1, k+1, up, down, left, right, front, back );  // v011
+	stores[ 3 ] = global_point( grid, i, j, k+1, up, down, left, right, front, back );    // v010
+	stores[ 4 ] = global_point( grid, i+1, j, k, up, down, left, right, front, back );    // v100
+	stores[ 5 ] = global_point( grid, i+1, j+1, k, up, down, left, right, front, back );  // v101
+	stores[ 6 ] = global_point( grid, i+1, j+1, k+1, up, down, left, right, front, back );// v111
+	stores[ 7 ] = global_point( grid, i+1, j, k+1, up, down, left, right, front, back );  // v110
+
 };
 
 __device__
@@ -214,9 +269,7 @@ double global_trilinear ( double *stores,
 	double const *front, double const *back,
 	double const x, double const y, double const z )
 {
-	global_vertices( stores, grid,
-		up, down, left, right, front, back, 
-		x, y, z );
+	global_vertices( stores, grid, up, down, left, right, front, back, x, y, z );
 
 	double dx = x - (int)(x);
 	double dy = y - (int)(y);

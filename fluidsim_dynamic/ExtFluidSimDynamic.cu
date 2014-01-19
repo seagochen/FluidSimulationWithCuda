@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Dec 12, 2013
-* <Last>		Jan 15, 2013
+* <Last>		Jan 19, 2013
 * <File>        ExtFluidSimDynamic.cu
 */
 
@@ -23,36 +23,37 @@
 using namespace sge;
 using namespace std;
 
+struct tpnode
+{
+	double *ptrCurDens, *ptrCurVelU, *ptrCurVelV, *ptrCurVelW, *ptrCurObs;
+	double *ptrLDens, *ptrLVelU, *ptrLVelV, *ptrLVelW;
+	double *ptrRDens, *ptrRVelU, *ptrRVelV, *ptrRVelW;
+	double *ptrUDens, *ptrUVelU, *ptrUVelV, *ptrUVelW;
+	double *ptrDDens, *ptrDVelU, *ptrDVelV, *ptrDVelW;
+	double *ptrFDens, *ptrFVelU, *ptrFVelV, *ptrFVelW;
+	double *ptrBDens, *ptrBVelU, *ptrBVelV, *ptrBVelW;
+};
+
+static tpnode node;
+
 /** 
-* number:
-* 0 ------ add density
-* 1 ------ add velocity v
+* type:
+* 0 ------ density
+* 1 ------ velocity u
+* 2 ------ velocity v
+* 3 ------ velocity w
 */
-__global__ 	
-void kernelAddSource ( double *grid, int const number )
+__global__
+void kernelAddSource( double *grid, double const *obstacle, int const type )
 {
 	GetIndex();
-	BeginSimArea();
+	int ix = Index(i,j,k);
 
-	const int half = GRIDS_X / 2;
-
-	switch ( number )
-	{
-	case 0: // density
-		if ( j < 3 ) 
-			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
-				grid [ Index(i,j,k) ] = SOURCE;
-
-	case 1: // velocity v
-		if ( j < 3 ) 
-			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
-				grid [ Index(i,j,k) ] = SOURCE;
-
-	default: // add external force if need
-		break;
-	}
-
-	EndSimArea();
+	if ( obstacle[ ix ] eqt BD_SOURCE )
+		if ( type is 0 )
+			grid[ ix ] = SOURCE;
+		elif ( type is 2 )
+			grid[ ix ] = SOURCE;
 };
 
 __host__

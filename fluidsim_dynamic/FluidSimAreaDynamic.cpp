@@ -38,8 +38,8 @@ FluidSimProc::FluidSimProc( fluidsim *fluid )
 	/* finally, print the state message and zero the data */
 	std::cout << "fluid simulation ready, zero the data and preparing the stage now" << std::endl;
 	ZeroAllBuffer();
+	SetObstacle();
 };
-
 
 SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs( fluidsim *fluid )
 {
@@ -57,7 +57,8 @@ SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs( fluidsim *fluid )
 		node.ptrVelU = (double*) calloc( CUBESIZE_X, sizeof(double) );
 		node.ptrVelV = (double*) calloc( CUBESIZE_X, sizeof(double) );
 		node.ptrVelW = (double*) calloc( CUBESIZE_X, sizeof(double) );
-		if ( node.ptrDens is NULL or node.ptrVelU is NULL 
+		node.ptrObs  = (double*) calloc( CUBESIZE_X, sizeof(double) );
+		if ( node.ptrDens is NULL or node.ptrVelU is NULL or node.ptrObs is NULL
 			or node.ptrVelV is NULL or node.ptrVelW is NULL )
 		{
 			printf( "calloc memory failed, file: %f, line: %d\n", __FILE__, __LINE__ );
@@ -130,8 +131,7 @@ SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs( fluidsim *fluid )
 
 	/* finally */
 	return SG_RUNTIME_OK;
-}  
-
+}
 
 void FluidSimProc::BuildStructure( void )
 {
@@ -191,7 +191,6 @@ void FluidSimProc::BuildStructure( void )
 	printf( "-----------------------------------------------\n" );
 };
 
-
 void FluidSimProc::FreeResourcePtrs( void )
 {
 	/* release nodes list */
@@ -226,7 +225,6 @@ void FluidSimProc::FreeResourcePtrs( void )
 	cudaFree ( dev_visual );
 	printf( "3D visual buffer released!\n" );
 };
-
 
 void FluidSimProc::ZeroAllBuffer( void )
 {
@@ -270,7 +268,6 @@ Error:
 Success:
 	;
 }
-
 
 void FluidSimProc::ZeroDevData( void )
 {
@@ -646,17 +643,20 @@ Success:
 void FluidSimProc::CopyDataToDevice( void )
 {
 	/* upload data to current grid */
-	if ( cudaMemcpy (dev_d, host_nodes[ m_index ].ptrDens, sizeof(double) * CUBESIZE_X,
+	if ( cudaMemcpy( dev_d, host_nodes[ m_index ].ptrDens, sizeof(double) * CUBESIZE_X,
 		cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_u, host_nodes[ m_index ].ptrVelU, sizeof(double) * CUBESIZE_X,
+	if ( cudaMemcpy( dev_u, host_nodes[ m_index ].ptrVelU, sizeof(double) * CUBESIZE_X,
 		cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_v, host_nodes[ m_index ].ptrVelV, sizeof(double) * CUBESIZE_X,
+	if ( cudaMemcpy( dev_v, host_nodes[ m_index ].ptrVelV, sizeof(double) * CUBESIZE_X,
 		cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_w, host_nodes[ m_index ].ptrVelW, sizeof(double) * CUBESIZE_X,
+	if ( cudaMemcpy( dev_w, host_nodes[ m_index ].ptrVelW, sizeof(double) * CUBESIZE_X,
 		cudaMemcpyHostToDevice) != cudaSuccess )
+		goto Error;
+	if ( cudaMemcpy( dev_o, host_nodes[ m_index ].ptrObs, sizeof(double) * CUBESIZE_X,
+		cudaMemcpyHostToDevice ) isnot cudaSuccess )
 		goto Error;
 
 	/* upload data to neighbouring grids */
@@ -685,7 +685,6 @@ Error:
 Success:
 	;	
 };
-
 
 void FluidSimProc::CopyDataToHost( void )
 {
@@ -756,5 +755,29 @@ void FluidSimProc::SelectNode( int index )
 		m_index = index;
 		host_nodes[ m_index ].bActive = true;
 		printf( "node no.%d is selected!\n", m_index );
+	}
+};
+
+void FluidSimProc::SetObstacle( void )
+{
+	/* set node 10 */
+	if ( m_index is 10 )
+	{
+		const int half = GRIDS_X / 2;
+
+		for ( int i = 0; i < GRIDS_X; i++ )
+		{
+			for ( int j = 0; j < GRIDS_X; j++ )
+			{
+				for ( int k = 0; k < GRIDS_X; k++ )
+				{
+					host_nodes[ m_index ].ptrObs[ Index(i, j, k) ] = BD_BLANK;
+
+					if ( j < 1 )
+						if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
+							host_nodes[ m_index ].ptrObs[ Index(i, j, k) ] = BD_SOURCE;
+				}
+			}
+		}
 	}
 };

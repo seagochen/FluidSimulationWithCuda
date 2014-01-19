@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Dec 15, 2013
-* <Last>		Jan 16, 2014
+* <Last>		Jan 19, 2014
 * <File>        FluidSimAreaDynamic.h
 */
 
@@ -71,6 +71,12 @@
 #define dev_u_B             dev_grids[ 29 ] //
 #define dev_v_B             dev_grids[ 30 ] //
 #define dev_w_B             dev_grids[ 31 ] //
+
+#define BD_SOURCE          -1
+#define BD_BLANK            0
+#define BD_HLAF             5
+#define BD_WALL             10
+#define BD_EXIT             100
 
 /*
   -------------------------------------------------------------------------------------------------------
@@ -146,7 +152,7 @@ namespace sge
 			node    *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 			boolean  bActive;
 			int      i, j, k;
-			double  *ptrDens, *ptrVelU, *ptrVelV, *ptrVelW;
+			double  *ptrDens, *ptrVelU, *ptrVelV, *ptrVelW, *ptrObs;
 		};
 
 	private:
@@ -181,6 +187,7 @@ namespace sge
 		void PickData( fluidsim *fluid );
 		void CopyDataToHost( void );
 		void CopyDataToDevice( void );
+		void SetObstacle ( void );
 
 	private:
 		/* building nodes-structure */
