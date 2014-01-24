@@ -19,9 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DataStructures.h" />
-    <ClInclude Include="MainFrameworkDynamic.h" />
-    <ClInclude Include="Parameter.h" />
+    <ClInclude Include="BufferOperationDynamic.h" />
+    <ClInclude Include="FluidMathLibDynamic.h" />
+    <ClInclude Include="FluidSimAreaDynamic.h" />
+    <ClInclude Include="FunctionHelperDynamic.h" />
+    <ClInclude Include="iso646.h" />
+    <ClInclude Include="RenderingDynamic.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
@@ -37,10 +40,20 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="FluidSimAreaDynamic.cpp">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <ClCompile Include="FunctionHelperDynamic.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
+    <ClCompile Include="RenderingDynamic.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="ExtFluidSimDynamic.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{BD0F37A3-9772-412B-8B66-65483CCA5C2A}</ProjectGuid>
+    <ProjectGuid>{57D32447-18E4-43F4-A35D-4BFC265E42B4}</ProjectGuid>
     <RootNamespace>fluidsim_dynamic</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

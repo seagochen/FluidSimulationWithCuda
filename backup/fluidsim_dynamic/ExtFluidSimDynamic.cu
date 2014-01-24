@@ -25,7 +25,8 @@ using namespace std;
 
 struct tpnode
 {
-	double *ptrCurDens, *ptrCurVelU, *ptrCurVelV, *ptrCurVelW, *ptrCurObs;
+	double *ptrCurD,  *ptrCurU,*ptrCurV,  *ptrCurW, *ptrCurObs;
+	double *ptrTemp,  *ptrCurP,  *ptrCurDiv;
 	double *ptrLDens, *ptrLVelU, *ptrLVelV, *ptrLVelW;
 	double *ptrRDens, *ptrRVelU, *ptrRVelV, *ptrRVelW;
 	double *ptrUDens, *ptrUVelU, *ptrUVelV, *ptrUVelW;
@@ -34,7 +35,7 @@ struct tpnode
 	double *ptrBDens, *ptrBVelU, *ptrBVelV, *ptrBVelW;
 };
 
-static tpnode node;
+static tpnode m_node;
 
 /** 
 * type:
@@ -321,6 +322,55 @@ void hostProject ( double *vel_u, double *vel_v, double *vel_w, double *div, dou
 
 #include "FunctionHelperDynamic.h"
 
+void FluidSimProc::LinkDataset( void )
+{
+	/* link current grid's information */
+	m_node.ptrCurD    = dev_d;
+	m_node.ptrCurObs  = dev_o;
+	m_node.ptrCurU    = dev_u;
+	m_node.ptrCurV    = dev_v;
+	m_node.ptrCurW    = dev_w;
+	m_node.ptrCurP    = dev_p;
+	m_node.ptrCurDiv  = dev_div;
+	m_node.ptrTemp    = dev_t;
+
+	/* link up grid */
+	m_node.ptrUDens   = dev_d_U;
+	m_node.ptrUVelU   = dev_u_U;
+	m_node.ptrUVelV   = dev_v_U;
+	m_node.ptrUVelW   = dev_w_U;
+
+	/* link down grid */
+	m_node.ptrDDens   = dev_d_D;
+	m_node.ptrDVelU   = dev_u_D;
+	m_node.ptrDVelV   = dev_v_D;
+	m_node.ptrDVelW   = dev_w_D;
+
+	/* link left grid */
+	m_node.ptrLDens   = dev_d_L;
+	m_node.ptrLVelU   = dev_u_L;
+	m_node.ptrLVelV   = dev_v_L;
+	m_node.ptrLVelW   = dev_w_L;
+
+	/* link right grid */
+	m_node.ptrRDens   = dev_d_R;
+	m_node.ptrRVelU   = dev_u_R;
+	m_node.ptrRVelV   = dev_v_R;
+	m_node.ptrRVelW   = dev_w_R;
+
+	/* link front grid */
+	m_node.ptrFDens   = dev_d_F;
+	m_node.ptrFVelU   = dev_u_F;
+	m_node.ptrFVelV   = dev_v_F;
+	m_node.ptrFVelW   = dev_w_F;
+
+	/* link back grid */
+	m_node.ptrBDens  = dev_d_B;
+	m_node.ptrBVelU  = dev_u_B;
+	m_node.ptrBVelV  = dev_v_B;
+	m_node.ptrBVelW  = dev_w_B;
+};
+
 void FluidSimProc::VelocitySolver ( void )
 {
 	// diffuse the velocity field (per axis):
@@ -403,10 +453,10 @@ void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 	if ( !fluid->ray.bRun ) return ;
 	
 	/* round robin if node is active */
-	for ( int i = 0; i < node_list.size(); i++ )
+	for ( int i = 0; i < host_nodes.size(); i++ )
 	{
 		/* active! */
-		if ( node_list[i].bActive == true )
+		if ( host_nodes[i].bActive == true )
 		{
 			/* zero buffer first */
 			ZeroDevData();

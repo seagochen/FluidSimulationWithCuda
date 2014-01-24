@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Dec 15, 2013
-* <Last>		Jan 19, 2014
+* <Last>		Jan 22, 2014
 * <File>        FluidSimAreaDynamic.h
 */
 
@@ -187,7 +187,9 @@ namespace sge
 		void PickData( fluidsim *fluid );
 		void CopyDataToHost( void );
 		void CopyDataToDevice( void );
-		void SetObstacle ( void );
+		void SetObstacle( void );
+		void LinkDataset( void );
+		void SetParameters( fluidsim *fluid );
 
 	private:
 		/* building nodes-structure */
@@ -264,12 +266,7 @@ namespace sge
   -------------------------------------------------------------------------------------------------------
 */
 
-#define eqt               ==
-#define and               &&
-#define or                ||
-#define is                ==
-#define isnot             !=
-#define not               !
+#include "iso646.h"
 
 #define gst_header        0              /* (ghost, halo) the header cell of grid */
 #define sim_header        1              /* (actually) the second cell of grid */

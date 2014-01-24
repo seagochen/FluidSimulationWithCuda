@@ -1,66 +1,66 @@
 /**
 * <Author>      Orlando Chen
-* <First>       Jan 07, 2014
-* <Last>		Jan 08, 2014
-* <File>        LaunchMainDynamic.cpp
+* <First>       Oct 16, 2013
+* <Last>		Jan 13, 2014
+* <File>        MainDynamic.cpp
 */
 
 #include <GL\glew32c.h>
 #include <GL\freeglut.h>
 #include <SGE\SGUtils.h>
+#include <GLM\glm.hpp>
+#include <GLM\gtc\matrix_transform.hpp>
+#include <GLM\gtx\transform2.hpp>
+#include <GLM\gtc\type_ptr.hpp>
 #include <iostream>
 #include <memory>
 
-#include "FunctionHelperDynamic.h"
 #include "FluidSimAreaDynamic.h"
-#include "VolumeRenderingDynamic.h"
+#include "RenderingDynamic.h"
+#include "FunctionHelperDynamic.h"
 #include "resource.h"
 
-sge::fluidsim      m_fluid;
-sge::VolumeHelper  m_vh;
-sge::FluidSimProc *m_fs;
-sge::MainActivity *activity;
+using namespace sge;
+using namespace std;
+
+fluidsim      m_fluid;
+VolumeHelper  m_vh;
+FluidSimProc *m_fs;
+MainActivity *activity;
+int index;
 
 void initialize ()
 {
-	using namespace sge;
+	index = 0;
 
-	m_fluid.ray.fStepsize     = STRIDE;
+	m_fluid.ray.fStepsize     = STEPSIZE;
 	m_fluid.ray.nAngle        = 0;
-	m_fluid.ray.uCanvasWidth  = CANVAS_WIDTH;
-	m_fluid.ray.uCanvasHeight = CANVAS_HEIGHT;
+	m_fluid.ray.uCanvasWidth  = CANVAS_X;
+	m_fluid.ray.uCanvasHeight = CANVAS_X;
 	m_fluid.ray.bRun          = true;
+	m_fluid.volume.uWidth     = VOLUME_X;
+	m_fluid.volume.uHeight    = VOLUME_X;
+	m_fluid.volume.uDepth     = VOLUME_X;
 
-	m_fluid.volume.uWidth    = Grids_X;
-	m_fluid.volume.uHeight   = Grids_X;
-	m_fluid.volume.uDepth    = Grids_X;
-	m_fluid.area.uWidth      = Area_X;
-	m_fluid.area.uHeight     = Area_X;
-	m_fluid.area.uDepth      = Area_X;
-
-	/* create big data */
-	size_t size = m_fluid.area.uWidth * m_fluid.area.uHeight * m_fluid.area.uDepth;
-	m_fluid.area.ptrDens  = new double [ size ];
-	m_fluid.area.ptrVelU  = new double [ size ];
-	m_fluid.area.ptrVelV  = new double [ size ];
-	m_fluid.area.ptrVelW  = new double [ size ];
-
-	/* GLSL source file path */
 	m_fluid.shader.szCanvasVert = ".\\shader\\backface.vert";
 	m_fluid.shader.szCanvasFrag = ".\\shader\\backface.frag";
 	m_fluid.shader.szVolumVert  = ".\\shader\\raycasting.vert";
 	m_fluid.shader.szVolumFrag  = ".\\shader\\raycasting.frag";
 
+	/* prepare the fluid simulation stage */
 	m_fs = new FluidSimProc ( &m_fluid );
-	std::cout << "initial stage finished" << std::endl;
+
+	cout << "initial stage finished" << endl;
 };
 
-DWORD WINAPI SolveFluidSimulationProc ( LPVOID lpParam )
+DWORD WINAPI FluidSimulationProc ( LPVOID lpParam )
 {
+	/* solve the fluid simulation */
 	while ( m_fluid.ray.bRun )
 	{
 		m_fs->FluidSimSolver ( &m_fluid );
 	}
+
 	return 0;
 };
 
@@ -70,34 +70,34 @@ void onCreate ()
 	GLenum error = glewInit ();
 	if ( error != GLEW_OK )
 	{
-		std::cout << "glewInit failed: " << glewGetErrorString (error) << std::endl;
+		cout << "glewInit failed: " << glewGetErrorString (error) << endl;
 		exit (1);
 	}
 
 	/* create sub-thread function */
 	m_fluid.thread.hThread = CreateThread ( 
-            NULL,                       // default security attributes
-            0,                          // use default stack size  
-            SolveFluidSimulationProc,   // thread function name
-            NULL,                       // argument to thread function 
-            0,                          // use default creation flags 
-			&m_fluid.thread.dwThreadId);// returns the thread identifier
+            NULL,                   // default security attributes
+            0,                      // use default stack size  
+            FluidSimulationProc,    // thread function name
+            NULL,                   // argument to thread function 
+            0,                      // use default creation flags 
+			&m_fluid.thread.dwThreadId);   // returns the thread identifier
 
 	 if ( m_fluid.thread.hThread == NULL )
 	 {
-		 std::cout << "create sub-thread failed" << std::endl;
+		 cout << "create sub-thread failed" << endl;
 		 exit (1);
 	 }
 
 	/* initialize the shader program and textures */
 	m_vh.CreateShaderProg ( &m_fluid );
-	m_fluid.textures.hTexture1D   = m_vh.Create1DTransFunc ( m_vh.DefaultTransFunc() );
+	m_fluid.textures.hTexture1D   = m_vh.Create1DTransFunc ( m_vh.DefaultTransFunc () );
 	m_fluid.textures.hTexture2D   = m_vh.Create2DCanvas ( &m_fluid );
 	m_fluid.textures.hTexture3D   = m_vh.Create3DVolumetric ();
 	m_fluid.ray.hCluster          = m_vh.InitVerticesBufferObj ();
 	m_fluid.textures.hFramebuffer = m_vh.Create2DFrameBuffer ( &m_fluid );
 
-	std::cout << "initialize finished, sge will start soon!" << std::endl;
+	cout << "initialize finished, sge will start soon!" << endl;
 };
 
 void CountFPS()
@@ -115,7 +115,7 @@ void CountFPS()
 		m_fluid.fps.dwLastUpdateTime = m_fluid.fps.dwCurrentTime;
 	}
 
-	const char *szTitle = "Excalibur OTL 1.00.00 alpha test  |  FPS: %d  |  dynamic tracking  |";
+	const char *szTitle = "Excalibur OTL 1.10.00 alpha test  |  FPS: %d  |  dynamic tracking  |";
 	SetWindowText (	activity->GetHWND(), string_fmt ( szTitle, m_fluid.fps.uFPS ).c_str() );
 }
 
@@ -126,7 +126,7 @@ void onDisplay ()
 	/* bind the vertex buffer object to shader with attribute "vertices" */
 	glBindAttribLocation ( m_fluid.shader.hProgram, 0, "vertices" );
 
-    /* rendering the framebuffer */
+    /* do Render Now! */
 	glBindFramebuffer ( GL_DRAW_FRAMEBUFFER, m_fluid.textures.hFramebuffer );
 	glViewport ( 0, 0, m_fluid.ray.uCanvasWidth, m_fluid.ray.uCanvasHeight );
 	m_fluid.shader.ptrShader->LinkShaders 
@@ -135,8 +135,9 @@ void onDisplay ()
 	m_vh.RenderingFace ( GL_FRONT, &m_fluid );
 	m_fluid.shader.ptrShader->DeactiveProgram ( m_fluid.shader.hProgram );
 
-	/* unbind the framebuffer, do the volume rendering */
+	/* do not bind the framebuffer now */
     glBindFramebuffer ( GL_FRAMEBUFFER, 0 );
+
 	glViewport ( 0, 0, m_fluid.ray.uCanvasWidth, m_fluid.ray.uCanvasHeight );
 	m_fluid.shader.ptrShader->LinkShaders 
 		( m_fluid.shader.hProgram, 2, m_fluid.shader.hRCVert, m_fluid.shader.hRCFrag );
@@ -145,7 +146,6 @@ void onDisplay ()
 	m_vh.RenderingFace ( GL_BACK, &m_fluid );
 	m_fluid.shader.ptrShader->DeactiveProgram ( m_fluid.shader.hProgram );
 
-	/* couting fps */
 	CountFPS ();
 };
 
@@ -155,21 +155,19 @@ void onDestroy ()
 	WaitForSingleObject ( m_fluid.thread.hThread, INFINITE );
 	CloseHandle ( m_fluid.thread.hThread );
 
-	m_fs->FreeResourcePtrs ();
-	SAFE_DELT_PTR ( m_fluid.area.ptrDens );
-	SAFE_DELT_PTR ( m_fluid.area.ptrVelU );
-	SAFE_DELT_PTR ( m_fluid.area.ptrVelV );
-	SAFE_DELT_PTR ( m_fluid.area.ptrVelW );
+	m_fs->FreeResourcePtrs();  
 	SAFE_FREE_PTR ( m_fs );
 	SAFE_FREE_PTR ( m_fluid.shader.ptrShader );
 
-	std::cout << "memory freed, program exits..." << std::endl;
-	exit ( 1 );
+	cout << "memory freed, program exits..." << endl;
+	exit(1);
 };
 
-void onKeyboard ( sge::SG_KEYS keys, sge::SG_KEY_STATUS status )
+void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
 {
-	if ( status == sge::SG_KEY_DOWN )
+	int nodes = NODES_X * NODES_X * NODES_X;
+
+	if ( status == SG_KEY_STATUS::SG_KEY_DOWN )
 	{
 		switch (keys)
 		{
@@ -177,9 +175,19 @@ void onKeyboard ( sge::SG_KEYS keys, sge::SG_KEY_STATUS status )
 		case sge::SG_KEY_ESCAPE:
 			onDestroy();
 			break;
+
+		case sge::SG_KEY_T:
+			index = (index + 1) % nodes;
+			m_fs->SelectNode ( index );
+			break;
+
+		case sge::SG_KEY_R:
+			printf("restore fluid simulation process!\n");
+			m_fs->SelectNode ( 10 );
+			m_fs->ZeroAllBuffer ();
 		
 		case sge::SG_KEY_C:
-			m_fs->ZeroData();
+			m_fs->ZeroAllBuffer ();
 			break;
 		
 		default:
@@ -188,12 +196,11 @@ void onKeyboard ( sge::SG_KEYS keys, sge::SG_KEY_STATUS status )
 	}
 };
 
-void onMouse ( sge::SG_MOUSE mouse, GLuint x, GLuint y, int degree )
+void onMouse ( SG_MOUSE mouse, uint x, uint y, int degree )
 {
-	if ( mouse eqt sge::SG_MOUSE_WHEEL_FORWARD or
-		mouse eqt sge::SG_MOUSE_WHEEL_BACKWARD )
+	if ( mouse eqt SG_MOUSE_WHEEL_FORWARD or mouse eqt SG_MOUSE_WHEEL_BACKWARD )
 	{
-		m_fluid.ray.nAngle = ( m_fluid.ray.nAngle + degree ) % 360;
+		m_fluid.ray.nAngle = (m_fluid.ray.nAngle + degree) % 360;
 	}
 };
 
@@ -201,7 +208,7 @@ int main()
 {
 	initialize ();
 
-	activity = new sge::MainActivity ( SCREEN_WIDTH, SCREEN_HEIGHT );
+	activity = new MainActivity ( WINDOWS_X, WINDOWS_X );
 
 	activity->SetAppClientInfo ( IDI_ICON1, IDI_ICON1 );
 	activity->RegisterCreateFunc ( onCreate );
@@ -210,5 +217,5 @@ int main()
 	activity->RegisterDestroyFunc ( onDestroy );
 	activity->RegisterKeyboardFunc ( onKeyboard );
 	
-	activity->SetupRoutine ();
+	activity->SetupRoutine();
 }

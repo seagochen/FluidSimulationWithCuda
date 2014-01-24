@@ -25,20 +25,27 @@ FluidSimProc::FluidSimProc( fluidsim *fluid )
 	/* building data structure */
 	BuildStructure();
 
+	/* initialize the parameters of fluid simulation */
+	SetParameters( fluid );
+
+	/* select a node as initilize stage */
+	SelectNode( 10 );
+
+	/* finally, print the state message and zero the data */
+	printf( "fluid simulation ready, zero the data and preparing the stage now...\n" );
+	ZeroAllBuffer();
+	SetObstacle();
+	printf( "finished!\n" );
+};
+
+void FluidSimProc::SetParameters( fluidsim *fluid )
+{
 	/* initilize the status of FPS counter */
 	fluid->fps.dwCurrentTime    = 0;
 	fluid->fps.dwElapsedTime    = 0;
 	fluid->fps.dwFrames         = 0;
 	fluid->fps.dwLastUpdateTime = 0;
 	fluid->fps.uFPS             = 0;
-
-	/* select a node as initilize stage */
-	SelectNode( 10 );
-
-	/* finally, print the state message and zero the data */
-	std::cout << "fluid simulation ready, zero the data and preparing the stage now" << std::endl;
-	ZeroAllBuffer();
-	SetObstacle();
 };
 
 SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs( fluidsim *fluid )
@@ -74,7 +81,7 @@ SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs( fluidsim *fluid )
 	{
 		/* alarm if cudaMalloc failed */
 		static double *ptr;
-		if ( cudaMalloc( (void **)&ptr, CUBESIZE_X * sizeof(double) ) isnot cudaSuccess )
+		if ( cudaMalloc( (void **)&ptr, CUBESIZE_X * sizeof(double) ) not_eq cudaSuccess )
 		{
 			cudaCheckErrors( "cudaMalloc failed!", __FILE__, __LINE__ );
 			return SG_MALLOC_SPACE_FAILED;
@@ -99,12 +106,12 @@ SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs( fluidsim *fluid )
 		return SG_MALLOC_SPACE_FAILED;
 	}
 	/* alarm if cudaMalloc is failed */
-	if ( cudaMalloc( (void**)&dev_ibuf, sizeof(int) * TPBUFFER_X ) isnot cudaSuccess )
+	if ( cudaMalloc( (void**)&dev_ibuf, sizeof(int) * TPBUFFER_X ) not_eq cudaSuccess )
 	{
 		cudaCheckErrors( "cudaMalloc failed!", __FILE__, __LINE__ );
 		return SG_MALLOC_SPACE_FAILED;
 	}
-	if ( cudaMalloc( (void**)&dev_fbuf, sizeof(double) * TPBUFFER_X) isnot cudaSuccess )
+	if ( cudaMalloc( (void**)&dev_fbuf, sizeof(double) * TPBUFFER_X) not_eq cudaSuccess )
 	{
 		cudaCheckErrors( "cudaMalloc failed!", __FILE__, __LINE__ );
 		return SG_MALLOC_SPACE_FAILED;
@@ -282,18 +289,18 @@ void FluidSimProc::LeftDataToDevice( void )
 {
 	size_t size = sizeof(double) * CUBESIZE_X;
 	/* upload data to grid */
-	if ( host_nodes[ m_index ].ptrLeft isnot NULL )
+	if ( host_nodes[ m_index ].ptrLeft not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrLeft;
 
 		/* copy data to grid */
-		if ( cudaMemcpy(dev_d_L, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_d_L, ptr->ptrDens, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_u_L, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_u_L, ptr->ptrVelU, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_v_L, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_v_L, ptr->ptrVelV, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_w_L, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_w_L, ptr->ptrVelW, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -312,18 +319,18 @@ void FluidSimProc::RightDataToDevice( void )
 {
 	size_t size = sizeof(double) * CUBESIZE_X;
 	/* upload data to grid */
-	if ( host_nodes[ m_index ].ptrRight isnot NULL )
+	if ( host_nodes[ m_index ].ptrRight not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrRight;
 		
 		/* copy data to grid */
-		if ( cudaMemcpy(dev_d_R, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_d_R, ptr->ptrDens, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_u_R, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_u_R, ptr->ptrVelU, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_v_R, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_v_R, ptr->ptrVelV, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_w_R, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_w_R, ptr->ptrVelW, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -342,18 +349,18 @@ void FluidSimProc::UpDataToDevice( void )
 {
 	size_t size = sizeof(double) * CUBESIZE_X;
 	/* upload data to grid */
-	if ( host_nodes[ m_index ].ptrUp isnot NULL )
+	if ( host_nodes[ m_index ].ptrUp not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrUp;
 
 		/* copy data to grid */
-		if ( cudaMemcpy(dev_d_U, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_d_U, ptr->ptrDens, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_u_U, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_u_U, ptr->ptrVelU, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_v_U, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_v_U, ptr->ptrVelV, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_w_U, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_w_U, ptr->ptrVelW, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -372,18 +379,18 @@ void FluidSimProc::DownDataToDevice( void )
 {
 	size_t size = sizeof(double) * CUBESIZE_X;
 	/* upload data to grid */
-	if ( host_nodes[ m_index ].ptrDown isnot NULL )
+	if ( host_nodes[ m_index ].ptrDown not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrDown;
 
 		/* copy data to grid */
-		if ( cudaMemcpy(dev_d_D, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_d_D, ptr->ptrDens, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_u_D, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_u_D, ptr->ptrVelU, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_v_D, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_v_D, ptr->ptrVelV, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_w_D, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_w_D, ptr->ptrVelW, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -402,18 +409,18 @@ void FluidSimProc::FrontDataToDevice( void )
 {
 	size_t size = sizeof(double) * CUBESIZE_X;
 	/* upload data to grid */
-	if ( host_nodes[ m_index ].ptrFront isnot NULL )
+	if ( host_nodes[ m_index ].ptrFront not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrFront;
 
 		/* copy data to grid */
-		if ( cudaMemcpy(dev_d_F, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_d_F, ptr->ptrDens, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_u_F, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_u_F, ptr->ptrVelU, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_v_F, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_v_F, ptr->ptrVelV, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_w_F, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_w_F, ptr->ptrVelW, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -432,18 +439,18 @@ void FluidSimProc::BackDataToDevice( void )
 {
 	size_t size = sizeof(double) * CUBESIZE_X;
 	/* upload data to grid */
-	if ( host_nodes[ m_index ].ptrBack isnot NULL )
+	if ( host_nodes[ m_index ].ptrBack not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrBack;
 
 		/* copy data to grid */
-		if ( cudaMemcpy(dev_d_B, ptr->ptrDens, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_d_B, ptr->ptrDens, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_u_B, ptr->ptrVelU, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_u_B, ptr->ptrVelU, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_v_B, ptr->ptrVelV, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_v_B, ptr->ptrVelV, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy(dev_w_B, ptr->ptrVelW, size, cudaMemcpyHostToDevice) isnot cudaSuccess )
+		if ( cudaMemcpy(dev_w_B, ptr->ptrVelW, size, cudaMemcpyHostToDevice) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -463,17 +470,17 @@ void FluidSimProc::LeftDataToHost( void )
 	size_t size = sizeof(double) * CUBESIZE_X;
 
 	/* draw data back to host */
-	if ( host_nodes[ m_index ].ptrLeft isnot NULL )
+	if ( host_nodes[ m_index ].ptrLeft not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrLeft;
 
-		if ( cudaMemcpy( ptr->ptrDens, dev_d_L, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_L, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelU, dev_u_L, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_L, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelV, dev_v_L, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_L, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelW, dev_w_L, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_L, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -493,17 +500,17 @@ void FluidSimProc::RightDataToHost( void )
 	size_t size = sizeof(double) * CUBESIZE_X;
 
 	/* draw data back to host */
-	if ( host_nodes[ m_index ].ptrRight isnot NULL )
+	if ( host_nodes[ m_index ].ptrRight not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrRight;
 
-		if ( cudaMemcpy( ptr->ptrDens, dev_d_R, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_R, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelU, dev_u_R, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_R, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelV, dev_v_R, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_R, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelW, dev_w_R, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_R, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -523,17 +530,17 @@ void FluidSimProc::UpDataToHost( void )
 	size_t size = sizeof(double) * CUBESIZE_X;
 
 	/* draw data back to host */
-	if ( host_nodes[ m_index ].ptrUp isnot NULL )
+	if ( host_nodes[ m_index ].ptrUp not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrUp;
 
-		if ( cudaMemcpy( ptr->ptrDens, dev_d_U, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_U, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelU, dev_u_U, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_U, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelV, dev_v_U, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_U, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelW, dev_w_U, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_U, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -553,17 +560,17 @@ void FluidSimProc::DownDataToHost( void )
 	size_t size = sizeof(double) * CUBESIZE_X;
 
 	/* draw data back to host */
-	if ( host_nodes[ m_index ].ptrDown isnot NULL )
+	if ( host_nodes[ m_index ].ptrDown not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrDown;
 
-		if ( cudaMemcpy( ptr->ptrDens, dev_d_D, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_D, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelU, dev_u_D, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_D, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelV, dev_v_D, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_D, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelW, dev_w_D, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_D, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -583,17 +590,17 @@ void FluidSimProc::FrontDataToHost( void )
 	size_t size = sizeof(double) * CUBESIZE_X;
 
 	/* draw data back to host */
-	if ( host_nodes[ m_index ].ptrFront isnot NULL )
+	if ( host_nodes[ m_index ].ptrFront not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrFront;
 		
-		if ( cudaMemcpy( ptr->ptrDens, dev_d_F, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_F, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelU, dev_u_F, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_F, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelV, dev_v_F, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_F, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelW, dev_w_F, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_F, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -613,17 +620,17 @@ void FluidSimProc::BackDataToHost( void )
 	size_t size = sizeof(double) * CUBESIZE_X;
 
 	/* draw data back to host */
-	if ( host_nodes[ m_index ].ptrBack isnot NULL )
+	if ( host_nodes[ m_index ].ptrBack not_eq NULL )
 	{
 		node *ptr = host_nodes[ m_index ].ptrBack;
 
-		if ( cudaMemcpy( ptr->ptrDens, dev_d_B, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrDens, dev_d_B, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelU, dev_u_B, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelU, dev_u_B, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelV, dev_v_B, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelV, dev_v_B, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
-		if ( cudaMemcpy( ptr->ptrVelW, dev_w_B, size, cudaMemcpyDeviceToHost) isnot cudaSuccess )
+		if ( cudaMemcpy( ptr->ptrVelW, dev_w_B, size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 			goto Error;
 	}
 
@@ -656,7 +663,7 @@ void FluidSimProc::CopyDataToDevice( void )
 		cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
 	if ( cudaMemcpy( dev_o, host_nodes[ m_index ].ptrObs, sizeof(double) * CUBESIZE_X,
-		cudaMemcpyHostToDevice ) isnot cudaSuccess )
+		cudaMemcpyHostToDevice ) not_eq cudaSuccess )
 		goto Error;
 
 	/* upload data to neighbouring grids */
@@ -669,10 +676,10 @@ void FluidSimProc::CopyDataToDevice( void )
 
 	/* upload temporary buffer to device */
 	if ( cudaMemcpy(dev_ibuf, host_ibuf, sizeof(int) * TPBUFFER_X, 
-		cudaMemcpyHostToDevice) isnot cudaSuccess )
+		cudaMemcpyHostToDevice) not_eq cudaSuccess )
 		goto Error;
 	if ( cudaMemcpy(dev_fbuf, host_fbuf, sizeof(double) * TPBUFFER_X,
-		cudaMemcpyHostToDevice) isnot cudaSuccess )
+		cudaMemcpyHostToDevice) not_eq cudaSuccess )
 		goto Error;
 
 	goto Success;
@@ -712,10 +719,10 @@ void FluidSimProc::CopyDataToHost( void )
 
 	/* draw temporary buffer back */
 	if ( cudaMemcpy( host_ibuf, dev_ibuf, sizeof(int) * TPBUFFER_X, 
-		cudaMemcpyHostToDevice) isnot cudaSuccess )
+		cudaMemcpyHostToDevice) not_eq cudaSuccess )
 		goto Error;
 	if ( cudaMemcpy( host_fbuf, dev_fbuf, sizeof(double) * TPBUFFER_X,
-		cudaMemcpyHostToDevice ) isnot cudaSuccess )
+		cudaMemcpyHostToDevice ) not_eq cudaSuccess )
 		goto Error;
 
 	goto Success;
