@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CUDADef.h" />
     <ClInclude Include="DataStructures.h" />
     <ClInclude Include="MainFrameworkDynamic.h" />
     <ClInclude Include="Parameter.h" />

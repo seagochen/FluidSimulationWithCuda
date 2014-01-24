@@ -8,11 +8,17 @@
 #ifndef __data_structures_h_
 #define __data_structures_h_
 
+#include <cuda_runtime.h>
 #include <GL\freeglut.h>
 #include <SGE\SGUtils.h>
 
 namespace sge
 {
+	typedef double3 SGDOUBLE3;
+	typedef double4 SGDOUBLE4;
+	typedef int3 SGINT3;
+	typedef int4 SGINT4;
+
 	struct fluidsim
 	{
 		static struct shader
@@ -64,5 +70,28 @@ namespace sge
 		thread   thread;
 		fps      fps;
 	};
+
+	struct hostnode
+	{
+		hostnode  *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+		SGBOOLEAN  bActive;
+		SGINT3     nPos;
+		SGDOUBLE3 *ptrVel;
+		SGDOUBLE  *ptrDen;
+		SGINT     *ptrObstacle;
+	};
+
+	struct devbuf
+	{
+		SGINT     *ptrObstacle;
+		SGDOUBLE  *ptrDen;
+		SGDOUBLE3 *ptrVel;
+		SGDOUBLE  *ptrDiv;
+		SGDOUBLE  *ptrP;
+		SGDOUBLE  *ptrTemp;
+		SGDOUBLE4 *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+	};
+
+}
 
 #endif
