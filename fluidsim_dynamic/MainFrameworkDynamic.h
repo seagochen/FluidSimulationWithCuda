@@ -20,33 +20,33 @@ namespace sge
 	typedef class Framework_v1_0
 	{
 	private:
-		SGUCHAR  *DefaultTransFunc( SGVOID );
-		SGHANDLER Create1DTransFunc( GLubyte *transfer );
-		SGHANDLER Create2DCanvas( FLUIDSPARAM *fluid );
-		SGHANDLER Create2DFrameBuffer( FLUIDSPARAM *fluid );
-		SGHANDLER Create3DVolumetric( SGVOID );
-		SGHANDLER CreateVerticesBufferObj( SGVOID );
+		static SGUCHAR  *DefaultTransFunc( SGVOID );
+		static SGHANDLER Create1DTransFunc( GLubyte *transfer );
+		static SGHANDLER Create2DCanvas( FLUIDSPARAM *fluid );
+		static SGHANDLER Create2DFrameBuffer( FLUIDSPARAM *fluid );
+		static SGHANDLER Create3DVolumetric( SGVOID );
+		static SGHANDLER CreateVerticesBufferObj( SGVOID );
 
 	private:
-		SGVOID SetVolumeInfoUinforms( FLUIDSPARAM *fluid );
-		SGVOID RenderingFace( GLENUM cullFace, FLUIDSPARAM *fluid );
-		SGVOID CreateShaderProg( FLUIDSPARAM *fluid );
-		SGVOID LoadVolumeSource( SGCONSTCHAR *szRawFile, FLUIDSPARAM *fluid );
+		static SGVOID SetVolumeInfoUinforms( FLUIDSPARAM *fluid );
+		static SGVOID RenderingFace( GLENUM cullFace, FLUIDSPARAM *fluid );
+		static SGVOID CreateShaderProg( FLUIDSPARAM *fluid );
+		static SGVOID LoadVolumeSource( SGCONSTCHAR *szRawFile, FLUIDSPARAM *fluid );
 
 	private:
-		SGBOOLEAN CheckHandleError( SGINT nShaderObjs, ... );
+		static SGBOOLEAN CheckHandleError( SGINT nShaderObjs, ... );
+		static SGVOID CountFPS();
+		static DWORD WINAPI FluidSimulationProc ( LPVOID lpParam );
 
 	public:
-		Framework_v1_0( SGVOID );
+		Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height );
 
 	public:
-		SGVOID onCreate( SGVOID );
-		SGVOID onDestroy( SGVOID );
-		SGVOID onDisplay( SGVOID );
-		SGVOID onReshape( SGUINT width, SGUINT height );
-		SGVOID onIdle( SGVOID );
-		SGVOID onKeyboard( SGKEYS keys, SGKEYSTATUS status );
-		SGVOID onMouse( SGMOUSE mouse, SGUINT x, SGUINT y, SGINT degree );
+		static SGVOID onMouse( SGMOUSE mouse, unsigned x, unsigned y, int degree );
+		static SGVOID onKeyboard( SGKEYS keys, SGKEYSTATUS status );
+		static SGVOID onDestroy( SGVOID );
+		static SGVOID onDisplay( SGVOID );		
+		static SGVOID onCreate( SGVOID );
 
 	}FrameworkDynamic;
 };

@@ -13,26 +13,18 @@
 #include "Parameter.h"
 #include "MainFrameworkDynamic.h"
 
-using sge::SGMAINACTIVITY;
-using sge::FrameworkDynamic;
-
 int main()
 {
-	SGMAINACTIVITY  *activity;
-	FrameworkDynamic framework;
+	using namespace sge;
+	SGMAINACTIVITY *activity;
+	FrameworkDynamic famework( &activity, WINDOWS_X, WINDOWS_X );
 
-	/* create instance of activity */
-	activity = new SGMAINACTIVITY( WINDOWS_X, WINDOWS_X, false );
-
-	/* set icon */
-	activity->SetAppClientInfo( IDI_ICON1, IDI_ICON1 );
-
-	/* set callback functions */
-	activity->RegisterCreateFunc( framework.onCreate );
-	activity->RegisterDestroyFunc( framework.onDestroy );
-	activity->RegisterDisplayFunc( framework.onDisplay );
-	activity->RegisterReshapeFunc( framework.onReshape );
-	activity->RegisterKeyboardFunc( framework.onKeyboard );
-	activity->RegisterMouseFunc( framework.onMouse );
-	activity->RegisterIdleFunc( framework.onIdle );
-};
+	activity->SetAppClientInfo ( IDI_ICON1, IDI_ICON1 );
+	activity->RegisterCreateFunc ( famework.onCreate );
+	activity->RegisterDisplayFunc ( famework.onDisplay );
+	activity->RegisterMouseFunc ( famework.onMouse );
+	activity->RegisterDestroyFunc ( famework.onDestroy );
+	activity->RegisterKeyboardFunc ( famework.onKeyboard );
+	
+	activity->SetupRoutine();
+}

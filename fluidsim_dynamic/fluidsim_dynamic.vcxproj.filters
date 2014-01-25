@@ -43,6 +43,9 @@
     <ClInclude Include="CUDADef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FunctionHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\backface.frag">
@@ -60,6 +63,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MainDynamic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MainFrameworkDynamic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FunctionHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

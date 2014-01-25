@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CUDADef.h" />
+    <ClInclude Include="FunctionHelper.h" />
     <ClInclude Include="DataStructures.h" />
     <ClInclude Include="MainFrameworkDynamic.h" />
     <ClInclude Include="Parameter.h" />
@@ -38,7 +39,9 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
+    <ClCompile Include="MainFrameworkDynamic.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BD0F37A3-9772-412B-8B66-65483CCA5C2A}</ProjectGuid>
