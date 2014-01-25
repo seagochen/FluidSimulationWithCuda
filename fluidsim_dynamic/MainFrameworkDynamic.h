@@ -15,21 +15,23 @@
 
 namespace sge
 {
+	typedef GLenum GLENUM;
+
 	typedef class Framework_v1_0
 	{
 	private:
 		SGUCHAR  *DefaultTransFunc( SGVOID );
 		SGHANDLER Create1DTransFunc( GLubyte *transfer );
-		SGHANDLER Create2DCanvas( fluidsim *fluid );
-		SGHANDLER Create2DFrameBuffer( fluidsim *fluid );
+		SGHANDLER Create2DCanvas( FLUIDSPARAM *fluid );
+		SGHANDLER Create2DFrameBuffer( FLUIDSPARAM *fluid );
 		SGHANDLER Create3DVolumetric( SGVOID );
 		SGHANDLER CreateVerticesBufferObj( SGVOID );
 
 	private:
-		SGVOID SetVolumeInfoUinforms( fluidsim *fluid );
-		SGVOID RenderingFace( GLenum cullFace, fluidsim *fluid );
-		SGVOID CreateShaderProg( fluidsim *fluid );
-		SGVOID LoadVolumeSource( SGCONSTCHAR *szRawFile, fluidsim *fluid );
+		SGVOID SetVolumeInfoUinforms( FLUIDSPARAM *fluid );
+		SGVOID RenderingFace( GLENUM cullFace, FLUIDSPARAM *fluid );
+		SGVOID CreateShaderProg( FLUIDSPARAM *fluid );
+		SGVOID LoadVolumeSource( SGCONSTCHAR *szRawFile, FLUIDSPARAM *fluid );
 
 	private:
 		SGBOOLEAN CheckHandleError( SGINT nShaderObjs, ... );

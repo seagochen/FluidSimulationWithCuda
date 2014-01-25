@@ -19,11 +19,7 @@
 #define WINDOWS_X           600
 #define CANVAS_X            600
 #define CUBESIZE_X          GRIDS_X*GRIDS_X*GRIDS_X
-#define FACESIZE_X          GRIDS_X*GRIDS_X
 #define TPBUFFER_X          1024
-
-#define DevGridsNum         32
-// TODO
 
 #define BD_SOURCE          -1
 #define BD_BLANK            0

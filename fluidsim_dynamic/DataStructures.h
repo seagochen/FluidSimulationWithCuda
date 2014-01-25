@@ -19,42 +19,42 @@ namespace sge
 	typedef int3 SGINT3;
 	typedef int4 SGINT4;
 
-	struct fluidsim
+	struct FLUIDSPARAM
 	{
-		static struct shader
+		static struct SHADER
 		{
 			SGHANDLER hProgram, hBFVert, hBFFrag, hRCVert, hRCFrag;
-			char     *szCanvasVert, *szCanvasFrag, *szVolumVert, *szVolumFrag;
+			SGCHAR   *szCanvasVert, *szCanvasFrag, *szVolumVert, *szVolumFrag;
 			SGSHADER *ptrShader;
 		};
 		
-		struct textures
+		struct TEXTURES
 		{
 			SGHANDLER  hTexture1D, hTexture2D, hTexture3D, hFramebuffer;
 		};
 		
-		struct volume
+		struct VOLUME
 		{
 			SGUCHAR *ptrData;
 			size_t   uWidth, uHeight, uDepth;
 		};
 		
-		typedef struct raycasting
+		struct RAYCAST
 		{
 			SGHANDLER hCluster;
 			SGINT     nAngle;
 			SGBOOLEAN bRun;
 			SGFLOAT   fStepsize;
 			size_t    uCanvasWidth, uCanvasHeight;
-		}rayc;
+		};
 		
-		struct thread
+		struct THREAD
 		{
 			DWORD   dwThreadId;
 			HANDLE  hThread;
 		};
 		
-		struct fps
+		struct FPS
 		{
 			DWORD dwFrames;
 			DWORD dwCurrentTime;
@@ -63,33 +63,40 @@ namespace sge
 			UINT  uFPS;
 		};
 		
-		shader   shader;
-		textures textures;
-		volume   volume;
-		rayc     ray;
-		thread   thread;
-		fps      fps;
+		SHADER   shader;
+		TEXTURES textures;
+		VOLUME   volume;
+		RAYCAST  ray;
+		THREAD   thread;
+		FPS      fps;
 	};
 
-	struct hostnode
+	typedef struct GRIDCPX
 	{
-		hostnode  *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+		SGDOUBLE   u, v, w, den;
+		SGINT      obstacle;
+		SGDOUBLE   div;
+		SGDOUBLE   p;
+		SGDOUBLE   temp;
+	}CUDAGRID;
+
+	typedef struct GRIDSPL
+	{
+		SGDOUBLE   u, v, w, den;
+	}HOSTGRID;
+
+	struct HOSTNODE
+	{
+		HOSTNODE  *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 		SGBOOLEAN  bActive;
-		SGINT3     nPos;
-		SGDOUBLE3 *ptrVel;
-		SGDOUBLE  *ptrDen;
-		SGINT     *ptrObstacle;
+		SGINT3     n3Pos;
+		GRIDSPL   *ptrGrids;
 	};
 
-	struct devbuf
+	struct DEVBUFF
 	{
-		SGINT     *ptrObstacle;
-		SGDOUBLE  *ptrDen;
-		SGDOUBLE3 *ptrVel;
-		SGDOUBLE  *ptrDiv;
-		SGDOUBLE  *ptrP;
-		SGDOUBLE  *ptrTemp;
-		SGDOUBLE4 *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+		GRIDCPX  *ptrGrids;
+		GRIDSPL  *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 	};
 
 }

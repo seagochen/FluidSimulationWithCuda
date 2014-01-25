@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 #include <SGE\SGUtils.h>
+#include "Parameter.h"
 
 #define cudaDevice(gridDim,blockDim) <<<gridDim,blockDim>>>
 
