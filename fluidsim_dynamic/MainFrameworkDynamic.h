@@ -12,6 +12,7 @@
 #include <GL\freeglut.h>
 #include <SGE\SGUtils.h>
 #include "DataStructures.h"
+#include "FunctionHelper.h"
 
 namespace sge
 {
@@ -47,7 +48,6 @@ namespace sge
 		static SGVOID onDestroy( SGVOID );
 		static SGVOID onDisplay( SGVOID );		
 		static SGVOID onCreate( SGVOID );
-
 	}FrameworkDynamic;
 };
 

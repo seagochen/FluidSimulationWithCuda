@@ -418,16 +418,14 @@ GLuint Framework_v1_0::CreateVerticesBufferObj ( void )
 * <File>        MainFrameworkDynamic.cpp
 */
 
-#include "FunctionHelper.h"
-
 static SGMAINACTIVITY   *m_activity;
 static FLUIDSPARAM       m_fluid;
 static AppHelper         m_helper;
-static SGINT             index;
+static SGINT             m_index;
 
 Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height  )
 {
-	index = 0;
+	m_index = 0;
 
 	m_fluid.ray.fStepsize     = STEPSIZE;
 	m_fluid.ray.nAngle        = 0;
@@ -574,8 +572,8 @@ void Framework_v1_0::onKeyboard ( SGKEYS keys, SGKEYSTATUS status )
 			break;
 
 		case sge::SG_KEY_T:
-			index = (index + 1) % nodes;
-//			m_fs->SelectNode ( index );
+			m_index = (m_index + 1) % nodes;
+//			m_fs->SelectNode ( m_index );
 			break;
 
 		case sge::SG_KEY_R:
