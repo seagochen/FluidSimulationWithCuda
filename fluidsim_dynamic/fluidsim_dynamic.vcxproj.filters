@@ -46,6 +46,15 @@
     <ClInclude Include="FunctionHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BasicFluidKernels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CUDAMath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalInterpolation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\backface.frag">
@@ -71,5 +80,10 @@
     <ClCompile Include="FunctionHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="BasicFluidKernels.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

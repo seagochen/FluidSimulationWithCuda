@@ -5,7 +5,7 @@
 * <File>        Parameters.cpp
 */
 
-#define DELTATIME           0.3f
+#define DELTATIME           0.5f
 #define STEPSIZE            0.001f
 #define DIFFUSION           0.1f
 #define VISOCITY            0.0f 
@@ -23,6 +23,12 @@
 
 #define BD_SOURCE          -1
 #define BD_BLANK            0
-#define BD_HLAF             5
-#define BD_WALL             10
-#define BD_EXIT             100
+#define BD_OBSTACLE         100
+
+#define USING_GRID_DENS     0
+#define USING_GRID_VELU     1
+#define USING_GRID_VELV     2
+#define USING_GRID_VELW     3
+
+#define JACOBI_DENSITY      0
+#define JACOBI_VELOCITY     1

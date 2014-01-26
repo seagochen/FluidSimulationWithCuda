@@ -1,3 +1,10 @@
+/**
+* <Author>      Orlando Chen
+* <First>       Jan 08, 2014
+* <Last>		Jan 26, 2014
+* <File>        FunctionHelper.cpp
+*/
+
 #include <cuda_runtime_api.h>
 #include "Parameter.h"
 #include "FunctionHelper.h"

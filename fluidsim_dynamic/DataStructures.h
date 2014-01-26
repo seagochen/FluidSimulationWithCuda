@@ -77,7 +77,7 @@ namespace sge
 		SGINT      obstacle;
 		SGDOUBLE   div;
 		SGDOUBLE   p;
-		SGDOUBLE   temp;
+		SGDOUBLE   u0, v0, w0, den0;
 	}CUDAGRID;
 
 	typedef struct GRIDSPL

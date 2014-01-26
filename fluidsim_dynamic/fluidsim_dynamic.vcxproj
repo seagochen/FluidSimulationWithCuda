@@ -19,9 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BasicFluidKernels.h" />
     <ClInclude Include="CUDADef.h" />
+    <ClInclude Include="CUDAMath.h" />
     <ClInclude Include="FunctionHelper.h" />
     <ClInclude Include="DataStructures.h" />
+    <ClInclude Include="GlobalInterpolation.h" />
     <ClInclude Include="MainFrameworkDynamic.h" />
     <ClInclude Include="Parameter.h" />
     <ClInclude Include="resource.h" />
@@ -42,6 +45,9 @@
     <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
     <ClCompile Include="MainFrameworkDynamic.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="BasicFluidKernels.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BD0F37A3-9772-412B-8B66-65483CCA5C2A}</ProjectGuid>
