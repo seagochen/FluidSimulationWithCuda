@@ -8,24 +8,13 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <SGE\config\ISO646.h>
-#include "Parameter.h"
+#include "Parameters.h"
 #include "CUDADef.h"
 #include "DataStructures.h"
 #include "FunctionHelper.h"
 #include "BasicFluidKernels.h"
 
 using namespace sge;
-
-#define jacobi_out        dStores[0]
-#define jacobi_in         dStores[1]
-#define jacobi_x0         dStores[2]
-#define jacobi_x1         dStores[3]
-#define jacobi_y0         dStores[4]
-#define jacobi_y1         dStores[5]
-#define jacobi_z0         dStores[6]
-#define jacobi_z1         dStores[7]
-#define jacobi_dif        dStores[8]
-#define jacobi_div        dStores[9]
 
 CUDAHelper m_cudahelper;
 
@@ -55,12 +44,12 @@ Success:
 };
 
 __global__
-void kernelAddSource( CUDAGRID *grid )
+void kernelAddSource( SGCUDAGRID *grid )
 {
 	GetIndex();
 	int ix = Index(i,j,k);
 
-	if ( grid[ix].obstacle eqt BD_SOURCE )
+	if ( grid[ix].obstacle eqt SG_BD_SOURCE )
 	{
 		grid[ix].v   = SOURCE * DELTATIME;
 		grid[ix].den = SOURCE;
@@ -68,7 +57,7 @@ void kernelAddSource( CUDAGRID *grid )
 };
 
 __host__
-void hostAddSource( CUDAGRID *grid )
+void hostAddSource( SGCUDAGRID *grid )
 {
 	dim3 gridDim, blockDim;
 	m_cudahelper.DeviceDim3D( &gridDim, &blockDim );
@@ -86,7 +75,7 @@ void atomicJacobi( double *dStores )
 };
 
 __global__
-void kernelJacobi( CUDAGRID *grid, double *dStores, 
+void kernelJacobi( SGCUDAGRID *grid, double *dStores, 
 	int const type, double const diffusion, double const divisor )
 {
 	GetIndex();
@@ -97,7 +86,7 @@ void kernelJacobi( CUDAGRID *grid, double *dStores,
 	if ( divisor <= 0.f ) jacobi_div = 1.f;
 	else jacobi_div = divisor;
 	
-	if ( type eqt JACOBI_DENSITY )
+	if ( type eqt SG_SOLVE_DENSITY )
 	{
 		jacobi_in = grid[ Index(i,j,k) ].den;
 		jacobi_x0 = grid[ Index(i-1,j,k) ].den0;
@@ -109,7 +98,7 @@ void kernelJacobi( CUDAGRID *grid, double *dStores,
 		atomicJacobi( dStores );
 		grid[ Index(i,j,k) ].den0 = jacobi_out;
 	}
-	elif ( type eqt JACOBI_VELOCITY )
+	elif ( type eqt SG_SOLVE_VELOCITY )
 	{
 		/* velocity u */
 		jacobi_in = grid[ Index(i,j,k) ].u;
@@ -149,7 +138,7 @@ void kernelJacobi( CUDAGRID *grid, double *dStores,
 }
 
 __host__
-void hostJacobi ( CUDAGRID *grid, double *dStores, 
+void hostJacobi ( SGCUDAGRID *grid, double *dStores, 
 	int const type, double const diffusion, double const divisor )
 {
 	dim3 gridDim, blockDim;
@@ -158,14 +147,3 @@ void hostJacobi ( CUDAGRID *grid, double *dStores,
 	for ( int k = 0; k < 20; k++)
 		kernelJacobi<<<gridDim, blockDim>>>( grid, dStores, type, diffusion, divisor );
 };
-
-#undef  jacobi_in
-#undef  jacobi_out
-#undef  jacobi_x0
-#undef  jacobi_x1
-#undef  jacobi_y0
-#undef  jacobi_y1
-#undef  jacobi_z0
-#undef  jacobi_z1
-#undef  jacobi_diffusion
-#undef  jacobi_div

@@ -10,7 +10,6 @@
 #include <GL\glew32c.h>
 #include <SGE\SGUtils.h>
 #include "resource.h"
-#include "Parameter.h"
 #include "MainFrameworkDynamic.h"
 
 int main()

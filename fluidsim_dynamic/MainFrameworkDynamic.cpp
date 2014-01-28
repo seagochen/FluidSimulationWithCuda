@@ -7,7 +7,6 @@
 
 #include <iostream>
 #include "MainFrameworkDynamic.h"
-#include "Parameter.h"
 
 using namespace sge;
 using std::cout;

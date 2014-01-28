@@ -24,9 +24,9 @@
     <ClInclude Include="CUDAMath.h" />
     <ClInclude Include="FunctionHelper.h" />
     <ClInclude Include="DataStructures.h" />
-    <ClInclude Include="GlobalInterpolation.h" />
+    <ClInclude Include="InterpKernels.h" />
     <ClInclude Include="MainFrameworkDynamic.h" />
-    <ClInclude Include="Parameter.h" />
+    <ClInclude Include="Parameters.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

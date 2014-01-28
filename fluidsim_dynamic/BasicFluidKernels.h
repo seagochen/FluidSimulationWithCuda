@@ -19,8 +19,8 @@ extern "C"
 {
 #endif
 	extern void hostPreBasicFluidKernel( double **dStores, int **nStores );
-	extern void hostAddSource( CUDAGRID *grid );
-	extern void hostJacobi( CUDAGRID *grid, double *dStores, 
+	extern void hostAddSource( SGCUDAGRID *grid );
+	extern void hostJacobi( SGCUDAGRID *grid, double *dStores, 
 		int const type, double const diffusion, double const divisor );
 
 #ifdef __cplusplus

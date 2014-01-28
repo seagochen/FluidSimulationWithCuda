@@ -37,9 +37,6 @@
     <ClInclude Include="DataStructures.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Parameter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CUDADef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -52,7 +49,10 @@
     <ClInclude Include="CUDAMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GlobalInterpolation.h">
+    <ClInclude Include="InterpKernels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Parameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
