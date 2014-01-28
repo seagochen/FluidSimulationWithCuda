@@ -26,24 +26,37 @@ double atomicGetValueFromGrids( const GRIDCPX *buff, const SGGRIDTYPE type,
 
 	switch (type)
 	{
-	case sge::SG_DENS_GRID:
+	case SG_DENS_GRID:
 		value = buff[ Index(x,y,z) ].den;
 		break;
-	case sge::SG_VELU_GRID:
+	case SG_VELU_GRID:
 		value = buff[ Index(x,y,z) ].u;
 		break;
-	case sge::SG_VELV_GRID:
+	case SG_VELV_GRID:
 		value = buff[ Index(x,y,z) ].v;
 		break;
-	case sge::SG_VELW_GRID:
+	case SG_VELW_GRID:
 		value = buff[ Index(x,y,z) ].w;
 		break;
-	case sge::SG_DIV_GRID:
+	case SG_DIV_GRID:
 		value = buff[ Index(x,y,z) ].div;
 		break;
-	case sge::SG_PRES_GRID:
+	case SG_PRES_GRID:
 		value = buff[ Index(x,y,z) ].p;
 		break;
+	case SG_DENS_GRID0:
+		value = buff[ Index(x,y,z) ].den0;
+		break;
+	case SG_VELU_GRID0:
+		value = buff[ Index(x,y,z) ].u0;
+		break;
+	case SG_VELV_GRID0:
+		value = buff[ Index(x,y,z) ].v0;
+		break;
+	case SG_VELW_GRID0:
+		value = buff[ Index(x,y,z) ].w0;
+		break;
+
 
 	default:
 		value = 0.f;
@@ -65,16 +78,16 @@ double atomicGetValueFromGrids( const GRIDSPL *buff, const SGGRIDTYPE type,
 
 	switch (type)
 	{
-	case sge::SG_DENS_GRID:
+	case SG_DENS_GRID:
 		value = buff[ Index(x,y,z) ].den;
 		break;
-	case sge::SG_VELU_GRID:
+	case SG_VELU_GRID:
 		value = buff[ Index(x,y,z) ].u;
 		break;
-	case sge::SG_VELV_GRID:
+	case SG_VELV_GRID:
 		value = buff[ Index(x,y,z) ].v;
 		break;
-	case sge::SG_VELW_GRID:
+	case SG_VELW_GRID:
 		value = buff[ Index(x,y,z) ].w;
 		break;
 
@@ -84,6 +97,49 @@ double atomicGetValueFromGrids( const GRIDSPL *buff, const SGGRIDTYPE type,
 	}
 
 	return value;
+};
+
+__device__	
+void atomicSetValueToGrids( GRIDCPX *buff, const double value, const SGGRIDTYPE type,
+	const int x, const int y, const int z )
+{
+	if ( x < gst_header or x > gst_tailer ) return ;
+	if ( y < gst_header or y > gst_tailer ) return ;
+	if ( z < gst_header or z > gst_tailer ) return ;
+
+	switch (type)
+	{
+	case SG_DENS_GRID:
+		buff[ Index(x,y,z) ].den = value;
+		break;
+	case SG_VELU_GRID:
+		buff[ Index(x,y,z) ].u = value;
+		break;
+	case SG_VELV_GRID:
+		buff[ Index(x,y,z) ].v = value;
+		break;
+	case SG_VELW_GRID:
+		buff[ Index(x,y,z) ].w = value;
+		break;
+	case SG_DIV_GRID:
+		buff[ Index(x,y,z) ].div = value;
+		break;
+	case SG_PRES_GRID:
+		buff[ Index(x,y,z) ].p = value;
+		break;
+	case SG_DENS_GRID0:
+		buff[ Index(x,y,z) ].den0 = value;
+		break;
+	case SG_VELU_GRID0:
+		buff[ Index(x,y,z) ].u0 = value;
+		break;
+	case SG_VELV_GRID0:
+		buff[ Index(x,y,z) ].v0 = value;
+		break;
+	case SG_VELW_GRID0:
+		buff[ Index(x,y,z) ].w0 = value;
+		break;
+	}
 };
 
 __device__
@@ -134,9 +190,8 @@ SGNODECODE atomicCheckNodeCord( const int x,const int y, const int z )
 	return SG_NO_DEFINE;
 };
 
-
 __device__
-double atomicGetFromDeviceBuffer( const SGDEVBUFF *buff, const SGGRIDTYPE type,
+double atomicGetDeviceBuffer( const SGDEVBUFF *buff, const SGGRIDTYPE type,
 	const int x, const int y, const int z )
 {
 	const int upper = GRIDS_X * 2;
@@ -154,34 +209,58 @@ double atomicGetFromDeviceBuffer( const SGDEVBUFF *buff, const SGGRIDTYPE type,
 	switch (coord)
 	{
 	case sge::SG_USING_CENTER:
-		value = atomicGetValueFromGrids( buff->ptrCenterGrids, type, x, y, z );
+		if ( buff->ptrCenterGrids not_eq NULL )
+			value = atomicGetValueFromGrids( buff->ptrCenterGrids, type, x, y, z );
 		break;
 	case sge::SG_USING_LEFT:
-		value = atomicGetValueFromGrids( buff->ptrLeftGrids, type, x + GRIDS_X, y, z );
+		if ( buff->ptrLeftGrids not_eq NULL )
+			value = atomicGetValueFromGrids( buff->ptrLeftGrids, type, x + GRIDS_X, y, z );
 		break;
 	case sge::SG_USING_RIGHT:
-		value = atomicGetValueFromGrids( buff->ptrRightGrids, type, x - GRIDS_X, y, z );
+		if ( buff->ptrRightGrids not_eq NULL )
+			value = atomicGetValueFromGrids( buff->ptrRightGrids, type, x - GRIDS_X, y, z );
 		break;
 	case sge::SG_USING_UP:
-		value = atomicGetValueFromGrids( buff->ptrUpGrids, type, x, y - GRIDS_X, z );
+		if ( buff->ptrUpGrids not_eq NULL )
+			value = atomicGetValueFromGrids( buff->ptrUpGrids, type, x, y - GRIDS_X, z );
 		break;
 	case sge::SG_USING_DOWN:
-		value = atomicGetValueFromGrids( buff->ptrDownGrids, type, x, y + GRIDS_X, z );
+		if ( buff->ptrDownGrids not_eq NULL )
+			value = atomicGetValueFromGrids( buff->ptrDownGrids, type, x, y + GRIDS_X, z );
 		break;
 	case sge::SG_USING_FRONT:
-		value = atomicGetValueFromGrids( buff->ptrDownGrids, type, x, y, z - GRIDS_X );
+		if ( buff->ptrFrontGrids not_eq NULL )
+			value = atomicGetValueFromGrids( buff->ptrDownGrids, type, x, y, z - GRIDS_X );
 		break;
 	case sge::SG_USING_BACK:
-		value = atomicGetValueFromGrids( buff->ptrDownGrids, type, x, y, z + GRIDS_X );
-		break;
-	case sge::SG_NO_DEFINE:
-		value = 0.f;
+		if ( buff->ptrBackGrids not_eq NULL )
+			value = atomicGetValueFromGrids( buff->ptrDownGrids, type, x, y, z + GRIDS_X );
 		break;
 	default:
 		break;
 	}
 
 	return value;
+};
+
+__device__
+void atomicSetDeviceBuffer( SGDEVBUFF *buff, const double value, const SGGRIDTYPE type,
+	const int x, const int y, const int z )
+{
+	const int upper = GRIDS_X * 2;
+	const int lower = -GRIDS_X; 
+	
+	/* check the bounds */
+	if ( x < lower or x >= upper ) return ;
+	if ( y < lower or y >= upper ) return ;
+	if ( z < lower or z >= upper ) return ;
+
+	/* check the region */
+	if ( atomicCheckNodeCord( x, y, z ) eqt SG_USING_CENTER )
+	{
+		if ( buff->ptrCenterGrids not_eq NULL )
+			atomicSetValueToGrids( buff->ptrCenterGrids, value, type, x, y, z );
+	}
 };
 
 
@@ -196,15 +275,15 @@ void atomicPickVertices( double *dStores, const SGDEVBUFF *buff, const SGGRIDTYP
 	int j = sground( y );
 	int k = sground( z );
 
-	v000 = atomicGetFromDeviceBuffer( buff, type, i, j, k );
-	v001 = atomicGetFromDeviceBuffer( buff, type, i, j+1, k );
-	v011 = atomicGetFromDeviceBuffer( buff, type, i, j+1, k+1 );
-	v010 = atomicGetFromDeviceBuffer( buff, type, i, j, k+1 );
+	v000 = atomicGetDeviceBuffer( buff, type, i, j, k );
+	v001 = atomicGetDeviceBuffer( buff, type, i, j+1, k );
+	v011 = atomicGetDeviceBuffer( buff, type, i, j+1, k+1 );
+	v010 = atomicGetDeviceBuffer( buff, type, i, j, k+1 );
 
-	v100 = atomicGetFromDeviceBuffer( buff, type, i+1, j, k );
-	v101 = atomicGetFromDeviceBuffer( buff, type, i+1, j+1, k ); 
-	v111 = atomicGetFromDeviceBuffer( buff, type, i+1, j+1, k+1 );
-	v110 = atomicGetFromDeviceBuffer( buff, type, i+1, j, k+1 );
+	v100 = atomicGetDeviceBuffer( buff, type, i+1, j, k );
+	v101 = atomicGetDeviceBuffer( buff, type, i+1, j+1, k ); 
+	v111 = atomicGetDeviceBuffer( buff, type, i+1, j+1, k+1 );
+	v110 = atomicGetDeviceBuffer( buff, type, i+1, j, k+1 );
 };
 
 

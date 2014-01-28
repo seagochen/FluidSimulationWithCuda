@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Dec 12, 2013
-* <Last>		Jan 26, 2013
+* <Last>		Jan 29, 2013
 * <File>        BasicFluidKernels.cu
 */
 
@@ -19,7 +19,7 @@ using namespace sge;
 CUDAHelper m_cudahelper;
 
 __host__
-void hostPreBasicFluidKernel(double **dStores, int **nStores )
+void hostPreBasicFluidKernel( double **dStores, int **nStores, int nPtrs, ... )
 {
 	if ( cudaMalloc( (void**)dStores, sizeof(double) * TPBUFFER_X ) != cudaSuccess )
 	{
@@ -32,6 +32,19 @@ void hostPreBasicFluidKernel(double **dStores, int **nStores )
 		goto Error;
 	}
 
+	va_list ap; double **ptr;
+	va_start( ap, nPtrs );
+	for ( int i = 0; i < nPtrs; i++ )
+	{
+		ptr = va_arg( ap, double** );
+		if ( cudaMalloc( (void**)ptr, sizeof(double) * CUBESIZE_X ) != cudaSuccess )
+		{
+			m_cudahelper.CheckErrors( "malloc temporary stores failed!", __FILE__, __LINE__ );
+			goto Error;
+		}
+	}
+	va_end( ap );
+
 	goto Success;
 
 Error:
@@ -41,6 +54,40 @@ Error:
 
 Success:
 	;
+};
+
+__global__ 
+void kernelCopyBuffer( double *buf, SGCUDAGRID *grids, const SGGRIDTYPE type )
+{
+	GetIndex();
+
+	switch (type)
+	{
+	case SG_DENS_GRID0:
+		buf[ Index(i,j,k) ] = grids[ Index(i,j,k) ].den0;
+		break;
+	case SG_VELU_GRID0:
+		buf[ Index(i,j,k) ] = grids[ Index(i,j,k) ].u0;
+		break;
+	case SG_VELV_GRID0:
+		break;
+	case SG_VELW_GRID0:
+		break;
+	case SG_DENS_GRID:
+		break;
+	case SG_VELU_GRID:
+		break;
+	case SG_VELV_GRID:
+		break;
+	case SG_VELW_GRID:
+		break;
+	case SG_DIV_GRID:
+		break;
+	case SG_PRES_GRID:
+		break;
+	default:
+		break;
+	}
 };
 
 __global__
@@ -65,6 +112,8 @@ void hostAddSource( SGCUDAGRID *grid )
 	kernelAddSource<<<gridDim, blockDim>>>( grid );
 };
 
+#include "InterpKernels.h"
+
 __device__
 void atomicJacobi( double *dStores )
 {
@@ -75,11 +124,10 @@ void atomicJacobi( double *dStores )
 };
 
 __global__
-void kernelJacobi( SGCUDAGRID *grid, double *dStores, 
-	int const type, double const diffusion, double const divisor )
+void kernelJacobi( SGDEVBUFF *buff, double *dStores,
+	const SGJACOBITYPE type, const double diffusion, const double divisor )
 {
 	GetIndex();
-	BeginSimArea();
 
 	jacobi_dif = diffusion;
 	jacobi_div = 0.f;
@@ -88,14 +136,15 @@ void kernelJacobi( SGCUDAGRID *grid, double *dStores,
 	
 	if ( type eqt SG_SOLVE_DENSITY )
 	{
-		jacobi_in = grid[ Index(i,j,k) ].den;
-		jacobi_x0 = grid[ Index(i-1,j,k) ].den0;
-		jacobi_x1 = grid[ Index(i+1,j,k) ].den0;
-		jacobi_y0 = grid[ Index(i,j-1,k) ].den0;
-		jacobi_y1 = grid[ Index(i,j+1,k) ].den0;
-		jacobi_z0 = grid[ Index(i,j,k-1) ].den0;
-		jacobi_z1 = grid[ Index(i,j,k+1) ].den0;
+		jacobi_in = atomicGetDeviceBuffer( buff, SG_DENS_GRID, i, j, k );
+		jacobi_x0 = atomicGetDeviceBuffer( buff, SG_DENS_GRID, i-1,j,k );
+		jacobi_x1 = atomicGetDeviceBuffer( buff, SG_DENS_GRID, i+1,j,k );
+		jacobi_y0 = atomicGetDeviceBuffer( buff, SG_DENS_GRID, i,j-1,k );
+		jacobi_y1 = atomicGetDeviceBuffer( buff, SG_DENS_GRID, i,j+1,k );
+		jacobi_z0 = atomicGetDeviceBuffer( buff, SG_DENS_GRID, i,j,k-1 );
+		jacobi_z1 = atomicGetDeviceBuffer( buff, SG_DENS_GRID, i,j,k+1 );
 		atomicJacobi( dStores );
+		atomicSetDeviceBuffer( buff, SG_DENS_GRID
 		grid[ Index(i,j,k) ].den0 = jacobi_out;
 	}
 	elif ( type eqt SG_SOLVE_VELOCITY )
@@ -134,8 +183,7 @@ void kernelJacobi( SGCUDAGRID *grid, double *dStores,
 		grid[ Index(i,j,k) ].w0 = jacobi_out;
 	}
 
-	EndSimArea();
-}
+};
 
 __host__
 void hostJacobi ( SGCUDAGRID *grid, double *dStores, 
@@ -147,3 +195,4 @@ void hostJacobi ( SGCUDAGRID *grid, double *dStores,
 	for ( int k = 0; k < 20; k++)
 		kernelJacobi<<<gridDim, blockDim>>>( grid, dStores, type, diffusion, divisor );
 };
+

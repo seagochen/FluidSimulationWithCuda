@@ -6,6 +6,7 @@
 */
 
 #include <cuda_runtime_api.h>
+#include "DataStructures.h"
 #include "FunctionHelper.h"
 
 using namespace sge;
