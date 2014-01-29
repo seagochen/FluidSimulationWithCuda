@@ -16,7 +16,8 @@
 #define STEPSIZE            0.001f
 #define DIFFUSION           0.1f
 #define VISOCITY            0.0f 
-#define SOURCE              30
+#define SOURCE_DENSITY      30
+#define SOURCE_VELOCITY     15
 
 #define GRIDS_X             64
 #define NODES_X             3
@@ -44,10 +45,6 @@ namespace sge
 	
 	enum SGGRIDTYPE
 	{
-		SG_DENS_GRID0,
-		SG_VELU_GRID0,
-		SG_VELV_GRID0,
-		SG_VELW_GRID0,
 		SG_DENS_GRID,
 		SG_VELU_GRID,
 		SG_VELV_GRID,
@@ -133,7 +130,6 @@ namespace sge
 		SGBOUNDARY obstacle;
 		SGDOUBLE   div;
 		SGDOUBLE   p;
-		SGDOUBLE   u0, v0, w0, den0;
 	} SGCUDAGRID;
 
 	typedef struct GRIDSPL

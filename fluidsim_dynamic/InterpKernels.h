@@ -44,23 +44,6 @@ double atomicGetValueFromGrids( const GRIDCPX *buff, const SGGRIDTYPE type,
 	case SG_PRES_GRID:
 		value = buff[ Index(x,y,z) ].p;
 		break;
-	case SG_DENS_GRID0:
-		value = buff[ Index(x,y,z) ].den0;
-		break;
-	case SG_VELU_GRID0:
-		value = buff[ Index(x,y,z) ].u0;
-		break;
-	case SG_VELV_GRID0:
-		value = buff[ Index(x,y,z) ].v0;
-		break;
-	case SG_VELW_GRID0:
-		value = buff[ Index(x,y,z) ].w0;
-		break;
-
-
-	default:
-		value = 0.f;
-		break;
 	}
 
 	return value;
@@ -126,18 +109,6 @@ void atomicSetValueToGrids( GRIDCPX *buff, const double value, const SGGRIDTYPE 
 		break;
 	case SG_PRES_GRID:
 		buff[ Index(x,y,z) ].p = value;
-		break;
-	case SG_DENS_GRID0:
-		buff[ Index(x,y,z) ].den0 = value;
-		break;
-	case SG_VELU_GRID0:
-		buff[ Index(x,y,z) ].u0 = value;
-		break;
-	case SG_VELV_GRID0:
-		buff[ Index(x,y,z) ].v0 = value;
-		break;
-	case SG_VELW_GRID0:
-		buff[ Index(x,y,z) ].w0 = value;
 		break;
 	}
 };
@@ -286,9 +257,50 @@ void atomicPickVertices( double *dStores, const SGDEVBUFF *buff, const SGGRIDTYP
 	v110 = atomicGetDeviceBuffer( buff, type, i+1, j, k+1 );
 };
 
+__device__
+void atomicPickVertices( double *dStores, const SGCUDAGRID *buff, const SGGRIDTYPE type,
+	double const x, double const y, double const z )
+{
+	int i = sground( x );
+	int j = sground( y );
+	int k = sground( z );
+
+	v000 = atomicGetValueFromGrids( buff, type, i, j, k );
+	v001 = atomicGetValueFromGrids( buff, type, i, j+1, k );
+	v011 = atomicGetValueFromGrids( buff, type, i, j+1, k+1 );
+	v010 = atomicGetValueFromGrids( buff, type, i, j, k+1 );
+
+	v100 = atomicGetValueFromGrids( buff, type, i+1, j, k );
+	v101 = atomicGetValueFromGrids( buff, type, i+1, j+1, k ); 
+	v111 = atomicGetValueFromGrids( buff, type, i+1, j+1, k+1 );
+	v110 = atomicGetValueFromGrids( buff, type, i+1, j, k+1 );
+};
 
 __device__
 double atomicTrilinear( double *dStores, const SGDEVBUFF *buff, const SGGRIDTYPE type,
+	double const x, double const y, double const z )
+{
+	atomicPickVertices( dStores, buff, type, x, y, z );
+
+	double dx = x - (int)(x);
+	double dy = y - (int)(y);
+	double dz = z - (int)(z);
+
+	double c00 = v000 * ( 1 - dx ) + v001 * dx;
+	double c10 = v010 * ( 1 - dx ) + v011 * dx;
+	double c01 = v100 * ( 1 - dx ) + v101 * dx;
+	double c11 = v110 * ( 1 - dx ) + v111 * dx;
+
+	double c0 = c00 * ( 1 - dy ) + c10 * dy;
+	double c1 = c01 * ( 1 - dy ) + c11 * dy;
+
+	double c = c0 * ( 1 - dz ) + c1 * dz;
+
+	return c;
+};
+
+__device__
+double atomicTrilinear( double *dStores, const SGCUDAGRID *buff, const SGGRIDTYPE type,
 	double const x, double const y, double const z )
 {
 	atomicPickVertices( dStores, buff, type, x, y, z );

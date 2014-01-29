@@ -10,6 +10,7 @@
 
 #include <device_launch_parameters.h>
 #include <string>
+#include "DataStructures.h"
 
 using std::string;
 
@@ -28,6 +29,23 @@ namespace sge
 	public:
 		string string_fmt ( const std::string fmt_str, ... );
 	};
-};
+}
+
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+	extern void hostPreBasicFluidKernel( double **dStores, int **nStores, int nPtrs, ... );
+	extern void hostAddSource( double *buf1, double *buf2, sge::SGCUDAGRID *grids );
+	extern void hostDiffusion( double *buf_old, double *buf_new, sge::SGCUDAGRID *grids,
+		const sge::SGGRIDTYPE type, const double diffusion );
+	extern void hostAdvection( double *buf, double *dStores, 
+		const sge::SGCUDAGRID *grids, const sge::SGGRIDTYPE type );
+	extern void hostProject ( double *vel_u, double *vel_v, double *vel_w,
+		double *div, double *p, sge::SGCUDAGRID *grids );
+#ifdef __cplusplus
+}
+#endif
 
 #endif
