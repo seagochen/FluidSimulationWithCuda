@@ -5,6 +5,10 @@
 * <File>        MainFrameworkDynamic.cpp
 */
 
+#include <GLM\glm.hpp>
+#include <GLM\gtc\matrix_transform.hpp>
+#include <GLM\gtx\transform2.hpp>
+#include <GLM\gtc\type_ptr.hpp>
 #include <iostream>
 #include "MainFrameworkDynamic.h"
 
@@ -205,11 +209,6 @@ GLuint Framework_v1_0::Create2DFrameBuffer ( FLUIDSPARAM *fluid )
 	
 	return framebuffer;
 };
-
-#include <GLM\glm.hpp>
-#include <GLM\gtc\matrix_transform.hpp>
-#include <GLM\gtx\transform2.hpp>
-#include <GLM\gtc\type_ptr.hpp>
 
 void Framework_v1_0::RenderingFace ( GLenum cullFace, FLUIDSPARAM *fluid )
 {
@@ -417,10 +416,10 @@ GLuint Framework_v1_0::CreateVerticesBufferObj ( void )
 * <File>        MainFrameworkDynamic.cpp
 */
 
-static SGMAINACTIVITY   *m_activity;
-static FLUIDSPARAM       m_fluid;
-static AppHelper         m_helper;
-static SGINT             m_index;
+SGMAINACTIVITY   *m_activity;
+FLUIDSPARAM       m_fluid;
+FuncHelper        m_helper;
+SGINT             m_index;
 
 Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height  )
 {

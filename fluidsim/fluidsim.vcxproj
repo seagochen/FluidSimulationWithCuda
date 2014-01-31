@@ -23,6 +23,8 @@
     <ClCompile Include="MainFrameworkDynamic.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CUDADef.h" />
+    <ClInclude Include="CUDAMathLib.h" />
     <ClInclude Include="DataStructures.h" />
     <ClInclude Include="FunctionHelper.h" />
     <ClInclude Include="MainFrameworkDynamic.h" />

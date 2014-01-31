@@ -1,17 +1,20 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Jan 08, 2014
-* <Last>		Jan 26, 2014
+* <Last>		Jan 31, 2014
 * <File>        FunctionHelper.cu
 */
 
-#include <cuda_runtime_api.h>
 #include "DataStructures.h"
 #include "FunctionHelper.h"
+#include <stdarg.h>
+#include <memory>
+#include <SGE\config\ISO646.h>
+#include <cuda_runtime_api.h>
 
 using namespace sge;
 
-void CUDAHelper::CheckErrors( const char* msg, const char *file, const int line )
+SGVOID FuncHelper::CheckErrors( const char* msg, const char *file, const int line )
 {
 	cudaError_t __err = cudaGetLastError();
 	if (__err != cudaSuccess) 
@@ -22,7 +25,7 @@ void CUDAHelper::CheckErrors( const char* msg, const char *file, const int line 
 	}
 };
 
-void CUDAHelper::DeviceDim2D( dim3 *grid_out, dim3 *block_out )
+SGVOID FuncHelper::DeviceDim2D( dim3 *grid_out, dim3 *block_out )
 {
 	block_out->x = TILE_X;
 	block_out->y = TILE_X;
@@ -30,7 +33,7 @@ void CUDAHelper::DeviceDim2D( dim3 *grid_out, dim3 *block_out )
 	grid_out->y  = GRIDS_X / TILE_X;
 };
 
-void CUDAHelper::DeviceDim3D( dim3 *gridDim, dim3 *blockDim )
+SGVOID FuncHelper::DeviceDim3D( dim3 *gridDim, dim3 *blockDim )
 {
 	blockDim->x = (GRIDS_X / TILE_X);
 	blockDim->y = (THREADS_X / TILE_X);
@@ -39,11 +42,7 @@ void CUDAHelper::DeviceDim3D( dim3 *gridDim, dim3 *blockDim )
 		(blockDim->x * blockDim->y * (GRIDS_X / blockDim->x));
 };
 
-#include <stdarg.h>
-#include <memory>
-#include <SGE\config\ISO646.h>
-
-string AppHelper::string_fmt( const std::string fmt_str, ... )
+string FuncHelper::string_fmt( const std::string fmt_str, ... )
 {
 	/* reserve 2 times as much as the length of the fmt_str */
     int final_n, n = fmt_str.size() * 2; 
@@ -65,3 +64,34 @@ string AppHelper::string_fmt( const std::string fmt_str, ... )
     }
     return std::string ( formatted.get() );
 };
+
+SGRUNTIMEMSG FuncHelper::PreBasicFluidKernel( SGINT nPtrs, SGDOUBLE **dStores, ... )
+{
+	/* create CUDA temporary buffer */
+	if ( cudaMalloc( (void**)dStores, sizeof(double) * TPBUFFER_X ) != cudaSuccess )
+	{
+		CheckErrors( "malloc temporary stores failed!", __FILE__, __LINE__ );
+		return SG_MALLOC_SPACE_FAILED;
+	}
+
+	/* malloc device buffer for fluid simulation */
+	double **ptr;
+	va_list ap;
+	const size_t size = GRIDS_X * GRIDS_X * GRIDS_X;
+	va_start( ap, dStores );
+	for ( int i = 0; i < nPtrs; i++ )
+	{
+		ptr = va_arg( ap, double** );
+		if ( cudaMalloc( (void**)ptr, sizeof(double) * size ) != cudaSuccess )
+		{
+			CheckErrors( "malloc temporary stores failed!", __FILE__, __LINE__ );
+			return SG_MALLOC_SPACE_FAILED;
+		}
+	}
+	va_end( ap );
+
+	return SG_RUNTIME_OK;
+};
+
+#include "CUDAMathLib.h"
+

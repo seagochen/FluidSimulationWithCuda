@@ -6,7 +6,6 @@
 */
 
 #include <GL\glew.h>
-#include <GL\freeglut.h>
 #include <GL\glew32c.h>
 #include <SGE\SGUtils.h>
 #include "resource.h"
