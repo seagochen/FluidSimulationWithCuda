@@ -24,7 +24,7 @@ namespace sge
 		SGVOID DeviceDim2D( dim3 *grid_out, dim3 *block_out );
 		SGVOID DeviceDim3D( dim3 *grid_out, dim3 *block_out );
 		string string_fmt ( const std::string fmt_str, ... );
-		SGRUNTIMEMSG PreBasicFluidKernel( SGINT nPtrs, SGDOUBLE **dStores, ... );
+		SGRUNTIMEMSG PrepareBasicFluidKernel( SGINT nPtrs, SGDOUBLE **dStores, ... );
 	};
 }
 

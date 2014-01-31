@@ -101,8 +101,8 @@ namespace sge
 		SG_VELOCITY_U_FIELD,
 		SG_VELOCITY_V_FIELD,
 		SG_VELOCITY_W_FIELD,
-		SG_DIVERGENCE_FIELD,
-		SG_PRESSURE_FIELD,
+	//	SG_DIVERGENCE_FIELD,
+	//	SG_PRESSURE_FIELD,
 	};
 	
 	enum SGUSINGNODE
@@ -124,26 +124,26 @@ namespace sge
 	};
 
 	/* standard format of grids */
-	struct SGSTDGRID
+	typedef struct SGSTDGRID
 	{
 		SGDOUBLE    u, v, w, dens;
 		SGBOUNDARY  obstacle;
-	};
+	}SGGRID;
 
-	/* extend format of grids */
-	struct SGEXTGRID
+	/* structure of host node */
+	struct SGHOSTNODE
 	{
-		SGDOUBLE    u, v, w, dens, div, p;
-		SGBOUNDARY  obstacle;
-	};
-
-	typedef struct HOSTNODE
-	{
-		HOSTNODE   *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+		SGHOSTNODE *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 		SGBOOLEAN   bActive;
 		SGINT3      n3Pos;
 		SGSTDGRID  *prtGrids;
-	} SGHOSTNODE;
+	};
+
+	/*  */
+	struct SGCUDABUFF
+	{
+		SGSTDGRID *ptrCenter, *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+	};
 }
 
 #endif
