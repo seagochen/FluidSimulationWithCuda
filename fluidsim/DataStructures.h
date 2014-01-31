@@ -19,9 +19,10 @@
 #define SOURCE_DENSITY      30
 #define SOURCE_VELOCITY     15
 
-#define GRIDS_X             64
+#define BASIC_X             64
+#define GRIDS_X             BASIC_X+1
 #define NODES_X             3
-#define VOLUME_X            GRIDS_X*NODES_X
+#define VOLUME_X            BASIC_X*NODES_X
 #define THREADS_X           512
 #define TILE_X              16
 #define WINDOWS_X           600
@@ -135,6 +136,7 @@ namespace sge
 	typedef struct GRIDSPL
 	{
 		SGDOUBLE   u, v, w, den;
+		SGBOUNDARY obstacle;
 	} SGHOSTGRID;
 
 	typedef struct HOSTNODE
@@ -142,7 +144,6 @@ namespace sge
 		HOSTNODE  *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 		SGBOOLEAN  bActive;
 		SGINT3     n3Pos;
-		GRIDSPL    *ptrGrids;
 	} SGHOSTNODE;
 
 	typedef struct DEVBUFF
