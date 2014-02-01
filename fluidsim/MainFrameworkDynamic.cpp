@@ -416,9 +416,12 @@ GLuint Framework_v1_0::CreateVerticesBufferObj ( void )
 * <File>        MainFrameworkDynamic.cpp
 */
 
+#include <stdarg.h>
+#include <memory>
+#include <string>
+
 SGMAINACTIVITY   *m_activity;
 FLUIDSPARAM       m_fluid;
-FuncHelper        m_helper;
 SGINT             m_index;
 
 Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height  )
@@ -444,6 +447,29 @@ Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT 
 	m_activity = new SGMAINACTIVITY( width, height, false );
 	*activity = m_activity;
 	cout << "initial stage finished" << endl;
+};
+
+std::string string_fmt( const std::string fmt_str, ... )
+{
+	/* reserve 2 times as much as the length of the fmt_str */
+    int final_n, n = fmt_str.size() * 2; 
+    std::string str;
+    std::unique_ptr<char[]> formatted;
+    va_list ap;
+    while ( true )
+	{
+		/* wrap the plain char array into the unique_ptr */
+        formatted.reset ( new char[n] ); 
+        strcpy ( &formatted[0], fmt_str.c_str() );
+        va_start ( ap, fmt_str );
+        final_n = vsnprintf ( &formatted[0], n, fmt_str.c_str(), ap );
+        va_end ( ap );
+        if ( final_n < 0 or final_n >= n )
+            n += abs( final_n - n + 1 );
+        else
+            break;
+    }
+    return std::string ( formatted.get() );
 };
 
 DWORD WINAPI Framework_v1_0::FluidSimulationProc ( LPVOID lpParam )
@@ -509,7 +535,7 @@ void Framework_v1_0::CountFPS()
 	}
 
 	const char *szTitle = "Excalibur OTL 1.10.00 alpha test  |  FPS: %d  |  dynamic tracking  |";
-	SetWindowText (	m_activity->GetHWND(), m_helper.string_fmt( szTitle, m_fluid.fps.uFPS ).c_str() );
+	SetWindowText (	m_activity->GetHWND(), string_fmt( szTitle, m_fluid.fps.uFPS ).c_str() );
 }
 
 void Framework_v1_0::onDisplay ()
