@@ -47,13 +47,90 @@ __global__ void kernelAddSource( double *buffer, SGSTDGRID *grids, SGFIELDTYPE t
 			break;
 		}
 	}
-
 }
 
-__device__ void atomicBoundary( double *buffer, SGFIELDTYPE type, 
-							   const int i, const int j, const int k  )
+__device__ void atomicDensity( double *buffer, SGSTDGRID *grids, const int i, const int j, const int k  )
 {
-	// TODO
+	int ix = 0;
+	if ( grids[Index(i+1,j,k)].obstacle not_eq SG_BD_WALL ) ix++;
+	if ( grids[Index(i-1,j,k)].obstacle not_eq SG_BD_WALL ) ix++;
+	if ( grids[Index(i,j+1,k)].obstacle not_eq SG_BD_WALL ) ix++;
+	if ( grids[Index(i,j-1,k)].obstacle not_eq SG_BD_WALL ) ix++;
+	if ( grids[Index(i,j,k+1)].obstacle not_eq SG_BD_WALL ) ix++;
+	if ( grids[Index(i,j,k-1)].obstacle not_eq SG_BD_WALL ) ix++;
+
+	if ( ix eqt 0 )
+	{
+		buffer[Index(i,j,k)] = 0.f;
+		return;
+	}
+
+	if ( grids[Index(i+1,j,k)].obstacle not_eq SG_BD_WALL ) buffer[Index(i+1,j,k)] += buffer[Index(i,j,k)] / ix;
+	if ( grids[Index(i-1,j,k)].obstacle not_eq SG_BD_WALL ) buffer[Index(i-1,j,k)] += buffer[Index(i,j,k)] / ix;
+	if ( grids[Index(i,j+1,k)].obstacle not_eq SG_BD_WALL ) buffer[Index(i,j+1,k)] += buffer[Index(i,j,k)] / ix;
+	if ( grids[Index(i,j-1,k)].obstacle not_eq SG_BD_WALL ) buffer[Index(i,j-1,k)] += buffer[Index(i,j,k)] / ix;
+	if ( grids[Index(i,j,k+1)].obstacle not_eq SG_BD_WALL ) buffer[Index(i,j,k+1)] += buffer[Index(i,j,k)] / ix;
+	if ( grids[Index(i,j,k-1)].obstacle not_eq SG_BD_WALL ) buffer[Index(i,j,k-1)] += buffer[Index(i,j,k)] / ix;
+
+	buffer[Index(i,j,k)] = 0.f;
+};
+
+__device__ void atomicVelocity_U( double *buffer, SGSTDGRID *grids, const int i, const int j, const int k )
+{
+	if ( buffer[Index(i,j,k)] >= 0.f )
+	{
+		if ( grids[Index(i-1,j,k)].obstacle not_eq SG_BD_WALL )
+		{
+			buffer[Index(i-1,j,k)] += -buffer[Index(i,j,k)];
+		}
+	}
+	else
+	{
+		if ( grids[Index(i+1,j,k)].obstacle not_eq SG_BD_WALL )
+		{
+			buffer[Index(i+1,j,k)] += -buffer[Index(i,j,k)];
+		}
+	}
+};
+
+__device__ void atomicVelocity_V( double *buffer, SGSTDGRID *grids, const int i, const int j, const int k )
+{
+	if ( buffer[Index(i,j,k)] >= 0.f )
+	{
+		if ( grids[Index(i,j-1,k)].obstacle not_eq SG_BD_WALL )
+		{
+			buffer[Index(i,j-1,k)] += -buffer[Index(i,j,k)];
+		}
+	}
+	else
+	{
+		if ( grids[Index(i,j+1,k)].obstacle not_eq SG_BD_WALL )
+		{
+			buffer[Index(i,j+1,k)] += -buffer[Index(i,j,k)];
+		}
+	}
+
+	buffer[Index(i,j,k)] = 0.f;
+};
+
+__device__ void atomicVelocity_W( double *buffer, SGSTDGRID *grids, const int i, const int j, const int k )
+{
+	if ( buffer[Index(i,j,k)] >= 0.f )
+	{
+		if ( grids[Index(i,j,k-1)].obstacle not_eq SG_BD_WALL )
+		{
+			buffer[Index(i,j,k-1)] += -buffer[Index(i,j,k)];
+		}
+	}
+	else
+	{
+		if ( grids[Index(i,j,k+1)].obstacle not_eq SG_BD_WALL )
+		{
+			buffer[Index(i,j,k+1)] += -buffer[Index(i,j,k)];
+		}
+	}
+
+	buffer[Index(i,j,k)] = 0.f;
 };
 
 __global__ void kernelBoundary( double *buffer, SGSTDGRID *grids, SGFIELDTYPE type )
@@ -65,30 +142,83 @@ __global__ void kernelBoundary( double *buffer, SGSTDGRID *grids, SGFIELDTYPE ty
 		switch ( type )
 		{
 		case SG_DENSITY_FIELD:
-			buffer[Index(i,j,k)] = grids[Index(i,j,k)].dens = 0.f;
+			atomicDensity( buffer, grids, i, j, k );
 			break;
 		case SG_VELOCITY_U_FIELD:
-			buffer[Index(i,j,k)] = grids[Index(i,j,k)].u = 0.f;
+			atomicVelocity_U( buffer, grids, i, j, k );
 			break;
 		case SG_VELOCITY_V_FIELD:
-			buffer[Index(i,j,k)] = grids[Index(i,j,k)].v = 0.f;;
+			atomicVelocity_V( buffer, grids, i, j, k );
 			break;
 		case SG_VELOCITY_W_FIELD:
-			buffer[Index(i,j,k)] = grids[Index(i,j,k)].w = 0.f;
+			atomicVelocity_W( buffer, grids, i, j, k );
 			break;
-//		case SG_DIVERGENCE_FIELD:
-//			buffer[Index(i,j,k)] = grids[Index(i,j,k)].div = 0.f;
-//			break;
-//		case SG_PRESSURE_FIELD:
-//			buffer[Index(i,j,k)] = grids[Index(i,j,k)].p = 0.f;
-//			break;
-
 		default:
 			break;
 		}
 	}
+};
 
-	atomicBoundary( buffer, type, i, j, k );
+__global__ void kernelSmoothHalo( double *buffer, double *stores, SGDEVICEBUFF *global, SGFIELDTYPE type )
+{
+	GetIndex();
+
+	buffer[ Index(i,j,gst_header) ] += atomicTrilinear( stores, global, type, i, j, gst_header );
+	buffer[ Index(i,j,gst_tailer) ] += atomicTrilinear( stores, global, type, i, j, gst_tailer );
+	buffer[ Index(i,gst_header,k) ] += atomicTrilinear( stores, global, type, i, gst_header, k );
+	buffer[ Index(i,gst_tailer,k) ] += atomicTrilinear( stores, global, type, i, gst_tailer, k );
+	buffer[ Index(gst_header,j,k) ] += atomicTrilinear( stores, global, type, gst_header, j, k );
+	buffer[ Index(gst_tailer,j,k) ] += atomicTrilinear( stores, global, type, gst_tailer, j, k );
+
+	if ( i eqt gst_header or i eqt gst_tailer ) 
+	{
+		if ( j eqt gst_header or j eqt gst_tailer )
+		{
+			if ( k eqt gst_header or k eqt gst_tailer )
+			{
+				/* vertices */
+				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 3.f;
+			}
+			elif ( k not_eq gst_header and k not_eq gst_tailer )
+			{
+				/* edges x 4 */
+				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 2.f;
+			}
+		}
+	}
+
+	if ( i eqt gst_header or i eqt gst_tailer ) 
+	{
+		if ( k eqt gst_header or k eqt gst_tailer )
+		{
+			if ( j not_eq gst_header and j not_eq gst_tailer )
+			{
+				/* edges x 4 */
+				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 2.f;
+			}
+		}
+	}
+
+	if ( j eqt gst_header or j eqt gst_tailer )
+	{
+		if ( k eqt gst_header or k eqt gst_tailer )
+		{
+			if ( i not_eq gst_header and i not_eq gst_tailer )
+			{
+				/* edges x 4 */
+				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 2.f;
+			}
+		}
+	}
+};
+
+__host__ void hostBoundary( double *buffer, double *stores, SGDEVICEBUFF *global, SGFIELDTYPE type )
+{
+	dim3 gridDim, blockDim;
+	m_helper.DeviceDim3Dx( &gridDim, &blockDim );
+	
+	kernelBoundary<<<gridDim, blockDim>>>( buffer, global->ptrCenter, type );
+	kernelSmoothHalo<<<gridDim, blockDim>>>( buffer, stores, global, type );
 };
 
 __global__ void kernelJacobi( double *grid_out, double const *grid_in, 
@@ -191,6 +321,47 @@ __host__ void hostProject( double *vel_u, double *vel_v, double *vel_w, double *
 	// now subtract this gradient from our current velocity field
 	kernelSubtract <<<gridDim, blockDim>>> (vel_u, vel_v, vel_w, p);
 };
+
+__global__ void kernelOutFlow( double *buffer, const SGDEVICEBUFF *global, SGFIELDTYPE type, SGNODECOORD coord )
+{
+	GetIndex();
+
+	switch (coord)
+	{
+	case sge::SG_LEFT:
+		buffer[Index(gst_tailer, j, k)] += atomicGetDeviceBuffer( global, type, gst_header, j, k );
+		buffer[Index(gst_tailer, j, k)] /= 2.f;
+		break;
+	case sge::SG_RIGHT:
+		buffer[Index(gst_header, j, k)] += atomicGetDeviceBuffer( global, type, gst_tailer, j, k );
+		buffer[Index(gst_header, j, k)] /= 2.f;
+		break;
+	case sge::SG_UP:
+		buffer[Index(i, gst_header, k)] += atomicGetDeviceBuffer( global, type, i, gst_tailer, k );
+		buffer[Index(i, gst_header, k)] /= 2.f;
+		break;
+	case sge::SG_DOWN:
+		buffer[Index(i, gst_tailer, k)] += atomicGetDeviceBuffer( global, type, i, gst_header, k );
+		buffer[Index(i, gst_tailer, k)] /= 2.f;
+		break;
+	case sge::SG_FRONT:
+		buffer[Index(i, j, gst_header)] += atomicGetDeviceBuffer( global, type, i, j, gst_tailer );
+		buffer[Index(i, j, gst_header)] /= 2.f;
+		break;
+	case sge::SG_BACK:
+		buffer[Index(i, j, gst_tailer)] += atomicGetDeviceBuffer( global, type, i, j, gst_header );
+		buffer[Index(i, j, gst_tailer)] /= 2.f;
+		break;
+
+	default:
+		break;
+	}
+
+
+};
+
+namespace sge
+{
 
 SGVOID CUDAFuncHelper::CheckRuntimeErrors( const char* msg, const char *file, const int line )
 {
@@ -328,15 +499,10 @@ void CUDAFuncHelper::CopyData
 	}
 };
 
+};
 
 namespace sge
 {
-	__host__ void Boundary( double *buffer, SGSTDGRID *grids, SGFIELDTYPE type )
-	{
-		dim3 gridDim, blockDim;
-		m_helper.DeviceDim3Dx( &gridDim, &blockDim );
-	};
-
 	__host__ void VelocitySolver( double *u, double *v, double *w, double *div, double *p,
 		double *u0, double *v0, double *w0,
 		SGDEVICEBUFF *global, double *stores )
@@ -360,6 +526,11 @@ namespace sge
 
 		/* stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field) */
 		hostProject( u, v, w, div, p );
+
+		/* boundary condition */
+		hostBoundary( u, stores, global, SG_VELOCITY_U_FIELD );
+		hostBoundary( v, stores, global, SG_VELOCITY_V_FIELD );
+		hostBoundary( w, stores, global, SG_VELOCITY_W_FIELD );
 		
 		/* retrieve data */
 		m_helper.CopyData( global, u, SG_VELOCITY_U_FIELD, SG_CENTER );
@@ -378,27 +549,32 @@ namespace sge
 		kernelSwapBuffer<<<gridDim, blockDim>>> ( v0, v );
 		kernelSwapBuffer<<<gridDim, blockDim>>> ( w0, w );
 
+		/* boundary condition */
+		hostBoundary( u, stores, global, SG_VELOCITY_U_FIELD );
+		hostBoundary( v, stores, global, SG_VELOCITY_V_FIELD );
+		hostBoundary( w, stores, global, SG_VELOCITY_W_FIELD );
+
 		/* retrieve data */
 		m_helper.CopyData( global, u, SG_VELOCITY_U_FIELD, SG_CENTER );
 		m_helper.CopyData( global, v, SG_VELOCITY_V_FIELD, SG_CENTER );
 		m_helper.CopyData( global, w, SG_VELOCITY_W_FIELD, SG_CENTER );
 	}
 
-	__host__ void DensitySolver( double *u, double *v, double *w, double *dens, double *dens0,
-		SGDEVICEBUFF *global, double *stores )
+	__host__ void DensitySolver( double *dens, double *dens0, SGDEVICEBUFF *global, double *stores )
 	{
 		dim3 gridDim, blockDim;
 		m_helper.DeviceDim3Dx( &gridDim, &blockDim );
 	
 		/* copy data to temporary buffer */
-		m_helper.CopyData( u, global, SG_VELOCITY_U_FIELD, SG_CENTER );
-		m_helper.CopyData( v, global, SG_VELOCITY_V_FIELD, SG_CENTER );
-		m_helper.CopyData( w, global, SG_VELOCITY_W_FIELD, SG_CENTER );
 		m_helper.CopyData( dens, global, SG_DENSITY_FIELD, SG_CENTER );
 	
 		/* advection */
 		hostJacobi( dens0, dens, DIFFUSION );
+		kernelSwapBuffer <<<gridDim, blockDim>>> ( dens0, dens );
 		hostAdvection( dens, stores, global, SG_DENSITY_FIELD );
+
+		/* boundary condition */
+		hostBoundary( dens, stores, global, SG_DENSITY_FIELD );
 
 		/* retrive data */
 		m_helper.CopyData( global, dens, SG_DENSITY_FIELD, SG_CENTER );
@@ -409,6 +585,44 @@ namespace sge
 		dim3 gridDim, blockDim;
 		m_helper.DeviceDim3Dx( &gridDim, &blockDim );
 		kernelAddSource <<<gridDim, blockDim>>> ( buffer, grids, type );
+	};
+
+
+	__host__ void HaloDataExchange( double *buffer, SGDEVICEBUFF *global, SGFIELDTYPE type, SGNODECOORD coord )
+	{
+		dim3 gridDim, blockDim;
+		m_helper.DeviceDim3Dx( &gridDim, &blockDim );
+
+		switch (coord)
+		{
+		case sge::SG_LEFT:
+			m_helper.CopyData( buffer, global, type, SG_LEFT );
+			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_LEFT );
+			break;
+		case sge::SG_RIGHT:
+			m_helper.CopyData( buffer, global, type, SG_RIGHT );
+			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_RIGHT );
+			break;
+		case sge::SG_UP:
+			m_helper.CopyData( buffer, global, type, SG_UP );
+			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_UP );
+			break;
+		case sge::SG_DOWN:
+			m_helper.CopyData( buffer, global, type, SG_DOWN );
+			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_DOWN );
+			break;
+		case sge::SG_FRONT:
+			m_helper.CopyData( buffer, global, type, SG_FRONT );
+			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_FRONT );
+			break;
+		case sge::SG_BACK:
+			m_helper.CopyData( buffer, global, type, SG_BACK );
+			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_BACK );
+			break;
+
+		default:
+			break;
+		}
 	};
 
 };

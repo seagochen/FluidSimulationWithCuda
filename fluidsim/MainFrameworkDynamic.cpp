@@ -1,7 +1,7 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 16, 2013
-* <Last>		Jan 13, 2014
+* <Last>		Feb 01, 2014
 * <File>        MainFrameworkDynamic.cpp
 */
 
@@ -409,12 +409,6 @@ GLuint Framework_v1_0::CreateVerticesBufferObj ( void )
 	return cluster;
 };
 
-/**
-* <Author>      Orlando Chen
-* <First>       Oct 16, 2013
-* <Last>		Jan 25, 2014
-* <File>        MainFrameworkDynamic.cpp
-*/
 
 #include <stdarg.h>
 #include <memory>
@@ -483,7 +477,7 @@ DWORD WINAPI Framework_v1_0::FluidSimulationProc ( LPVOID lpParam )
 	return 0;
 };
 
-void Framework_v1_0::onCreate ()
+void Framework_v1_0::onCreate()
 {
 	/* initialize glew */
 	GLenum error = glewInit ();
@@ -538,7 +532,7 @@ void Framework_v1_0::CountFPS()
 	SetWindowText (	m_activity->GetHWND(), string_fmt( szTitle, m_fluid.fps.uFPS ).c_str() );
 }
 
-void Framework_v1_0::onDisplay ()
+void Framework_v1_0::onDisplay()
 {
 	glEnable ( GL_DEPTH_TEST );
 	
@@ -568,7 +562,7 @@ void Framework_v1_0::onDisplay ()
 	CountFPS ();
 };
 
-void Framework_v1_0::onDestroy ()
+void Framework_v1_0::onDestroy()
 {
 	m_fluid.ray.bRun = false;
 	WaitForSingleObject ( m_fluid.thread.hThread, INFINITE );
@@ -582,7 +576,7 @@ void Framework_v1_0::onDestroy ()
 	exit(1);
 };
 
-void Framework_v1_0::onKeyboard ( SGKEYS keys, SGKEYSTATUS status )
+void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 {
 	int nodes = NODES_X * NODES_X * NODES_X;
 
@@ -615,7 +609,7 @@ void Framework_v1_0::onKeyboard ( SGKEYS keys, SGKEYSTATUS status )
 	}
 };
 
-void Framework_v1_0::onMouse ( SGMOUSE mouse, unsigned x, unsigned y, int degree )
+void Framework_v1_0::onMouse( SGMOUSE mouse, unsigned x, unsigned y, int degree )
 {
 	if ( mouse eqt SGMOUSE::SG_MOUSE_WHEEL_FORWARD or mouse eqt SGMOUSE::SG_MOUSE_WHEEL_BACKWARD )
 	{

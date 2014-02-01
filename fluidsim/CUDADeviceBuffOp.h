@@ -161,6 +161,7 @@ __device__ double atomicGetDeviceBuffer( const SGDEVICEBUFF *buff, const SGFIELD
 			value = atomicGetValue( buff->ptrBack, type, x, y, z + GRIDS_X );
 		break;
 	default:
+		value = 0.f;
 		break;
 	}
 
@@ -301,5 +302,22 @@ __global__ void kernelSwapBuffer ( double *grid1, double *grid2 )
 	grid2 [ Index(i,j,k) ] = temp;
 };
 
+__global__ void kernelPickData ( unsigned char *data, double const *grid, 
+	int const offseti, int const offsetj, int const offsetk )
+{
+	GetIndex();
+
+	int di = offseti + i;
+	int dj = offsetj + j;
+	int dk = offsetk + k;
+
+	/* zero data first */
+	data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
+
+	/* retrieve data from grid */
+	int temp = sground ( grid[ Index(i,j,k)] );
+	if ( temp > 0 and temp < 250 )
+		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (unsigned char) temp;
+};
 
 #endif

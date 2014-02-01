@@ -11,8 +11,6 @@
 #include <device_launch_parameters.h>
 #include "DataStructures.h"
 
-using std::string;
-
 namespace sge
 {
 	enum SGBOUNDARY
@@ -79,19 +77,16 @@ namespace sge
 		SGRUNTIMEMSG CreateDoubleBuffers( SGINT size, SGINT nPtrs, ... );
 		SGRUNTIMEMSG CreateIntegerBuffers( SGINT size, SGINT nPtrs, ... );
 
-		void CopyData
-			( SGDOUBLE *buffer, const SGDEVICEBUFF *devbuffs, SGFIELDTYPE type, SGNODECOORD coord );
-		void CopyData
-			( SGDEVICEBUFF *devbuffs, const SGDOUBLE *buffer, SGFIELDTYPE type, SGNODECOORD coord );
+		void CopyData( SGDOUBLE *buffer, const SGDEVICEBUFF *devbuffs, SGFIELDTYPE type, SGNODECOORD coord );
+		void CopyData( SGDEVICEBUFF *devbuffs, const SGDOUBLE *buffer, SGFIELDTYPE type, SGNODECOORD coord );
 	};
 
-	extern void Boundary( double *buffer, SGSTDGRID *grids, SGFIELDTYPE type );
-	extern void VelocitySolver( double *u, double *v, double *w, double *div, double *p,
-							 double *u0, double *v0, double *w0,
-							SGDEVICEBUFF *global, double *stores );
-	extern void DensitySolver ( double *u, double *v, double *w, double *dens, double *dens0,
-							SGDEVICEBUFF *global, double *stores );
+	extern void VelocitySolver
+		( double *u, double *v, double *w, double *div, double *p,
+		double *u0, double *v0, double *w0, SGDEVICEBUFF *global, double *stores );
+	extern void DensitySolver ( double *dens, double *dens0, SGDEVICEBUFF *global, double *stores );
 	extern void AddSource( double *buffer, SGSTDGRID *grids, SGFIELDTYPE type );
+	extern void HaloDataExchange( double *buffer, SGDEVICEBUFF *global, SGFIELDTYPE type, SGNODECOORD coord );
 };
 
 #endif
