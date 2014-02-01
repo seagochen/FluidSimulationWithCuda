@@ -1,16 +1,15 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Jan 23, 2014
-* <Last>		Jan 28, 2014
+* <Last>		Jan 31, 2014
 * <File>        DataStructures.h
 */
 
 #ifndef __data_and_structures_h_
 #define __data_and_structures_h_
 
-#include <cuda_runtime.h>
-#include <GL\freeglut.h>
 #include <SGE\SGUtils.h>
+#include <device_launch_parameters.h>
 
 #define DELTATIME           0.5f
 #define STEPSIZE            0.001f
@@ -19,16 +18,14 @@
 #define SOURCE_DENSITY      30
 #define SOURCE_VELOCITY     15
 
-#define BASIC_X             64
-#define GRIDS_X             BASIC_X+1
-#define NODES_X             3
-#define VOLUME_X            BASIC_X*NODES_X
-#define THREADS_X           512
-#define TILE_X              16
-#define WINDOWS_X           600
-#define CANVAS_X            600
-#define CUBESIZE_X          GRIDS_X*GRIDS_X*GRIDS_X
-#define TPBUFFER_X          1024
+#define GRIDS_X             64     // extend grids on one dimension is 65
+#define NODES_X             3      // standard nodes on one dimension is 3
+#define VOLUME_X            192    // rendering box on one dimension is 3x64=192
+#define THREADS_X           512    // standard GPU-threads per sm
+#define TILE_X              16     // 16x16 GPU-threads as a block
+#define WINDOWS_X           600    // Windows application's size
+#define CANVAS_X            600    // canvas's size
+#define TPBUFFER_X          1024   // size of GPU temporary buffer is 1024, as shared memory
 
 namespace sge
 {
@@ -36,41 +33,6 @@ namespace sge
 	typedef double4 SGDOUBLE4;
 	typedef int3    SGINT3;
 	typedef int4    SGINT4;
-
-	enum SGBOUNDARY
-	{
-		SG_BD_SOURCE,
-		SG_BD_BLANK,
-		SG_BD_WALL,
-	};
-	
-	enum SGGRIDTYPE
-	{
-		SG_DENS_GRID,
-		SG_VELU_GRID,
-		SG_VELV_GRID,
-		SG_VELW_GRID,
-		SG_DIV_GRID,
-		SG_PRES_GRID,
-	};
-	
-	enum SGNODECODE
-	{
-		SG_USING_CENTER,
-		SG_USING_LEFT,
-		SG_USING_RIGHT,
-		SG_USING_UP,
-		SG_USING_DOWN,
-		SG_USING_FRONT,
-		SG_USING_BACK,
-		SG_NO_DEFINE,
-	};
-	
-	enum SGJACOBITYPE
-	{
-		SG_SOLVE_DENSITY,
-		SG_SOLVE_VELOCITY,
-	};
 
 	typedef struct FLUIDSPARAM
 	{
@@ -123,39 +85,8 @@ namespace sge
 		THREAD   thread;
 		FPS      fps;
 
-	}SGFLUIDVARS;
+	} SGFLUIDVARS;
 
-	typedef struct GRIDCPX
-	{
-		SGDOUBLE   u, v, w, den;
-		SGBOUNDARY obstacle;
-		SGDOUBLE   div;
-		SGDOUBLE   p;
-	} SGCUDAGRID;
-
-	typedef struct GRIDSPL
-	{
-		SGDOUBLE   u, v, w, den;
-		SGBOUNDARY obstacle;
-	} SGHOSTGRID;
-
-	typedef struct HOSTNODE
-	{
-		HOSTNODE  *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
-		SGBOOLEAN  bActive;
-		SGINT3     n3Pos;
-	} SGHOSTNODE;
-
-	typedef struct DEVBUFF
-	{
-		GRIDCPX *ptrCenterGrids;
-		GRIDSPL *ptrLeftGrids;
-		GRIDSPL *ptrRightGrids;
-		GRIDSPL *ptrUpGrids;
-		GRIDSPL *ptrDownGrids;
-		GRIDSPL *ptrFrontGrids;
-		GRIDSPL *ptrBackGrids;
-	} SGDEVBUFF;
 
 }
 

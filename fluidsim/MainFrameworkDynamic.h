@@ -12,7 +12,6 @@
 #include <GL\freeglut.h>
 #include <SGE\SGUtils.h>
 #include "DataStructures.h"
-#include "FunctionHelper.h"
 
 namespace sge
 {

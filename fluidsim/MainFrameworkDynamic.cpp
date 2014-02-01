@@ -1,10 +1,14 @@
 /**
 * <Author>      Orlando Chen
 * <First>       Oct 16, 2013
-* <Last>		Jan 13, 2014
+* <Last>		Feb 01, 2014
 * <File>        MainFrameworkDynamic.cpp
 */
 
+#include <GLM\glm.hpp>
+#include <GLM\gtc\matrix_transform.hpp>
+#include <GLM\gtx\transform2.hpp>
+#include <GLM\gtc\type_ptr.hpp>
 #include <iostream>
 #include "MainFrameworkDynamic.h"
 
@@ -206,11 +210,6 @@ GLuint Framework_v1_0::Create2DFrameBuffer ( FLUIDSPARAM *fluid )
 	return framebuffer;
 };
 
-#include <GLM\glm.hpp>
-#include <GLM\gtc\matrix_transform.hpp>
-#include <GLM\gtx\transform2.hpp>
-#include <GLM\gtc\type_ptr.hpp>
-
 void Framework_v1_0::RenderingFace ( GLenum cullFace, FLUIDSPARAM *fluid )
 {
 	GLfloat angle  = fluid->ray.nAngle;
@@ -410,17 +409,14 @@ GLuint Framework_v1_0::CreateVerticesBufferObj ( void )
 	return cluster;
 };
 
-/**
-* <Author>      Orlando Chen
-* <First>       Oct 16, 2013
-* <Last>		Jan 25, 2014
-* <File>        MainFrameworkDynamic.cpp
-*/
 
-static SGMAINACTIVITY   *m_activity;
-static FLUIDSPARAM       m_fluid;
-static AppHelper         m_helper;
-static SGINT             m_index;
+#include <stdarg.h>
+#include <memory>
+#include <string>
+
+SGMAINACTIVITY   *m_activity;
+FLUIDSPARAM       m_fluid;
+SGINT             m_index;
 
 Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height  )
 {
@@ -447,6 +443,29 @@ Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT 
 	cout << "initial stage finished" << endl;
 };
 
+std::string string_fmt( const std::string fmt_str, ... )
+{
+	/* reserve 2 times as much as the length of the fmt_str */
+    int final_n, n = fmt_str.size() * 2; 
+    std::string str;
+    std::unique_ptr<char[]> formatted;
+    va_list ap;
+    while ( true )
+	{
+		/* wrap the plain char array into the unique_ptr */
+        formatted.reset ( new char[n] ); 
+        strcpy ( &formatted[0], fmt_str.c_str() );
+        va_start ( ap, fmt_str );
+        final_n = vsnprintf ( &formatted[0], n, fmt_str.c_str(), ap );
+        va_end ( ap );
+        if ( final_n < 0 or final_n >= n )
+            n += abs( final_n - n + 1 );
+        else
+            break;
+    }
+    return std::string ( formatted.get() );
+};
+
 DWORD WINAPI Framework_v1_0::FluidSimulationProc ( LPVOID lpParam )
 {
 	/* solve the fluid simulation */
@@ -458,7 +477,7 @@ DWORD WINAPI Framework_v1_0::FluidSimulationProc ( LPVOID lpParam )
 	return 0;
 };
 
-void Framework_v1_0::onCreate ()
+void Framework_v1_0::onCreate()
 {
 	/* initialize glew */
 	GLenum error = glewInit ();
@@ -510,10 +529,10 @@ void Framework_v1_0::CountFPS()
 	}
 
 	const char *szTitle = "Excalibur OTL 1.10.00 alpha test  |  FPS: %d  |  dynamic tracking  |";
-	SetWindowText (	m_activity->GetHWND(), m_helper.string_fmt( szTitle, m_fluid.fps.uFPS ).c_str() );
+	SetWindowText (	m_activity->GetHWND(), string_fmt( szTitle, m_fluid.fps.uFPS ).c_str() );
 }
 
-void Framework_v1_0::onDisplay ()
+void Framework_v1_0::onDisplay()
 {
 	glEnable ( GL_DEPTH_TEST );
 	
@@ -543,7 +562,7 @@ void Framework_v1_0::onDisplay ()
 	CountFPS ();
 };
 
-void Framework_v1_0::onDestroy ()
+void Framework_v1_0::onDestroy()
 {
 	m_fluid.ray.bRun = false;
 	WaitForSingleObject ( m_fluid.thread.hThread, INFINITE );
@@ -557,7 +576,7 @@ void Framework_v1_0::onDestroy ()
 	exit(1);
 };
 
-void Framework_v1_0::onKeyboard ( SGKEYS keys, SGKEYSTATUS status )
+void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 {
 	int nodes = NODES_X * NODES_X * NODES_X;
 
@@ -590,7 +609,7 @@ void Framework_v1_0::onKeyboard ( SGKEYS keys, SGKEYSTATUS status )
 	}
 };
 
-void Framework_v1_0::onMouse ( SGMOUSE mouse, unsigned x, unsigned y, int degree )
+void Framework_v1_0::onMouse( SGMOUSE mouse, unsigned x, unsigned y, int degree )
 {
 	if ( mouse eqt SGMOUSE::SG_MOUSE_WHEEL_FORWARD or mouse eqt SGMOUSE::SG_MOUSE_WHEEL_BACKWARD )
 	{

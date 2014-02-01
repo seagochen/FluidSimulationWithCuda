@@ -23,8 +23,11 @@
     <ClCompile Include="MainFrameworkDynamic.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CUDADef.h" />
+    <ClInclude Include="CUDADeviceBuffOp.h" />
+    <ClInclude Include="CUDAMathLib.h" />
     <ClInclude Include="DataStructures.h" />
-    <ClInclude Include="FunctionHelper.h" />
+    <ClInclude Include="CUDAFunctionHelper.h" />
     <ClInclude Include="MainFrameworkDynamic.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
@@ -41,7 +44,7 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FunctionHelper.cu" />
+    <CudaCompile Include="Kernels.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A2E2ED4E-D77D-4CCD-B62A-11FF84812774}</ProjectGuid>
