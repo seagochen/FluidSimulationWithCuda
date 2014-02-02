@@ -71,9 +71,12 @@
     <ClInclude Include="CUDADeviceBuffOp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FluidSimProc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="Kernels.cu">
+    <CudaCompile Include="BasicKernels.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>

@@ -28,6 +28,7 @@
     <ClInclude Include="CUDAMathLib.h" />
     <ClInclude Include="DataStructures.h" />
     <ClInclude Include="CUDAFunctionHelper.h" />
+    <ClInclude Include="FluidSimProc.h" />
     <ClInclude Include="MainFrameworkDynamic.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
@@ -44,7 +45,7 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="Kernels.cu" />
+    <CudaCompile Include="BasicKernels.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A2E2ED4E-D77D-4CCD-B62A-11FF84812774}</ProjectGuid>

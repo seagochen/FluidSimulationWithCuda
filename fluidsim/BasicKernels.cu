@@ -2,7 +2,7 @@
 * <Author>      Orlando Chen
 * <First>       Jan 08, 2014
 * <Last>		Feb 01, 2014
-* <File>        Kernels.cu
+* <File>        BasicKernels.cu
 */
 
 #include <iostream>
@@ -593,36 +593,9 @@ namespace sge
 		dim3 gridDim, blockDim;
 		m_helper.DeviceDim3Dx( &gridDim, &blockDim );
 
-		switch (coord)
-		{
-		case sge::SG_LEFT:
-			m_helper.CopyData( buffer, global, type, SG_LEFT );
-			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_LEFT );
-			break;
-		case sge::SG_RIGHT:
-			m_helper.CopyData( buffer, global, type, SG_RIGHT );
-			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_RIGHT );
-			break;
-		case sge::SG_UP:
-			m_helper.CopyData( buffer, global, type, SG_UP );
-			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_UP );
-			break;
-		case sge::SG_DOWN:
-			m_helper.CopyData( buffer, global, type, SG_DOWN );
-			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_DOWN );
-			break;
-		case sge::SG_FRONT:
-			m_helper.CopyData( buffer, global, type, SG_FRONT );
-			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_FRONT );
-			break;
-		case sge::SG_BACK:
-			m_helper.CopyData( buffer, global, type, SG_BACK );
-			kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, SG_BACK );
-			break;
-
-		default:
-			break;
-		}
+		m_helper.CopyData( buffer, global, type, coord );
+		kernelOutFlow<<<gridDim, blockDim>>>( buffer, global, type, coord );
+		m_helper.CopyData( global, buffer, type, coord );
 	};
 
 };
