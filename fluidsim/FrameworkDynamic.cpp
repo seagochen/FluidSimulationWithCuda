@@ -1,8 +1,9 @@
 /**
-* <Author>      Orlando Chen
-* <First>       Oct 16, 2013
-* <Last>		Feb 01, 2014
-* <File>        MainFrameworkDynamic.cpp
+* <Author>        Orlando Chen
+* <Email>         seagochen@gmail.com
+* <First Time>    Oct 16, 2013
+* <Last Time>     Feb 01, 2014
+* <File Name>     FrameworkDynamic.cpp
 */
 
 #include <GLM\glm.hpp>
@@ -10,27 +11,33 @@
 #include <GLM\gtx\transform2.hpp>
 #include <GLM\gtc\type_ptr.hpp>
 #include <iostream>
-#include "MainFrameworkDynamic.h"
+#include "FrameworkDynamic.h"
 
 using namespace sge;
+using namespace glm;
+
 using std::cout;
 using std::endl;
 
+/* 检查着色器句柄是否有错误  */
 bool Framework_v1_0::CheckHandleError ( int nShaderObjs, ... )
 {
+	/* 当创建的着色器小于1个时，报错 */
 	if ( nShaderObjs < 1 )
 	{
 		cout << "parameters error, check your code..." << endl;
 		return false;
 	}
 	
+	/* 对创建的着色器进行检查，若发现有错误，报错 */
 	va_list list; int i = 1; bool fin = true;
 	va_start ( list, nShaderObjs );
 	{
 		for ( ; i <= nShaderObjs; i++ )
 		{
 			GLuint value = va_arg ( list, GLuint );
-			if ( value == 0 )
+
+			if ( value eqt 0 ) // 发现当前句柄存在错误，报错
 			{
 				cout << "Error> the No." << i << " handle is null" << endl;
 				fin = false;
@@ -42,48 +49,53 @@ bool Framework_v1_0::CheckHandleError ( int nShaderObjs, ... )
 	return fin;
 };
 
+
+/* 创建着色器句柄及着色程序 */
 void Framework_v1_0::CreateShaderProg ( FLUIDSPARAM *fluid )
 {
-	GLuint *prog_out   = &fluid->shader.hProgram;
-	GLuint *bfVert_out = &fluid->shader.hBFVert;
-	GLuint *bfFrag_out = &fluid->shader.hBFFrag;
-	GLuint *rcVert_out = &fluid->shader.hRCVert;
-	GLuint *rcFrag_out = &fluid->shader.hRCFrag;
+	/* 创建指针指向着色器及着色器程序 */
+	SGHANDLER *prog_out   = &fluid->shader.hProgram;
+	SGHANDLER *bfVert_out = &fluid->shader.hBFVert;
+	SGHANDLER *bfFrag_out = &fluid->shader.hBFFrag;
+	SGHANDLER *rcVert_out = &fluid->shader.hRCVert;
+	SGHANDLER *rcFrag_out = &fluid->shader.hRCFrag;
 
-	// Create shader helper
+	/* 创建着色器程序 */
 	SGSHADER *shader_out = new SGSHADER();
 
-	// Create shader objects from source
+	/* 使用着色器程序读取GLSL代码，并创建着色器 */
 	shader_out->CreateShaderObj ( fluid->shader.szCanvasVert, SG_VERTEX,   bfVert_out );
 	shader_out->CreateShaderObj ( fluid->shader.szCanvasFrag, SG_FRAGMENT, bfFrag_out );
 	shader_out->CreateShaderObj ( fluid->shader.szVolumVert,  SG_VERTEX,   rcVert_out );
 	shader_out->CreateShaderObj ( fluid->shader.szVolumFrag,  SG_FRAGMENT, rcFrag_out );
 
-	// Check error
+	/* Check error */
 	if ( !CheckHandleError ( 4, *bfVert_out, *bfFrag_out, *rcVert_out, *rcFrag_out ) )
 	{
 		cout << "create shaders object failed" << endl;
 		exit (1);
 	}
 	
-	// Create shader program object
+	/* Create shader program object */
 	shader_out->CreateProgmObj ( prog_out );
 
-	// Check error
+	/* Check error */
 	if ( !CheckHandleError ( 1, *prog_out) )
 	{
 		cout << "create program object failed" << endl;
 		exit (1);
 	}
 
+	/* 链接已创建的着色器程序，并打印信息 */
 	fluid->shader.ptrShader = shader_out;
-
 	cout << "shader program created" << endl;
 }
 
+
+/* 创建默认的传递函数，该函数将对3D体数据进行渲染，着色 */
 GLubyte* Framework_v1_0::DefaultTransFunc ()
 {
-	// Hardcode the transfer function
+	/* Hardcode the transfer function */
 	GLubyte *tff = (GLubyte *) calloc ( TPBUFFER_X, sizeof(GLubyte) );
 	for ( int i = 0; i < 256; i++ )
 	{
@@ -96,16 +108,20 @@ GLubyte* Framework_v1_0::DefaultTransFunc ()
 		}
 	}
 
+	/* 创建完毕，打印信息 */
 	cout << "use default transfer function" << endl;
-
 	return tff;
 }
 
-GLuint Framework_v1_0::Create1DTransFunc ( GLubyte *transfer )
+
+/* 创建1D纹理信息 */
+SGHANDLER Framework_v1_0::Create1DTransFunc ( GLubyte *transfer )
 {
-	GLuint tff1DTex;
+	SGHANDLER tff1DTex;
+
     glGenTextures(1, &tff1DTex);
     glBindTexture(GL_TEXTURE_1D, tff1DTex);
+
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -114,14 +130,17 @@ GLuint Framework_v1_0::Create1DTransFunc ( GLubyte *transfer )
     
 	SAFE_FREE_PTR (transfer);
 
+	/* 创建完毕，返回1D纹理句柄并打印信息 */
 	cout << "transfer function created" << endl;
-    
 	return tff1DTex;
 };
 
-GLuint Framework_v1_0::Create2DCanvas ( FLUIDSPARAM *fluid )
+
+/* 创建2D canvas 纹理信息 */
+SGHANDLER Framework_v1_0::Create2DCanvas ( FLUIDSPARAM *fluid )
 {
-    GLuint backFace2DTex;
+    SGHANDLER backFace2DTex;
+
     glGenTextures(1, &backFace2DTex);
     glBindTexture(GL_TEXTURE_2D, backFace2DTex);
 
@@ -133,39 +152,17 @@ GLuint Framework_v1_0::Create2DCanvas ( FLUIDSPARAM *fluid )
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 
 		fluid->ray.uCanvasWidth, fluid->ray.uCanvasHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 
+	/* 创建完毕，返回2D纹理句柄并打印信息 */
 	cout << "canvas created" << endl;
-
 	return backFace2DTex;
 };
 
-void Framework_v1_0::LoadVolumeSource ( const char *szRawFile, FLUIDSPARAM *fluid )
+
+/* 创建3D纹理信息 */
+SGHANDLER Framework_v1_0::Create3DVolumetric ( void )
 {
-	FILE *fp;
-	size_t size   = fluid->volume.uDepth * fluid->volume.uHeight * fluid->volume.uWidth;
-    GLubyte *data = new GLubyte[size];
- 
-	if ( !(fp = fopen(".\\res\\head256.raw", "rb")) )
-    {
-        cout << "Error: opening .raw file failed" << endl;
-        exit ( 1 );
-    }
-
-    if ( fread(data, sizeof(char), size, fp)!= size) 
-    {
-        cout << "Error: read .raw file failed" << endl;
-        exit ( 1 );
-    }
-    fclose ( fp );
-
-	fluid->volume.ptrData = data;
-
-	cout << "volume resource loaded" << endl;
-};
-
-GLuint Framework_v1_0::Create3DVolumetric ( void )
-{
-	// Generate 3D textuer
-	GLuint volTex;
+	/* Generate 3D textuer */
+	SGHANDLER volTex;
     glGenTextures(1, &volTex);
     glBindTexture(GL_TEXTURE_3D, volTex);
 
@@ -175,21 +172,23 @@ GLuint Framework_v1_0::Create3DVolumetric ( void )
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
 
+	/* 创建完毕，返回3D纹理句柄并打印信息 */
 	cout << "volumetric texture created" << endl;
-
     return volTex;
 };
 
+
+/* 创建2D framebuffer 纹理信息 */
 GLuint Framework_v1_0::Create2DFrameBuffer ( FLUIDSPARAM *fluid )
 {
-    // Create a depth buffer for framebuffer
+    /* Create a depth buffer for framebuffer */
     GLuint depthBuffer;
     glGenRenderbuffers(1, &depthBuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 
 		fluid->ray.uCanvasWidth, fluid->ray.uCanvasHeight);
 
-    // Attach the texture and the depth buffer to the framebuffer
+    /* Attach the texture and the depth buffer to the framebuffer */
 	GLuint framebuffer;
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -197,7 +196,7 @@ GLuint Framework_v1_0::Create2DFrameBuffer ( FLUIDSPARAM *fluid )
 		fluid->textures.hTexture2D, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
 	
-	// Check Framebuffer status
+	/* Check Framebuffer status */
 	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
     {
 		cout << "framebuffer is not complete" << endl;
@@ -210,16 +209,86 @@ GLuint Framework_v1_0::Create2DFrameBuffer ( FLUIDSPARAM *fluid )
 	return framebuffer;
 };
 
+
+/* 创建代理几何的句柄 */
+SGHANDLER Framework_v1_0::CreateVerticesBufferObj ( void )
+{
+	// How agent cube looks like by specified the coordinate positions of vertices
+	GLfloat vertices[24] = 
+	{                    // (x, y, z)
+		0.0, 0.0, 0.0,   // (0, 0, 0)
+		0.0, 0.0, 1.0,   // (0, 0, 1)
+		0.0, 1.0, 0.0,   // (0, 1, 0)
+		0.0, 1.0, 1.0,   // (0, 1, 1)
+		1.0, 0.0, 0.0,   // (1, 0, 0)
+		1.0, 0.0, 1.0,   // (1, 0, 1)
+		1.0, 1.0, 0.0,   // (1, 1, 0)
+		1.0, 1.0, 1.0    // (1, 1, 1)
+	};
+
+	// Drawing six faces of agent cube with triangles by counter clockwise
+	GLuint indices[36] = 
+	{
+		/// <front> 1 5 7 3 </front>///
+		1,5,7,
+		7,3,1,
+		/// <back> 0 2 6 4 </back> ///
+		0,2,6,
+		6,4,0,
+		/// <left> 0 1 3 2 </left> ///
+		0,1,3,
+		3,2,0,
+		/// <right> 7 5 4 6 </right> ///
+		7,5,4,
+		4,6,7,
+		/// <up> 2 3 7 6 </up> ///
+		2,3,7,
+		7,6,2,
+		/// <down> 1 0 4 5 </down> ///
+		1,0,4,
+		4,5,1
+	};  
+
+	/// Create Vertex Buffer Object (vbo) ///
+	// Generate the buffer indices, and 
+	GLuint GenBufferList[2];
+	glGenBuffers ( 2, GenBufferList );
+	GLuint ArrayBufferData  = GenBufferList [ 0 ];
+	GLuint ElementArrayData = GenBufferList [ 1 ];
+
+	// Bind vertex array list
+	glBindBuffer ( GL_ARRAY_BUFFER, ArrayBufferData );
+	glBufferData ( GL_ARRAY_BUFFER, 24 * sizeof(GLfloat), vertices, GL_STATIC_DRAW );
+
+	// Bind element array list
+	glBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, ElementArrayData );
+	glBufferData ( GL_ELEMENT_ARRAY_BUFFER, 36 * sizeof(GLuint), indices, GL_STATIC_DRAW );
+
+	/// vbo finished ///
+
+	/// Upload attributes of vertex ///
+	// Use a cluster for keeping the attributes of vertex
+	SGHANDLER cluster;
+	glGenVertexArrays ( 1, &cluster );
+	glBindVertexArray ( cluster );
+	glEnableVertexAttribArray ( 0 );
+	glBindBuffer ( GL_ARRAY_BUFFER, ArrayBufferData );
+	glVertexAttribPointer ( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLfloat *)NULL );
+	glBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, ElementArrayData );  
+
+	cout << "agent object created" << endl;
+	return cluster;
+};
+
+
+/* 渲染数据 */
 void Framework_v1_0::RenderingFace ( GLenum cullFace, FLUIDSPARAM *fluid )
 {
 	GLfloat angle  = fluid->ray.nAngle;
 	GLuint program = fluid->shader.hProgram;
 	GLuint cluster = fluid->ray.hCluster;
 	GLuint width   = fluid->ray.uCanvasWidth;
-	GLuint height  = fluid->ray.uCanvasHeight;
-	//GLint width = fluid->
-
-	using namespace glm;
+	GLuint height  = fluid->ray.uCanvasHeight;	
 	
 	// Clear background color and depth buffer
     glClearColor ( 0.0f, 0.f, 0.0f, 0.0f );
@@ -261,6 +330,8 @@ void Framework_v1_0::RenderingFace ( GLenum cullFace, FLUIDSPARAM *fluid )
 	glDisable ( GL_CULL_FACE );
 }
 
+
+/* 向Shader中传递参数 */
 void Framework_v1_0::SetVolumeInfoUinforms ( FLUIDSPARAM *fluid )
 {
 	GLuint program    = fluid->shader.hProgram;
@@ -339,94 +410,44 @@ void Framework_v1_0::SetVolumeInfoUinforms ( FLUIDSPARAM *fluid )
     }    
 };
 
-GLuint Framework_v1_0::CreateVerticesBufferObj ( void )
-{
-	// How agent cube looks like by specified the coordinate positions of vertices
-	GLfloat vertices[24] = 
-	{                    // (x, y, z)
-		0.0, 0.0, 0.0,   // (0, 0, 0)
-		0.0, 0.0, 1.0,   // (0, 0, 1)
-		0.0, 1.0, 0.0,   // (0, 1, 0)
-		0.0, 1.0, 1.0,   // (0, 1, 1)
-		1.0, 0.0, 0.0,   // (1, 0, 0)
-		1.0, 0.0, 1.0,   // (1, 0, 1)
-		1.0, 1.0, 0.0,   // (1, 1, 0)
-		1.0, 1.0, 1.0    // (1, 1, 1)
-	};
 
-	// Drawing six faces of agent cube with triangles by counter clockwise
-	GLuint indices[36] = 
-	{
-		/// <front> 1 5 7 3 </front>///
-		1,5,7,
-		7,3,1,
-		/// <back> 0 2 6 4 </back> ///
-		0,2,6,
-		6,4,0,
-		/// <left> 0 1 3 2 </left> ///
-		0,1,3,
-		3,2,0,
-		/// <right> 7 5 4 6 </right> ///
-		7,5,4,
-		4,6,7,
-		/// <up> 2 3 7 6 </up> ///
-		2,3,7,
-		7,6,2,
-		/// <down> 1 0 4 5 </down> ///
-		1,0,4,
-		4,5,1
-	};  
-
-	/// Create Vertex Buffer Object (vbo) ///
-	// Generate the buffer indices, and 
-	GLuint GenBufferList[2];
-	glGenBuffers ( 2, GenBufferList );
-	GLuint ArrayBufferData  = GenBufferList [ 0 ];
-	GLuint ElementArrayData = GenBufferList [ 1 ];
-
-	// Bind vertex array list
-	glBindBuffer ( GL_ARRAY_BUFFER, ArrayBufferData );
-	glBufferData ( GL_ARRAY_BUFFER, 24 * sizeof(GLfloat), vertices, GL_STATIC_DRAW );
-
-	// Bind element array list
-	glBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, ElementArrayData );
-	glBufferData ( GL_ELEMENT_ARRAY_BUFFER, 36 * sizeof(GLuint), indices, GL_STATIC_DRAW );
-
-	/// vbo finished ///
-
-	/// Upload attributes of vertex ///
-	// Use a cluster for keeping the attributes of vertex
-	GLuint cluster;
-	glGenVertexArrays ( 1, &cluster );
-	glBindVertexArray ( cluster );
-	glEnableVertexAttribArray ( 0 );
-	glBindBuffer ( GL_ARRAY_BUFFER, ArrayBufferData );
-	glVertexAttribPointer ( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLfloat *)NULL );
-	glBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, ElementArrayData );  
-
-	cout << "agent object created" << endl;
-
-	return cluster;
-};
+/**
+***************************** 以上成员函数为进行GLSL渲染所必须初始步骤 ***************************************
+***********************************************************************************************************
+**************** 以下成员函数包含模型的初始化，及运行。关于流体模拟的计算过程则被封装在其他类中 *****************
+*/
 
 
 #include <stdarg.h>
 #include <memory>
 #include <string>
 
-SGMAINACTIVITY   *m_activity;
-FLUIDSPARAM       m_fluid;
-SGINT             m_index;
+using std::string;
 
+/* 基本框架所默认的构造函数，需要传入SGGUI的地址，以及创建的窗口的长和宽 */
 Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height  )
 {
-	m_index = 0;
+	/* 设置参数 */
+	SetDefaultParam();
+
+	/* prepare the fluid simulation stage */
+	m_activity = new SGMAINACTIVITY( width, height, false );
+	m_simproc  = new FluidSimProc( &m_fluid );
+	*activity = m_activity;
+	cout << "initial stage finished" << endl;
+};
+
+
+/* 设置模拟程序所需要的一切参数 */
+SGVOID Framework_v1_0::SetDefaultParam( SGVOID )
+{
+	m_fluid.run = true;
 
 	m_fluid.ray.fStepsize     = STEPSIZE;
 	m_fluid.ray.nAngle        = 0;
 	m_fluid.ray.uCanvasWidth  = CANVAS_X;
 	m_fluid.ray.uCanvasHeight = CANVAS_X;
-	m_fluid.ray.bRun          = true;
+
 	m_fluid.volume.uWidth     = VOLUME_X;
 	m_fluid.volume.uHeight    = VOLUME_X;
 	m_fluid.volume.uDepth     = VOLUME_X;
@@ -435,15 +456,11 @@ Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT 
 	m_fluid.shader.szCanvasFrag = ".\\shader\\backface.frag";
 	m_fluid.shader.szVolumVert  = ".\\shader\\raycasting.vert";
 	m_fluid.shader.szVolumFrag  = ".\\shader\\raycasting.frag";
-
-	/* prepare the fluid simulation stage */
-//	m_fs = new FluidSimProc ( &m_fluid );
-	m_activity = new SGMAINACTIVITY( width, height, false );
-	*activity = m_activity;
-	cout << "initial stage finished" << endl;
 };
 
-std::string string_fmt( const std::string fmt_str, ... )
+
+/* 对字符串数据的格式化 */
+string Framework_v1_0::string_fmt( const std::string fmt_str, ... )
 {
 	/* reserve 2 times as much as the length of the fmt_str */
     int final_n, n = fmt_str.size() * 2; 
@@ -466,17 +483,19 @@ std::string string_fmt( const std::string fmt_str, ... )
     return std::string ( formatted.get() );
 };
 
-DWORD WINAPI Framework_v1_0::FluidSimulationProc ( LPVOID lpParam )
-{
-	/* solve the fluid simulation */
-	while ( m_fluid.ray.bRun )
-	{
-//		m_fs->FluidSimSolver ( &m_fluid );
-	}
 
+/* 创建子线程，用于流体模拟 */
+DWORD WINAPI Framework_v1_0::FluidSimulationProc( LPVOID lpParam )
+{
+	/* 只要m_fluid.run为真，则一直保持流体模拟程序的运行 */
+	while ( m_fluid.run ) m_simproc->FluidSimSolver( &m_fluid );
+
+	/* 程序结束，返回 */
 	return 0;
 };
 
+
+/* SGGUI运行后，所调度的第一个函数 */
 void Framework_v1_0::onCreate()
 {
 	/* initialize glew */
@@ -489,11 +508,11 @@ void Framework_v1_0::onCreate()
 
 	/* create sub-thread function */
 	m_fluid.thread.hThread = CreateThread ( 
-            NULL,                   // default security attributes
-            0,                      // use default stack size  
-            FluidSimulationProc,    // thread function name
-            NULL,                   // argument to thread function 
-            0,                      // use default creation flags 
+            NULL,                          // default security attributes
+            0,                             // use default stack size  
+            FluidSimulationProc,           // thread function name
+            NULL,                          // argument to thread function 
+            0,                             // use default creation flags 
 			&m_fluid.thread.dwThreadId);   // returns the thread identifier
 
 	if ( m_fluid.thread.hThread == NULL )
@@ -513,6 +532,7 @@ void Framework_v1_0::onCreate()
 	cout << "initialize finished, sge will start soon!" << endl;
 };
 
+
 void Framework_v1_0::CountFPS()
 {
 	/* counting FPS */
@@ -528,9 +548,11 @@ void Framework_v1_0::CountFPS()
 		m_fluid.fps.dwLastUpdateTime = m_fluid.fps.dwCurrentTime;
 	}
 
-	const char *szTitle = "Excalibur OTL 1.10.00 alpha test  |  FPS: %d  |  dynamic tracking  |";
-	SetWindowText (	m_activity->GetHWND(), string_fmt( szTitle, m_fluid.fps.uFPS ).c_str() );
+	/* finally, print the message on the tile bar */
+	m_szTitle = "Excalibur OTL 1.10.00 alpha test  |  FPS: %d  |  dynamic tracking  |";
+	SetWindowText (	m_activity->GetHWND(), string_fmt( m_szTitle, m_fluid.fps.uFPS ).c_str() );
 }
+
 
 void Framework_v1_0::onDisplay()
 {
@@ -562,24 +584,30 @@ void Framework_v1_0::onDisplay()
 	CountFPS ();
 };
 
+
 void Framework_v1_0::onDestroy()
 {
-	m_fluid.ray.bRun = false;
-	WaitForSingleObject ( m_fluid.thread.hThread, INFINITE );
-	CloseHandle ( m_fluid.thread.hThread );
+	/* 启动退出程序的命令后，先关闭子线程 */
+	m_fluid.run = false;
+	WaitForSingleObject( m_fluid.thread.hThread, INFINITE );
+	CloseHandle( m_fluid.thread.hThread );
 
-//	m_fs->FreeResourcePtrs();  
-//	SAFE_FREE_PTR ( m_fs );
-	SAFE_FREE_PTR ( m_fluid.shader.ptrShader );
+	/* 释放所有用于流体计算的资源 */
+	m_simproc->FreeResource();
 
+	/* 释放其他资源 */
+	SAFE_FREE_PTR( m_simproc );
+	SAFE_FREE_PTR( m_fluid.shader.ptrShader );
+	SAFE_FREE_PTR( m_szTitle );
+
+	/* 打印信息，并退出 */
 	cout << "memory freed, program exits..." << endl;
 	exit(1);
 };
 
+
 void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 {
-	int nodes = NODES_X * NODES_X * NODES_X;
-
 	if ( status == SGKEYSTATUS::SG_KEY_DOWN )
 	{
 		switch (keys)
@@ -588,19 +616,9 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 		case sge::SG_KEY_ESCAPE:
 			onDestroy();
 			break;
-
-		case sge::SG_KEY_T:
-			m_index = (m_index + 1) % nodes;
-//			m_fs->SelectNode ( m_index );
-			break;
-
-		case sge::SG_KEY_R:
-			printf("restore fluid simulation process!\n");
-//			m_fs->SelectNode ( 10 );
-//			m_fs->ZeroAllBuffer ();
-		
+	
 		case sge::SG_KEY_C:
-//			m_fs->ZeroAllBuffer ();
+			m_simproc->ZeroAllBuffer ();
 			break;
 		
 		default:
@@ -608,6 +626,7 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 		}
 	}
 };
+
 
 void Framework_v1_0::onMouse( SGMOUSE mouse, unsigned x, unsigned y, int degree )
 {

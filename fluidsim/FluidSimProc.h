@@ -1,9 +1,11 @@
 /**
-* <Author>      Orlando Chen
-* <First>       Dec 15, 2013
-* <Last>		Feb 02, 2014
-* <File>        FluidSimProc.h
+* <Author>        Orlando Chen
+* <Email>         seagochen@gmail.com
+* <First Time>    Dec 15, 2013
+* <Last Time>     Feb 02, 2014
+* <File Name>     FluidSimProc.h
 */
+
 
 #ifndef __fluid_simulation_process_h_
 #define __fluid_simulation_process_h_
@@ -11,21 +13,9 @@
 #include <GL\freeglut.h>
 #include <SGE\SGUtils.h>
 #include <vector>
-#include "CUDADef.h"
-#include "CUDAFunctionHelper.h"
+#include "CUDAMacroDef.h"
+#include "FunctionHelper.h"
 #include "DataStructures.h"
-
-#define DEVLISTNUM       10
-#define dev_u     dev_buf[0]
-#define dev_v     dev_buf[1]
-#define dev_w     dev_buf[2]
-#define dev_div   dev_buf[3]
-#define dev_p     dev_buf[4]
-#define dev_dens  dev_buf[5]
-#define dev_u0    dev_buf[6]
-#define dev_v0    dev_buf[7]
-#define dev_w0    dev_buf[8]
-#define dev_dens0 dev_buf[9]
 
 using std::vector;
 
@@ -52,13 +42,13 @@ namespace sge
 		int nodeIX;
 
 		/* etc */
-		CUDAFuncHelper cudahelper;
+		FunctionHelper m_helper;
 
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
 
 		void FluidSimSolver( FLUIDSPARAM *fluid );
-		void FreeResourcePtrs( void );
+		void FreeResource( void );
 		void ZeroAllBuffer( void );
 		void ZeroDevData( void );
 		void SelectNode( int i, int j, int k );

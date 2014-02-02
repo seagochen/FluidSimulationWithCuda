@@ -1,9 +1,13 @@
 /**
-* <Author>      Orlando Chen
-* <First>       Jan 25, 2014
-* <Last>		Jan 25, 2014
-* <File>        CUDADef.h
+* <Author>        Orlando Chen
+* <Email>         seagochen@gmail.com
+* <First Time>    Jan 25, 2014
+* <Last Time>     Feb 02, 2014
+* <File Name>     CUDAMacroDef.h
 */
+
+#ifndef __cuda_macro_def_h_
+#define __cuda_macro_def_h_
 
 #include <stdio.h>
 #include <cuda_runtime.h>
@@ -42,12 +46,6 @@
 	int k = 0; \
 	cudaTrans2DTo3D ( i, j, k, GRIDS_X ); \
 
-/*
-  -------------------------------------------------------------------------------------------------------
-   Define something
-  -------------------------------------------------------------------------------------------------------
-*/
-
 #define gst_header        0             /* (ghost, halo) the header cell of grid */
 #define sim_header        1             /* (actually) the second cell of grid */
 #define gst_tailer       GRIDS_X - 1    /* (ghost, halo) the last cell of grid */
@@ -59,3 +57,5 @@
 	if ( k >= sim_header and k <= sim_tailer ) {
 
 #define EndSimArea() }
+
+#endif

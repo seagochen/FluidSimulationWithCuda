@@ -1,17 +1,19 @@
 /**
-* <Author>      Orlando Chen
-* <First>       Nov 21, 2013
-* <Last>		Jan 25, 2014
-* <File>        MainFrameworkDynamic.h
+* <Author>        Orlando Chen
+* <Email>         seagochen@gmail.com
+* <First Time>    Nov 21, 2013
+* <Last Time>     Jan 25, 2014
+* <File Name>     FrameworkDynamic.h
 */
 
-#ifndef __main_framework_dynamic_h_
-#define __main_framework_dynamic_h_
+#ifndef __framework_dynamic_h_
+#define __framework_dynamic_h_
 
 #include <GL\glew.h>
 #include <GL\freeglut.h>
 #include <SGE\SGUtils.h>
 #include "DataStructures.h"
+#include "FluidSimProc.h"
 
 namespace sge
 {
@@ -31,7 +33,6 @@ namespace sge
 		static SGVOID SetVolumeInfoUinforms( FLUIDSPARAM *fluid );
 		static SGVOID RenderingFace( GLENUM cullFace, FLUIDSPARAM *fluid );
 		static SGVOID CreateShaderProg( FLUIDSPARAM *fluid );
-		static SGVOID LoadVolumeSource( SGCONSTCHAR *szRawFile, FLUIDSPARAM *fluid );
 
 	private:
 		static SGBOOLEAN CheckHandleError( SGINT nShaderObjs, ... );
@@ -47,6 +48,17 @@ namespace sge
 		static SGVOID onDestroy( SGVOID );
 		static SGVOID onDisplay( SGVOID );		
 		static SGVOID onCreate( SGVOID );
+
+	private:
+		static std::string string_fmt( const std::string fmt_str, ... );
+		static SGVOID SetDefaultParam( SGVOID );
+
+	private:
+		static SGMAINACTIVITY   *m_activity;
+		static FLUIDSPARAM       m_fluid;
+		static FluidSimProc     *m_simproc;
+		static char             *m_szTitle;
+
 	}FrameworkDynamic;
 };
 

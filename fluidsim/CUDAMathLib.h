@@ -1,8 +1,9 @@
 /**
-* <Author>      Orlando Chen
-* <First>       Nov 21, 2013
-* <Last>		Jan 26, 2014
-* <File>        CUDAMathLib.h
+* <Author>        Orlando Chen
+* <Email>         seagochen@gmail.com
+* <First Time>    Nov 21, 2013
+* <Last Time>     Jan 26, 2014
+* <File Name>     CUDAMathLib.h
 */
 
 #ifndef __cuda_math_lib_h_

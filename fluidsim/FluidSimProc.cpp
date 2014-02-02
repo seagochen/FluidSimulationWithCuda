@@ -1,14 +1,28 @@
 /**
-* <Author>      Orlando Chen
-* <First>       Nov 15, 2013
-* <Last>		Jan 16, 2014
-* <File>        FluidSimProc.cpp
+* <Author>        Orlando Chen
+* <Email>         seagochen@gmail.com
+* <First Time>    Nov 15, 2013
+* <Last Time>     Feb 02, 2014
+* <File Name>     FluidSimProc.cpp
 */
+
 
 #include <iostream>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include "FluidSimProc.h"
+
+#define DEVLISTNUM       10
+#define dev_u     dev_buf[0]
+#define dev_v     dev_buf[1]
+#define dev_w     dev_buf[2]
+#define dev_div   dev_buf[3]
+#define dev_p     dev_buf[4]
+#define dev_dens  dev_buf[5]
+#define dev_u0    dev_buf[6]
+#define dev_v0    dev_buf[7]
+#define dev_w0    dev_buf[8]
+#define dev_dens0 dev_buf[9]
 
 using namespace sge;
 
