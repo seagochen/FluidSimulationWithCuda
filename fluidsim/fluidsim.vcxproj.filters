@@ -21,13 +21,13 @@
     <ClCompile Include="MainDynamic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MainFrameworkDynamic.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FluidSimProc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CUDAFunctionHelper.cpp">
+    <ClCompile Include="FrameworkDynamic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FunctionHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -59,9 +59,6 @@
     <ClInclude Include="resource.h">
       <Filter>Resource Files\Resource</Filter>
     </ClInclude>
-    <ClInclude Include="MainFrameworkDynamic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DataStructures.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -80,9 +77,15 @@
     <ClInclude Include="FunctionHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FrameworkDynamic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="BasicKernels.cu">
+    <CudaCompile Include="Kernels.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="CUDABasicKernels.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>

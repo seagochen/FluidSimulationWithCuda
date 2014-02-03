@@ -3,13 +3,17 @@
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
 * <Last Time>     Feb 01, 2014
-* <File Name>     CUDAFunctionHelper.cpp
+* <File Name>     FunctionHelper.cpp
 */
 
-namespace sge
-{
+#include "FunctionHelper.h"
+#include "CUDAMacroDef.h"
+#include "CUDAInterfaces.h"
 
-SGVOID CUDAFuncHelper::CheckRuntimeErrors( const char* msg, const char *file, const int line )
+using namespace sge;
+
+
+SGVOID FunctionHelper::CheckRuntimeErrors( const char* msg, const char *file, const int line )
 {
 	cudaError_t __err = cudaGetLastError();
 	if (__err != cudaSuccess) 
@@ -20,7 +24,7 @@ SGVOID CUDAFuncHelper::CheckRuntimeErrors( const char* msg, const char *file, co
 	}
 };
 
-SGVOID CUDAFuncHelper::DeviceDim2Dx( dim3 *grid_out, dim3 *block_out )
+SGVOID FunctionHelper::DeviceDim2Dx( dim3 *grid_out, dim3 *block_out )
 {
 	block_out->x = TILE_X;
 	block_out->y = TILE_X;
@@ -28,7 +32,7 @@ SGVOID CUDAFuncHelper::DeviceDim2Dx( dim3 *grid_out, dim3 *block_out )
 	grid_out->y  = GRIDS_X / TILE_X;
 };
 
-SGVOID CUDAFuncHelper::DeviceDim3Dx( dim3 *gridDim, dim3 *blockDim )
+SGVOID FunctionHelper::DeviceDim3Dx( dim3 *gridDim, dim3 *blockDim )
 {
 	blockDim->x = (GRIDS_X / TILE_X);
 	blockDim->y = (THREADS_X / TILE_X);
@@ -37,7 +41,7 @@ SGVOID CUDAFuncHelper::DeviceDim3Dx( dim3 *gridDim, dim3 *blockDim )
 		(blockDim->x * blockDim->y * (GRIDS_X / blockDim->x));
 };
 
-SGRUNTIMEMSG CUDAFuncHelper::CreateDoubleBuffers( SGINT size, SGINT nPtrs, ... )
+SGRUNTIMEMSG FunctionHelper::CreateDoubleBuffers( SGINT size, SGINT nPtrs, ... )
 {
 	double **ptr;
 
@@ -57,7 +61,7 @@ SGRUNTIMEMSG CUDAFuncHelper::CreateDoubleBuffers( SGINT size, SGINT nPtrs, ... )
 	return SG_RUNTIME_OK;
 };
 
-SGRUNTIMEMSG CUDAFuncHelper::CreateIntegerBuffers( SGINT size, SGINT nPtrs, ... )
+SGRUNTIMEMSG FunctionHelper::CreateIntegerBuffers( SGINT size, SGINT nPtrs, ... )
 {
 	int **ptr;
 
@@ -77,33 +81,31 @@ SGRUNTIMEMSG CUDAFuncHelper::CreateIntegerBuffers( SGINT size, SGINT nPtrs, ... 
 	return SG_RUNTIME_OK;
 };
 
-void CUDAFuncHelper::CopyData
+void FunctionHelper::CopyData
 	( SGDOUBLE *buffer, const SGDEVICEBUFF *devbuffs, SGFIELDTYPE type, SGNODECOORD coord )
 {
-	dim3 grid, block;
-	DeviceDim3Dx( &grid, &block );
 	switch ( coord )
 	{
 	case SG_CENTER:
-		kernelCopyBuffer <<<grid, block>>> ( buffer, devbuffs->ptrCenter, type );
+		hostCopyBuffer( buffer, devbuffs->ptrCenter, type );
 		break;
 	case SG_LEFT:
-		kernelCopyBuffer <<<grid, block>>> ( buffer, devbuffs->ptrLeft, type );
+		hostCopyBuffer( buffer, devbuffs->ptrLeft, type );
 		break;
 	case SG_RIGHT:
-		kernelCopyBuffer <<<grid, block>>> ( buffer, devbuffs->ptrRight, type );
+		hostCopyBuffer( buffer, devbuffs->ptrRight, type );
 		break;
 	case SG_UP:
-		kernelCopyBuffer <<<grid, block>>> ( buffer, devbuffs->ptrUp, type );
+		hostCopyBuffer( buffer, devbuffs->ptrUp, type );
 		break;
 	case SG_DOWN:
-		kernelCopyBuffer <<<grid, block>>> ( buffer, devbuffs->ptrDown, type );
+		hostCopyBuffer( buffer, devbuffs->ptrDown, type );
 		break;
 	case SG_FRONT:
-		kernelCopyBuffer <<<grid, block>>> ( buffer, devbuffs->ptrFront, type );
+		hostCopyBuffer( buffer, devbuffs->ptrFront, type );
 		break;
 	case SG_BACK:
-		kernelCopyBuffer <<<grid, block>>> ( buffer, devbuffs->ptrBack, type );
+		hostCopyBuffer( buffer, devbuffs->ptrBack, type );
 		break;
 
 	default:
@@ -111,38 +113,34 @@ void CUDAFuncHelper::CopyData
 	}
 };
 
-void CUDAFuncHelper::CopyData
+void FunctionHelper::CopyData
 	( SGDEVICEBUFF *devbuffs, const SGDOUBLE *buffer, SGFIELDTYPE type, SGNODECOORD coord )
 {
-	dim3 grid, block;
-	DeviceDim3Dx( &grid, &block );
 	switch ( coord )
 	{
 	case SG_CENTER:
-		kernelCopyBuffer <<<grid, block>>> ( devbuffs->ptrCenter, buffer, type );
+		hostCopyBuffer( devbuffs->ptrCenter, buffer, type );
 		break;
 	case SG_LEFT:
-		kernelCopyBuffer <<<grid, block>>> ( devbuffs->ptrLeft, buffer, type );
+		hostCopyBuffer( devbuffs->ptrLeft, buffer, type );
 		break;
 	case SG_RIGHT:
-		kernelCopyBuffer <<<grid, block>>> ( devbuffs->ptrRight, buffer, type );
+		hostCopyBuffer( devbuffs->ptrRight, buffer, type );
 		break;
 	case SG_UP:
-		kernelCopyBuffer <<<grid, block>>> ( devbuffs->ptrUp, buffer, type );
+		hostCopyBuffer( devbuffs->ptrUp, buffer, type );
 		break;
 	case SG_DOWN:
-		kernelCopyBuffer <<<grid, block>>> ( devbuffs->ptrDown, buffer, type );
+		hostCopyBuffer( devbuffs->ptrDown, buffer, type );
 		break;
 	case SG_FRONT:
-		kernelCopyBuffer <<<grid, block>>> ( devbuffs->ptrFront, buffer, type );
+		hostCopyBuffer( devbuffs->ptrFront, buffer, type );
 		break;
 	case SG_BACK:
-		kernelCopyBuffer <<<grid, block>>> ( devbuffs->ptrBack, buffer, type );
+		hostCopyBuffer( devbuffs->ptrBack, buffer, type );
 		break;
 
 	default:
 		break;
 	}
-};
-
 };

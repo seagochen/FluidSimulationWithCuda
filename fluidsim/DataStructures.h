@@ -98,9 +98,9 @@ namespace sge
 	/* 定义的边界条件 */
 	enum SGBOUNDARY
 	{
-		SG_BD_SOURCE, // 源
-		SG_BD_BLANK,  // 空白空间
-		SG_BD_WALL,   // 障碍物
+		SG_SOURCE, // 源
+		SG_BLANK,  // 空白空间
+		SG_WALL,   // 障碍物
 	};
 	
 	/* 定义的场 */
@@ -149,7 +149,7 @@ namespace sge
 	};
 
 	/* 从全局中抓取局部的相邻的节点，用于在GPU进行并行计算 */
-	struct SGDEVICEBUFF
+	struct SGCUDANODES
 	{
 		SGSTDGRID *ptrCenter, *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 	};

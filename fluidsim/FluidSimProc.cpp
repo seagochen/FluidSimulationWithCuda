@@ -24,6 +24,26 @@
 #define dev_w0    dev_buf[8]
 #define dev_dens0 dev_buf[9]
 
+
+
+__global__ void kernelPickData
+	( unsigned char *data, double const *grid, int const offseti, int const offsetj, int const offsetk )
+{
+	GetIndex();
+
+	int di = offseti + i;
+	int dj = offsetj + j;
+	int dk = offsetk + k;
+
+	/* zero data first */
+	data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
+
+	/* retrieve data from grid */
+	int temp = sground ( grid[ Index(i,j,k)] );
+	if ( temp > 0 and temp < 250 )
+		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (unsigned char) temp;
+};
+
 using namespace sge;
 
 FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )

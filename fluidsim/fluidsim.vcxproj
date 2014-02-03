@@ -19,10 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CUDAFunctionHelper.cpp" />
+    <CudaCompile Include="CUDABasicKernels.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="FluidSimProc.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
-    <ClCompile Include="MainFrameworkDynamic.cpp" />
+    <ClCompile Include="FrameworkDynamic.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CUDAInterfaces.h" />
@@ -33,7 +36,7 @@
     <ClInclude Include="DataStructures.h" />
     <ClInclude Include="FunctionHelper.h" />
     <ClInclude Include="FluidSimProc.h" />
-    <ClInclude Include="MainFrameworkDynamic.h" />
+    <ClInclude Include="FrameworkDynamic.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
@@ -49,7 +52,7 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="BasicKernels.cu">
+    <CudaCompile Include="Kernels.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
   </ItemGroup>
