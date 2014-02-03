@@ -26,106 +26,10 @@
 #include "DataStructures.h"
 #include "CUDAMacroDef.h"
 
-
 using namespace sge;
 
 
 
-
-__global__ void kernelSmoothHalo
-	( double *buffer, double *stores, SGDEVICEBUFF *global, SGFIELDTYPE type )
-{
-	GetIndex();
-
-	buffer[ Index(i,j,gst_header) ] += atomicTrilinear( stores, global, type, i, j, gst_header );
-	buffer[ Index(i,j,gst_tailer) ] += atomicTrilinear( stores, global, type, i, j, gst_tailer );
-	buffer[ Index(i,gst_header,k) ] += atomicTrilinear( stores, global, type, i, gst_header, k );
-	buffer[ Index(i,gst_tailer,k) ] += atomicTrilinear( stores, global, type, i, gst_tailer, k );
-	buffer[ Index(gst_header,j,k) ] += atomicTrilinear( stores, global, type, gst_header, j, k );
-	buffer[ Index(gst_tailer,j,k) ] += atomicTrilinear( stores, global, type, gst_tailer, j, k );
-
-	if ( i eqt gst_header or i eqt gst_tailer ) 
-	{
-		if ( j eqt gst_header or j eqt gst_tailer )
-		{
-			if ( k eqt gst_header or k eqt gst_tailer )
-			{
-				/* vertices */
-				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 3.f;
-			}
-			elif ( k not_eq gst_header and k not_eq gst_tailer )
-			{
-				/* edges x 4 */
-				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 2.f;
-			}
-		}
-	}
-
-	if ( i eqt gst_header or i eqt gst_tailer ) 
-	{
-		if ( k eqt gst_header or k eqt gst_tailer )
-		{
-			if ( j not_eq gst_header and j not_eq gst_tailer )
-			{
-				/* edges x 4 */
-				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 2.f;
-			}
-		}
-	}
-
-	if ( j eqt gst_header or j eqt gst_tailer )
-	{
-		if ( k eqt gst_header or k eqt gst_tailer )
-		{
-			if ( i not_eq gst_header and i not_eq gst_tailer )
-			{
-				/* edges x 4 */
-				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 2.f;
-			}
-		}
-	}
-};
-
-__host__ void hostBoundary
-	( double *buffer, double *stores, SGDEVICEBUFF *global, SGFIELDTYPE type )
-{
-	cudaDeviceDim3D();
-	
-	kernelBoundary<<<gridDim, blockDim>>>( buffer, global->ptrCenter, type );
-	kernelSmoothHalo<<<gridDim, blockDim>>>( buffer, stores, global, type );
-};
-
-__global__ void kernelJacobi( double *grid_out, double const *grid_in, 
-							 double const diffusion, double const divisor )
-{
-	GetIndex();
-	BeginSimArea();
-
-	double div = 0.f;
-	if ( divisor <= 0.f ) div = 1.f;
-	else div = divisor;
-
-	grid_out [ Index(i,j,k) ] = 
-		( grid_in [ Index(i,j,k) ] + diffusion * 
-			(
-				grid_out [ Index(i-1, j, k) ] + grid_out [ Index(i+1, j, k) ] +
-				grid_out [ Index(i, j-1, k) ] + grid_out [ Index(i, j+1, k) ] +
-				grid_out [ Index(i, j, k-1) ] + grid_out [ Index(i, j, k+1) ]
-			) 
-		) / div;
-
-	EndSimArea();
-}
-
-__host__ void hostJacobi
-	( double *grid_out, double const *grid_in, double const diffusion )
-{
-	double rate = diffusion;
-
-	cudaDeviceDim3D();
-	for ( int k=0; k<20; k++)
-		kernelJacobi <<<gridDim, blockDim>>> (grid_out, grid_in, rate, 1+6*rate);
-};
 
 __global__ void kernelAdvection
 	( double *buffer, double *stores, const SGDEVICEBUFF *global, SGFIELDTYPE type )
@@ -145,8 +49,8 @@ __host__ void hostAdvection( double *buffer, double *stores,
 	kernelAdvection <<<gridDim, blockDim>>> ( buffer, stores, global, type );
 };
 
-__global__ void kernelGradient( double *div, double *p, 
-	double const *vel_u, double const *vel_v, double const *vel_w )
+__global__ void kernelGradient
+	( double *div, double *p, double const *vel_u, double const *vel_v, double const *vel_w )
 {
 	GetIndex();
 	BeginSimArea();

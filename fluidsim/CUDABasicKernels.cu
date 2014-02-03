@@ -325,6 +325,49 @@ __device__ void atomicSetDeviceBuffer
 	}
 };
 
+/* 返回坐标点的边界信息 */
+__device__ SGBOUNDARY atomicCheckBounds( SGCUDANODES *nodes, const int x, const int y, const int z )
+{
+	const int upper = GRIDS_X * 2;
+	const int lower = -GRIDS_X; 
+	
+	/* 对超出范围的坐标进行处理，默认情况返回值：0.f */
+	if ( x < lower or x >= upper ) return ;
+	if ( y < lower or y >= upper ) return ;
+	if ( z < lower or z >= upper ) return ;
+
+	/* 但当前的坐标还不能立刻使用，因此需要判断坐标落入的具体计算节点中 */
+	SGNODECOORD coord = atomicNodeCoord( x, y, z );
+
+	switch (coord)
+	{
+	case SG_CENTER: // 位于中心，因此不需要做转换
+		if ( nodes->ptrCenter not_eq NULL )
+			return nodes->ptrCenter[Index(x,y,z)].obstacle;
+	case SG_LEFT:  // 位于左节点，将x值右移，原范围[-GRIDS_X, -1]，修正后[0，GRIDS_X-1]
+		if ( nodes->ptrLeft not_eq NULL )
+			return nodes->ptrLeft[Index(x+GRIDS_X,y,z)].obstacle;
+	case SG_RIGHT: // 位于右节点，将x值左移，原范围[GRIDS_X, GRIDS_X*2-1]，修正后[0，GRIDS_X-1]
+		if ( nodes->ptrRight not_eq NULL )
+			return nodes->ptrRight[Index(x-GRIDS_X,y,z)].obstacle;
+	case SG_UP:    // 位于上节点，将y值下移，原范围[GRIDS_X, GRIDS_X*2-1]，修正后[0，GRIDS_X-1]
+		if ( nodes->ptrUp not_eq NULL )
+			return nodes->ptrUp[Index(x,y-GRIDS_X,z)].obstacle;
+	case SG_DOWN:  // 位于下节点，将y值上移，原范围[-GRIDS_X, -1]，修正后[0，GRIDS_X-1]
+		if ( nodes->ptrDown not_eq NULL )
+			return nodes->ptrDown[Index(x,y+GRIDS_X,z)].obstacle;
+	case SG_FRONT: // 位于前节点，将z值后移，原范围[GRIDS_X, GRIDS_X*2-1]，修正后[0，GRIDS_X-1]
+		if ( nodes->ptrFront not_eq NULL )
+			return nodes->ptrFront[Index(x,y,z-GRIDS_X)].obstacle;
+	case SG_BACK:  // 位于后节点，将z值前移，原范围[-GRIDS_X, -1]，修正后[0，GRIDS_X-1]
+		if ( nodes->ptrBack not_eq NULL )
+			return nodes->ptrBack[Index(x,y,z+GRIDS_X)].obstacle;
+
+	default:
+		break;
+	}
+};
+
 #pragma endregion
 
 /*********************************************************************************************************/
@@ -437,42 +480,130 @@ __host__ void AddSource( double *buffer, SGSTDGRID *grids, SGFIELDTYPE type )
 __device__ void atomicCheckDensity
 	( double *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
 {
-	SGSTDGRID *grids = nodes->ptrCenter;
-
 	int ix = 0;
 
 	/* 由于传递的是临时节点信息，所以需要做特殊的处理 */
-	
-	if ( grids[Index(i+1,j,k)].obstacle not_eq SG_WALL ) ix++;
-	if ( grids[Index(i-1,j,k)].obstacle not_eq SG_WALL ) ix++;
-	if ( grids[Index(i,j+1,k)].obstacle not_eq SG_WALL ) ix++;
-	if ( grids[Index(i,j-1,k)].obstacle not_eq SG_WALL ) ix++;
-	if ( grids[Index(i,j,k+1)].obstacle not_eq SG_WALL ) ix++;
-	if ( grids[Index(i,j,k-1)].obstacle not_eq SG_WALL ) ix++;
 
+	if ( atomicCheckBounds( nodes, i+1, j, k ) not_eq SG_WALL ) ix++;
+	if ( atomicCheckBounds( nodes, i-1, j, k ) not_eq SG_WALL ) ix++;
+	if ( atomicCheckBounds( nodes, i, j+1, k ) not_eq SG_WALL ) ix++;
+	if ( atomicCheckBounds( nodes, i, j-1, k ) not_eq SG_WALL ) ix++;
+	if ( atomicCheckBounds( nodes, i, j, k+1 ) not_eq SG_WALL ) ix++;
+	if ( atomicCheckBounds( nodes, i, j, k-1 ) not_eq SG_WALL ) ix++;
+	
 	if ( ix eqt 0 )
 	{
 		buffer[Index(i,j,k)] = 0.f;
 		return;
 	}
 
-	if ( grids[Index(i+1,j,k)].obstacle not_eq SG_WALL )
-		buffer[Index(i+1,j,k)] += buffer[Index(i,j,k)] / ix;
+	double value = buffer[Index(i,j,k)] / ix;
+	double temp  = 0.f;
 
-	if ( grids[Index(i-1,j,k)].obstacle not_eq SG_WALL )
-		buffer[Index(i-1,j,k)] += buffer[Index(i,j,k)] / ix;
+	if ( atomicCheckBounds( nodes, i+1, j, k ) not_eq SG_WALL )
+	{
+		temp = atomicGetDeviceBuffer( nodes, SG_DENSITY_FIELD, i+1, j, k );
+		temp = temp + value;
+		atomicSetDeviceBuffer( nodes, temp, SG_DENSITY_FIELD, i+1, j, k );
+	}
 
-	if ( grids[Index(i,j+1,k)].obstacle not_eq SG_WALL )
-		buffer[Index(i,j+1,k)] += buffer[Index(i,j,k)] / ix;
+	if ( atomicCheckBounds( nodes, i-1, j, k ) not_eq SG_WALL )
+	{
+		temp = atomicGetDeviceBuffer( nodes, SG_DENSITY_FIELD, i-1, j, k );
+		temp = temp + value;
+		atomicSetDeviceBuffer( nodes, temp, SG_DENSITY_FIELD, i-1, j, k );
+	}
 
-	if ( grids[Index(i,j-1,k)].obstacle not_eq SG_WALL )
-		buffer[Index(i,j-1,k)] += buffer[Index(i,j,k)] / ix;
+	if ( atomicCheckBounds( nodes, i, j+1, k ) not_eq SG_WALL )
+	{
+		temp = atomicGetDeviceBuffer( nodes, SG_DENSITY_FIELD, i, j+1, k );
+		temp = temp + value;
+		atomicSetDeviceBuffer( nodes, temp, SG_DENSITY_FIELD, i, j+1, k );
+	}
 
-	if ( grids[Index(i,j,k+1)].obstacle not_eq SG_WALL )
-		buffer[Index(i,j,k+1)] += buffer[Index(i,j,k)] / ix;
+	if ( atomicCheckBounds( nodes, i, j-1, k ) not_eq SG_WALL )
+	{
+		temp = atomicGetDeviceBuffer( nodes, SG_DENSITY_FIELD, i, j-1, k );
+		temp = temp + value;
+		atomicSetDeviceBuffer( nodes, temp, SG_DENSITY_FIELD, i, j-1, k );
+	}
 
-	if ( grids[Index(i,j,k-1)].obstacle not_eq SG_WALL )
-		buffer[Index(i,j,k-1)] += buffer[Index(i,j,k)] / ix;
+	if ( atomicCheckBounds( nodes, i, j, k+1 ) not_eq SG_WALL )
+	{
+		temp = atomicGetDeviceBuffer( nodes, SG_DENSITY_FIELD, i, j, k+1 );
+		temp = temp + value;
+		atomicSetDeviceBuffer( nodes, temp, SG_DENSITY_FIELD, i, j, k+1 );
+	}
+
+	if ( atomicCheckBounds( nodes, i, j, k-1 ) not_eq SG_WALL )
+	{
+		temp = atomicGetDeviceBuffer( nodes, SG_DENSITY_FIELD, i, j, k-1 );
+		temp = temp + value;
+		atomicSetDeviceBuffer( nodes, temp, SG_DENSITY_FIELD, i, j, k-1 );
+	}
+
+	/* 数据清零 */
+	buffer[Index(i,j,k)] = 0.f;
+};
+
+
+/* 对速度场在U、V、W方向上的分量的处理是一致的，是将当前格点的值添加至前格点，并将数值相反。
+所需要注意的是U、V、W表示的方向是不一样的。 */
+__device__ void atomicCheckVelocity_U
+	( double *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
+{
+	double temp = 0.f;
+
+	if ( buffer[Index(i,j,k)] >= 0.f )
+	{
+		if ( atomicCheckBounds( nodes, i-1, j, k ) not_eq SG_WALL )
+		{
+			temp = atomicGetDeviceBuffer( nodes, SG_VELOCITY_U_FIELD, i-1, j, k );
+			temp = temp - buffer[Index(i,j,k)];
+			atomicSetDeviceBuffer( nodes, temp, SG_VELOCITY_U_FIELD, i-1, j, k );
+		}
+	}
+	else
+	{
+		if ( atomicCheckBounds( nodes, i+1, j, k ) not_eq SG_WALL )
+		{
+			temp = atomicGetDeviceBuffer( nodes, SG_VELOCITY_U_FIELD, i+1, j, k );
+			temp = temp - buffer[Index(i,j,k)];
+			atomicSetDeviceBuffer( nodes, temp, SG_VELOCITY_U_FIELD, i+1, j, k );
+		}
+	}
+
+	/* 数据清零 */
+	buffer[Index(i,j,k)] = 0.f;
+};
+
+
+
+/* 对速度场在U、V、W方向上的分量的处理是一致的，是将当前格点的值添加至前格点，并将数值相反。
+所需要注意的是U、V、W表示的方向是不一样的。 */
+__device__ void atomicCheckVelocity_V
+	( double *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
+{
+	double temp = 0.f;
+
+	if ( buffer[Index(i,j,k)] >= 0.f )
+	{
+		if ( atomicCheckBounds( nodes, i, j-1, k ) not_eq SG_WALL )
+		{
+			temp = atomicGetDeviceBuffer( nodes, SG_VELOCITY_U_FIELD, i, j-1, k );
+			temp = temp - buffer[Index(i,j,k)];
+			atomicSetDeviceBuffer( nodes, temp, SG_VELOCITY_U_FIELD, i, j-1, k );
+		}
+	}
+	else
+	{
+		if ( atomicCheckBounds( nodes, i, j+1, k ) not_eq SG_WALL )
+		{
+			temp = atomicGetDeviceBuffer( nodes, SG_VELOCITY_U_FIELD, i, j+1, k );
+			temp = temp - buffer[Index(i,j,k)];
+			atomicSetDeviceBuffer( nodes, temp, SG_VELOCITY_U_FIELD, i, j+1, k );
+		}
+	}
 
 	buffer[Index(i,j,k)] = 0.f;
 };
@@ -480,69 +611,26 @@ __device__ void atomicCheckDensity
 
 /* 对速度场在U、V、W方向上的分量的处理是一致的，是将当前格点的值添加至前格点，并将数值相反。
 所需要注意的是U、V、W表示的方向是不一样的。 */
-__device__ void atomicVelocity_U
-	( double *buffer, SGSTDGRID *grids, const int i, const int j, const int k )
+__device__ void atomicCheckVelocity_W
+	( double *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
 {
-	/* U方向向右为正，因此当检测到当前的格点值大于0时，意味着需要将数值相反，
-	并赋值给左边的格点，但需要注意该格点是否处于计算节点的左边界 */
+	double temp = 0.f;
 	if ( buffer[Index(i,j,k)] >= 0.f )
 	{
-		if ( grids[Index(i-1,j,k)].obstacle not_eq SG_WALL )
+		if ( atomicCheckBounds( nodes, i, j, k-1 ) not_eq SG_WALL )
 		{
-			buffer[Index(i-1,j,k)] += -buffer[Index(i,j,k)];
+			temp = atomicGetDeviceBuffer( nodes, SG_VELOCITY_U_FIELD, i, j, k-1 );
+			temp = temp - buffer[Index(i,j,k)];
+			atomicSetDeviceBuffer( nodes, temp, SG_VELOCITY_U_FIELD, i, j, k-1 );
 		}
 	}
 	else
 	{
-		if ( grids[Index(i+1,j,k)].obstacle not_eq SG_WALL )
+		if ( atomicCheckBounds( nodes, i, j, k+1 ) not_eq SG_WALL )
 		{
-			buffer[Index(i+1,j,k)] += -buffer[Index(i,j,k)];
-		}
-	}
-};
-
-
-/* 对速度场在U、V、W方向上的分量的处理是一致的，是将当前格点的值添加至前格点，并将数值相反。
-所需要注意的是U、V、W表示的方向是不一样的。 */
-__device__ void atomicVelocity_V
-	( double *buffer, SGSTDGRID *grids, const int i, const int j, const int k )
-{
-	if ( buffer[Index(i,j,k)] >= 0.f )
-	{
-		if ( grids[Index(i,j-1,k)].obstacle not_eq SG_WALL )
-		{
-			buffer[Index(i,j-1,k)] += -buffer[Index(i,j,k)];
-		}
-	}
-	else
-	{
-		if ( grids[Index(i,j+1,k)].obstacle not_eq SG_WALL )
-		{
-			buffer[Index(i,j+1,k)] += -buffer[Index(i,j,k)];
-		}
-	}
-
-	buffer[Index(i,j,k)] = 0.f;
-};
-
-
-/* 对速度场在U、V、W方向上的分量的处理是一致的，是将当前格点的值添加至前格点，并将数值相反。
-所需要注意的是U、V、W表示的方向是不一样的。 */
-__device__ void atomicVelocity_W
-	( double *buffer, SGSTDGRID *grids, const int i, const int j, const int k )
-{
-	if ( buffer[Index(i,j,k)] >= 0.f )
-	{
-		if ( grids[Index(i,j,k-1)].obstacle not_eq SG_WALL )
-		{
-			buffer[Index(i,j,k-1)] += -buffer[Index(i,j,k)];
-		}
-	}
-	else
-	{
-		if ( grids[Index(i,j,k+1)].obstacle not_eq SG_WALL )
-		{
-			buffer[Index(i,j,k+1)] += -buffer[Index(i,j,k)];
+			temp = atomicGetDeviceBuffer( nodes, SG_VELOCITY_U_FIELD, i, j, k+1 );
+			temp = temp - buffer[Index(i,j,k)];
+			atomicSetDeviceBuffer( nodes, temp, SG_VELOCITY_U_FIELD, i, j, k+1 );
 		}
 	}
 
@@ -559,26 +647,116 @@ __global__ void kernelBoundary
 	GetIndex();
 
 	/* 这里所需要检测的是中央节点的数据情况 */
-	if ( nodes->ptrCenter[Index(i,j,k)].obstacle eqt SG_WALL )
+	if ( atomicCheckBounds( nodes, i, j, k ) eqt SG_WALL )
 	{
 		switch ( type )
 		{
-//		case SG_DENSITY_FIELD:
-//			atomicCheckDensity( buffer, grids, i, j, k );
-//			break;
-//		case SG_VELOCITY_U_FIELD:
-//			atomicVelocity_U( buffer, grids, i, j, k );
-//			break;
-//		case SG_VELOCITY_V_FIELD:
-//			atomicVelocity_V( buffer, grids, i, j, k );
-//			break;
-//		case SG_VELOCITY_W_FIELD:
-//			atomicVelocity_W( buffer, grids, i, j, k );
-//			break;
-//		default:
-//			break;
+		case SG_DENSITY_FIELD:
+			atomicCheckDensity( buffer, nodes, i, j, k );
+			break;
+		case SG_VELOCITY_U_FIELD:
+			atomicCheckVelocity_U( buffer, nodes, i, j, k );
+			break;
+		case SG_VELOCITY_V_FIELD:
+			atomicCheckVelocity_V( buffer, nodes, i, j, k );
+			break;
+		case SG_VELOCITY_W_FIELD:
+			atomicCheckVelocity_W( buffer, nodes, i, j, k );
+			break;
+		default:
+			break;
 		}
 	}
 };
+
+/* kernelSmoothHalo 函数，将 */
+__global__ void kernelSmoothHalo
+	( double *buffer, double *stores, SGCUDANODES *nodes, SGFIELDTYPE type )
+{
+	GetIndex();
+
+	buffer[ Index(i,j,gst_header) ] += atomicTrilinear( stores, nodes, type, i, j, gst_header );
+	buffer[ Index(i,j,gst_tailer) ] += atomicTrilinear( stores, nodes, type, i, j, gst_tailer );
+	buffer[ Index(i,gst_header,k) ] += atomicTrilinear( stores, nodes, type, i, gst_header, k );
+	buffer[ Index(i,gst_tailer,k) ] += atomicTrilinear( stores, nodes, type, i, gst_tailer, k );
+	buffer[ Index(gst_header,j,k) ] += atomicTrilinear( stores, nodes, type, gst_header, j, k );
+	buffer[ Index(gst_tailer,j,k) ] += atomicTrilinear( stores, nodes, type, gst_tailer, j, k );
+
+	if ( i eqt gst_header or i eqt gst_tailer ) 
+	{
+		if ( j eqt gst_header or j eqt gst_tailer )
+		{
+			if ( k eqt gst_header or k eqt gst_tailer )
+			{
+				/* vertices */
+				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 3.f;
+			}
+			elif ( k not_eq gst_header and k not_eq gst_tailer )
+			{
+				/* edges x 4 */
+				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 2.f;
+			}
+		}
+	}
+
+	if ( i eqt gst_header or i eqt gst_tailer ) 
+	{
+		if ( k eqt gst_header or k eqt gst_tailer )
+		{
+			if ( j not_eq gst_header and j not_eq gst_tailer )
+			{
+				/* edges x 4 */
+				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 2.f;
+			}
+		}
+	}
+
+	if ( j eqt gst_header or j eqt gst_tailer )
+	{
+		if ( k eqt gst_header or k eqt gst_tailer )
+		{
+			if ( i not_eq gst_header and i not_eq gst_tailer )
+			{
+				/* edges x 4 */
+				buffer[Index(i,j,k)] = buffer[Index(i,j,k)] / 2.f;
+			}
+		}
+	}
+};
+
+__global__ void kernelJacobi
+	( double *grid_out, double const *grid_in, double const diffusion, double const divisor )
+{
+	GetIndex();
+	BeginSimArea();
+
+	double div = 0.f;
+	if ( divisor <= 0.f ) div = 1.f;
+	else div = divisor;
+
+	grid_out [ Index(i,j,k) ] = 
+		( grid_in [ Index(i,j,k) ] + diffusion * 
+			(
+				grid_out [ Index(i-1, j, k) ] + grid_out [ Index(i+1, j, k) ] +
+				grid_out [ Index(i, j-1, k) ] + grid_out [ Index(i, j+1, k) ] +
+				grid_out [ Index(i, j, k-1) ] + grid_out [ Index(i, j, k+1) ]
+			) 
+		) / div;
+
+	EndSimArea();
+}
+
+__host__ void hostJacobi( double *grid_out, double const *grid_in, double const diffusion )
+{
+	double rate = diffusion;
+
+	cudaDeviceDim3D();
+	for ( int k=0; k<20; k++)
+		kernelJacobi <<<gridDim, blockDim>>> (grid_out, grid_in, rate, 1+6*rate);
+};
+
+
+
+
 
 #pragma endregion
