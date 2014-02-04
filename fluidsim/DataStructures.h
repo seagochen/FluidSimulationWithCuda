@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 23, 2014
-* <Last Time>     Feb 01, 2014
+* <Last Time>     Feb 04, 2014
 * <File Name>     DataStructures.h
 */
 
@@ -148,10 +148,16 @@ namespace sge
 		SGSTDGRID  *prtGrids;    // 自定义数据类型，表示该计算节点所包含的计算网格，本程序中格点数默认为64^3
 	};
 
-	/* 从全局中抓取局部的相邻的节点，用于在GPU进行并行计算 */
+	/* 从全局中抓取局部的相邻的节点，在GPU进行并行计算 */
 	struct SGCUDANODES
 	{
 		SGSTDGRID *ptrCenter, *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+	};
+
+	/* 用于fluid simulation的临时数据 */
+	struct SGTEMPBUFFERS
+	{
+		SGDOUBLE *ptrCenter, *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 	};
 
 }

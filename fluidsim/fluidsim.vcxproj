@@ -51,11 +51,6 @@
     <None Include="shader\raycasting.frag" />
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="Kernels.cu">
-      <FileType>CppCode</FileType>
-    </CudaCompile>
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A2E2ED4E-D77D-4CCD-B62A-11FF84812774}</ProjectGuid>
     <RootNamespace>fluidsim</RootNamespace>

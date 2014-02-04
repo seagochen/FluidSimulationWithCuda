@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Feb 01, 2014
+* <Last Time>     Feb 04, 2014
 * <File Name>     FunctionHelper.cpp
 */
 
@@ -81,66 +81,12 @@ SGRUNTIMEMSG FunctionHelper::CreateIntegerBuffers( SGINT size, SGINT nPtrs, ... 
 	return SG_RUNTIME_OK;
 };
 
-void FunctionHelper::CopyData
-	( SGDOUBLE *buffer, const SGDEVICEBUFF *devbuffs, SGFIELDTYPE type, SGNODECOORD coord )
+void FunctionHelper::CopyBuffers( SGTEMPBUFFERS *bufs, const SGCUDANODES *nodes, SGFIELDTYPE type )
 {
-	switch ( coord )
-	{
-	case SG_CENTER:
-		hostCopyBuffer( buffer, devbuffs->ptrCenter, type );
-		break;
-	case SG_LEFT:
-		hostCopyBuffer( buffer, devbuffs->ptrLeft, type );
-		break;
-	case SG_RIGHT:
-		hostCopyBuffer( buffer, devbuffs->ptrRight, type );
-		break;
-	case SG_UP:
-		hostCopyBuffer( buffer, devbuffs->ptrUp, type );
-		break;
-	case SG_DOWN:
-		hostCopyBuffer( buffer, devbuffs->ptrDown, type );
-		break;
-	case SG_FRONT:
-		hostCopyBuffer( buffer, devbuffs->ptrFront, type );
-		break;
-	case SG_BACK:
-		hostCopyBuffer( buffer, devbuffs->ptrBack, type );
-		break;
-
-	default:
-		break;
-	}
+	hostCopyBuffer( bufs, nodes, type );
 };
 
-void FunctionHelper::CopyData
-	( SGDEVICEBUFF *devbuffs, const SGDOUBLE *buffer, SGFIELDTYPE type, SGNODECOORD coord )
+void FunctionHelper::CopyBuffers( SGCUDANODES *nodes, const SGTEMPBUFFERS *bufs, SGFIELDTYPE type )
 {
-	switch ( coord )
-	{
-	case SG_CENTER:
-		hostCopyBuffer( devbuffs->ptrCenter, buffer, type );
-		break;
-	case SG_LEFT:
-		hostCopyBuffer( devbuffs->ptrLeft, buffer, type );
-		break;
-	case SG_RIGHT:
-		hostCopyBuffer( devbuffs->ptrRight, buffer, type );
-		break;
-	case SG_UP:
-		hostCopyBuffer( devbuffs->ptrUp, buffer, type );
-		break;
-	case SG_DOWN:
-		hostCopyBuffer( devbuffs->ptrDown, buffer, type );
-		break;
-	case SG_FRONT:
-		hostCopyBuffer( devbuffs->ptrFront, buffer, type );
-		break;
-	case SG_BACK:
-		hostCopyBuffer( devbuffs->ptrBack, buffer, type );
-		break;
-
-	default:
-		break;
-	}
+	hostCopyBuffer( nodes, bufs, type );
 };

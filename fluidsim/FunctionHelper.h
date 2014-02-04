@@ -26,8 +26,8 @@ namespace sge
 		SGRUNTIMEMSG CreateDoubleBuffers( SGINT size, SGINT nPtrs, ... );
 		SGRUNTIMEMSG CreateIntegerBuffers( SGINT size, SGINT nPtrs, ... );
 
-		void CopyData( SGDOUBLE *buffer, const SGDEVICEBUFF *devbuffs, SGFIELDTYPE type, SGNODECOORD coord );
-		void CopyData( SGDEVICEBUFF *devbuffs, const SGDOUBLE *buffer, SGFIELDTYPE type, SGNODECOORD coord );
+		void CopyBuffers( SGTEMPBUFFERS *bufs, const SGCUDANODES *nodes, SGFIELDTYPE type );
+		void CopyBuffers( SGCUDANODES *nodes, const SGTEMPBUFFERS *bufs, SGFIELDTYPE type );
 	};
 
 };
