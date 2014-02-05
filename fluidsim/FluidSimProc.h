@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Feb 02, 2014
+* <Last Time>     Feb 05, 2014
 * <File Name>     FluidSimProc.h
 */
 
@@ -25,65 +25,67 @@ namespace sge
 	class FluidSimProc
 	{
 	private:
-		/* vector list */
+		/* nodes, and buffers for fluid simulation */
 		vector<SGHOSTNODE> host_nodes;
-		vector<SGDOUBLE*>  dev_buf;
+		vector<SGTEMPBUFFERS*> dev_bufs;
+
+		/* fluid simulation buffers */
+		SGCUDANODES *dev_nodes;
+		SGSTDGRID *ptrCenter, *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+		
+		/* buffer for temporary storing */
+		SGDOUBLE  *dev_stores;
 
 		/* buffer for volume rendering */
 		SGUCHAR *host_visual, *dev_visual;
-
-		/* buffer for temporary storing */
-		double *dev_fbuf;
-
-		/* fluid simulation buffers */
-		SGDEVICEBUFF *dev_global;
-
+	
+	private:
 		/* target */
-		int nodeIX;
+		int m_ix;
 
 		/* etc */
 		FunctionHelper m_helper;
 
 	public:
+		/* default constructor */
 		FluidSimProc( FLUIDSPARAM *fluid );
 
+		/* fluid simulation processing function */
 		void FluidSimSolver( FLUIDSPARAM *fluid );
+
+		/* allocate resource */
+		bool AllocateResource( void );
+
+		/* when program existed, release resource */
 		void FreeResource( void );
-		void ZeroAllBuffer( void );
-		void ZeroDevData( void );
-		void SelectNode( int i, int j, int k );
-		void SelectNode( int index );
+
+		/* zero the buffers for fluid simulation */
+		void ZeroBuffers( void );
+
+		/* choose the node and mark it as actived */
+		void ActiveNode( int i, int j, int k );
+
+		/* choose the node and mark it as deactived */
+		void DeactiveNode( int i, int j, int k );
+
+		/* retrieve the density back and load into volumetric data for rendering */
+		void PickVolumetric( FLUIDSPARAM *fluid );
 
 	private:
-		SGRUNTIMEMSG AllocateResourcePtrs( FLUIDSPARAM *fluid );
-		void PickData( FLUIDSPARAM *fluid );
-		void CopyDataToHost( void );
-		void CopyDataToDevice( void );
-		void SetObstacle( void );
-		void LinkDataset( void );
-		void SetParameters( FLUIDSPARAM *fluid );
+		/* copy host data to CUDA device */
+		void UploadBuffers( void );
 
-	private:
-		/* building nodes-structure */
-		void BuildStructure( void );
-		/* left */
-		void LeftDataToHost( void );
-		void LeftDataToDevice( void );
-		/* right */
-		void RightDataToHost( void );
-		void RightDataToDevice( void );
-		/* up */
-		void UpDataToHost( void );
-		void UpDataToDevice( void );
-		/* down */
-		void DownDataToHost( void );
-		void DownDataToDevice( void );
-		/* front */
-		void FrontDataToHost( void );
-		void FrontDataToDevice( void );
-		/* back */
-		void BackDataToHost( void );
-		void BackDataToDevice( void );
+		/* retrieve data back to host */
+		void DownloadBuffers( void );
+
+		/* initialize the fluid simulation parameters, such as FPS and etc. */
+		void InitParams( FLUIDSPARAM *fluid );
+
+		/* zero data, set the bounds */
+		void InitSimNodes( void );
+
+		/* create simulation nodes' topological structure */
+		void BuildOrder( void );
 	};
 };
 

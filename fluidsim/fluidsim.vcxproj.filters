@@ -85,5 +85,8 @@
     <CudaCompile Include="CUDABasicKernels.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
+    <CudaCompile Include="FluidSimProcKernels.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

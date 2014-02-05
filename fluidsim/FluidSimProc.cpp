@@ -2,10 +2,9 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Nov 15, 2013
-* <Last Time>     Feb 02, 2014
+* <Last Time>     Feb 05, 2014
 * <File Name>     FluidSimProc.cpp
 */
-
 
 #include <iostream>
 #include <cuda_runtime_api.h>
@@ -13,57 +12,18 @@
 #include "FluidSimProc.h"
 
 #define DEVLISTNUM       10
-#define dev_u     dev_buf[0]
-#define dev_v     dev_buf[1]
-#define dev_w     dev_buf[2]
-#define dev_div   dev_buf[3]
-#define dev_p     dev_buf[4]
-#define dev_dens  dev_buf[5]
-#define dev_u0    dev_buf[6]
-#define dev_v0    dev_buf[7]
-#define dev_w0    dev_buf[8]
-#define dev_dens0 dev_buf[9]
+#define dev_u     dev_bufs[0]
+#define dev_v     dev_bufs[1]
+#define dev_w     dev_bufs[2]
+#define dev_div   dev_bufs[3]
+#define dev_p     dev_bufs[4]
+#define dev_dens  dev_bufs[5]
+#define dev_u0    dev_bufs[6]
+#define dev_v0    dev_bufs[7]
+#define dev_w0    dev_bufs[8]
+#define dev_dens0 dev_bufs[9]
 
 
-
-
-
-using namespace sge;
-
-FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
-{
-	/* allocate the space for fluid simulation */
-	if ( AllocateResourcePtrs( fluid ) != SG_RUNTIME_OK )
-	{
-		FreeResourcePtrs();
-		exit(1);
-	}
-
-	/* building data structure */
-	BuildStructure();
-
-	/* initialize the parameters of fluid simulation */
-	SetParameters( fluid );
-
-	/* select a node as initilize stage */
-	SelectNode( 10 );
-
-	/* finally, print the state message and zero the data */
-	printf( "fluid simulation ready, zero the data and preparing the stage now...\n" );
-	ZeroAllBuffer();
-	SetObstacle();
-	printf( "finished!\n" );
-};
-
-void FluidSimProc::SetParameters( FLUIDSPARAM *fluid )
-{
-	/* initilize the status of FPS counter */
-	fluid->fps.dwCurrentTime    = 0;
-	fluid->fps.dwElapsedTime    = 0;
-	fluid->fps.dwFrames         = 0;
-	fluid->fps.dwLastUpdateTime = 0;
-	fluid->fps.uFPS             = 0;
-};
 
 SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs( FLUIDSPARAM *fluid )
 {

@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Feb 04, 2014
+* <Last Time>     Feb 05, 2014
 * <File Name>     FunctionHelper.cpp
 */
 
@@ -89,4 +89,30 @@ void FunctionHelper::CopyBuffers( SGTEMPBUFFERS *bufs, const SGCUDANODES *nodes,
 void FunctionHelper::CopyBuffers( SGCUDANODES *nodes, const SGTEMPBUFFERS *bufs, SGFIELDTYPE type )
 {
 	hostCopyBuffer( nodes, bufs, type );
+};
+
+SGRUNTIMEMSG FunctionHelper::CreateHostNodeBuffers( SGHOSTNODE  **node )
+{
+	*node = (SGHOSTNODE*)malloc( sizeof(SGHOSTNODE));
+
+	if ( *node not_eq nullptr )
+		return SG_RUNTIME_OK;
+	
+	return SG_MALLOC_SPACE_FAILED;
+};
+
+SGRUNTIMEMSG FunctionHelper::CreateCUDANodeBuffers( SGCUDANODES **node )
+{
+	if ( cudaMalloc( (void**)node, sizeof(SGCUDANODES)) eqt cudaSuccess )
+		return SG_RUNTIME_OK;
+
+	return SG_MALLOC_SPACE_FAILED;
+};
+
+SGRUNTIMEMSG FunctionHelper::CreateCUDATempBuffers( SGTEMPBUFFERS **bufs )
+{
+	if ( cudaMalloc( (void**)bufs, sizeof(SGTEMPBUFFERS)) eqt cudaSuccess )
+		return SG_RUNTIME_OK;
+
+	return SG_MALLOC_SPACE_FAILED;
 };

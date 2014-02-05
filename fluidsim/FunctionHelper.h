@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Feb 01, 2014
+* <Last Time>     Feb 05, 2014
 * <File Name>     FunctionHelper.h
 */
 
@@ -10,6 +10,7 @@
 #ifndef __function_helper_h_
 #define __function_helper_h_
 
+#include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include "DataStructures.h"
 
@@ -28,8 +29,11 @@ namespace sge
 
 		void CopyBuffers( SGTEMPBUFFERS *bufs, const SGCUDANODES *nodes, SGFIELDTYPE type );
 		void CopyBuffers( SGCUDANODES *nodes, const SGTEMPBUFFERS *bufs, SGFIELDTYPE type );
-	};
 
+		SGRUNTIMEMSG CreateHostNodeBuffers( SGHOSTNODE  **node );
+		SGRUNTIMEMSG CreateCUDANodeBuffers( SGCUDANODES **node );
+		SGRUNTIMEMSG CreateCUDATempBuffers( SGTEMPBUFFERS **bufs );
+	};
 };
 
 #endif

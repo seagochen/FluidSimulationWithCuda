@@ -22,10 +22,15 @@
     <CudaCompile Include="CUDABasicKernels.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
-    <ClCompile Include="FunctionHelper.cpp" />
+    <ClCompile Include="FunctionHelper.cpp">
+      <FileType>CppCode</FileType>
+    </ClCompile>
     <ClCompile Include="FluidSimProc.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
     <ClCompile Include="FrameworkDynamic.cpp" />
+    <CudaCompile Include="FluidSimProcKernels.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CUDAInterfaces.h" />

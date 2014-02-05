@@ -145,19 +145,32 @@ namespace sge
 		SGHOSTNODE *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack; // 链表，计算节点的拓扑结构
 		SGBOOLEAN   bActive;     // 布尔值，表示该节点是否被激活
 		SGINT3      n3Pos;       // INT3，表示该节点的空间坐标
-		SGSTDGRID  *prtGrids;    // 自定义数据类型，表示该计算节点所包含的计算网格，本程序中格点数默认为64^3
+		SGSTDGRID   ptrGrids[GRIDS_X*GRIDS_X*GRIDS_X]; // 该计算节点所包含的计算网格，本程序中格点数默认为64^3
 	};
 
 	/* 从全局中抓取局部的相邻的节点，在GPU进行并行计算 */
 	struct SGCUDANODES
 	{
-		SGSTDGRID *ptrCenter, *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+		SGSTDGRID ptrCenter[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGSTDGRID ptrLeft[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGSTDGRID ptrRight[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGSTDGRID ptrUp[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGSTDGRID ptrDown[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGSTDGRID ptrFront[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGSTDGRID ptrBack[GRIDS_X*GRIDS_X*GRIDS_X];
 	};
+
 
 	/* 用于fluid simulation的临时数据 */
 	struct SGTEMPBUFFERS
 	{
-		SGDOUBLE *ptrCenter, *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+		SGDOUBLE ptrCenter[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGDOUBLE ptrLeft[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGDOUBLE ptrRight[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGDOUBLE ptrUp[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGDOUBLE ptrDown[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGDOUBLE ptrFront[GRIDS_X*GRIDS_X*GRIDS_X];
+		SGDOUBLE ptrBack[GRIDS_X*GRIDS_X*GRIDS_X];
 	};
 
 }
