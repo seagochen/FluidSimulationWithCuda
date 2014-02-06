@@ -116,6 +116,7 @@ void FluidSimProc::UploadBuffers( void )
 
 	if ( host_nodes[m_ix].bActive )
 	{
+		/* upload buffers to device */
 		if ( host_nodes[m_ix].ptrLeft eqt nullptr ) kernelZeroSTDGrids<<<gridDim, blockDim>>>(ptrLeft);
 		elif ( cudaMemcpy(ptrLeft, host_nodes[m_ix].ptrLeft->ptrGrids,
 			sizeof(SGSTDGRID) * size, cudaMemcpyHostToDevice) != cudaSuccess )
@@ -177,6 +178,10 @@ void FluidSimProc::UploadBuffers( void )
 			FreeResource();
 			exit(1);
 		}
+
+		/* Copy data to device nodes for next fluid simulations */
+		kernelUploadSTDGrids <<<gridDim, blockDim>>>
+			( dev_nodes, ptrCenter, ptrLeft, ptrRight, ptrUp, ptrDown, ptrFront, ptrBack ); 
 	}
 };
 
@@ -202,4 +207,87 @@ __global__ void kernelDownloadSTDGrids
 /* retrieve data back to host */
 void FluidSimProc::DownloadBuffers( void )
 {
+	cudaDeviceDim3D();
+	size_t size = GRIDS_X * GRIDS_X * GRIDS_X;
+
+	if ( host_nodes[m_ix].bActive )
+	{
+		/* retrieve data back */
+		kernelDownloadSTDGrids<<<gridDim, blockDim>>>
+			( ptrCenter, ptrLeft, ptrRight, ptrUp, ptrDown, ptrFront, ptrBack, dev_nodes );
+
+		if ( cudaMemcpy( host_nodes[m_ix].ptrGrids, ptrCenter,
+			sizeof(SGSTDGRID) * size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+
+		if ( host_nodes[m_ix].ptrLeft not_eq nullptr )
+		{
+			if ( cudaMemcpy( host_nodes[m_ix].ptrLeft->ptrGrids, ptrLeft,
+				sizeof(SGSTDGRID) * size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+			{
+				m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+				FreeResource();
+				exit(1);
+			}
+		}
+
+		if ( host_nodes[m_ix].ptrRight not_eq nullptr )
+		{
+			if ( cudaMemcpy( host_nodes[m_ix].ptrRight->ptrGrids, ptrRight,
+				sizeof(SGSTDGRID) * size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+			{
+				m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+				FreeResource();
+				exit(1);
+			}
+		}
+
+		if ( host_nodes[m_ix].ptrUp not_eq nullptr )
+		{
+			if ( cudaMemcpy( host_nodes[m_ix].ptrUp->ptrGrids, ptrUp,
+				sizeof(SGSTDGRID) * size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+			{
+				m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+				FreeResource();
+				exit(1);
+			}
+		}
+
+		if ( host_nodes[m_ix].ptrDown not_eq nullptr )
+		{
+			if ( cudaMemcpy( host_nodes[m_ix].ptrDown->ptrGrids, ptrDown,
+				sizeof(SGSTDGRID) * size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+			{
+				m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+				FreeResource();
+				exit(1);
+			}
+		}
+
+		if ( host_nodes[m_ix].ptrFront not_eq nullptr )
+		{
+			if ( cudaMemcpy( host_nodes[m_ix].ptrFront->ptrGrids, ptrFront,
+				sizeof(SGSTDGRID) * size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+			{
+				m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+				FreeResource();
+				exit(1);
+			}
+		}
+
+		if ( host_nodes[m_ix].ptrBack not_eq nullptr )
+		{
+			if ( cudaMemcpy( host_nodes[m_ix].ptrBack->ptrGrids, ptrBack,
+				sizeof(SGSTDGRID) * size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+			{
+				m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+				FreeResource();
+				exit(1);
+			}
+		}
+	};
 };
