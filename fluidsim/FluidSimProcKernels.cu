@@ -26,7 +26,6 @@
 
 #include "FluidSimProc.h"
 
-
 using namespace sge;
 
 FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
@@ -55,7 +54,6 @@ FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 	printf( "fluid simulation ready...\n" );
 };
 
-
 void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 {
 	/* initilize the status of FPS counter */
@@ -65,7 +63,6 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	fluid->fps.dwLastUpdateTime = 0;
 	fluid->fps.uFPS             = 0;
 };
-
 
 __device__ void atomicCopyGridsData( SGSTDGRID *grid0, const SGSTDGRID *grid1, int id )
 {
@@ -94,7 +91,6 @@ __global__ void kernelUploadSTDGrids
 	atomicCopyGridsData( nodes->ptrBack, ptrBack, id );
 };
 
-
 __global__ void kernelZeroSTDGrids( SGSTDGRID *grids )
 {
 	GetIndex();
@@ -106,7 +102,6 @@ __global__ void kernelZeroSTDGrids( SGSTDGRID *grids )
 	grids[id].w    = 0.f;
 	grids[id].obstacle = SG_BLANK;
 };
-
 
 /* copy host data to CUDA device */
 void FluidSimProc::UploadBuffers( void )
@@ -184,7 +179,6 @@ void FluidSimProc::UploadBuffers( void )
 			( dev_nodes, ptrCenter, ptrLeft, ptrRight, ptrUp, ptrDown, ptrFront, ptrBack ); 
 	}
 };
-
 
 __global__ void kernelDownloadSTDGrids
 	( SGSTDGRID *ptrCenter, SGSTDGRID *ptrLeft, SGSTDGRID *ptrRight,
@@ -290,4 +284,114 @@ void FluidSimProc::DownloadBuffers( void )
 			}
 		}
 	};
+};
+
+void FluidSimProc::DeactiveNode( int i, int j, int k )
+{
+	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
+	{
+		m_ix = cudaIndex3D( i, j, k, NODES_X );
+
+		if ( host_nodes[m_ix].bActive )
+		{
+			host_nodes[m_ix].bActive = false;
+			printf ( "node no.%d is deactived!\n", m_ix );
+		}
+	}
+};
+
+void FluidSimProc::ActiveNode( int i, int j, int k )
+{
+	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
+	{
+		m_ix = cudaIndex3D( i, j, k, NODES_X );
+
+		if ( !host_nodes[m_ix].bActive )
+		{
+			host_nodes[m_ix].bActive = true;
+			printf ( "node no.%d is actived!\n", m_ix );
+		}
+	}	
+};
+
+void FluidSimProc::BuildOrder( void )
+{
+	printf( "structure:\n" );
+	for ( int i = 0; i < NODES_X; i++ )
+	{
+		for ( int j = 0; j < NODES_X; j++ )
+		{
+			for ( int k = 0; k < NODES_X; k++ )
+			{
+				int index = cudaIndex3D( i, j, k, NODES_X );
+
+				if ( index >= host_nodes.size() or index < 0 )
+				{
+					printf ( "index out of range! %s, line: %d \n", __FILE__, __LINE__ );
+					exit ( 1 );
+				}
+
+				/* left */
+				if ( i >= 1 )
+					host_nodes[index].ptrLeft = &host_nodes[index-1];
+				/* right */
+				if ( i <= NODES_X - 2 )
+					host_nodes[index].ptrRight = &host_nodes[index+1];
+				/* down */
+				if ( j >= 1 )
+					host_nodes[index].ptrDown = &host_nodes[index-NODES_X];
+				/* up */
+				if ( j <= NODES_X - 2 )
+					host_nodes[index].ptrUp = &host_nodes[index+NODES_X];
+				/* back */
+				if ( k >= 1 )
+					host_nodes[index].ptrBack = &host_nodes[index-NODES_X*NODES_X];
+				/* front */
+				if ( k <= NODES_X - 2 )
+					host_nodes[index].ptrFront = &host_nodes[index+NODES_X*NODES_X];
+
+				host_nodes[index].n3Pos.x = i;
+				host_nodes[index].n3Pos.y = j;
+				host_nodes[index].n3Pos.z = k;
+
+				printf ( "no: %d | offset: %d%d%d | L: %d | R: %d | U: %d | D: %d | F: %d | B: %d \n",
+					index,
+					host_nodes[index].n3Pos.x, 
+					host_nodes[index].n3Pos.y, 
+					host_nodes[index].n3Pos.z,
+					host_nodes[index].ptrLeft != NULL,
+					host_nodes[index].ptrRight != NULL,
+					host_nodes[index].ptrUp != NULL,
+					host_nodes[index].ptrDown != NULL,
+					host_nodes[index].ptrFront != NULL,
+					host_nodes[index].ptrBack != NULL );
+			}
+		}
+	}
+
+	printf( "-----------------------------------------------\n" );
+};
+
+
+void FluidSimProc::InitSimNodes( void )
+{
+	/* Get node index */
+	int nID = cudaIndex3D( 1, 1, 0, NODES_X );
+
+	const int half = GRIDS_X / 2;
+	
+	for ( int i = 0; i < GRIDS_X; i++ )
+	{
+		for ( int j = 0; j < GRIDS_X; j++ )
+		{
+			for ( int k = 0; k < GRIDS_X; k++ )
+			{
+				host_nodes[ nID ].ptrGrids[ Index(i, j, k) ].obstacle = SG_BD BD_BLANK;
+
+				if ( j < 1 )
+					if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
+						host_nodes[ m_index ].ptrObs[ Index(i, j, k) ] = BD_SOURCE;
+			}
+		}
+	}
 };
