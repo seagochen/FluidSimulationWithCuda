@@ -52,13 +52,6 @@ namespace sge
 	private:
 		static std::string string_fmt( const std::string fmt_str, ... );
 		static SGVOID SetDefaultParam( SGVOID );
-
-	private:
-		static SGMAINACTIVITY   *m_activity;
-		static FLUIDSPARAM       m_fluid;
-		static FluidSimProc     *m_simproc;
-		static char             *m_szTitle;
-
 	}FrameworkDynamic;
 };
 

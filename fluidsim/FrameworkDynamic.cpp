@@ -1,3 +1,5 @@
+#pragma region framework basic functions
+
 /**
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
@@ -416,13 +418,18 @@ void Framework_v1_0::SetVolumeInfoUinforms ( FLUIDSPARAM *fluid )
 ***********************************************************************************************************
 **************** 以下成员函数包含模型的初始化，及运行。关于流体模拟的计算过程则被封装在其他类中 *****************
 */
-
+#pragma endregion
 
 #include <stdarg.h>
 #include <memory>
 #include <string>
 
 using std::string;
+
+static SGMAINACTIVITY   *m_activity;
+static FLUIDSPARAM       m_fluid;
+static FluidSimProc     *m_simproc;
+static SGCHAR           *m_szTitle;
 
 /* 基本框架所默认的构造函数，需要传入SGGUI的地址，以及创建的窗口的长和宽 */
 Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height  )
@@ -618,7 +625,7 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 			break;
 	
 		case sge::SG_KEY_C:
-			m_simproc->ZeroAllBuffer ();
+			m_simproc->ZeroBuffers();
 			break;
 		
 		default:

@@ -46,7 +46,7 @@ __device__ void atomicSetValue
 
 /* CopyBuffer的重载之一，将网格的数据拷贝到临时数据中 */
 __global__ void kernelCopyBuffer
-	( SGTEMPBUFFERS *buffs, const SGCUDANODES *nodes, const SGFIELDTYPE type )
+	( SGSIMPLENODES *buffs, const SGCUDANODES *nodes, const SGFIELDTYPE type )
 {
 	GetIndex();
 
@@ -97,7 +97,7 @@ __global__ void kernelCopyBuffer
 
 /* CopyBuffer的重载之一，将临时数据拷贝到网格中 */
 __global__ void kernelCopyBuffer
-	( SGCUDANODES *nodes, const SGTEMPBUFFERS *buffs, const SGFIELDTYPE type )
+	( SGCUDANODES *nodes, const SGSIMPLENODES *buffs, const SGFIELDTYPE type )
 {
 	GetIndex();
 	
@@ -148,7 +148,7 @@ __global__ void kernelCopyBuffer
 
 /* 对CopyBuffer的C语言封装，将网格的数据拷贝到临时数据中 */
 __host__ void hostCopyBuffer
-	( SGTEMPBUFFERS *buffs, const SGCUDANODES *nodes, const SGFIELDTYPE type )
+	( SGSIMPLENODES *buffs, const SGCUDANODES *nodes, const SGFIELDTYPE type )
 {
 	cudaDeviceDim3D();
 	kernelCopyBuffer <<<gridDim, blockDim>>> ( buffs, nodes, type );
@@ -157,7 +157,7 @@ __host__ void hostCopyBuffer
 
 /* 对CopyBuffer的C语言封装，将临时数据拷贝到网格中 */
 __host__ void hostCopyBuffer
-	( SGCUDANODES *nodes, const SGTEMPBUFFERS *buffs, const SGFIELDTYPE type )
+	( SGCUDANODES *nodes, const SGSIMPLENODES *buffs, const SGFIELDTYPE type )
 {
 	cudaDeviceDim3D();
 	kernelCopyBuffer <<<gridDim, blockDim>>> ( nodes, buffs, type );
@@ -165,7 +165,7 @@ __host__ void hostCopyBuffer
 
 
 /* 交换两段GPU buffer的数据，需要注意的是这两段数据的长度应该是一样的，是64^3 */
-__global__ void kernelSwapBuffer( SGTEMPBUFFERS *buf1, SGTEMPBUFFERS *buf2 )
+__global__ void kernelSwapBuffer( SGSIMPLENODES *buf1, SGSIMPLENODES *buf2 )
 {
 	GetIndex ();
 
@@ -198,7 +198,7 @@ __global__ void kernelSwapBuffer( SGTEMPBUFFERS *buf1, SGTEMPBUFFERS *buf2 )
 
 
 /* 对SwapBuffer的C语言封装，交换两段GPU buffer的数据，需要注意的是这两段数据的长度应该是一样的，是64^3 */
-__host__ void hostSwapBuffer( SGTEMPBUFFERS *buf1, SGTEMPBUFFERS *buf2 )
+__host__ void hostSwapBuffer( SGSIMPLENODES *buf1, SGSIMPLENODES *buf2 )
 {
 	cudaDeviceDim3D();
 	kernelSwapBuffer<<<gridDim, blockDim>>>(buf1, buf2);
@@ -206,7 +206,7 @@ __host__ void hostSwapBuffer( SGTEMPBUFFERS *buf1, SGTEMPBUFFERS *buf2 )
 
 
 /* 对GPU buffer的数据做归零 */
-__global__ void kernelZeroBuffer( SGTEMPBUFFERS *buf )
+__global__ void kernelZeroBuffer( SGSIMPLENODES *buf )
 {
 	GetIndex();
 	buf->ptrCenter[Index(i,j,k)] = 0.f;
@@ -220,45 +220,10 @@ __global__ void kernelZeroBuffer( SGTEMPBUFFERS *buf )
 
 
 /* 对ZeroBuffer的C语言封装，对GPU buffer的数据做归零 */
-__host__ void hostZeroBuffer( SGTEMPBUFFERS *buf )
+__host__ void hostZeroBuffer( SGSIMPLENODES *buf )
 {
 	cudaDeviceDim3D();
-
-	kernelZeroBuffer<<<gridDim, blockDim>>>( temp );
-
-};
-
-
-__global__ void kernelPickData
-	( unsigned char *data, const SGTEMPBUFFERS *bufs,
-	int const offseti, int const offsetj, int const offsetk )
-{
-	GetIndex();
-
-	int di = offseti + i;
-	int dj = offsetj + j;
-	int dk = offsetk + k;
-
-	/* zero data first */
-	data[ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
-
-	/* retrieve data from grid */
-	double value = atomicGetDeviceBuffer( bufs, i, j, k );
-
-	/* append data to volume data */
-	int temp = sground ( value );
-	if ( temp > 0 and temp < 250 )
-		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (unsigned char) temp;
-};
-
-
-/* 采集网格数据，并转换为volumetric data */
-__host__ void hostPickData 
-	( unsigned char *data, const SGTEMPBUFFERS *bufs,
-	int const offi, int const offj, int const offk )
-{
-	cudaDeviceDim3D();
-	kernelPickData cudaDevice(gridDim, blockDim) ( data, bufs, offi, offj, offk );
+	kernelZeroBuffer<<<gridDim, blockDim>>>( buf );
 };
 
 #pragma endregion
@@ -325,7 +290,7 @@ __device__ SGNODECOORD atomicNodeCoord( const int x, const int y, const int z )
 
 /* 将atomicGetValue封装之后并扩展，使得该函数可以自由的访问上、下、左、右、前、后以及中心这7个节点
 的数据，这样对于以后节点之间数据互相交换提供可能。 */
-__device__ double atomicGetDeviceBuffer( const SGTEMPBUFFERS *buff, const int x, const int y, const int z )
+__device__ double atomicGetDeviceBuffer( const SGSIMPLENODES *buff, const int x, const int y, const int z )
 {
 	const int upper = GRIDS_X * 2; // 设定坐标上限
 	const int lower = -GRIDS_X;    // 设定坐标下限
@@ -383,7 +348,7 @@ __device__ double atomicGetDeviceBuffer( const SGTEMPBUFFERS *buff, const int x,
 /* 将atomicSetValue封装之后并扩展，使得该函数可以自由的访问上、下、左、右、前、后以及中心这7个节点
 的数据，这样对于以后节点之间数据互相交换提供可能。 */
 __device__ void atomicSetDeviceBuffer
-	( SGTEMPBUFFERS *buff, const double value, const int x, const int y, const int z )
+	( SGSIMPLENODES *buff, const double value, const int x, const int y, const int z )
 {
 	const int upper = GRIDS_X * 2;
 	const int lower = -GRIDS_X; 
@@ -493,7 +458,7 @@ __device__ SGBOUNDARY atomicCheckBounds( SGCUDANODES *nodes, const int x, const 
 
 /* 三线性数据插值，第一步，提取样本点 */
 __device__ void atomicPickVertices
-	( double *dStores, const SGTEMPBUFFERS *buff, double const x, double const y, double const z )
+	( double *dStores, const SGSIMPLENODES *buff, double const x, double const y, double const z )
 {
 	int i = sground( x );
 	int j = sground( y );
@@ -513,7 +478,7 @@ __device__ void atomicPickVertices
 
 /* 三线性数据插值，第二步，计算最终插值 */
 __device__ double atomicTrilinear
-	( double *dStores, const SGTEMPBUFFERS *buff, double const x, double const y, double const z )
+	( double *dStores, const SGSIMPLENODES *buff, double const x, double const y, double const z )
 {
 	atomicPickVertices( dStores, buff, x, y, z );
 
@@ -584,7 +549,7 @@ __host__ void AddSource( SGDOUBLE *buffer, SGSTDGRID *grids, SGFIELDTYPE type )
 /* 对density的边界处理方法，若发现当前格点表示的是障碍物，则将本应该赋值于当前格点的值均分至
 周围不是边界的格点中，并将当前格点的density值修改为0.f，对于不处在边界的格点，则不处理。 */
 __device__ void atomicCheckDensity
-	( SGTEMPBUFFERS *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
+	( SGSIMPLENODES *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
 {
 	int ix = 0;
 
@@ -656,7 +621,7 @@ __device__ void atomicCheckDensity
 /* 对速度场在U、V、W方向上的分量的处理是一致的，是将当前格点的值添加至前格点，并将数值相反。
 所需要注意的是U、V、W表示的方向是不一样的。 */
 __device__ void atomicCheckVelocity_U
-	( SGTEMPBUFFERS *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
+	( SGSIMPLENODES *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
 {
 	double temp = buffer->ptrCenter[Index(i,j,k)];
 
@@ -684,7 +649,7 @@ __device__ void atomicCheckVelocity_U
 /* 对速度场在U、V、W方向上的分量的处理是一致的，是将当前格点的值添加至前格点，并将数值相反。
 所需要注意的是U、V、W表示的方向是不一样的。 */
 __device__ void atomicCheckVelocity_V
-	( SGTEMPBUFFERS *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
+	( SGSIMPLENODES *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
 {
 	double temp = buffer->ptrCenter[Index(i,j,k)];
 
@@ -712,7 +677,7 @@ __device__ void atomicCheckVelocity_V
 /* 对速度场在U、V、W方向上的分量的处理是一致的，是将当前格点的值添加至前格点，并将数值相反。
 所需要注意的是U、V、W表示的方向是不一样的。 */
 __device__ void atomicCheckVelocity_W
-	( SGTEMPBUFFERS *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
+	( SGSIMPLENODES *buffer, SGCUDANODES *nodes, const int i, const int j, const int k )
 {
 	double temp = buffer->ptrCenter[Index(i,j,k)];
 
@@ -740,7 +705,7 @@ __device__ void atomicCheckVelocity_W
 /* 边界检测，当前需要检测的是中央节点的数据是否发生了边界越界并需要对数值做特殊处理，
 但由于该节点的数据可能会外溢至邻近节点，因此需要传递全部七个节点的数据，并对可能发生
 溢出的数据实时调整，以保证模型的准确性。 */
-__global__ void kernelBoundary( SGTEMPBUFFERS *buffer, SGCUDANODES *nodes, SGFIELDTYPE type )
+__global__ void kernelBoundary( SGSIMPLENODES *buffer, SGCUDANODES *nodes, SGFIELDTYPE type )
 {
 	GetIndex();
 
@@ -770,7 +735,7 @@ __global__ void kernelBoundary( SGTEMPBUFFERS *buffer, SGCUDANODES *nodes, SGFIE
 
 
 __global__ void kernelJacobi
-	( SGTEMPBUFFERS *buf_out, SGTEMPBUFFERS *buf_in, double diffusion, double divisor )
+	( SGSIMPLENODES *buf_out, SGSIMPLENODES *buf_in, double diffusion, double divisor )
 {
 	GetIndex();
 
@@ -791,7 +756,7 @@ __global__ void kernelJacobi
 
 
 __host__ void hostJacobi
-	( SGTEMPBUFFERS *buf_out, SGTEMPBUFFERS *buf_in, double diffusion,
+	( SGSIMPLENODES *buf_out, SGSIMPLENODES *buf_in, double diffusion,
 	SGCUDANODES *nodes, SGFIELDTYPE type )
 {
 	double rate = diffusion;
@@ -799,11 +764,11 @@ __host__ void hostJacobi
 	cudaDeviceDim3D();
 	for ( int k=0; k<20; k++)
 		kernelJacobi <<<gridDim, blockDim>>> ( buf_out, buf_in, rate, 1+6*rate );
-	kernelBoundary( buf_out, nodes, type );
+	kernelBoundary <<<gridDim, blockDim>>> ( buf_out, nodes, type );
 };
 
 
-__global__ void kernelAdvection( double *stores, SGTEMPBUFFERS *buff, SGCUDANODES *nodes )
+__global__ void kernelAdvection( double *stores, SGSIMPLENODES *buff, SGCUDANODES *nodes )
 {
 	GetIndex();
 
@@ -816,16 +781,16 @@ __global__ void kernelAdvection( double *stores, SGTEMPBUFFERS *buff, SGCUDANODE
 };
 
 
-__host__ void hostAdvection( double *stores, SGTEMPBUFFERS *buff, SGCUDANODES *nodes, SGFIELDTYPE type )
+__host__ void hostAdvection( double *stores, SGSIMPLENODES *buff, SGCUDANODES *nodes, SGFIELDTYPE type )
 {
 	cudaDeviceDim3D();
-	kernelAdvection <<<gridDim, blockDim>>> ( stores, buffer, nodes );
+	kernelAdvection <<<gridDim, blockDim>>> ( stores, buff, nodes );
 	kernelBoundary <<<gridDim, blockDim>>> ( buff, nodes, type );
 };
 
 
 __global__ void kernelGradient
-	( SGTEMPBUFFERS *div, SGTEMPBUFFERS *p, SGTEMPBUFFERS *u, SGTEMPBUFFERS *v, SGTEMPBUFFERS *w )
+	( SGSIMPLENODES *div, SGSIMPLENODES *p, SGSIMPLENODES *u, SGSIMPLENODES *v, SGSIMPLENODES *w )
 {
 	GetIndex();
 	
@@ -851,7 +816,7 @@ __global__ void kernelGradient
 };
 
 
-__global__ void kernelSubtract( SGTEMPBUFFERS *u, SGTEMPBUFFERS *v, SGTEMPBUFFERS *w, SGTEMPBUFFERS *p )
+__global__ void kernelSubtract( SGSIMPLENODES *u, SGSIMPLENODES *v, SGSIMPLENODES *w, SGSIMPLENODES *p )
 {
 	GetIndex();
 
@@ -881,7 +846,7 @@ __global__ void kernelSubtract( SGTEMPBUFFERS *u, SGTEMPBUFFERS *v, SGTEMPBUFFER
 
 
 __host__ void hostProject
-	( SGTEMPBUFFERS *u, SGTEMPBUFFERS *v, SGTEMPBUFFERS *w, SGTEMPBUFFERS *div, SGTEMPBUFFERS *p,
+	( SGSIMPLENODES *u, SGSIMPLENODES *v, SGSIMPLENODES *w, SGSIMPLENODES *div, SGSIMPLENODES *p,
 	SGCUDANODES *nodes )
 {
 	cudaDeviceDim3D();
@@ -909,8 +874,8 @@ __host__ void hostProject
 #pragma region velocity and density solvers
 
 __host__ void hostVelocitySolver
-	( SGTEMPBUFFERS *u, SGTEMPBUFFERS *v, SGTEMPBUFFERS *w, SGTEMPBUFFERS *div, SGTEMPBUFFERS *p,
-	SGTEMPBUFFERS *u0, SGTEMPBUFFERS *v0, SGTEMPBUFFERS *w0,
+	( SGSIMPLENODES *u, SGSIMPLENODES *v, SGSIMPLENODES *w, SGSIMPLENODES *div, SGSIMPLENODES *p,
+	SGSIMPLENODES *u0, SGSIMPLENODES *v0, SGSIMPLENODES *w0,
 	SGCUDANODES *nodes, double *stores )
 {
 	/* copy data to temporary buffer */
@@ -956,7 +921,7 @@ __host__ void hostVelocitySolver
 };
 
 __host__ void DensitySolver
-	( SGTEMPBUFFERS *dens, SGTEMPBUFFERS *dens0, SGCUDANODES *nodes, double *stores )
+	( SGSIMPLENODES *dens, SGSIMPLENODES *dens0, SGCUDANODES *nodes, double *stores )
 {
 	/* copy data to temporary buffer */
 	hostCopyBuffer( dens, nodes, SG_DENSITY_FIELD );
@@ -972,6 +937,43 @@ __host__ void DensitySolver
 
 	/* retrive data */
 	hostCopyBuffer( nodes, dens, SG_DENSITY_FIELD );
+};
+
+#pragma endregion
+
+
+#pragma region externed functions
+
+__global__ void kernelPickData
+	( unsigned char *data, const SGSIMPLENODES *bufs,
+	int const offseti, int const offsetj, int const offsetk )
+{
+	GetIndex();
+
+	int di = offseti + i;
+	int dj = offsetj + j;
+	int dk = offsetk + k;
+
+	/* zero data first */
+	data[ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
+
+	/* retrieve data from grid */
+	double value = atomicGetDeviceBuffer( bufs, i, j, k );
+
+	/* append data to volume data */
+	int temp = sground ( value );
+	if ( temp > 0 and temp < 250 )
+		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (unsigned char) temp;
+};
+
+
+/* 采集网格数据，并转换为volumetric data */
+__host__ void hostPickData 
+	( unsigned char *data, const SGSIMPLENODES *bufs,
+	int const offi, int const offj, int const offk )
+{
+	cudaDeviceDim3D();
+	kernelPickData cudaDevice(gridDim, blockDim) ( data, bufs, offi, offj, offk );
 };
 
 #pragma endregion
