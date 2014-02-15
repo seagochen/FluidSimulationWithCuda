@@ -24,6 +24,7 @@ extern void hostSwapBuffer( SGSIMPLENODES *buf1, SGSIMPLENODES *buf2 );
 
 /* 对ZeroBuffer的C语言封装，对GPU buffer的数据做归零 */
 extern void hostZeroBuffer( SGSIMPLENODES *buf );
+extern void hostZeroBuffer( SGSTDGRID *buf );
 
 /* 采集网格数据，并转换为volumetric data */
 extern void hostPickData ( unsigned char *data, const SGSIMPLENODES *bufs,

@@ -218,9 +218,25 @@ __global__ void kernelZeroBuffer( SGSIMPLENODES *buf )
 	buf->ptrBack[Index(i,j,k)]   = 0.f;
 };
 
+__global__ void kernelZeroBuffer( SGSTDGRID *buf )
+{
+	GetIndex();
+	buf[Index(i,j,k)].dens = 0.f;
+	buf[Index(i,j,k)].u    = 0.f;
+	buf[Index(i,j,k)].v    = 0.f;
+	buf[Index(i,j,k)].w    = 0.f;
+};
+
 
 /* 对ZeroBuffer的C语言封装，对GPU buffer的数据做归零 */
 __host__ void hostZeroBuffer( SGSIMPLENODES *buf )
+{
+	cudaDeviceDim3D();
+	kernelZeroBuffer<<<gridDim, blockDim>>>( buf );
+};
+
+
+__host__ void hostZeroBuffer( SGSTDGRID *buf )
 {
 	cudaDeviceDim3D();
 	kernelZeroBuffer<<<gridDim, blockDim>>>( buf );

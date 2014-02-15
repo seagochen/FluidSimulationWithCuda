@@ -20,6 +20,28 @@
 
 using std::vector;
 
+#define dev_L0_vector_num      10
+#define dev_u     dev_L0_vector[0]
+#define dev_v     dev_L0_vector[1]
+#define dev_w     dev_L0_vector[2]
+#define dev_div   dev_L0_vector[3]
+#define dev_p     dev_L0_vector[4]
+#define dev_dens  dev_L0_vector[5]
+#define dev_u0    dev_L0_vector[6]
+#define dev_v0    dev_L0_vector[7]
+#define dev_w0    dev_L0_vector[8]
+#define dev_dens0 dev_L0_vector[9]
+
+#define dev_L2_vector_num       7
+#define dev_center dev_L2_vector[0]
+#define dev_left   dev_L2_vector[1]
+#define dev_right  dev_L2_vector[2]
+#define dev_front  dev_L2_vector[3]
+#define dev_back   dev_L2_vector[4]
+#define dev_up     dev_L2_vector[5]
+#define dev_down   dev_L2_vector[6]
+
+
 namespace sge
 {
 	/* fluid simulation */
@@ -37,7 +59,7 @@ namespace sge
 		vector<SGSTDGRID*> dev_L2_vector;
 
 		/* Level-0 host buffers */
-		vector<SGHOSTNODE> host_L0_vector;
+		vector<SGHOSTNODE*> host_L0_vector;
 
 		/* Level-1 host volume rendering buffers */
 		SGUCHAR *host_L0_visual, *dev_L0_visual;
