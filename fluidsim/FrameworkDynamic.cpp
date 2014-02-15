@@ -4,7 +4,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Oct 16, 2013
-* <Last Time>     Feb 01, 2014
+* <Last Time>     Feb 15, 2014
 * <File Name>     FrameworkDynamic.cpp
 */
 
@@ -429,7 +429,6 @@ using std::string;
 static SGMAINACTIVITY   *m_activity;
 static FLUIDSPARAM       m_fluid;
 static FluidSimProc     *m_simproc;
-static SGCHAR           *m_szTitle;
 
 /* 基本框架所默认的构造函数，需要传入SGGUI的地址，以及创建的窗口的长和宽 */
 Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height  )
@@ -556,8 +555,9 @@ void Framework_v1_0::CountFPS()
 	}
 
 	/* finally, print the message on the tile bar */
-	m_szTitle = "Excalibur OTL 1.10.00 alpha test  |  FPS: %d  |  dynamic tracking  |";
-	SetWindowText (	m_activity->GetHWND(), string_fmt( m_szTitle, m_fluid.fps.uFPS ).c_str() );
+	SetWindowText (	m_activity->GetHWND(), 
+		string_fmt( "Excalibur OTL 1.10.00 alpha test  |  FPS: %d  |  dynamic tracking  |",
+		m_fluid.fps.uFPS ).c_str() );
 }
 
 
@@ -605,7 +605,6 @@ void Framework_v1_0::onDestroy()
 	/* 释放其他资源 */
 	SAFE_FREE_PTR( m_simproc );
 	SAFE_FREE_PTR( m_fluid.shader.ptrShader );
-	SAFE_FREE_PTR( m_szTitle );
 
 	/* 打印信息，并退出 */
 	cout << "memory freed, program exits..." << endl;
