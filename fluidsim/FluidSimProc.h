@@ -64,13 +64,7 @@ namespace sge
 		/* Level-1 host volume rendering buffers */
 		SGUCHAR *host_L0_visual, *dev_L0_visual;
 	/****************************************************************/
-
-	/****************************************************************/
-	private: // volumetric rendering buffers
-		/* volumetric rendering data */
-		SGUCHAR *host_visual, *dev_visual;
-	/****************************************************************/
-		
+	
 	/****************************************************************/
 	private: // etc.
 		/* target */

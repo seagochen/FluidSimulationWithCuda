@@ -224,22 +224,209 @@ void FluidSimProc::DeactiveNode( int i, int j, int k )
 	}	
 };
 
-/* retrieve the density back and load into volumetric data for rendering */
-void FluidSimProc::PickVolumetric( FLUIDSPARAM *fluid )
-{};
-
-/* copy host data to CUDA device */
-void FluidSimProc::UploadBuffers( void )
-{};
-
-/* retrieve data back to host */
-void FluidSimProc::DownloadBuffers( void )
-{};
-
 /* zero data, set the bounds */
 void FluidSimProc::InitSimNodes( void )
-{};
+{
+
+};
 
 /* create simulation nodes' topological structure */
 void FluidSimProc::BuildOrder( void )
-{};
+{
+	printf( "structure:\n" );
+	for ( int i = 0; i < NODES_X; i++ )
+	{
+		for ( int j = 0; j < NODES_X; j++ )
+		{
+			for ( int k = 0; k < NODES_X; k++ )
+			{
+				int index = cudaIndex3D( i, j, k, NODES_X );
+
+				if ( index >= host_L0_vector.size() or index < 0 )
+				{
+					printf ( "index out of range! %s, line: %d \n", __FILE__, __LINE__ );
+					exit ( 1 );
+				}
+
+				/* left */
+				if ( i >= 1 )
+					host_L0_vector[index]->ptrLeft = host_L0_vector[index-1];
+				/* right */
+				if ( i <= NODES_X - 2 )
+					host_L0_vector[index]->ptrRight = host_L0_vector[index+1];
+				/* down */
+				if ( j >= 1 )
+					host_L0_vector[index]->ptrDown = host_L0_vector[index-NODES_X];
+				/* up */
+				if ( j <= NODES_X - 2 )
+					host_L0_vector[index]->ptrUp = host_L0_vector[index+NODES_X];
+				/* back */
+				if ( k >= 1 )
+					host_L0_vector[index]->ptrBack = host_L0_vector[index-NODES_X*NODES_X];
+				/* front */
+				if ( k <= NODES_X - 2 )
+					host_L0_vector[index]->ptrFront = host_L0_vector[index+NODES_X*NODES_X];
+
+				host_L0_vector[index]->n3Pos.x = i;
+				host_L0_vector[index]->n3Pos.y = j;
+				host_L0_vector[index]->n3Pos.z = k;
+
+				printf ( "no: %d | offset: %d%d%d | L: %d | R: %d | U: %d | D: %d | F: %d | B: %d \n",
+					index,
+					host_L0_vector[index]->n3Pos.x, 
+					host_L0_vector[index]->n3Pos.y, 
+					host_L0_vector[index]->n3Pos.z,
+					host_L0_vector[index]->ptrLeft != NULL,
+					host_L0_vector[index]->ptrRight != NULL,
+					host_L0_vector[index]->ptrUp != NULL,
+					host_L0_vector[index]->ptrDown != NULL,
+					host_L0_vector[index]->ptrFront != NULL,
+					host_L0_vector[index]->ptrBack != NULL );
+			}
+		}
+	}
+
+	printf( "-----------------------------------------------\n" );
+};
+
+/* copy host data to CUDA device */
+void FluidSimProc::UploadBuffers( void )
+{
+	int index = cudaIndex3D( nodeIX.x, nodeIX.y, nodeIX.z, NODES_X );
+
+	/* zero all buffers first */
+	hostZeroBuffer( dev_center );
+	hostZeroBuffer( dev_left );
+	hostZeroBuffer( dev_right );
+	hostZeroBuffer( dev_up );
+	hostZeroBuffer( dev_down );
+	hostZeroBuffer( dev_front );
+	hostZeroBuffer( dev_back );
+	printf( "buffers cleared!\n" );
+
+	SGHOSTNODE *ptr = host_L0_vector[index];
+	size_t size = sizeof( SGSTDGRID ) * GRIDS_X * GRIDS_X * GRIDS_X;
+
+	if ( ptr->ptrLeft not_eq nullptr and 
+		cudaMemcpy( dev_left, ptr->ptrLeft->ptrGrids, size, cudaMemcpyHostToDevice ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( ptr->ptrRight not_eq nullptr and 
+		cudaMemcpy( dev_right, ptr->ptrRight->ptrGrids, size, cudaMemcpyHostToDevice ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( ptr->ptrUp not_eq nullptr and 
+		cudaMemcpy( dev_up, ptr->ptrUp->ptrGrids, size, cudaMemcpyHostToDevice ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( ptr->ptrDown not_eq nullptr and 
+		cudaMemcpy( dev_down, ptr->ptrDown->ptrGrids, size, cudaMemcpyHostToDevice ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( ptr->ptrFront not_eq nullptr and 
+		cudaMemcpy( dev_front, ptr->ptrFront->ptrGrids, size, cudaMemcpyHostToDevice ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( ptr->ptrBack not_eq nullptr and 
+		cudaMemcpy( dev_back, ptr->ptrBack->ptrGrids, size, cudaMemcpyHostToDevice ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( cudaMemcpy( dev_center, ptr->ptrGrids, size, cudaMemcpyHostToDevice ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	printf( "data has been uploaded to CUDA device!\n" );
+};
+
+/* retrieve data back to host */
+void FluidSimProc::DownloadBuffers( void )
+{
+	int index = cudaIndex3D( nodeIX.x, nodeIX.y, nodeIX.z, NODES_X );
+
+	SGHOSTNODE *ptr = host_L0_vector[index];
+	size_t size = sizeof( SGSTDGRID ) * GRIDS_X * GRIDS_X * GRIDS_X;
+
+	if ( ptr->ptrLeft not_eq nullptr and 
+		cudaMemcpy( ptr->ptrLeft->ptrGrids, dev_left, size, cudaMemcpyDeviceToHost ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( ptr->ptrRight not_eq nullptr and 
+		cudaMemcpy( ptr->ptrRight->ptrGrids, dev_right, size, cudaMemcpyDeviceToHost ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( ptr->ptrUp not_eq nullptr and 
+		cudaMemcpy( ptr->ptrUp->ptrGrids, dev_up, size, cudaMemcpyDeviceToHost ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( ptr->ptrDown not_eq nullptr and 
+		cudaMemcpy( ptr->ptrDown->ptrGrids, dev_down, size, cudaMemcpyDeviceToHost ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( ptr->ptrFront not_eq nullptr and 
+		cudaMemcpy( ptr->ptrFront->ptrGrids, dev_front, size, cudaMemcpyDeviceToHost ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( ptr->ptrBack not_eq nullptr and 
+		cudaMemcpy( ptr->ptrBack->ptrGrids, dev_back, size, cudaMemcpyDeviceToHost ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	if ( cudaMemcpy( ptr->ptrGrids, dev_center, size, cudaMemcpyDeviceToHost ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+	printf( "data has been downloaded to host!\n" );
+};
+
+/* retrieve the density back and load into volumetric data for rendering */
+void FluidSimProc::PickVolumetric( FLUIDSPARAM *fluid )
+{
+	if ( cudaMemcpy( host_L0_visual, dev_L0_visual,
+		sizeof(SGUCHAR) * VOLUME_X * VOLUME_X * VOLUME_X, cudaMemcpyDeviceToHost ) != cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+
+	fluid->volume.ptrData = host_L0_visual;
+};
