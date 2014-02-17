@@ -27,10 +27,8 @@ extern void hostZeroBuffer( SGSIMPLENODES *buf );
 extern void hostZeroBuffer( SGSTDGRID *buf );
 
 /* 采集网格数据，并转换为volumetric data */
-extern void hostPickData( SGUCHAR *data, const SGSIMPLENODES *bufs,
-	int const offi, int const offj, int const offk );
-extern void hostPickData( SGUCHAR *data, const SGSTDGRID *bufs,
-	int const offi, int const offj, int const offk );
+extern void hostPickData( SGUCHAR *data, const SGSIMPLENODES *bufs, SGINT3 *nodeIX );
+extern void hostPickData( SGUCHAR *data, const SGSTDGRID *bufs, SGINT3 *nodeIX );
 
 /* 向计算网格中加入数据 */
 extern void hostAdvection( double *stores, SGSIMPLENODES *buff, SGCUDANODES *nodes );

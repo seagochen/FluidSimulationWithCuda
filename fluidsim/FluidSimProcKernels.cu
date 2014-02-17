@@ -61,6 +61,8 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 /* fluid simulation processing function */
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
+	/*test*/ ZeroBuffers();
+
 	if ( fluid->run )
 	{
 		for ( int i = 0; i < NODES_X; i++ )
@@ -71,9 +73,11 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 				{
 					//ActiveNode( i, j, k );
 
+					SelectNode( i, j, k );
+
 					UploadBuffers();
 
-					hostPickData( dev_L0_visual, dev_center, i, j, k ); 
+					hostPickData( dev_L0_visual, dev_center, &nodeIX ); 
 					//DownloadBuffers();
 
 					//DeactiveNode( i, j, k );
@@ -130,14 +134,7 @@ bool FluidSimProc::AllocateResource( void )
 	}
 
 	/* allocate visual buffers */	
-	size_t size = VOLUME_X * VOLUME_X * VOLUME_X;
-	host_L0_visual = (SGUCHAR*) malloc ( sizeof(SGUCHAR) * size );
-	if ( host_L0_visual eqt nullptr )
-	{
-		printf( "malloc failed\n" );
-		return false;
-	}
-	if ( cudaMalloc( (void**)&dev_L0_visual, sizeof(SGUCHAR) * size) not_eq cudaSuccess )
+	if ( m_helper.CreateVolumetricBuffers( &host_L0_visual, &dev_L0_visual ) not_eq SG_RUNTIME_OK )
 	{
 		m_helper.CheckRuntimeErrors( "cudaMalloc failed", __FILE__, __LINE__ );
 		return false;
@@ -192,9 +189,6 @@ void FluidSimProc::ZeroBuffers( void )
 			exit( 1 );
 		}
 	}
-
-	/* update fluid simulation! */
-	UploadBuffers();
 };
 
 /* choose the node and mark it as actived */
@@ -204,11 +198,7 @@ void FluidSimProc::ActiveNode( int i, int j, int k )
 
 	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
 	{
-		/* update index */
-		nodeIX.x = i;
-		nodeIX.y = j;
-		nodeIX.z = k;
-		ix = cudaIndex3D( nodeIX.x, nodeIX.y, nodeIX.z, NODES_X );
+		ix = cudaIndex3D( i, j, k, NODES_X );
 		host_L0_vector[ix]->bActive = true;
 
 		/* print status */
@@ -226,11 +216,7 @@ void FluidSimProc::DeactiveNode( int i, int j, int k )
 
 	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
 	{
-		/* update index */
-		nodeIX.x = i;
-		nodeIX.y = j;
-		nodeIX.z = k;
-		ix = cudaIndex3D( nodeIX.x, nodeIX.y, nodeIX.z, NODES_X );
+		ix = cudaIndex3D( i, j, k, NODES_X );
 		host_L0_vector[ix]->bActive = false;
 
 		/* print status */
@@ -239,6 +225,17 @@ void FluidSimProc::DeactiveNode( int i, int j, int k )
 		else
 			printf ( "node no.%d is deactived!\n", ix );
 	}	
+};
+
+
+void FluidSimProc::SelectNode( int i, int j, int k )
+{
+	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
+	{
+		nodeIX.x = i;
+		nodeIX.y = j;
+		nodeIX.z = k;
+	}
 };
 
 /* zero data, set the bounds */

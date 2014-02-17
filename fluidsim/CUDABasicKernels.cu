@@ -1006,19 +1006,28 @@ __global__ void kernelPickData
 
 
 /* 采集网格数据，并转换为volumetric data */
-__host__ void hostPickData 
-	( unsigned char *data, const SGSIMPLENODES *bufs,
-	int const offi, int const offj, int const offk )
+__host__ void hostPickData( SGUCHAR *data, const SGSIMPLENODES *bufs, SGINT3 *nodeIX )
 {
 	cudaDeviceDim3D();
-	kernelPickData cudaDevice(gridDim, blockDim) ( data, bufs, offi, offj, offk );
+
+	nodeIX->x *= GRIDS_X;
+	nodeIX->y *= GRIDS_X;
+	nodeIX->z *= GRIDS_X;
+
+	kernelPickData cudaDevice(gridDim, blockDim)
+		( data, bufs, nodeIX->x, nodeIX->y, nodeIX->z );
 };
 
-void hostPickData( SGUCHAR *data, const SGSTDGRID *bufs,
-	int const offi, int const offj, int const offk )
+void hostPickData( SGUCHAR *data, const SGSTDGRID *bufs, SGINT3 *nodeIX )
 {
 	cudaDeviceDim3D();
-	kernelPickData cudaDevice(gridDim, blockDim) ( data, bufs, offi, offj, offk );
+
+	nodeIX->x *= GRIDS_X;
+	nodeIX->y *= GRIDS_X;
+	nodeIX->z *= GRIDS_X;
+
+	kernelPickData cudaDevice(gridDim, blockDim)
+		( data, bufs, nodeIX->x, nodeIX->y, nodeIX->z );
 };
 
 #pragma endregion

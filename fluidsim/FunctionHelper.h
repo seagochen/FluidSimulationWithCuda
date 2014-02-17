@@ -34,6 +34,8 @@ namespace sge
 		SGRUNTIMEMSG CreateCUDABuffers( SGSTDGRID **buf );
 		SGRUNTIMEMSG CreateCUDABuffers( SGCUDANODES **buf );
 		SGRUNTIMEMSG CreateCUDABuffers( SGSIMPLENODES **buf );
+
+		SGRUNTIMEMSG CreateVolumetricBuffers( SGUCHAR **host_buf, SGUCHAR **dev_buf );
 	};
 };
 

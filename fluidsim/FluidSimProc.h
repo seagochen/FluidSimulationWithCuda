@@ -91,11 +91,14 @@ namespace sge
 		/* zero the buffers for fluid simulation */
 		void ZeroBuffers( void );
 
-		/* choose the node and mark it as actived */
+		/* mark the node as actived */
 		void ActiveNode( int i, int j, int k );
 
-		/* choose the node and mark it as deactived */
+		/* mark the node as deactived */
 		void DeactiveNode( int i, int j, int k );
+
+		/* select a node */
+		void SelectNode( int i, int j, int k );
 
 		/* retrieve the density back and load into volumetric data for rendering */
 		void PickVolumetric( FLUIDSPARAM *fluid );

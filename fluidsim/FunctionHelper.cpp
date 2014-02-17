@@ -126,3 +126,17 @@ SGRUNTIMEMSG FunctionHelper::CreateCUDABuffers( SGSTDGRID **bufs )
 
 	return SG_MALLOC_SPACE_FAILED;
 };
+
+SGRUNTIMEMSG FunctionHelper::CreateVolumetricBuffers( SGUCHAR **hostbuf, SGUCHAR **devbuf )
+{
+	size_t size = VOLUME_X * VOLUME_X *VOLUME_X;
+	*hostbuf = (SGUCHAR*)malloc( sizeof(SGUCHAR) * size );
+
+	if ( *hostbuf eqt nullptr )
+		return SG_MALLOC_SPACE_FAILED;
+
+	if ( cudaMalloc( (void**)devbuf, sizeof(SGUCHAR) * size ) not_eq cudaSuccess )
+		return SG_MALLOC_SPACE_FAILED;
+
+	return SG_RUNTIME_OK;
+};
