@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Feb 05, 2014
+* <Last Time>     Feb 17, 2014
 * <File Name>     FunctionHelper.h
 */
 
@@ -30,9 +30,10 @@ namespace sge
 		void CopyBuffers( SGSIMPLENODES *bufs, const SGCUDANODES *nodes, SGFIELDTYPE type );
 		void CopyBuffers( SGCUDANODES *nodes, const SGSIMPLENODES *bufs, SGFIELDTYPE type );
 
-		SGRUNTIMEMSG CreateHostNodeBuffers( SGHOSTNODE  **node );
-		SGRUNTIMEMSG CreateCUDANodeBuffers( SGCUDANODES **node );
-		SGRUNTIMEMSG CreateCUDATempBuffers( SGSIMPLENODES **bufs );
+		SGRUNTIMEMSG CreateHostBuffers( SGHOSTNODE  **buf );
+		SGRUNTIMEMSG CreateCUDABuffers( SGSTDGRID **buf );
+		SGRUNTIMEMSG CreateCUDABuffers( SGCUDANODES **buf );
+		SGRUNTIMEMSG CreateCUDABuffers( SGSIMPLENODES **buf );
 	};
 };
 

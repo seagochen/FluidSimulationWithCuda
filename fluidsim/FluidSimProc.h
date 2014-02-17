@@ -61,7 +61,7 @@ namespace sge
 		/* Level-0 host buffers */
 		vector<SGHOSTNODE*> host_L0_vector;
 
-		/* Level-1 host volume rendering buffers */
+		/* Level-0 host volume rendering buffers */
 		SGUCHAR *host_L0_visual, *dev_L0_visual;
 	/****************************************************************/
 	
@@ -72,6 +72,7 @@ namespace sge
 
 		/* etc */
 		FunctionHelper m_helper;
+		SGDOUBLE *dev_L0_temps;
 	/****************************************************************/
 
 	public:

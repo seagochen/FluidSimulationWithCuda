@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Nov 15, 2013
-* <Last Time>     Feb 15, 2014
+* <Last Time>     Feb 17, 2014
 * <File Name>     FluidSimProc.cu
 */
 
@@ -39,6 +39,9 @@ FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 
 	/* select and active a node for fluid simulation */
 	ActiveNode( 1, 1, 0 );
+
+	/* zero all buffers */
+	ZeroBuffers();
 	
 	/* finally, print the state message and zero the data */
 	printf( "fluid simulation ready...\n" );
@@ -60,19 +63,34 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( fluid->run )
 	{
+		for ( int i = 0; i < NODES_X; i++ )
+		{
+			for ( int j = 0; j < NODES_X; j++ )
+			{
+				for ( int k = 0; k < NODES_X; k++ )
+				{
+					//ActiveNode( i, j, k );
+
+					UploadBuffers();
+
+					hostPickData( dev_L0_visual, dev_center, i, j, k ); 
+					//DownloadBuffers();
+
+					//DeactiveNode( i, j, k );
+				}
+			}
+		}
 	}
 };
 
 /* allocate resource */
 bool FluidSimProc::AllocateResource( void )
 {
-	size_t size;
-
 	/* allocate device L-0 buffers */
 	for ( int i = 0; i < dev_L0_vector_num; i++ )
 	{
 		SGSIMPLENODES *buf;
-		if ( cudaMalloc( (void**)&buf, sizeof(SGSIMPLENODES) ) != cudaSuccess )
+		if ( m_helper.CreateCUDABuffers( &buf ) not_eq SG_RUNTIME_OK )
 		{
 			m_helper.CheckRuntimeErrors( "cudaMalloc failed", __FILE__, __LINE__ );
 			return false;
@@ -81,18 +99,17 @@ bool FluidSimProc::AllocateResource( void )
 	}
 
 	/* allocate device L-1 buffer */
-	if ( cudaMalloc( (void**)&dev_L1_bufs, sizeof(SGCUDANODES) ) != cudaSuccess )
+	if ( m_helper.CreateCUDABuffers( &dev_L1_bufs ) not_eq SG_RUNTIME_OK )
 	{
 		m_helper.CheckRuntimeErrors( "cudaMalloc failed", __FILE__, __LINE__ );
 		return false;
 	}
 
 	/* allocate device L-2 buffers */
-	size = GRIDS_X * GRIDS_X * GRIDS_X;
 	for ( int i = 0; i < dev_L2_vector_num; i++ )
 	{
 		SGSTDGRID *buf;
-		if ( cudaMalloc( (void**)&buf, sizeof(SGSTDGRID) * size ) != cudaSuccess)
+		if ( m_helper.CreateCUDABuffers( &buf ) not_eq SG_RUNTIME_OK )
 		{
 			m_helper.CheckRuntimeErrors( "cudaMalloc failed", __FILE__, __LINE__ );
 			return false;
@@ -101,12 +118,10 @@ bool FluidSimProc::AllocateResource( void )
 	}
 
 	/* allocate host L-0 buffers */
-	size = VOLUME_X * VOLUME_X * VOLUME_X;
 	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++)
 	{
 		SGHOSTNODE *buf;
-		buf = (SGHOSTNODE*)malloc( sizeof(SGHOSTNODE) );
-		if ( buf eqt nullptr )
+		if ( m_helper.CreateHostBuffers( &buf ) not_eq SG_RUNTIME_OK )
 		{
 			printf( "malloc falied\n" );
 			return false;
@@ -114,15 +129,15 @@ bool FluidSimProc::AllocateResource( void )
 		host_L0_vector.push_back( buf );
 	}
 
-	/* allocate visual buffers */
+	/* allocate visual buffers */	
+	size_t size = VOLUME_X * VOLUME_X * VOLUME_X;
 	host_L0_visual = (SGUCHAR*) malloc ( sizeof(SGUCHAR) * size );
 	if ( host_L0_visual eqt nullptr )
 	{
-		printf( "malloc falied\n" );
+		printf( "malloc failed\n" );
 		return false;
 	}
-
-	if ( cudaMalloc( (void**)&dev_L0_visual, sizeof(SGUCHAR) * size) != cudaSuccess )
+	if ( cudaMalloc( (void**)&dev_L0_visual, sizeof(SGUCHAR) * size) not_eq cudaSuccess )
 	{
 		m_helper.CheckRuntimeErrors( "cudaMalloc failed", __FILE__, __LINE__ );
 		return false;
@@ -166,10 +181,12 @@ void FluidSimProc::ZeroBuffers( void )
 	/* zero center node first */
 	hostZeroBuffer( dev_center );
 
+	size_t size = GRIDS_X * GRIDS_X * GRIDS_X;
+
 	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
 	{
 		if ( cudaMemcpy( host_L0_vector[i]->ptrGrids, dev_center, 
-			sizeof(SGSTDGRID) * GRIDS_X * GRIDS_X * GRIDS_X, cudaMemcpyDeviceToHost ) != cudaSuccess )
+			sizeof(SGSTDGRID) * size, cudaMemcpyDeviceToHost ) != cudaSuccess )
 		{
 			m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
 			exit( 1 );
@@ -227,7 +244,30 @@ void FluidSimProc::DeactiveNode( int i, int j, int k )
 /* zero data, set the bounds */
 void FluidSimProc::InitSimNodes( void )
 {
+	int IX = 0;
 
+	for ( int i = 0; i < GRIDS_X; i++ )
+	{
+		for ( int j = 0; j < GRIDS_X; j++ )
+		{
+			for ( int k = 0; k < GRIDS_X; k++ )
+			{
+				for ( int IX = 0; IX < host_L0_vector.size(); IX++ )
+				{
+					host_L0_vector[IX]->ptrGrids[cudaIndex3D(i,j,k,NODES_X)].obstacle = SG_BLANK;
+				}
+			}
+		}
+	}
+
+	IX = cudaIndex3D(1,1,0,NODES_X);
+
+	int half = GRIDS_X / 2;
+	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half,0,NODES_X)].obstacle = SG_SOURCE;
+	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half-1,half,0,NODES_X)].obstacle = SG_SOURCE;
+	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half+1,half,0,NODES_X)].obstacle = SG_SOURCE;
+	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half-1,0,NODES_X)].obstacle = SG_SOURCE;
+	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half+1,0,NODES_X)].obstacle = SG_SOURCE;
 };
 
 /* create simulation nodes' topological structure */
@@ -302,7 +342,7 @@ void FluidSimProc::UploadBuffers( void )
 	hostZeroBuffer( dev_down );
 	hostZeroBuffer( dev_front );
 	hostZeroBuffer( dev_back );
-	printf( "buffers cleared!\n" );
+	//printf( "buffers cleared!\n" );
 
 	SGHOSTNODE *ptr = host_L0_vector[index];
 	size_t size = sizeof( SGSTDGRID ) * GRIDS_X * GRIDS_X * GRIDS_X;
@@ -355,7 +395,7 @@ void FluidSimProc::UploadBuffers( void )
 		FreeResource();
 		exit(1);
 	}
-	printf( "data has been uploaded to CUDA device!\n" );
+	//printf( "data has been uploaded to CUDA device!\n" );
 };
 
 /* retrieve data back to host */
@@ -414,7 +454,7 @@ void FluidSimProc::DownloadBuffers( void )
 		FreeResource();
 		exit(1);
 	}
-	printf( "data has been downloaded to host!\n" );
+	//printf( "data has been downloaded to host!\n" );
 };
 
 /* retrieve the density back and load into volumetric data for rendering */

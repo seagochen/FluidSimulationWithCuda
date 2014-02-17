@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Feb 05, 2014
+* <Last Time>     Feb 17, 2014
 * <File Name>     FunctionHelper.cpp
 */
 
@@ -91,7 +91,7 @@ void FunctionHelper::CopyBuffers( SGCUDANODES *nodes, const SGSIMPLENODES *bufs,
 	hostCopyBuffer( nodes, bufs, type );
 };
 
-SGRUNTIMEMSG FunctionHelper::CreateHostNodeBuffers( SGHOSTNODE  **node )
+SGRUNTIMEMSG FunctionHelper::CreateHostBuffers( SGHOSTNODE  **node )
 {
 	*node = (SGHOSTNODE*)malloc( sizeof(SGHOSTNODE));
 
@@ -101,7 +101,7 @@ SGRUNTIMEMSG FunctionHelper::CreateHostNodeBuffers( SGHOSTNODE  **node )
 	return SG_MALLOC_SPACE_FAILED;
 };
 
-SGRUNTIMEMSG FunctionHelper::CreateCUDANodeBuffers( SGCUDANODES **node )
+SGRUNTIMEMSG FunctionHelper::CreateCUDABuffers( SGCUDANODES **node )
 {
 	if ( cudaMalloc( (void**)node, sizeof(SGCUDANODES)) eqt cudaSuccess )
 		return SG_RUNTIME_OK;
@@ -109,9 +109,19 @@ SGRUNTIMEMSG FunctionHelper::CreateCUDANodeBuffers( SGCUDANODES **node )
 	return SG_MALLOC_SPACE_FAILED;
 };
 
-SGRUNTIMEMSG FunctionHelper::CreateCUDATempBuffers( SGSIMPLENODES **bufs )
+SGRUNTIMEMSG FunctionHelper::CreateCUDABuffers( SGSIMPLENODES **bufs )
 {
 	if ( cudaMalloc( (void**)bufs, sizeof(SGSIMPLENODES)) eqt cudaSuccess )
+		return SG_RUNTIME_OK;
+
+	return SG_MALLOC_SPACE_FAILED;
+};
+
+SGRUNTIMEMSG FunctionHelper::CreateCUDABuffers( SGSTDGRID **bufs )
+{
+	size_t size = GRIDS_X * GRIDS_X * GRIDS_X;
+
+	if ( cudaMalloc( (void**)bufs, sizeof(SGSTDGRID) * size ) eqt cudaSuccess)
 		return SG_RUNTIME_OK;
 
 	return SG_MALLOC_SPACE_FAILED;

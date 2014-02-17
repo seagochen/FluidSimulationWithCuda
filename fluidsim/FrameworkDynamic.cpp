@@ -563,6 +563,10 @@ void Framework_v1_0::CountFPS()
 
 void Framework_v1_0::onDisplay()
 {
+	/* get volumetric data from fluid simulation processor */
+	m_simproc->PickVolumetric( &m_fluid );
+
+	/* do something before rendering */
 	glEnable ( GL_DEPTH_TEST );
 	
 	/* bind the vertex buffer object to shader with attribute "vertices" */

@@ -982,10 +982,39 @@ __global__ void kernelPickData
 		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (unsigned char) temp;
 };
 
+__global__ void kernelPickData
+	( unsigned char *data, const SGSTDGRID *bufs,
+	int const offseti, int const offsetj, int const offsetk )
+{
+	GetIndex();
+
+	int di = offseti + i;
+	int dj = offsetj + j;
+	int dk = offsetk + k;
+
+	/* zero data first */
+	data[ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
+
+	/* retrieve data from grid */
+	double value = bufs[Index(i,j,k)].dens;
+
+	/* append data to volume data */
+	int temp = sground ( value );
+	if ( temp > 0 and temp < 250 )
+		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (unsigned char) temp;
+};
+
 
 /* 采集网格数据，并转换为volumetric data */
 __host__ void hostPickData 
 	( unsigned char *data, const SGSIMPLENODES *bufs,
+	int const offi, int const offj, int const offk )
+{
+	cudaDeviceDim3D();
+	kernelPickData cudaDevice(gridDim, blockDim) ( data, bufs, offi, offj, offk );
+};
+
+void hostPickData( SGUCHAR *data, const SGSTDGRID *bufs,
 	int const offi, int const offj, int const offk )
 {
 	cudaDeviceDim3D();
