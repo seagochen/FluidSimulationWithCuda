@@ -31,10 +31,10 @@ extern void hostPickData( SGUCHAR *data, const SGSIMPLENODES *bufs, SGINT3 *node
 extern void hostPickData( SGUCHAR *data, const SGSTDGRID *bufs, SGINT3 *nodeIX );
 
 /* 向计算网格中加入数据 */
-extern void hostAdvection( double *stores, SGSIMPLENODES *buff, SGCUDANODES *nodes );
+extern void hostAddSource( SGSTDGRID *grids, SGFIELDTYPE type );
 
 /* 求解密度场 */
-extern void DensitySolver
+extern void hostDensitySolver
 	( SGSIMPLENODES *dens, SGSIMPLENODES *dens0, SGCUDANODES *nodes, double *stores );
 
 /* 求解速度场 */

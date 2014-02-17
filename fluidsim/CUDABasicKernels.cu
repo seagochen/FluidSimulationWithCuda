@@ -531,7 +531,7 @@ __device__ double atomicTrilinear
 #pragma region basic functions of fluid simulation
 
 /* 向计算网格中加入数据 */
-__global__ void kernelAddSource( SGDOUBLE *buffer, SGSTDGRID *grids, SGFIELDTYPE type )
+__global__ void kernelAddSource( SGSTDGRID *grids, SGFIELDTYPE type )
 {
 	GetIndex();
 
@@ -540,10 +540,10 @@ __global__ void kernelAddSource( SGDOUBLE *buffer, SGSTDGRID *grids, SGFIELDTYPE
 		switch ( type )
 		{
 		case SG_DENSITY_FIELD:
-			buffer[Index(i,j,k)] = SOURCE_DENSITY;
+			grids[Index(i,j,k)].dens = SOURCE_DENSITY;
 			break;
 		case SG_VELOCITY_V_FIELD:
-			buffer[Index(i,j,k)] = SOURCE_VELOCITY;
+			grids[Index(i,j,k)].v = SOURCE_VELOCITY;
 			break;
 
 		default:
@@ -554,11 +554,11 @@ __global__ void kernelAddSource( SGDOUBLE *buffer, SGSTDGRID *grids, SGFIELDTYPE
 
 
 /* 向计算网格中加入数据 */
-__host__ void AddSource( SGDOUBLE *buffer, SGSTDGRID *grids, SGFIELDTYPE type )
+__host__ void hostAddSource( SGSTDGRID *grids, SGFIELDTYPE type )
 {
 	cudaDeviceDim3D();
 
-	kernelAddSource <<<gridDim, blockDim>>> ( buffer, grids, type );
+	kernelAddSource <<<gridDim, blockDim>>> ( grids, type );
 };
 
 
@@ -936,7 +936,7 @@ __host__ void hostVelocitySolver
 	hostCopyBuffer( nodes, w, SG_VELOCITY_W_FIELD );
 };
 
-__host__ void DensitySolver
+__host__ void hostDensitySolver
 	( SGSIMPLENODES *dens, SGSIMPLENODES *dens0, SGCUDANODES *nodes, double *stores )
 {
 	/* copy data to temporary buffer */

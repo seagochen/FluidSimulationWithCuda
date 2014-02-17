@@ -98,8 +98,8 @@ namespace sge
 	/* 定义的边界条件 */
 	enum SGBOUNDARY
 	{
-		SG_SOURCE, // 源
 		SG_BLANK,  // 空白空间
+		SG_SOURCE, // 源
 		SG_WALL,   // 障碍物
 	};
 	

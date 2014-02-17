@@ -61,8 +61,6 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 /* fluid simulation processing function */
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
-	/*test*/ ZeroBuffers();
-
 	if ( fluid->run )
 	{
 		for ( int i = 0; i < NODES_X; i++ )
@@ -71,16 +69,21 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 			{
 				for ( int k = 0; k < NODES_X; k++ )
 				{
-					//ActiveNode( i, j, k );
-
+					// TODO: 在技术升级前，将一直采用简单而明了的轮询法，检查各个计算节点的状态。
+					// 在当前的情况下，将所有节点默认为激活状态，这样将可以直观的测试各个节点数据传输情况。
+					/* 计算开始 */
 					SelectNode( i, j, k );
-
 					UploadBuffers();
 
-					hostPickData( dev_L0_visual, dev_center, &nodeIX ); 
-					//DownloadBuffers();
+//					hostAddSource( dev_center, SG_VELOCITY_U_FIELD );
+//					hostAddSource( dev_center, SG_VELOCITY_V_FIELD );
+//					hostAddSource( dev_center, SG_VELOCITY_W_FIELD );
+//					hostAddSource( dev_center, SG_DENSITY_FIELD );
 
-					//DeactiveNode( i, j, k );
+
+					/* 计算结束 */
+					DownloadBuffers();
+					hostPickData( dev_L0_visual, dev_center, &nodeIX ); 
 				}
 			}
 		}
@@ -139,6 +142,13 @@ bool FluidSimProc::AllocateResource( void )
 		m_helper.CheckRuntimeErrors( "cudaMalloc failed", __FILE__, __LINE__ );
 		return false;
 	}
+
+	/* allocate temporary buffers */
+	if ( m_helper.CreateDoubleBuffers( TPBUFFER_X, 1, &dev_L0_temps ) not_eq SG_RUNTIME_OK )
+	{
+		printf( "malloc falied\n" );
+		return false;
+	}
 		
 	return true;
 };
@@ -170,6 +180,7 @@ void FluidSimProc::FreeResource( void )
 	/* free L-0 visual buffers */
 	SAFE_FREE_PTR( host_L0_visual );
 	cudaFree( dev_L0_visual );
+	cudaFree( dev_L0_temps );
 };
 
 /* zero the buffers for fluid simulation */
@@ -249,7 +260,7 @@ void FluidSimProc::InitSimNodes( void )
 		{
 			for ( int k = 0; k < GRIDS_X; k++ )
 			{
-				for ( int IX = 0; IX < host_L0_vector.size(); IX++ )
+				for ( IX = 0; IX < host_L0_vector.size(); IX++ )
 				{
 					host_L0_vector[IX]->ptrGrids[cudaIndex3D(i,j,k,NODES_X)].obstacle = SG_BLANK;
 				}
@@ -260,11 +271,11 @@ void FluidSimProc::InitSimNodes( void )
 	IX = cudaIndex3D(1,1,0,NODES_X);
 
 	int half = GRIDS_X / 2;
-	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half,0,NODES_X)].obstacle = SG_SOURCE;
-	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half-1,half,0,NODES_X)].obstacle = SG_SOURCE;
-	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half+1,half,0,NODES_X)].obstacle = SG_SOURCE;
-	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half-1,0,NODES_X)].obstacle = SG_SOURCE;
-	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half+1,0,NODES_X)].obstacle = SG_SOURCE;
+	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half,half,GRIDS_X)].obstacle = SG_SOURCE;
+//	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half-1,half,0,NODES_X)].obstacle = SG_SOURCE;
+//	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half+1,half,0,NODES_X)].obstacle = SG_SOURCE;
+//	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half-1,0,NODES_X)].obstacle = SG_SOURCE;
+//	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half+1,0,NODES_X)].obstacle = SG_SOURCE;
 };
 
 /* create simulation nodes' topological structure */
