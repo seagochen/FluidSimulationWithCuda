@@ -128,7 +128,7 @@ bool FluidSimProc::AllocateResource( void )
 	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++)
 	{
 		SGHOSTNODE *buf;
-		if ( m_helper.CreateHostBuffers( &buf ) not_eq SG_RUNTIME_OK )
+		if ( m_helper.CreateHostBuffers( buf ) not_eq SG_RUNTIME_OK )
 		{
 			printf( "malloc falied\n" );
 			return false;
@@ -271,7 +271,7 @@ void FluidSimProc::InitSimNodes( void )
 	IX = cudaIndex3D(1,1,0,NODES_X);
 
 	int half = GRIDS_X / 2;
-	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half,half,GRIDS_X)].obstacle = SG_SOURCE;
+//	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half,half,GRIDS_X)].obstacle = SG_SOURCE;
 //	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half-1,half,0,NODES_X)].obstacle = SG_SOURCE;
 //	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half+1,half,0,NODES_X)].obstacle = SG_SOURCE;
 //	host_L0_vector[IX]->ptrGrids[cudaIndex3D(half,half-1,0,NODES_X)].obstacle = SG_SOURCE;

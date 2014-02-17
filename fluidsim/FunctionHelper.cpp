@@ -91,11 +91,11 @@ void FunctionHelper::CopyBuffers( SGCUDANODES *nodes, const SGSIMPLENODES *bufs,
 	hostCopyBuffer( nodes, bufs, type );
 };
 
-SGRUNTIMEMSG FunctionHelper::CreateHostBuffers( SGHOSTNODE  **node )
+SGRUNTIMEMSG FunctionHelper::CreateHostBuffers( SGHOSTNODE  *node )
 {
-	*node = (SGHOSTNODE*)malloc( sizeof(SGHOSTNODE));
+	node = (SGHOSTNODE*)malloc( sizeof(SGHOSTNODE));
 
-	if ( *node not_eq nullptr )
+	if ( node not_eq nullptr ) 
 		return SG_RUNTIME_OK;
 	
 	return SG_MALLOC_SPACE_FAILED;

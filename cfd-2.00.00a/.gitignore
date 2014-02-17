@@ -1,0 +1,15 @@
+*.opensdf
+*.sdf
+*.suo
+*.db
+templet.txt
+projectplan.txt
+plan.md
+/Debug
+/Release
+/bin
+/lib
+/include
+/fonts
+/icons
+/doc

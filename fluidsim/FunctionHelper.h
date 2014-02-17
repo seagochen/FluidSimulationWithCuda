@@ -30,7 +30,7 @@ namespace sge
 		void CopyBuffers( SGSIMPLENODES *bufs, const SGCUDANODES *nodes, SGFIELDTYPE type );
 		void CopyBuffers( SGCUDANODES *nodes, const SGSIMPLENODES *bufs, SGFIELDTYPE type );
 
-		SGRUNTIMEMSG CreateHostBuffers( SGHOSTNODE  **buf );
+		SGRUNTIMEMSG CreateHostBuffers( SGHOSTNODE  *buf );
 		SGRUNTIMEMSG CreateCUDABuffers( SGSTDGRID **buf );
 		SGRUNTIMEMSG CreateCUDABuffers( SGCUDANODES **buf );
 		SGRUNTIMEMSG CreateCUDABuffers( SGSIMPLENODES **buf );
