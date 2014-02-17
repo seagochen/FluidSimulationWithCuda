@@ -21,21 +21,14 @@ namespace sge
 	{
 	public:
 		SGVOID CheckRuntimeErrors( const char* msg, const char *file, const int line );
-		SGVOID DeviceDim2Dx( dim3 *grid_out, dim3 *block_out );
-		SGVOID DeviceDim3Dx( dim3 *grid_out, dim3 *block_out );
 
-		SGRUNTIMEMSG CreateDoubleBuffers( SGINT size, SGINT nPtrs, ... );
-		SGRUNTIMEMSG CreateIntegerBuffers( SGINT size, SGINT nPtrs, ... );
+		SGRUNTIMEMSG CreateDoubleBuffers( size_t size, SGINT nPtrs, ... );
+		SGRUNTIMEMSG CreateIntegerBuffers( size_t size, SGINT nPtrs, ... );
 
-		void CopyBuffers( SGSIMPLENODES *bufs, const SGCUDANODES *nodes, SGFIELDTYPE type );
-		void CopyBuffers( SGCUDANODES *nodes, const SGSIMPLENODES *bufs, SGFIELDTYPE type );
+		SGRUNTIMEMSG CreateHostBuffers( size_t size, SGINT nPtrs, ... );
+		SGRUNTIMEMSG CreateDeviceBuffers( size_t size, SGINT nPtrs, ... );
 
-		SGRUNTIMEMSG CreateHostBuffers( SGHOSTNODE  *buf );
-		SGRUNTIMEMSG CreateCUDABuffers( SGSTDGRID **buf );
-		SGRUNTIMEMSG CreateCUDABuffers( SGCUDANODES **buf );
-		SGRUNTIMEMSG CreateCUDABuffers( SGSIMPLENODES **buf );
-
-		SGRUNTIMEMSG CreateVolumetricBuffers( SGUCHAR **host_buf, SGUCHAR **dev_buf );
+		SGRUNTIMEMSG CreateVolumetricBuffers( size_t size, SGUCHAR **host_buf, SGUCHAR **dev_buf );
 	};
 };
 

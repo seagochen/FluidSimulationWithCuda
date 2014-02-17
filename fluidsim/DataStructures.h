@@ -20,7 +20,7 @@
 #define SOURCE_VELOCITY        15     // 为计算网格中添加的velocity的量
 
 #define GRIDS_X                64     // 计算网格在单维度上所拥有的数量
-#define NODES_X                 3     // 计算节点在单维度上所拥有的数量
+#define NODES_X                 2     // 计算节点在单维度上所拥有的数量
 #define VOLUME_X   GRIDS_X*NODES_X    // 三维体数据在单维度上的长度
 #define THREADS_X             1024    // 定义CUDA的线程数量
 #define TILE_X                 16     // 将16x16的GPU-threads捆绑打包为一个block
@@ -94,85 +94,6 @@ namespace sge
 		SGBOOLEAN run;       // 子程序运行状态
 
 	} SGFLUIDVARS;
-
-	/* 定义的边界条件 */
-	enum SGBOUNDARY
-	{
-		SG_BLANK,  // 空白空间
-		SG_SOURCE, // 源
-		SG_WALL,   // 障碍物
-	};
-	
-	/* 定义的场 */
-	enum SGFIELDTYPE
-	{
-		SG_DENSITY_FIELD,     // 密度
-		SG_VELOCITY_U_FIELD,  // 速度场在U方向上的分量
-		SG_VELOCITY_V_FIELD,  // 速度场在V方向上的分量
-		SG_VELOCITY_W_FIELD,  // 速度场在W方向上的分量
-	};
-	
-	/* 计算节点的位置标记 */
-	enum SGNODECOORD
-	{
-		SG_CENTER,      // 位于计算节点的正中央
-		SG_LEFT,        // 位于计算节点的左方向，位于-U方向
-		SG_RIGHT,       // 位于计算节点的右方向，位于+U方向
-		SG_UP,          // 位于计算节点的上方向，位于+V方向
-		SG_DOWN,        // 位于计算节点的下方向，位于-V方向
-		SG_FRONT,       // 位于计算节点的前方向，位于+W方向
-		SG_BACK,        // 位于计算节点的后方向，位于-W方向
-		SG_NO_DEFINE,   // 其他
-	};
-	
-	/* 行列式的计算的数据类型 */
-	enum SGJACOBI
-	{
-		SG_SOLVE_DENSITY,  // 所处理的计算数据为关于密度的数据
-		SG_SOLVE_VELOCITY, // 所处理的计算数据为关于速度的数据
-	};
-
-	/* 流体模拟的基本数据结构 */
-	typedef struct SGSTDGRID
-	{
-		SGDOUBLE    u, v, w, dens;  // 双精度浮点数据类型，分别表示处于该格点的速度及密度数据
-		SGBOUNDARY  obstacle;       // 自定义数据类型，表示处于该格点的边界信息
-	}SGGRID;
-
-	/* 计算节点的拓扑结构 */
-	struct SGHOSTNODE
-	{
-		SGHOSTNODE *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack; // 链表，计算节点的拓扑结构
-		SGBOOLEAN   bActive;     // 布尔值，表示该节点是否被激活
-		SGINT3      n3Pos;       // INT3，表示该节点的空间坐标
-		SGSTDGRID   ptrGrids[GRIDS_X*GRIDS_X*GRIDS_X];    // 该计算节点所包含的计算网格，本程序中格点数默认为64^3
-	};
-
-	/* 从全局中抓取局部的相邻的节点，在GPU进行并行计算 */
-	struct SGCUDANODES
-	{
-		SGSTDGRID ptrCenter[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGSTDGRID ptrLeft[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGSTDGRID ptrRight[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGSTDGRID ptrUp[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGSTDGRID ptrDown[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGSTDGRID ptrFront[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGSTDGRID ptrBack[GRIDS_X*GRIDS_X*GRIDS_X];
-	};
-
-
-	/* SGCUDANODES的簡化形式 */
-	struct SGSIMPLENODES
-	{
-		SGDOUBLE ptrCenter[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGDOUBLE ptrLeft[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGDOUBLE ptrRight[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGDOUBLE ptrUp[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGDOUBLE ptrDown[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGDOUBLE ptrFront[GRIDS_X*GRIDS_X*GRIDS_X];
-		SGDOUBLE ptrBack[GRIDS_X*GRIDS_X*GRIDS_X];
-	};
-
 }
 
 #endif

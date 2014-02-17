@@ -11,36 +11,24 @@
 
 #include "DataStructures.h"
 
+#define VELOCITY_FIELD_U    0
+#define VELOCITY_FIELD_V    1
+#define VELOCITY_FIELD_W    2
+#define DENSITY_FIELD       3
+
 using namespace sge;
 
-/* 对CopyBuffer的C语言封装，将网格的数据拷贝到临时数据中 */
-extern void hostCopyBuffer( SGSIMPLENODES *buffs, const SGCUDANODES *nodes, const SGFIELDTYPE type );
-
-/* 对CopyBuffer的C语言封装，将临时数据拷贝到网格中 */
-extern void hostCopyBuffer( SGCUDANODES *nodes, const SGSIMPLENODES *buffs, const SGFIELDTYPE type );
-
-/* 对SwapBuffer的C语言封装，交换两段GPU buffer的数据，需要注意的是这两段数据的长度应该是一样的，是64^3 */
-extern void hostSwapBuffer( SGSIMPLENODES *buf1, SGSIMPLENODES *buf2 );
-
-/* 对ZeroBuffer的C语言封装，对GPU buffer的数据做归零 */
-extern void hostZeroBuffer( SGSIMPLENODES *buf );
-extern void hostZeroBuffer( SGSTDGRID *buf );
-
 /* 采集网格数据，并转换为volumetric data */
-extern void hostPickData( SGUCHAR *data, const SGSIMPLENODES *bufs, SGINT3 *nodeIX );
-extern void hostPickData( SGUCHAR *data, const SGSTDGRID *bufs, SGINT3 *nodeIX );
+extern void hostPickData( SGUCHAR *data, const double *bufs, SGINT3 *nodeIX );
 
-/* 向计算网格中加入数据 */
-extern void hostAddSource( SGSTDGRID *grids, SGFIELDTYPE type );
+/* clear GPU buffer */
+extern void hostZeroBuffer( double *grid );
 
-/* 求解密度场 */
-extern void hostDensitySolver
-	( SGSIMPLENODES *dens, SGSIMPLENODES *dens0, SGCUDANODES *nodes, double *stores );
+extern void DensitySolver
+	( double *dev_den, double *dev_u, double *dev_v, double *dev_w, double *dev_den0 );
 
-/* 求解速度场 */
-extern void hostVelocitySolver
-	( SGSIMPLENODES *u, SGSIMPLENODES *v, SGSIMPLENODES *w, SGSIMPLENODES *div, SGSIMPLENODES *p,
-	SGSIMPLENODES *u0, SGSIMPLENODES *v0, SGSIMPLENODES *w0,
-	SGCUDANODES *nodes, double *stores );
+extern void VelocitySolver
+	( double *dev_u, double *dev_v, double *dev_w, double *dev_u0, double *dev_v0, double *dev_w0,
+	double *div, double *p );
 
 #endif

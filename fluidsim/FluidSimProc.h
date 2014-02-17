@@ -20,49 +20,36 @@
 
 using std::vector;
 
-#define dev_L0_vector_num      10
-#define dev_u     dev_L0_vector[0]
-#define dev_v     dev_L0_vector[1]
-#define dev_w     dev_L0_vector[2]
-#define dev_div   dev_L0_vector[3]
-#define dev_p     dev_L0_vector[4]
-#define dev_dens  dev_L0_vector[5]
-#define dev_u0    dev_L0_vector[6]
-#define dev_v0    dev_L0_vector[7]
-#define dev_w0    dev_L0_vector[8]
-#define dev_dens0 dev_L0_vector[9]
-
-#define dev_L2_vector_num       7
-#define dev_center dev_L2_vector[0]
-#define dev_left   dev_L2_vector[1]
-#define dev_right  dev_L2_vector[2]
-#define dev_front  dev_L2_vector[3]
-#define dev_back   dev_L2_vector[4]
-#define dev_up     dev_L2_vector[5]
-#define dev_down   dev_L2_vector[6]
-
-
 namespace sge
 {
 	/* fluid simulation */
 	class FluidSimProc
 	{
+	private:
+		struct LinkNode
+		{
+			int3 n3Pos;
+			bool active;
+			LinkNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack; 
+		};
+
 	/****************************************************************/
 	private: // fluid simulation buffers		
-		/* Level-0 GPU buffers */
-		vector<SGSIMPLENODES*> dev_L0_vector;
+		/* GPU buffers */
+		vector<double*> dev_buffers;
 
-		/* Level-1 GPU buffers */
-		SGCUDANODES *dev_L1_bufs;
+		/* host buffers */
+		vector<double*> host_density;
+		vector<double*> host_velocity_u;
+		vector<double*> host_velocity_v;
+		vector<double*> host_velocity_w;
+		vector<double*> host_obstacle;
 
-		/* Level-2 GPU buffers */
-		vector<SGSTDGRID*> dev_L2_vector;
-
-		/* Level-0 host buffers */
-		vector<SGHOSTNODE*> host_L0_vector;
+		/* linking message */
+		vector<LinkNode*> host_link;
 
 		/* Level-0 host volume rendering buffers */
-		SGUCHAR *host_L0_visual, *dev_L0_visual;
+		SGUCHAR *host_visual, *dev_visual;
 	/****************************************************************/
 	
 	/****************************************************************/
@@ -72,7 +59,6 @@ namespace sge
 
 		/* etc */
 		FunctionHelper m_helper;
-		SGDOUBLE *dev_L0_temps;
 	/****************************************************************/
 
 	public:
@@ -118,7 +104,35 @@ namespace sge
 
 		/* create simulation nodes' topological structure */
 		void BuildOrder( void );
+
+		/* add source */
+		void AddSource( void );
 	};
 };
+
+#define dev_buffers_num         11
+#define dev_dens    dev_buffers[0]
+#define dev_dens0   dev_buffers[1]
+#define dev_vel_u   dev_buffers[2]
+#define dev_vel_v   dev_buffers[3]
+#define dev_vel_w   dev_buffers[4]
+#define dev_vel_u0  dev_buffers[5]
+#define dev_vel_v0  dev_buffers[6]
+#define dev_vel_w0  dev_buffers[7]
+#define dev_div     dev_buffers[8]
+#define dev_p       dev_buffers[9]
+#define dev_obs     dev_buffers[10]
+
+#define dev_center  dev_buffers[0]
+#define dev_left    dev_buffers[1]
+#define dev_right   dev_buffers[2]
+#define dev_up      dev_buffers[3]
+#define dev_down    dev_buffers[4]
+#define dev_front   dev_buffers[5]
+#define dev_back    dev_buffers[6]
+
+#define BOUND_BLANK   0.f
+#define BOUND_SOURCE  1.f
+#define BOUND_WALL    100.f
 
 #endif

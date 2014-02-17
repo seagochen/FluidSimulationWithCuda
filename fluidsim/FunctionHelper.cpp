@@ -24,24 +24,7 @@ SGVOID FunctionHelper::CheckRuntimeErrors( const char* msg, const char *file, co
 	}
 };
 
-SGVOID FunctionHelper::DeviceDim2Dx( dim3 *grid_out, dim3 *block_out )
-{
-	block_out->x = TILE_X;
-	block_out->y = TILE_X;
-	grid_out->x  = GRIDS_X / TILE_X;
-	grid_out->y  = GRIDS_X / TILE_X;
-};
-
-SGVOID FunctionHelper::DeviceDim3Dx( dim3 *gridDim, dim3 *blockDim )
-{
-	blockDim->x = (GRIDS_X / TILE_X);
-	blockDim->y = (THREADS_X / TILE_X);
-	gridDim->x  = (GRIDS_X / blockDim->x);
-	gridDim->y  = (GRIDS_X * GRIDS_X * GRIDS_X) / 
-		(blockDim->x * blockDim->y * (GRIDS_X / blockDim->x));
-};
-
-SGRUNTIMEMSG FunctionHelper::CreateDoubleBuffers( SGINT size, SGINT nPtrs, ... )
+SGRUNTIMEMSG FunctionHelper::CreateDoubleBuffers( size_t size, SGINT nPtrs, ... )
 {
 	double **ptr;
 
@@ -61,7 +44,7 @@ SGRUNTIMEMSG FunctionHelper::CreateDoubleBuffers( SGINT size, SGINT nPtrs, ... )
 	return SG_RUNTIME_OK;
 };
 
-SGRUNTIMEMSG FunctionHelper::CreateIntegerBuffers( SGINT size, SGINT nPtrs, ... )
+SGRUNTIMEMSG FunctionHelper::CreateIntegerBuffers( size_t size, SGINT nPtrs, ... )
 {
 	int **ptr;
 
@@ -81,62 +64,61 @@ SGRUNTIMEMSG FunctionHelper::CreateIntegerBuffers( SGINT size, SGINT nPtrs, ... 
 	return SG_RUNTIME_OK;
 };
 
-void FunctionHelper::CopyBuffers( SGSIMPLENODES *bufs, const SGCUDANODES *nodes, SGFIELDTYPE type )
+SGRUNTIMEMSG FunctionHelper::CreateVolumetricBuffers( size_t size, SGUCHAR **hostbuf, SGUCHAR **devbuf )
 {
-	hostCopyBuffer( bufs, nodes, type );
-};
-
-void FunctionHelper::CopyBuffers( SGCUDANODES *nodes, const SGSIMPLENODES *bufs, SGFIELDTYPE type )
-{
-	hostCopyBuffer( nodes, bufs, type );
-};
-
-SGRUNTIMEMSG FunctionHelper::CreateHostBuffers( SGHOSTNODE  *node )
-{
-	node = (SGHOSTNODE*)malloc( sizeof(SGHOSTNODE));
-
-	if ( node not_eq nullptr ) 
-		return SG_RUNTIME_OK;
-	
-	return SG_MALLOC_SPACE_FAILED;
-};
-
-SGRUNTIMEMSG FunctionHelper::CreateCUDABuffers( SGCUDANODES **node )
-{
-	if ( cudaMalloc( (void**)node, sizeof(SGCUDANODES)) eqt cudaSuccess )
-		return SG_RUNTIME_OK;
-
-	return SG_MALLOC_SPACE_FAILED;
-};
-
-SGRUNTIMEMSG FunctionHelper::CreateCUDABuffers( SGSIMPLENODES **bufs )
-{
-	if ( cudaMalloc( (void**)bufs, sizeof(SGSIMPLENODES)) eqt cudaSuccess )
-		return SG_RUNTIME_OK;
-
-	return SG_MALLOC_SPACE_FAILED;
-};
-
-SGRUNTIMEMSG FunctionHelper::CreateCUDABuffers( SGSTDGRID **bufs )
-{
-	size_t size = GRIDS_X * GRIDS_X * GRIDS_X;
-
-	if ( cudaMalloc( (void**)bufs, sizeof(SGSTDGRID) * size ) eqt cudaSuccess)
-		return SG_RUNTIME_OK;
-
-	return SG_MALLOC_SPACE_FAILED;
-};
-
-SGRUNTIMEMSG FunctionHelper::CreateVolumetricBuffers( SGUCHAR **hostbuf, SGUCHAR **devbuf )
-{
-	size_t size = VOLUME_X * VOLUME_X *VOLUME_X;
 	*hostbuf = (SGUCHAR*)malloc( sizeof(SGUCHAR) * size );
 
 	if ( *hostbuf eqt nullptr )
 		return SG_MALLOC_SPACE_FAILED;
 
 	if ( cudaMalloc( (void**)devbuf, sizeof(SGUCHAR) * size ) not_eq cudaSuccess )
+	{
+		CheckRuntimeErrors( "malloc temporary stores failed!", __FILE__, __LINE__ );
 		return SG_MALLOC_SPACE_FAILED;
+	}
+
+	return SG_RUNTIME_OK;
+};
+
+SGRUNTIMEMSG FunctionHelper::CreateHostBuffers( size_t size, SGINT nPtrs, ... )
+{
+	double **ptr;
+
+	va_list ap;
+	va_start( ap, nPtrs );
+	for ( int i = 0; i < nPtrs; i++ )
+	{
+		ptr = va_arg( ap, double** );
+		*ptr = (double*)malloc( sizeof(double) * size );
+		
+		if ( *ptr eqt nullptr )
+		{
+			printf( "malloc space failed!\n" );
+			return SG_MALLOC_SPACE_FAILED;
+		}
+	}
+	va_end( ap );
+
+	return SG_RUNTIME_OK;
+};
+
+SGRUNTIMEMSG FunctionHelper::CreateDeviceBuffers( size_t size, SGINT nPtrs, ... )
+{
+	double **ptr;
+
+	va_list ap;
+	va_start( ap, nPtrs );
+	for ( int i = 0; i < nPtrs; i++ )
+	{
+		ptr = va_arg( ap, double** );
+
+		if ( cudaMalloc( (void**)ptr, sizeof(double) * size) not_eq cudaSuccess )
+		{
+			CheckRuntimeErrors( "malloc temporary stores failed!", __FILE__, __LINE__ );
+			return SG_MALLOC_SPACE_FAILED;
+		}
+	}
+	va_end( ap );
 
 	return SG_RUNTIME_OK;
 };
