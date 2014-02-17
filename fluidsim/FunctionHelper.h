@@ -27,12 +27,12 @@ namespace sge
 		SGRUNTIMEMSG CreateDoubleBuffers( SGINT size, SGINT nPtrs, ... );
 		SGRUNTIMEMSG CreateIntegerBuffers( SGINT size, SGINT nPtrs, ... );
 
-		void CopyBuffers( SGTEMPBUFFERS *bufs, const SGCUDANODES *nodes, SGFIELDTYPE type );
-		void CopyBuffers( SGCUDANODES *nodes, const SGTEMPBUFFERS *bufs, SGFIELDTYPE type );
+		void CopyBuffers( SGSIMPLENODES *bufs, const SGCUDANODES *nodes, SGFIELDTYPE type );
+		void CopyBuffers( SGCUDANODES *nodes, const SGSIMPLENODES *bufs, SGFIELDTYPE type );
 
 		SGRUNTIMEMSG CreateHostNodeBuffers( SGHOSTNODE  **node );
 		SGRUNTIMEMSG CreateCUDANodeBuffers( SGCUDANODES **node );
-		SGRUNTIMEMSG CreateCUDATempBuffers( SGTEMPBUFFERS **bufs );
+		SGRUNTIMEMSG CreateCUDATempBuffers( SGSIMPLENODES **bufs );
 	};
 };
 

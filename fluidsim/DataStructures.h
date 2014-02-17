@@ -161,8 +161,8 @@ namespace sge
 	};
 
 
-	/* 用于fluid simulation的临时数据 */
-	struct SGTEMPBUFFERS
+	/* SGCUDANODES的簡化形式 */
+	struct SGSIMPLENODES
 	{
 		SGDOUBLE ptrCenter[GRIDS_X*GRIDS_X*GRIDS_X];
 		SGDOUBLE ptrLeft[GRIDS_X*GRIDS_X*GRIDS_X];

@@ -81,12 +81,12 @@ SGRUNTIMEMSG FunctionHelper::CreateIntegerBuffers( SGINT size, SGINT nPtrs, ... 
 	return SG_RUNTIME_OK;
 };
 
-void FunctionHelper::CopyBuffers( SGTEMPBUFFERS *bufs, const SGCUDANODES *nodes, SGFIELDTYPE type )
+void FunctionHelper::CopyBuffers( SGSIMPLENODES *bufs, const SGCUDANODES *nodes, SGFIELDTYPE type )
 {
 	hostCopyBuffer( bufs, nodes, type );
 };
 
-void FunctionHelper::CopyBuffers( SGCUDANODES *nodes, const SGTEMPBUFFERS *bufs, SGFIELDTYPE type )
+void FunctionHelper::CopyBuffers( SGCUDANODES *nodes, const SGSIMPLENODES *bufs, SGFIELDTYPE type )
 {
 	hostCopyBuffer( nodes, bufs, type );
 };
@@ -109,9 +109,9 @@ SGRUNTIMEMSG FunctionHelper::CreateCUDANodeBuffers( SGCUDANODES **node )
 	return SG_MALLOC_SPACE_FAILED;
 };
 
-SGRUNTIMEMSG FunctionHelper::CreateCUDATempBuffers( SGTEMPBUFFERS **bufs )
+SGRUNTIMEMSG FunctionHelper::CreateCUDATempBuffers( SGSIMPLENODES **bufs )
 {
-	if ( cudaMalloc( (void**)bufs, sizeof(SGTEMPBUFFERS)) eqt cudaSuccess )
+	if ( cudaMalloc( (void**)bufs, sizeof(SGSIMPLENODES)) eqt cudaSuccess )
 		return SG_RUNTIME_OK;
 
 	return SG_MALLOC_SPACE_FAILED;

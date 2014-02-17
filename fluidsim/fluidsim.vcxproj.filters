@@ -21,9 +21,6 @@
     <ClCompile Include="MainDynamic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FluidSimProc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FrameworkDynamic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
