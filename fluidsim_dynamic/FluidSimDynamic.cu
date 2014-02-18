@@ -32,6 +32,9 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	/* initialize FPS */
 	InitFPS( fluid );
 
+	/* build order */
+	BuildOrder();
+
 	/* select node */
 	SelectNode(0, 0, 0);
 
@@ -51,13 +54,72 @@ void FluidSimProc::InitFPS( FLUIDSPARAM *fluid )
 	fluid->fps.uFPS = 0;
 };
 
+void FluidSimProc::BuildOrder( void )
+{
+	printf( "structure:\n" );
+
+	for ( int i = 0; i < NODES_X; i++ )
+	{
+		for ( int j = 0; j < NODES_X; j++ )
+		{
+			for ( int k = 0; k < NODES_X; k++ )
+			{
+				int index = cudaIndex3D( i, j, k, NODES_X );
+
+				if ( index >= host_node.size() or index < 0 )
+				{
+					printf ( "index out of range! %s, line: %d \n", __FILE__, __LINE__ );
+					exit ( 1 );
+				}
+
+				/* left */
+				if ( i >= 1 )
+					host_node[index]->ptrLeft = host_node[index-1];
+				/* right */
+				if ( i <= NODES_X - 2 )
+					host_node[index]->ptrRight = host_node[index+1];
+				/* down */
+				if ( j >= 1 )
+					host_node[index]->ptrDown = host_node[index-NODES_X];
+				/* up */
+				if ( j <= NODES_X - 2 )
+					host_node[index]->ptrUp = host_node[index+NODES_X];
+				/* back */
+				if ( k >= 1 )
+					host_node[index]->ptrBack = host_node[index-NODES_X*NODES_X];
+				/* front */
+				if ( k <= NODES_X - 2 )
+					host_node[index]->ptrFront = host_node[index+NODES_X*NODES_X];
+
+				host_node[index]->nodeIX.x = i;
+				host_node[index]->nodeIX.y = j;
+				host_node[index]->nodeIX.z = k;
+
+				printf ( "no: %d | offset: %d%d%d | L: %d | R: %d | U: %d | D: %d | F: %d | B: %d \n",
+					index,
+					host_node[index]->nodeIX.x, 
+					host_node[index]->nodeIX.y, 
+					host_node[index]->nodeIX.z,
+					host_node[index]->ptrLeft not_eq nullptr,
+					host_node[index]->ptrRight not_eq nullptr,
+					host_node[index]->ptrUp not_eq nullptr,
+					host_node[index]->ptrDown not_eq nullptr,
+					host_node[index]->ptrFront not_eq nullptr,
+					host_node[index]->ptrBack not_eq nullptr );
+			}
+		}
+	}
+
+	printf( "-----------------------------------------------\n" );
+};
+
 SGRUNTIMEMSG FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 {
-	// Choose which GPU to run on, change this on a multi-GPU system.
+	/* choose which GPU to run on, change this on a multi-GPU system. */
 	if ( cudaSetDevice ( 0 ) != cudaSuccess )
 		helper.CheckRuntimeErrors ( "cudaSetDevices", __FILE__, __LINE__ );
 
-	// Allocate memory on host
+	/* allocate memory on host */
 	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
 	{
 		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
@@ -73,8 +135,12 @@ SGRUNTIMEMSG FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		if ( helper.CreateHostBuffers( node_size, 1, &ptrObs ) not_eq SG_RUNTIME_OK )
 			return SG_RUNTIME_FALSE;
 
-		SimNode node;
-		host_node.push_back( &node );
+		/* simulation nodes */
+		SimNode *node = (SimNode*)malloc(sizeof(SimNode));
+		node->ptrFront = node->ptrBack = nullptr;
+		node->ptrLeft = node->ptrRight = nullptr;
+		node->ptrDown = node->ptrUp = nullptr;
+		host_node.push_back( node );
 
 		host_density.push_back( ptrDens );
 		host_velocity_u.push_back( ptrU );
@@ -83,10 +149,9 @@ SGRUNTIMEMSG FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		host_obstacle.push_back( ptrObs );
 	}
 
-	// Allocate memory on GPU devices
+	/* allocate memory on GPU devices */
 	for ( int i = 0; i < dev_buffers_num; i++ )
 	{
-		// Alarm if cudaMalloc failed
 		double *ptr;
 		if ( helper.CreateDeviceBuffers( node_size, 1, &ptr ) not_eq SG_RUNTIME_OK )
 			return SG_RUNTIME_FALSE;
@@ -100,7 +165,7 @@ SGRUNTIMEMSG FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 	if ( helper.CreateHostBuffers( visual_size, 1, &host_visual ) not_eq SG_RUNTIME_OK )
 		return SG_RUNTIME_FALSE;
 
-	// Finally
+	/* finally */
 	return SG_RUNTIME_OK;
 }  
 
@@ -609,29 +674,23 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 				DevicetoNode();
 
 				/* pick density */
-				GetDensityImage();
+				DensitytoVolumetric();
 			}
 		}
 	}
 
 	/* finally, generate volumetric image */
-	GenerateVolumeData( fluid );
+	GetVolumetric( fluid );
 };
 
-void FluidSimProc::GetDensityImage( void )
+void FluidSimProc::DensitytoVolumetric( void )
 {
 	hostPickData( dev_visual, dev_den, &nPos );
 }
 
-void FluidSimProc::GenerateVolumeData( FLUIDSPARAM *fluid )
+void FluidSimProc::GetVolumetric( FLUIDSPARAM *fluid )
 {
-	if ( cudaMemcpy (host_visual, dev_visual, visual_size, cudaMemcpyDeviceToHost ) != cudaSuccess )
-	{
-		helper.CheckRuntimeErrors ("cudaMemcpy failed", __FILE__, __LINE__);
-		FreeResource ();
-		exit (1);
-	}
-
+	cudaMemcpy( host_visual, dev_visual, visual_size, cudaMemcpyDeviceToHost );
 	fluid->volume.ptrData = host_visual;
 };
 

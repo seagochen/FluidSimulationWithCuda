@@ -41,6 +41,7 @@ namespace sge
 		{
 			SGINT3 nodeIX;
 			SGBOOLEAN active;
+			SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 		};
 
 	private:
@@ -64,23 +65,50 @@ namespace sge
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
 
+		/* fluid simulation processing function */
 		void FluidSimSolver( FLUIDSPARAM *fluid );
+
+		/* when program existed, release resource */
 		void FreeResource( void );
+
+		/* zero the buffers for fluid simulation */
 		void ZeroBuffers( void );
 
 	private:
+		/* initialize FPS and etc. */
 		void InitFPS( FLUIDSPARAM *fluid );
-		void NodetoDevice( void );
-		void DevicetoNode( void );
-		void SelectNode( int i, int j, int k );
-		bool ActiveNode( int i, int j, int k );
-		bool DeactiveNode( int i, int j, int k );
-		void GetDensityImage( void );
-		void GenerateVolumeData( FLUIDSPARAM *fluid );
 
-	private:
+		/* copy host data to CUDA device */
+		void NodetoDevice( void );
+
+		/* retrieve data back to host */
+		void DevicetoNode( void );
+
+		/* select a node */
+		void SelectNode( int i, int j, int k );
+
+		/* mark the node as actived */
+		bool ActiveNode( int i, int j, int k );
+
+		/* mark the node as deactived */
+		bool DeactiveNode( int i, int j, int k );
+		
+		/* cast density to volumetric data */
+		void DensitytoVolumetric( void );
+		
+		/* retrieve the density back and load into volumetric data for rendering */
+		void GetVolumetric( FLUIDSPARAM *fluid );
+		
+		/* create simulation nodes' topological structure */
+		void BuildOrder( void );
+
+		/* allocate resource */
 		SGRUNTIMEMSG AllocateResource( FLUIDSPARAM *fluid );
+
+		/* solving density */
 		void DensitySolver ( void );
+
+		/* solving velocity */
 		void VelocitySolver ( void );
 	};
 };
