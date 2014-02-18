@@ -36,10 +36,13 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	BuildOrder();
 
 	/* select node */
-	SelectNode(0, 0, 0);
+	ActiveNode(1, 0, 1);
 
 	/* clear buffer */
 	ZeroBuffers();
+
+	/* set boundary */
+	InitBoundary();
 
 	/* finally, print message */
 	printf( "fluid simulation ready, zero the data and preparing the stage now" );
@@ -142,6 +145,8 @@ SGRUNTIMEMSG FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		node->ptrDown = node->ptrUp = nullptr;
 		host_node.push_back( node );
 
+		node->active = false;
+
 		host_density.push_back( ptrDens );
 		host_velocity_u.push_back( ptrU );
 		host_velocity_v.push_back( ptrV );
@@ -198,18 +203,30 @@ void FluidSimProc::FreeResource ( void )
 	dev_buffers.empty( );
 }
 
-__global__ void kernelZeroBuffer ( double *grid )
+__global__ void kernelZeroBuffer( double *grid )
 {
 	GetIndex ();
 	grid [ Index(i,j,k) ] = 0.f;
 };
 
+__global__ void kernelZeroVisual
+	( SGUCHAR *data, int const offseti, int const offsetj, int const offsetk )
+{
+	GetIndex();
+
+	int di = offseti + i;
+	int dj = offsetj + j;
+	int dk = offsetk + k;
+
+	/* zero data */
+	data[ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
+};
 
 void FluidSimProc::ZeroBuffers ( void )
 {
 	cudaDeviceDim3D();
 
-	/* zero GPU buffer first */
+	/* zero GPU buffer */
 	for ( int i = 0; i < dev_buffers_num; i++ )
 		kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_buffers[i] );
 
@@ -221,6 +238,20 @@ void FluidSimProc::ZeroBuffers ( void )
 		cudaMemcpy( host_velocity_v[i], dev_v, node_size, cudaMemcpyDeviceToHost );
 		cudaMemcpy( host_velocity_w[i], dev_w, node_size, cudaMemcpyDeviceToHost );
 	}
+
+	/* zero visual buffer */
+	for ( int i = 0; i < NODES_X; i++ )
+	{
+		for ( int j = 0; j < NODES_X; j++ )
+		{
+			for ( int k = 0; k < NODES_X; k++ )
+			{
+				kernelZeroVisual <<< gridDim, blockDim>>>
+					( dev_visual, i * GRIDS_X, j * GRIDS_X, k * GRIDS_X );
+			}
+		}
+	}
+	cudaMemcpy( host_visual, dev_visual, visual_size, cudaMemcpyDeviceToHost );
 };
 
 void FluidSimProc::NodetoDevice ( void )
@@ -438,42 +469,6 @@ __host__ void hostSwapBuffer
 	kernelSwapBuffer cudaDevice(gridDim, blockDim) (grid1, grid2);
 };
 
-
-__global__ 	void kernelAddSource( double *grid, int const number )
-{
-	GetIndex();
-	BeginSimArea();
-
-	const int half = GRIDS_X / 2;
-
-	switch ( number )
-	{
-	case 0: // density
-		if ( j < 3 ) 
-			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
-				grid [ Index(i,j,k) ] = 100.f;
-	case 1: // velocity v
-		if ( j < 3 ) 
-			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
-				grid [ Index(i,j,k) ] = 100.f;
-
-	default: // add external force if need
-		break;
-	}
-
-	EndSimArea();
-};
-
-__host__ void hostAddSource( double *dens, double *vel_u, double *vel_v, double *vel_w  )
-{
-	cudaDeviceDim3D();
-
-	if ( dens != NULL )
-		kernelAddSource cudaDevice(gridDim, blockDim) ( dens, 0 );
-	if ( vel_v != NULL )
-		kernelAddSource cudaDevice(gridDim, blockDim) ( vel_v, 1 );
-};
-
 __global__ void kernelBoundary ( double *grid, int const cd )
 {
 	GetIndex();
@@ -608,8 +603,6 @@ __host__ void hostProject
 
 void FluidSimProc::VelocitySolver( void )
 {
-	hostAddSource( NULL, NULL, dev_v, NULL );
-
 	// diffuse the velocity field (per axis):
 	hostDiffusion( dev_u0, dev_u, VELOCITY_FIELD_U, VISOCITY );
 	hostDiffusion( dev_v0, dev_v, VELOCITY_FIELD_V, VISOCITY );
@@ -635,7 +628,6 @@ void FluidSimProc::VelocitySolver( void )
 
 void FluidSimProc::DensitySolver( void )
 {
-	hostAddSource( dev_den, NULL, NULL, NULL );
 	hostDiffusion( dev_den0, dev_den, DENSITY_FIELD, DIFFUSION );
 	hostSwapBuffer( dev_den0, dev_den );
 	hostAdvection ( dev_den, dev_den0, DENSITY_FIELD, dev_u, dev_v, dev_w );
@@ -652,29 +644,22 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 			for ( int k = 0; k < NODES_X; k++ )
 			{
 				/* select node */
-				SelectNode( i, j, k );
-				
-				/* for fluid simulation, copy the data to device */
-				NodetoDevice();
-				
-				/* Fluid process */
-				VelocitySolver();
-				DensitySolver();
-				
-				/* Synchronize the device */
-				if ( cudaDeviceSynchronize() not_eq cudaSuccess ) 
+				if ( SelectNode( i, j, k ) )
 				{
-					helper.CheckRuntimeErrors("cudaDeviceSynchronize failed", __FILE__, __LINE__);
-					FreeResource();
-					exit (1);
+					/* for fluid simulation, copy the data to device */
+					NodetoDevice();
+					
+					/* Fluid process */
+					AddSource();
+					VelocitySolver();
+					DensitySolver();
+					
+					/* retrieve data back to host */
+					DevicetoNode();
+					
+					/* pick density */
+					DensitytoVolumetric();
 				}
-				
-				// After simulation process, retrieve data back to host, in order to 
-				// avoid data flipping
-				DevicetoNode();
-
-				/* pick density */
-				DensitytoVolumetric();
 			}
 		}
 	}
@@ -694,7 +679,7 @@ void FluidSimProc::GetVolumetric( FLUIDSPARAM *fluid )
 	fluid->volume.ptrData = host_visual;
 };
 
-void FluidSimProc::SelectNode( int i, int j, int k )
+bool FluidSimProc::SelectNode( int i, int j, int k )
 {
 	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
 	{
@@ -702,6 +687,10 @@ void FluidSimProc::SelectNode( int i, int j, int k )
 		nPos.y = j;
 		nPos.z = k;
 	}
+
+	int ix = cudaIndex3D( i, j, k, NODES_X );
+	
+	return host_node[ix]->active;
 };
 
 bool FluidSimProc::ActiveNode( int i, int j, int k )
@@ -726,4 +715,20 @@ bool FluidSimProc::DeactiveNode( int i, int j, int k )
 	}
 
 	return host_node[ix]->active == false;
+};
+
+__global__ void kernelAddSource
+	( double *density, double *vel_u, double *vel_v, double *vel_w, double *obs )
+{
+
+};
+
+/* add source */
+void FluidSimProc::AddSource( void )
+{
+};
+
+/* initialize boundary condition */
+void FluidSimProc::InitBoundary( void )
+{
 };
