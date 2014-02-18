@@ -17,7 +17,7 @@
 #define SOURCE_VELOCITY        15     // 为计算网格中添加的velocity的量
 
 #define GRIDS_X                64     // 计算网格在单维度上所拥有的数量
-#define NODES_X                 1     // 计算节点在单维度上所拥有的数量
+#define NODES_X                 3     // 计算节点在单维度上所拥有的数量
 #define VOLUME_X   GRIDS_X*NODES_X    // 三维体数据在单维度上的长度
 #define THREADS_X             1024    // 定义CUDA的线程数量
 #define TILE_X                 16     // 将16x16的GPU-threads捆绑打包为一个block

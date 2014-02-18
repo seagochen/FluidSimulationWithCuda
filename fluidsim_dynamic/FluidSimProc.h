@@ -40,6 +40,7 @@ namespace sge
 		struct SimNode
 		{
 			SGINT3 nodeIX;
+			SGBOOLEAN active;
 		};
 
 	private:
@@ -61,23 +62,26 @@ namespace sge
 		SGINT3 nPos;
 
 	public:
-		FluidSimProc ( FLUIDSPARAM *fluid );
+		FluidSimProc( FLUIDSPARAM *fluid );
 
-		void FluidSimSolver ( FLUIDSPARAM *fluid );
-		void FreeResource ( void );
-		void ZeroBuffers ( void );
+		void FluidSimSolver( FLUIDSPARAM *fluid );
+		void FreeResource( void );
+		void ZeroBuffers( void );
 
 	private:
+		void InitFPS( FLUIDSPARAM *fluid );
 		void NodetoDevice( void );
 		void DevicetoNode( void );
+		void SelectNode( int i, int j, int k );
+		bool ActiveNode( int i, int j, int k );
+		bool DeactiveNode( int i, int j, int k );
+		void GetDensityImage( void );
+		void GenerateVolumeData( FLUIDSPARAM *fluid );
 
 	private:
 		SGRUNTIMEMSG AllocateResource( FLUIDSPARAM *fluid );
 		void DensitySolver ( void );
 		void VelocitySolver ( void );
-		void PickData ( FLUIDSPARAM *fluid );
-		void CopyDataToHost ( void );
-		void CopyDataToDevice ( void );
 	};
 };
 
