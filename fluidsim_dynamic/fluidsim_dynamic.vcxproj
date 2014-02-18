@@ -23,6 +23,7 @@
     <ClInclude Include="DataStructures.h" />
     <ClInclude Include="FluidSimProc.h" />
     <ClInclude Include="FrameworkDynamic.h" />
+    <ClInclude Include="FunctionHelper.h" />
     <ClInclude Include="MacroDefinition.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
@@ -40,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameworkDynamic.cpp" />
+    <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
   </ItemGroup>
   <ItemGroup>

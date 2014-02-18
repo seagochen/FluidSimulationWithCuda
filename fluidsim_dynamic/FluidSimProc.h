@@ -15,40 +15,50 @@
 #include <SGE\SGUtils.h>
 #include <vector>
 #include "CUDAMacroDef.h"
+#include "FunctionHelper.h"
 
-#define Simul_Size          GRIDS_X*GRIDS_X*GRIDS_X
+#define dev_buffers_num                 11
+#define dev_u                dev_buffers [ 0 ]
+#define dev_v                dev_buffers [ 1 ]
+#define dev_w                dev_buffers [ 2 ]
+#define dev_u0               dev_buffers [ 3 ]
+#define dev_v0               dev_buffers [ 4 ]
+#define dev_w0               dev_buffers [ 5 ]
+#define dev_den              dev_buffers [ 6 ]
+#define dev_den0             dev_buffers [ 7 ]
+#define dev_div              dev_buffers [ 8 ]
+#define dev_p                dev_buffers [ 9 ]
+#define dev_obs              dev_buffers [ 10 ]
 
-#define DevListNum           11
-#define dev_u                dev_list [ 0 ]
-#define dev_v                dev_list [ 1 ]
-#define dev_w                dev_list [ 2 ]
-#define dev_u0               dev_list [ 3 ]
-#define dev_v0               dev_list [ 4 ]
-#define dev_w0               dev_list [ 5 ]
-#define dev_den              dev_list [ 6 ]
-#define dev_den0             dev_list [ 7 ]
-#define dev_div              dev_list [ 8 ]
-#define dev_p                dev_list [ 9 ]
-#define dev_grid             dev_list [ 10 ]
-
-#define HostListNum          6
-#define host_u               host_list [ 0 ]
-#define host_v               host_list [ 1 ]
-#define host_w               host_list [ 2 ]
-#define host_den             host_list [ 3 ]
-#define host_div             host_list [ 4 ]
-#define host_p               host_list [ 5 ]
-
+using std::vector;
 
 namespace sge
 {
 	class FluidSimProc
 	{
 	private:
-		std::vector <double*> dev_list;
-		std::vector <double*> host_list;
-		GLubyte *host_data;
-		unsigned char *dev_data;
+		struct SimNode
+		{
+			SGINT3 nodeIX;
+		};
+
+	private:
+		vector <double*> dev_buffers;
+
+		vector <double*> host_density;
+		vector <double*> host_velocity_u;
+		vector <double*> host_velocity_v;
+		vector <double*> host_velocity_w;
+		vector <double*> host_obstacle;
+		vector <SimNode*> host_node;
+
+		SGUCHAR *dev_visual, *host_visual;
+
+	private:
+		FunctionHelper helper;
+
+	private:
+		SGINT3 nPos;
 
 	public:
 		FluidSimProc ( FLUIDSPARAM *fluid );
@@ -58,7 +68,11 @@ namespace sge
 		void ZeroBuffers ( void );
 
 	private:
-		SGRUNTIMEMSG AllocateResourcePtrs ( FLUIDSPARAM *fluid );
+		void NodetoDevice( void );
+		void DevicetoNode( void );
+
+	private:
+		SGRUNTIMEMSG AllocateResource( FLUIDSPARAM *fluid );
 		void DensitySolver ( void );
 		void VelocitySolver ( void );
 		void PickData ( FLUIDSPARAM *fluid );

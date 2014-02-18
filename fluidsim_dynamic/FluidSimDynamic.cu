@@ -13,20 +13,12 @@
 
 using namespace sge;
 
-inline void cudaCheckErrors ( const char* msg, const char *file, const int line )
-{
-	cudaError_t __err = cudaGetLastError();
-	if (__err != cudaSuccess) 
-	{ 
-		printf ( "<<< file: %s, line %d >>> \n", file, line );
-		printf ( "*error: %s \n", cudaGetErrorString(__err) );
-		printf ( "%s \n", msg );
-	}
-};
+size_t node_size = GRIDS_X * GRIDS_X * GRIDS_X * sizeof(double);
+size_t visual_size = VOLUME_X * VOLUME_X * VOLUME_X * sizeof(SGUCHAR);
 
 FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 {
-	if ( AllocateResourcePtrs ( fluid ) != SG_RUNTIME_OK )
+	if ( AllocateResource ( fluid ) != SG_RUNTIME_OK )
 	{
 		FreeResource ();
 		exit (1);
@@ -38,51 +30,62 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	fluid->fps.dwLastUpdateTime = 0;
 	fluid->fps.uFPS = 0;
 
+	nPos.x = 0;
+	nPos.y = 0;
+	nPos.z = 0;
+
 	std::cout << "fluid simulation ready, zero the data and preparing the stage now" << std::endl;
 	ZeroBuffers ();
 };
 
-SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs ( FLUIDSPARAM *fluid )
+SGRUNTIMEMSG FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 {
 	// Choose which GPU to run on, change this on a multi-GPU system.
 	if ( cudaSetDevice ( 0 ) != cudaSuccess )
-		cudaCheckErrors ( "cudaSetDevices", __FILE__, __LINE__ );
+		helper.CheckRuntimeErrors ( "cudaSetDevices", __FILE__, __LINE__ );
 
 	// Allocate memory on host
-	for ( int i = 0; i < HostListNum; i++ )
+	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
 	{
-		static double *ptr;
-		ptr = (double*) malloc ( Simul_Size * sizeof(double) );
-		host_list.push_back ( ptr );
+		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
 
-		// Alarm if null pointer
-		if ( ! host_list [ i ] )
-		{
+		if ( helper.CreateHostBuffers( node_size, 1, &ptrDens ) not_eq SG_RUNTIME_OK )
 			return SG_RUNTIME_FALSE;
-		}
+		if ( helper.CreateHostBuffers( node_size, 1, &ptrU ) not_eq SG_RUNTIME_OK )
+			return SG_RUNTIME_FALSE;
+		if ( helper.CreateHostBuffers( node_size, 1, &ptrV ) not_eq SG_RUNTIME_OK )
+			return SG_RUNTIME_FALSE;
+		if ( helper.CreateHostBuffers( node_size, 1, &ptrW ) not_eq SG_RUNTIME_OK )
+			return SG_RUNTIME_FALSE;
+		if ( helper.CreateHostBuffers( node_size, 1, &ptrObs ) not_eq SG_RUNTIME_OK )
+			return SG_RUNTIME_FALSE;
+
+		SimNode node;
+		host_node.push_back( &node );
+
+		host_density.push_back( ptrDens );
+		host_velocity_u.push_back( ptrU );
+		host_velocity_v.push_back( ptrV );
+		host_velocity_w.push_back( ptrW );
+		host_obstacle.push_back( ptrObs );
 	}
 
 	// Allocate memory on GPU devices
-	for ( int i = 0; i < DevListNum; i++ )
+	for ( int i = 0; i < dev_buffers_num; i++ )
 	{
 		// Alarm if cudaMalloc failed
-		static double *ptr;
-		if ( cudaMalloc( (void **) &ptr, Simul_Size * sizeof(double) ) != cudaSuccess )
-		{
-			cudaCheckErrors ( "cudaMalloc failed!", __FILE__, __LINE__ );
+		double *ptr;
+		if ( helper.CreateDeviceBuffers( node_size, 1, &ptr ) not_eq SG_RUNTIME_OK )
 			return SG_RUNTIME_FALSE;
-		}
-		dev_list.push_back(ptr);
+
+		dev_buffers.push_back(ptr);
 	}
-	
-	host_data = (GLubyte*) malloc (sizeof(GLubyte) * 
-		(fluid->volume.uWidth * fluid->volume.uHeight * fluid->volume.uDepth));
-	if ( cudaMalloc ((void**)&dev_data, sizeof(unsigned char) * 
-		(fluid->volume.uWidth * fluid->volume.uHeight * fluid->volume.uDepth)) != cudaSuccess )
-	{
-		cudaCheckErrors ( "cudaMalloc failed!", __FILE__, __LINE__ );
+
+	/* allocate visual buffers */
+	if ( helper.CreateDeviceBuffers( visual_size, 1, &dev_visual ) not_eq SG_RUNTIME_OK )
 		return SG_RUNTIME_FALSE;
-	}
+	if ( helper.CreateHostBuffers( visual_size, 1, &host_visual ) not_eq SG_RUNTIME_OK )
+		return SG_RUNTIME_FALSE;
 
 	// Finally
 	return SG_RUNTIME_OK;
@@ -90,86 +93,63 @@ SGRUNTIMEMSG FluidSimProc::AllocateResourcePtrs ( FLUIDSPARAM *fluid )
 
 void FluidSimProc::FreeResource ( void )
 {
-	for ( int i = 0; i < HostListNum; i++ )
+	/* free host resource */
+	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
 	{
-		if ( host_list [ i ] ) SAFE_FREE_PTR ( host_list [ i ] );
+		helper.FreeHostBuffers( 1, &host_density[i] );
+		helper.FreeHostBuffers( 1, &host_velocity_u[i] );
+		helper.FreeHostBuffers( 1, &host_velocity_v[i] );
+		helper.FreeHostBuffers( 1, &host_velocity_w[i] );
+		helper.FreeHostBuffers( 1, &host_obstacle[i] );
 	}
-	host_list.empty ( );
+	host_density.empty ( );
+	host_velocity_u.empty ( );
+	host_velocity_v.empty ( );
+	host_velocity_w.empty ( );
+	host_obstacle.empty ( );
 
-	for ( int i = 0; i < DevListNum; i++ )
+	/* free device resource */
+	for ( int i = 0; i < dev_buffers_num; i++ )
 	{
-		cudaFree ( dev_list [ i ] );
+		helper.FreeDeviceBuffers( 1, &dev_buffers[i] );
 	}
-	dev_list.empty ( );
+	dev_buffers.empty ( );
 
-	SAFE_FREE_PTR (host_data);
-	cudaFree (dev_data);
+	SAFE_FREE_PTR( host_visual );
+	cudaFree( dev_visual );
 }
 
 void FluidSimProc::ZeroBuffers ( void )
 {
-	for ( int i = 0; i < Simul_Size; i++ )
+	for ( int j = 0; j < NODES_X * NODES_X * NODES_X; j++ )
+	for ( int i = 0; i < GRIDS_X*GRIDS_X*GRIDS_X; i++ )
 	{
-		host_u [ i ] = 0.f;
-		host_v [ i ] = 0.f;
-		host_w [ i ] = 0.f;
-		host_den [ i ] = 0.f;
-		host_div [ i ] = 0.f;
-		host_p [ i ] = 0.f;
+		host_density[j][i] = 0.f;
+		host_velocity_u[j][i] = 0.f;
+		host_velocity_v[j][i] = 0.f;
+		host_velocity_w[j][i] = 0.f;
+		host_obstacle[j][i] = 0.f;
 	}
-
-	if ( cudaMemcpy (dev_u, host_u, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (dev_u0, host_u, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (dev_v, host_v, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (dev_v0, host_v, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (dev_w, host_w, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (dev_w0, host_w, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (dev_den, host_den, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (dev_den0, host_den, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (dev_div, host_div, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (dev_p, host_p, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-
-	goto Success;
-
-Error:
-	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
-	FreeResource ();
-	exit(1);
-
-Success:
-	;
 }
 
 
 void FluidSimProc::CopyDataToDevice ( void )
 {
-	if ( cudaMemcpy (dev_u, host_u, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
+
+	if ( cudaMemcpy (dev_u, host_velocity_u[ix], node_size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_v, host_v, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	if ( cudaMemcpy (dev_v, host_velocity_v[ix], node_size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_w, host_w, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	if ( cudaMemcpy (dev_w, host_velocity_w[ix], node_size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (dev_den, host_den, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (dev_div, host_div, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (dev_p, host_p, sizeof(double) * Simul_Size, cudaMemcpyHostToDevice) != cudaSuccess )
+	if ( cudaMemcpy (dev_den, host_density[ix], node_size, cudaMemcpyHostToDevice) != cudaSuccess )
 		goto Error;
 
 	goto Success;
 
 Error:
-	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	helper.CheckRuntimeErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
 	FreeResource ();
 	exit(1);
 
@@ -180,23 +160,21 @@ Success:
 
 void FluidSimProc::CopyDataToHost ( void )
 {
-	if ( cudaMemcpy (host_u, dev_u, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
+	int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
+
+	if ( cudaMemcpy (host_velocity_u[ix], dev_u, node_size, cudaMemcpyDeviceToHost) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (host_v, dev_v, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
+	if ( cudaMemcpy (host_velocity_v[ix], dev_v, node_size, cudaMemcpyDeviceToHost) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (host_w, dev_w, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
+	if ( cudaMemcpy (host_velocity_w[ix], dev_w, node_size, cudaMemcpyDeviceToHost) != cudaSuccess )
 		goto Error;
-	if ( cudaMemcpy (host_den, dev_den, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (host_div, dev_div, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost ) != cudaSuccess )
-		goto Error;
-	if ( cudaMemcpy (host_p, dev_p, sizeof(double) * Simul_Size, cudaMemcpyDeviceToHost ) != cudaSuccess )
+	if ( cudaMemcpy (host_density[ix], dev_den, node_size, cudaMemcpyDeviceToHost) != cudaSuccess )
 		goto Error;
 
 	goto Success;
 
 Error:
-	cudaCheckErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
+	helper.CheckRuntimeErrors ( "cudaMemcpy failed", __FILE__, __LINE__ );
 	FreeResource ();
 	exit(1);
 
@@ -597,11 +575,6 @@ void hostProject ( double *vel_u, double *vel_v, double *vel_w, double *div, dou
 };
 #pragma endregion
 
-
-
-
-#pragma region velocity, density, fluid simulation solver and pick data
-
 void FluidSimProc::VelocitySolver ( void )
 {
 	hostAddSource ( NULL, NULL, dev_v, NULL );
@@ -659,27 +632,23 @@ void FluidSimProc::FluidSimSolver ( FLUIDSPARAM *fluid )
 	goto Success;
 
 Error:
-	cudaCheckErrors ("cudaDeviceSynchronize failed", __FILE__, __LINE__);
+	helper.CheckRuntimeErrors ("cudaDeviceSynchronize failed", __FILE__, __LINE__);
 	FreeResource ();
 	exit (1);
 
 Success:
-	fluid->volume.ptrData = host_data;
+	fluid->volume.ptrData = host_visual;
 };
 
 void FluidSimProc::PickData ( FLUIDSPARAM *fluid )
 {
 	cudaDeviceDim3D ();
-	kernelPickData  <<<gridDim, blockDim>>> ( dev_data, dev_den );
+	kernelPickData  <<<gridDim, blockDim>>> ( dev_visual, dev_den );
 
-	if ( cudaMemcpy (host_data, dev_data, 
-		sizeof(unsigned char) * (fluid->volume.uWidth * fluid->volume.uHeight * fluid->volume.uDepth), 
-		cudaMemcpyDeviceToHost ) != cudaSuccess )
+	if ( cudaMemcpy (host_visual, dev_visual, visual_size, cudaMemcpyDeviceToHost ) != cudaSuccess )
 	{
-		cudaCheckErrors ("cudaMemcpy failed", __FILE__, __LINE__);
+		helper.CheckRuntimeErrors ("cudaMemcpy failed", __FILE__, __LINE__);
 		FreeResource ();
 		exit (1);
 	}
 };
-
-#pragma endregion
