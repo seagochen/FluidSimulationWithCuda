@@ -110,7 +110,7 @@ namespace sge
 	};
 };
 
-#define dev_buffers_num         11
+#define dev_buffers_num         12
 #define dev_dens    dev_buffers[0]
 #define dev_dens0   dev_buffers[1]
 #define dev_vel_u   dev_buffers[2]

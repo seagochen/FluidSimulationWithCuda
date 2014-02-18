@@ -564,7 +564,7 @@ void Framework_v1_0::CountFPS()
 void Framework_v1_0::onDisplay()
 {
 	/* get volumetric data from fluid simulation processor */
-	m_simproc->PickVolumetric( &m_fluid );
+//	m_simproc->PickVolumetric( &m_fluid );
 
 	/* do something before rendering */
 	glEnable ( GL_DEPTH_TEST );

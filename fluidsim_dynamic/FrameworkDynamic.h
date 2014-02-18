@@ -13,6 +13,7 @@
 #include <GL\freeglut.h>
 #include <SGE\SGUtils.h>
 #include "DataStructures.h"
+#include "MacroDefinition.h"
 #include "FluidSimProc.h"
 
 namespace sge

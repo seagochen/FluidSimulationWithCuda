@@ -18,17 +18,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MainDynamic.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FrameworkDynamic.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FunctionHelper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="shader\backface.frag">
       <Filter>Resource Files\Shader Files</Filter>
     </None>
@@ -56,33 +45,32 @@
     <ClInclude Include="resource.h">
       <Filter>Resource Files\Resource</Filter>
     </ClInclude>
-    <ClInclude Include="DataStructures.h">
+    <ClInclude Include="fluidsim.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FluidSimProc.h">
+    <ClInclude Include="bufferOp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CUDAInterfaces.h">
+    <ClInclude Include="myMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CUDAMacroDef.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CUDAMathLib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FunctionHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FrameworkDynamic.h">
+    <ClInclude Include="volumeHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="CUDABasicKernels.cu">
+    <ClCompile Include="fluidSimImp.cpp">
       <Filter>Source Files</Filter>
-    </CudaCompile>
-    <CudaCompile Include="FluidSimProcKernels.cu">
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="volumeHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="kernel.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>

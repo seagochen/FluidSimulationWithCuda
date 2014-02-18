@@ -294,10 +294,47 @@ void hostProject
 	kernelBoundary cudaDevice(gridDim, blockDim) (vel_w, VELOCITY_FIELD_W);
 };
 
+/*********************************************************************************************/
+/*********************************************************************************************/
+/*********************************************************************************************/
 
-/*********************************************************************************************/
-/*********************************************************************************************/
-/*********************************************************************************************/
+__global__ 	
+void kernelAddSource ( double *grid, int const number )
+{
+	GetIndex();
+	BeginSimArea();
+
+	const int half = GRIDS_X / 2;
+
+	switch ( number )
+	{
+	case DENSITY_FIELD: // density
+		if ( j < 3 ) 
+			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
+				grid [ Index(i,j,k) ] = 100.f;
+	case VELOCITY_FIELD_V: // velocity v
+		if ( j < 3 ) 
+			if ( i >= half-2 and i <= half+2 ) if ( k >= half-2 and k <= half+2 )
+				grid [ Index(i,j,k) ] = 100.f;
+
+	default: // add external force if need
+		break;
+	}
+
+	EndSimArea();
+};
+
+__host__
+void hostAddSource ( double *dens, double *vel_u, double *vel_v, double *vel_w  )
+{
+	cudaDeviceDim3D();
+
+	if ( dens != NULL )
+		kernelAddSource cudaDevice(gridDim, blockDim) ( dens, DENSITY_FIELD );
+	if ( vel_v != NULL )
+		kernelAddSource cudaDevice(gridDim, blockDim) ( vel_v, VELOCITY_FIELD_V );
+};
+
 
 __host__
 void VelocitySolver
@@ -305,6 +342,8 @@ void VelocitySolver
 	double *dev_u0, double *dev_v0, double *dev_w0,
 	double *dev_div, double *dev_p )
 {
+	hostAddSource ( NULL, NULL, dev_v, NULL );
+
 	// diffuse the velocity field (per axis):
 	hostDiffusion ( dev_u0, dev_u, VELOCITY_FIELD_U, VISOCITY );
 	hostDiffusion ( dev_v0, dev_v, VELOCITY_FIELD_V, VISOCITY );
@@ -332,6 +371,7 @@ __host__
 void DensitySolver
 	( double *dev_den, double *dev_u, double *dev_v, double *dev_w, double *dev_den0 )
 {
+	hostAddSource ( dev_den, NULL, NULL, NULL );
 	hostDiffusion ( dev_den0, dev_den, DENSITY_FIELD, DIFFUSION );
 	hostSwapBuffer ( dev_den0, dev_den );
 	hostAdvection ( dev_den, dev_den0, DENSITY_FIELD, dev_u, dev_v, dev_w );

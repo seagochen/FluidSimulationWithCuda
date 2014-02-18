@@ -74,44 +74,24 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 					/* 计算开始 */
 					SelectNode( i, j, k );
 					UploadBuffers();
-
-					AddSource();
-					DensitySolver( dev_dens, dev_vel_u, dev_vel_v, dev_vel_w, dev_dens0 );
+					
 					VelocitySolver( dev_vel_u, dev_vel_v, dev_vel_w,
 						dev_vel_u0, dev_vel_v0, dev_vel_w0, dev_div, dev_p );
-//					hostAddSource( dev_center, SG_VELOCITY_U_FIELD );
-//					hostAddSource( dev_center, SG_VELOCITY_V_FIELD );
-//					hostAddSource( dev_center, SG_VELOCITY_W_FIELD );
-//					hostAddSource( dev_center, SG_DENSITY_FIELD );
-
+					DensitySolver( dev_dens, dev_vel_u, dev_vel_v, dev_vel_w, dev_dens0 );
+					hostPickData( dev_visual, dev_dens, &nodeIX );
 
 					/* 计算结束 */
-					DownloadBuffers();
-					hostPickData( dev_visual, dev_center, &nodeIX ); 
+					DownloadBuffers(); 
 				}
 			}
 		}
 	}
 };
 
-__global__ void kernelAddSource( double *dens, double *u, double *v, double *w, double const *obs )
-{
-	GetIndex();
-
-	if ( obs[ Index(i,j,k) ] eqt BOUND_SOURCE )
-	{
-		dens[ Index(i,j,k) ] = SOURCE_DENSITY;
-		v[ Index(i,j,k) ] = SOURCE_VELOCITY;
-	}
-};
-
 /* add source */
 void FluidSimProc::AddSource( void )
 {
-	cudaDeviceDim3D();
 
-	kernelAddSource cudaDevice(gridDim, blockDim)
-		( dev_dens, dev_vel_u, dev_vel_v, dev_vel_w, dev_obs );
 };
 
 /* allocate resource */
@@ -122,7 +102,7 @@ bool FluidSimProc::AllocateResource( void )
 	/* allocate device buffers */
 	for ( int i = 0; i < dev_buffers_num; i++ )
 	{
-		double *buf;
+		static double *buf;
 		if ( m_helper.CreateDeviceBuffers( size, 1, &buf ) not_eq SG_RUNTIME_OK )
 			return false;
 
@@ -132,37 +112,26 @@ bool FluidSimProc::AllocateResource( void )
 	/* allocate host buffers */
 	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++)
 	{
-		double *dens, *u, *v, *w, *obs;
+		static double *dens, *u, *v, *w, *obs;
 		if ( m_helper.CreateHostBuffers( size, 5, &dens, &u, &v, &w, &obs ) not_eq SG_RUNTIME_OK )
 			return false;
 		
+		/* velocity and density */
 		host_density.push_back( dens );
 		host_velocity_u.push_back( u );
 		host_velocity_v.push_back( v );
 		host_velocity_w.push_back( w );
 		host_obstacle.push_back( obs );
+
+		/* linking node*/
+		static LinkNode node;
+		host_link.push_back( &node );
 	}
 
 	/* allocate visual buffers */	
 	size = VOLUME_X * VOLUME_X * VOLUME_X;
 	if ( m_helper.CreateVolumetricBuffers( size, &host_visual, &dev_visual ) not_eq SG_RUNTIME_OK )
 		return false;
-
-	/* push nodes to linker */
-	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
-	{
-		LinkNode* node = (LinkNode*)malloc( sizeof(LinkNode) );
-		node->ptrBack = node->ptrDown = node->ptrFront =
-			node->ptrLeft = node->ptrRight = node->ptrUp = nullptr;
-
-		if ( node eqt nullptr )
-		{
-			printf( "malloc node failed\n" );
-			return false;
-		}
-
-		host_link.push_back( node );
-	}	
 
 	return true;
 };
@@ -177,17 +146,14 @@ void FluidSimProc::FreeResource( void )
 	}
 
 	/* free host L-0 buffers */
-	int i;
-	for ( i = 0; i < host_density.size(); i++ )
+	for ( int i = 0; i < host_link.size(); i++ )
+	{
 		SAFE_FREE_PTR( host_density[i] );
-	for ( i = 0; i < host_velocity_u.size(); i++ )
 		SAFE_FREE_PTR( host_velocity_u[i] );
-	for ( i = 0; i < host_velocity_v.size(); i++ )
 		SAFE_FREE_PTR( host_velocity_v[i] );
-	for ( i = 0; i < host_velocity_w.size(); i++ )
 		SAFE_FREE_PTR( host_velocity_w[i] );
-	for ( i = 0; i < host_obstacle.size(); i++ )
 		SAFE_FREE_PTR( host_obstacle[i] );
+	}
 
 	/* free L-0 visual buffers */
 	SAFE_FREE_PTR( host_visual );
@@ -275,6 +241,18 @@ void FluidSimProc::SelectNode( int i, int j, int k )
 	}
 };
 
+
+__global__ void kernelSetBound( double *obs, const int half )
+{
+	GetIndex();
+
+	if ( i < half + 2 and i >= half - 2 and
+		k < half + 2 and k >= half - 2 and j < 2 )
+	{
+		obs[ Index(i,j,k) ] = BOUND_SOURCE;
+	}
+};
+
 /* zero data, set the bounds */
 void FluidSimProc::InitSimNodes( void )
 {
@@ -291,15 +269,19 @@ void FluidSimProc::InitSimNodes( void )
 		}
 	}
 
-	int half = GRIDS_X / 2;
-	double *obs = host_obstacle[0];
-	obs[Index(half, half, half)] = BOUND_SOURCE;
-	obs[Index(half+1, half, half)] = BOUND_SOURCE;
-	obs[Index(half-1, half, half)] = BOUND_SOURCE;
-	obs[Index(half, half+1, half)] = BOUND_SOURCE;
-	obs[Index(half, half-1, half)] = BOUND_SOURCE;
-	obs[Index(half, half, half+1)] = BOUND_SOURCE;
-	obs[Index(half, half, half-1)] = BOUND_SOURCE;
+	cudaDeviceDim3D();
+
+	const int half = GRIDS_X / 2;
+	int ops = host_obstacle.size() / 2;
+	
+	kernelSetBound <<<gridDim, blockDim>>> ( dev_obs, half );
+	if ( cudaMemcpy( host_obstacle[ops], dev_obs, 
+		sizeof(double) * GRIDS_X * GRIDS_X * GRIDS_X, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+	{
+		m_helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
 };
 
 /* create simulation nodes' topological structure */
