@@ -11,6 +11,7 @@
 
 #include <cuda_runtime.h>
 
+
 inline __host__ __device__ int sgrand( int *seed )
 {
 	*seed = (69069 * *seed + 1);

@@ -19,14 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="bufferOp.h" />
-    <ClInclude Include="fluidsim.h" />
-    <ClInclude Include="myMath.h" />
+    <ClInclude Include="CUDAMacroDef.h" />
+    <ClInclude Include="DataStructures.h" />
+    <ClInclude Include="FluidSimProc.h" />
+    <ClInclude Include="FrameworkDynamic.h" />
+    <ClInclude Include="FunctionHelper.h" />
+    <ClInclude Include="MacroDefinition.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="volumeHelper.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="fluidsim.rc" />
+    <ResourceCompile Include="fluidsim_dynamic.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icons\main.ico" />
@@ -38,16 +40,16 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="fluidSimImp.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="volumeHelper.cpp" />
+    <ClCompile Include="FrameworkDynamic.cpp" />
+    <ClCompile Include="FunctionHelper.cpp" />
+    <ClCompile Include="MainDynamic.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="kernel.cu" />
+    <CudaCompile Include="FluidSimDynamic.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{A2E2ED4E-D77D-4CCD-B62A-11FF84812774}</ProjectGuid>
-    <RootNamespace>fluidsim</RootNamespace>
+    <ProjectGuid>{E4B0508D-90FB-4516-AA56-9CA6AEB290F6}</ProjectGuid>
+    <RootNamespace>fluidsim_dynamic</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

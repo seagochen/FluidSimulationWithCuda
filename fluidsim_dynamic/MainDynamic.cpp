@@ -12,10 +12,9 @@
 #pragma once
 
 #include <GL\glew.h>
-#include <GL\glew32c.h>
 #include <SGE\SGUtils.h>
 #include "resource.h"
-#include "MainFrameworkDynamic.h"
+#include "FrameworkDynamic.h"
 
 using namespace sge;
 
