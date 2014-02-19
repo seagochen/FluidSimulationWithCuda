@@ -17,31 +17,26 @@
 #include "CUDAMacroDef.h"
 #include "FunctionHelper.h"
 
-#define dev_buffers_num                   11
-#define dev_center           dev_buffers[ 0 ]
+#define dev_buffers_num                   18
 #define dev_den              dev_buffers[ 0 ]
 #define dev_den0             dev_buffers[ 1 ]
-
-#define dev_left             dev_buffers[ 2 ]
 #define dev_u                dev_buffers[ 2 ]
 #define dev_u0               dev_buffers[ 3 ]
-
-#define dev_right            dev_buffers[ 4 ]
 #define dev_v                dev_buffers[ 4 ]
 #define dev_v0               dev_buffers[ 5 ]
-
-#define dev_up               dev_buffers[ 6 ]
 #define dev_w                dev_buffers[ 6 ]
 #define dev_w0               dev_buffers[ 7 ]
-
-#define dev_down             dev_buffers[ 8 ]
 #define dev_div              dev_buffers[ 8 ]
-
-#define dev_front            dev_buffers[ 9 ]
 #define dev_p                dev_buffers[ 9 ]
-
-#define dev_back             dev_buffers[ 10 ]
 #define dev_obs              dev_buffers[ 10 ]
+#define dev_center           dev_buffers[ 11 ]
+#define dev_left             dev_buffers[ 12 ]
+#define dev_right            dev_buffers[ 13 ]
+#define dev_up               dev_buffers[ 14 ]
+#define dev_down             dev_buffers[ 15 ]
+#define dev_front            dev_buffers[ 16 ]
+#define dev_back             dev_buffers[ 17 ]
+
 
 using std::vector;
 
@@ -74,6 +69,8 @@ namespace sge
 
 	private:
 		SGINT3 nPos;
+		int left, right, up, down, front, back;
+		int nIX;
 
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
@@ -88,8 +85,23 @@ namespace sge
 		void ZeroBuffers( void );
 
 	private:
+		/* pick neighbour index */
+		void PickIndex( void );
+
 		/* flood buffer for multiple nodes */
 		void FloodBuffers( void );
+
+		/* flood density */
+		void FloodDensityBuffers( void );
+
+		/* flood velocity u */
+		void FloodVelocityBuffersU( void );
+
+		/* flood velocity v */
+		void FloodVelocityBuffersV( void );
+
+		/* flood velocity w */
+		void FloodVelocityBuffersW( void );
 
 		/* initialize FPS and etc. */
 		void InitFPS( FLUIDSPARAM *fluid );

@@ -782,12 +782,11 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 					DensitytoVolumetric();
 
 					/* flood data */
-					FloodBuffers();
+					//FloodBuffers();
 				}
 			}
 		}
 	}
-
 	/* finally, generate volumetric image */
 	GetVolumetric( fluid );
 };
@@ -935,6 +934,30 @@ __global__ void kernelFloodBoundary( double *grids )
 	grids[Index(i,j,gst_tailer)] = grids[Index(i,j,sim_tailer)];
 
 	/* edges */
+	grids[Index(i,gst_header,gst_header)] = ( grids[Index(i,sim_header,gst_header)] + grids[Index(i,gst_header,sim_header)] ) / 2.f;
+	grids[Index(i,gst_tailer,gst_header)] = ( grids[Index(i,sim_tailer,gst_header)] + grids[Index(i,gst_tailer,sim_header)] ) / 2.f;
+	grids[Index(i,gst_header,gst_tailer)] = ( grids[Index(i,sim_header,gst_tailer)] + grids[Index(i,gst_header,sim_tailer)] ) / 2.f;
+	grids[Index(i,gst_tailer,gst_tailer)] = ( grids[Index(i,sim_tailer,gst_tailer)] + grids[Index(i,gst_tailer,sim_tailer)] ) / 2.f;
+
+	grids[Index(gst_header,j,gst_header)] = ( grids[Index(sim_header,j,gst_header)] + grids[Index(gst_header,j,sim_header)] ) / 2.f;
+	grids[Index(gst_tailer,j,gst_header)] = ( grids[Index(sim_tailer,j,gst_header)] + grids[Index(gst_tailer,j,sim_header)] ) / 2.f;
+	grids[Index(gst_header,j,gst_tailer)] = ( grids[Index(sim_header,j,gst_tailer)] + grids[Index(gst_header,j,sim_tailer)] ) / 2.f;
+	grids[Index(gst_tailer,j,gst_tailer)] = ( grids[Index(sim_tailer,j,gst_tailer)] + grids[Index(gst_tailer,j,sim_tailer)] ) / 2.f;
+
+	grids[Index(gst_header,gst_header,k)] = ( grids[Index(sim_header,gst_header,k)] + grids[Index(gst_header,sim_header,k)] ) / 2.f;
+	grids[Index(gst_tailer,gst_header,k)] = ( grids[Index(sim_tailer,gst_header,k)] + grids[Index(gst_tailer,sim_header,k)] ) / 2.f;
+	grids[Index(gst_header,gst_tailer,k)] = ( grids[Index(sim_header,gst_tailer,k)] + grids[Index(gst_header,sim_tailer,k)] ) / 2.f;
+	grids[Index(gst_tailer,gst_tailer,k)] = ( grids[Index(sim_tailer,gst_tailer,k)] + grids[Index(gst_tailer,sim_tailer,k)] ) / 2.f;
+
+	/* vetices */
+	grids[Index(gst_header,gst_header,gst_header)] = ( grids[Index(sim_header,gst_header,gst_header)] + grids[Index(gst_header,sim_header,gst_header)] + grids[Index(gst_header,gst_header,sim_header)] ) / 3.f;
+	grids[Index(gst_header,gst_header,gst_tailer)] = ( grids[Index(sim_header,gst_header,gst_tailer)] + grids[Index(gst_header,sim_header,gst_tailer)] + grids[Index(gst_header,gst_header,sim_tailer)] ) / 3.f;
+	grids[Index(gst_header,gst_tailer,gst_header)] = ( grids[Index(sim_header,gst_tailer,gst_header)] + grids[Index(gst_header,sim_tailer,gst_header)] + grids[Index(gst_header,gst_tailer,sim_header)] ) / 3.f;
+	grids[Index(gst_header,gst_tailer,gst_tailer)] = ( grids[Index(sim_header,gst_tailer,gst_tailer)] + grids[Index(gst_header,sim_tailer,gst_tailer)] + grids[Index(gst_header,gst_tailer,sim_tailer)] ) / 3.f;
+	grids[Index(gst_tailer,gst_header,gst_header)] = ( grids[Index(sim_tailer,gst_header,gst_header)] + grids[Index(gst_tailer,sim_header,gst_header)] + grids[Index(gst_tailer,gst_header,sim_header)] ) / 3.f;
+	grids[Index(gst_tailer,gst_header,gst_tailer)] = ( grids[Index(sim_tailer,gst_header,gst_tailer)] + grids[Index(gst_tailer,sim_header,gst_tailer)] + grids[Index(gst_tailer,gst_header,sim_tailer)] ) / 3.f;
+	grids[Index(gst_tailer,gst_tailer,gst_header)] = ( grids[Index(sim_tailer,gst_tailer,gst_header)] + grids[Index(gst_tailer,sim_tailer,gst_header)] + grids[Index(gst_tailer,gst_tailer,sim_header)] ) / 3.f;
+	grids[Index(gst_tailer,gst_tailer,gst_tailer)] = ( grids[Index(sim_tailer,gst_tailer,gst_tailer)] + grids[Index(gst_tailer,sim_tailer,gst_tailer)] + grids[Index(gst_tailer,gst_tailer,sim_tailer)]) / 3.f;
 };
 
 void FluidSimProc::FloodBuffers( void )
@@ -951,4 +974,74 @@ void FluidSimProc::FloodBuffers( void )
 	kernelFloodBoundary cudaDevice(gridDim, blockDim) ( dev_u0 );
 	kernelFloodBoundary cudaDevice(gridDim, blockDim) ( dev_v0 );
 	kernelFloodBoundary cudaDevice(gridDim, blockDim) ( dev_w0 );
+
+	/* zero buffers */
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_center );
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_left );
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_right );
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_up );
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_down );
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_front );
+	kernelZeroBuffer cudaDevice(gridDim, blockDim) ( dev_back );
+
+	/* flood neighbouring nodes */
+	PickIndex();
+	FloodDensityBuffers();
+//	FloodVelocityBuffersU();
+//	FloodVelocityBuffersV();
+//	FloodVelocityBuffersW();
+};
+
+
+void FluidSimProc::PickIndex( void )
+{
+	nIX   = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
+	left = right = up = down = front = back = 0;
+}
+
+void FluidSimProc::FloodDensityBuffers()
+{
+	if ( cudaMemcpy( dev_center, host_density[nIX],   m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess ){ helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );  FreeResource(); exit(1); }; 
+	if ( cudaMemcpy( dev_left,   host_density[left],  m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess ){ helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );  FreeResource(); exit(1); };
+	if ( cudaMemcpy( dev_right,  host_density[right], m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess ){ helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );  FreeResource(); exit(1); };
+	if ( cudaMemcpy( dev_up,     host_density[up],    m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess ){ helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );  FreeResource(); exit(1); };
+	if ( cudaMemcpy( dev_down,   host_density[down],  m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess ){ helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );  FreeResource(); exit(1); };
+	if ( cudaMemcpy( dev_front,  host_density[front], m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess ){ helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );  FreeResource(); exit(1); };
+	if ( cudaMemcpy( dev_back,   host_density[back],  m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess ){ helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );  FreeResource(); exit(1); };
+};
+
+void FluidSimProc::FloodVelocityBuffersU()
+{
+	cudaMemcpy( dev_center, host_velocity_u[nIX], m_node_size, cudaMemcpyHostToDevice );
+
+	if ( left  >= 0 and left  < NODES_X ) cudaMemcpy( dev_left,  host_velocity_u[left],  m_node_size, cudaMemcpyHostToDevice );
+	if ( right >= 0 and right < NODES_X ) cudaMemcpy( dev_right, host_velocity_u[right], m_node_size, cudaMemcpyHostToDevice );
+	if ( up    >= 0 and up    < NODES_X ) cudaMemcpy( dev_up,    host_velocity_u[up],    m_node_size, cudaMemcpyHostToDevice );
+	if ( down  >= 0 and down  < NODES_X ) cudaMemcpy( dev_down,  host_velocity_u[down],  m_node_size, cudaMemcpyHostToDevice );
+	if ( front >= 0 and front < NODES_X ) cudaMemcpy( dev_front, host_velocity_u[front], m_node_size, cudaMemcpyHostToDevice );
+	if ( back  >= 0 and back  < NODES_X ) cudaMemcpy( dev_back,  host_velocity_u[back],  m_node_size, cudaMemcpyHostToDevice );
+};
+
+void FluidSimProc::FloodVelocityBuffersV()
+{
+	cudaMemcpy( dev_center, host_velocity_v[nIX], m_node_size, cudaMemcpyHostToDevice );
+
+	if ( left  >= 0 and left  < NODES_X ) cudaMemcpy( dev_left,  host_velocity_v[left],  m_node_size, cudaMemcpyHostToDevice );
+	if ( right >= 0 and right < NODES_X ) cudaMemcpy( dev_right, host_velocity_v[right], m_node_size, cudaMemcpyHostToDevice );
+	if ( up    >= 0 and up    < NODES_X ) cudaMemcpy( dev_up,    host_velocity_v[up],    m_node_size, cudaMemcpyHostToDevice );
+	if ( down  >= 0 and down  < NODES_X ) cudaMemcpy( dev_down,  host_velocity_v[down],  m_node_size, cudaMemcpyHostToDevice );
+	if ( front >= 0 and front < NODES_X ) cudaMemcpy( dev_front, host_velocity_v[front], m_node_size, cudaMemcpyHostToDevice );
+	if ( back  >= 0 and back  < NODES_X ) cudaMemcpy( dev_back,  host_velocity_v[back],  m_node_size, cudaMemcpyHostToDevice );
+};
+
+void FluidSimProc::FloodVelocityBuffersW()
+{
+	cudaMemcpy( dev_center, host_velocity_w[nIX], m_node_size, cudaMemcpyHostToDevice );
+
+	if ( left  >= 0 and left  < NODES_X ) cudaMemcpy( dev_left,  host_velocity_w[left],  m_node_size, cudaMemcpyHostToDevice );
+	if ( right >= 0 and right < NODES_X ) cudaMemcpy( dev_right, host_velocity_w[right], m_node_size, cudaMemcpyHostToDevice );
+	if ( up    >= 0 and up    < NODES_X ) cudaMemcpy( dev_up,    host_velocity_w[up],    m_node_size, cudaMemcpyHostToDevice );
+	if ( down  >= 0 and down  < NODES_X ) cudaMemcpy( dev_down,  host_velocity_w[down],  m_node_size, cudaMemcpyHostToDevice );
+	if ( front >= 0 and front < NODES_X ) cudaMemcpy( dev_front, host_velocity_w[front], m_node_size, cudaMemcpyHostToDevice );
+	if ( back  >= 0 and back  < NODES_X ) cudaMemcpy( dev_back,  host_velocity_w[back],  m_node_size, cudaMemcpyHostToDevice );
 };
