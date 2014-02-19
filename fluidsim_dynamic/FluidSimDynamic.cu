@@ -473,12 +473,49 @@ __host__ void hostSwapBuffer
 	kernelSwapBuffer cudaDevice(gridDim, blockDim) (grid1, grid2);
 };
 
-__global__ void kernelBoundary ( double *grid, int const cd )
+__device__ void atomicDensityBound( double *grids, double const *obstacle )
 {
 	GetIndex();
-	BeginSimArea();
-	// ...
-	EndSimArea();
+};
+
+__device__ void atomicVelocityBound_U( double *grids, double const *obstacle )
+{
+	GetIndex();
+};
+
+__device__ void atomicVelocityBound_V( double *grids, double const *obstacle )
+{
+	GetIndex();
+};
+
+__device__ void atomicVelocityBound_W( double *grids, double const *obstacle )
+{
+	GetIndex();
+};
+
+__global__ void kernelBoundary( double *grids, double const *obstacle, int const cd )
+{
+	switch ( cd )
+	{
+	case MACRO_DENSITY:
+		atomicDensityBound( grids, obstacle );
+		break;
+
+	case MACRO_VELOCITY_U:
+		atomicVelocityBound_U( grids, obstacle );
+		break;
+
+	case MACRO_VELOCITY_V:
+		atomicVelocityBound_V( grids, obstacle );
+		break;
+
+	case MACRO_VELOCITY_W:
+		atomicVelocityBound_W( grids, obstacle );
+		break;
+
+	default:
+		break;
+	}
 };
 
 __global__ void kernelJacobi
@@ -504,13 +541,15 @@ __global__ void kernelJacobi
 }
 
 __host__ void hostJacobi
-( double *grid_out, double const *grid_in, int const cd, double const diffusion, double const divisor )
+	( double *grid_out, double const *grid_in,
+	double const *obstacle, int const cd,
+	double const diffusion, double const divisor )
 {
 	cudaDeviceDim3D();
 	for ( int k=0; k<20; k++)
 	{
 		kernelJacobi cudaDevice(gridDim, blockDim) (grid_out, grid_in, cd, diffusion, divisor);
-		kernelBoundary cudaDevice(gridDim, blockDim) (grid_out, cd);
+		kernelBoundary cudaDevice(gridDim, blockDim) (grid_out, obstacle, cd);
 	}
 };
 
@@ -529,23 +568,24 @@ __global__ void kernelGridAdvection
 };
 
 __host__ void hostAdvection
-	( double *grid_out, double const *grid_in, int const cd, 
+	( double *grid_out, double const *grid_in,
+	double const *obstacle, int const cd, 
 	double const *u_in, double const *v_in, double const *w_in )
 {
 	cudaDeviceDim3D();
 	kernelGridAdvection cudaDevice(gridDim, blockDim) ( grid_out, grid_in, u_in, v_in, w_in );
-	kernelBoundary cudaDevice(gridDim, blockDim) ( grid_out, cd );
+	kernelBoundary cudaDevice(gridDim, blockDim) ( grid_out, obstacle, cd );
 
 };
-#pragma endregion
-
 
 __host__ void hostDiffusion
-	( double *grid_out, double const *grid_in, int const cd, double const diffusion )
+	( double *grid_out, double const *grid_in,
+	double const *obstacle, int const cd,
+	double const diffusion )
 {
 //	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
 	double rate = diffusion;
-	hostJacobi ( grid_out, grid_in, cd, rate, 1+6*rate );
+	hostJacobi ( grid_out, grid_in, obstacle, cd, rate, 1+6*rate );
 };
 
 
@@ -586,55 +626,55 @@ __global__ void kernelSubtract
 };
 
 __host__ void hostProject
-	( double *vel_u, double *vel_v, double *vel_w, double *div, double *p )
+	( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, double const *obstacle )
 {
 	cudaDeviceDim3D();
 
 	// the velocity gradient
 	kernelGradient cudaDevice(gridDim, blockDim) (div, p, vel_u, vel_v, vel_w);
-	kernelBoundary cudaDevice(gridDim, blockDim) (div, MACRO_DENSITY);
-	kernelBoundary cudaDevice(gridDim, blockDim) (p, MACRO_DENSITY);
+	kernelBoundary cudaDevice(gridDim, blockDim) (div, obstacle, MACRO_DENSITY);
+	kernelBoundary cudaDevice(gridDim, blockDim) (p, obstacle, MACRO_DENSITY);
 
 	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
-	hostJacobi(p, div, MACRO_DENSITY, 1.f, 6.f);
+	hostJacobi(p, div, obstacle, MACRO_DENSITY, 1.f, 6.f);
 
 	// now subtract this gradient from our current velocity field
 	kernelSubtract cudaDevice(gridDim, blockDim) (vel_u, vel_v, vel_w, p);
-	kernelBoundary cudaDevice(gridDim, blockDim) (vel_u, MACRO_VELOCITY_U);
-	kernelBoundary cudaDevice(gridDim, blockDim) (vel_v, MACRO_VELOCITY_V);
-	kernelBoundary cudaDevice(gridDim, blockDim) (vel_w, MACRO_VELOCITY_W);
+	kernelBoundary cudaDevice(gridDim, blockDim) (vel_u, obstacle, MACRO_VELOCITY_U);
+	kernelBoundary cudaDevice(gridDim, blockDim) (vel_v, obstacle, MACRO_VELOCITY_V);
+	kernelBoundary cudaDevice(gridDim, blockDim) (vel_w, obstacle, MACRO_VELOCITY_W);
 };
 
 void FluidSimProc::VelocitySolver( void )
 {
 	// diffuse the velocity field (per axis):
-	hostDiffusion( dev_u0, dev_u, MACRO_VELOCITY_U, VISOCITY );
-	hostDiffusion( dev_v0, dev_v, MACRO_VELOCITY_V, VISOCITY );
-	hostDiffusion( dev_w0, dev_w, MACRO_VELOCITY_W, VISOCITY );
+	hostDiffusion( dev_u0, dev_u, dev_obs, MACRO_VELOCITY_U, VISOCITY );
+	hostDiffusion( dev_v0, dev_v, dev_obs, MACRO_VELOCITY_V, VISOCITY );
+	hostDiffusion( dev_w0, dev_w, dev_obs, MACRO_VELOCITY_W, VISOCITY );
 	hostSwapBuffer( dev_u0, dev_u );
 	hostSwapBuffer( dev_v0, dev_v );
 	hostSwapBuffer( dev_w0, dev_w );
 
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	hostProject( dev_u, dev_v, dev_w, dev_div, dev_p );
+	hostProject( dev_u, dev_v, dev_w, dev_div, dev_p, dev_obs );
 	
 	// advect the velocity field (per axis):
-	hostAdvection( dev_u0, dev_u, MACRO_VELOCITY_U, dev_u, dev_v, dev_w );
-	hostAdvection( dev_v0, dev_v, MACRO_VELOCITY_V, dev_u, dev_v, dev_w );
-	hostAdvection( dev_w0, dev_w, MACRO_VELOCITY_W, dev_u, dev_v, dev_w );
+	hostAdvection( dev_u0, dev_u, dev_obs, MACRO_VELOCITY_U, dev_u, dev_v, dev_w );
+	hostAdvection( dev_v0, dev_v, dev_obs, MACRO_VELOCITY_V, dev_u, dev_v, dev_w );
+	hostAdvection( dev_w0, dev_w, dev_obs, MACRO_VELOCITY_W, dev_u, dev_v, dev_w );
 	hostSwapBuffer( dev_u0, dev_u );
 	hostSwapBuffer( dev_v0, dev_v );
 	hostSwapBuffer( dev_w0, dev_w );
 	
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	hostProject( dev_u, dev_v, dev_w, dev_div, dev_p );
+	hostProject( dev_u, dev_v, dev_w, dev_div, dev_p, dev_obs );
 };
 
 void FluidSimProc::DensitySolver( void )
 {
-	hostDiffusion( dev_den0, dev_den, MACRO_DENSITY, DIFFUSION );
+	hostDiffusion( dev_den0, dev_den, dev_obs, MACRO_DENSITY, DIFFUSION );
 	hostSwapBuffer( dev_den0, dev_den );
-	hostAdvection ( dev_den, dev_den0, MACRO_DENSITY, dev_u, dev_v, dev_w );
+	hostAdvection ( dev_den, dev_den0, dev_obs, MACRO_DENSITY, dev_u, dev_v, dev_w );
 };
 
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
@@ -800,4 +840,9 @@ void FluidSimProc::InitBoundary( void )
 		FreeResource();
 		exit( 1 );
 	}
+};
+
+void FluidSimProc::FloodBuffers( void )
+{
+
 };

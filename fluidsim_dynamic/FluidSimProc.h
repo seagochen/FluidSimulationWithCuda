@@ -75,6 +75,9 @@ namespace sge
 		void ZeroBuffers( void );
 
 	private:
+		/* flood buffer for multiple nodes */
+		void FloodBuffers( void );
+
 		/* initialize FPS and etc. */
 		void InitFPS( FLUIDSPARAM *fluid );
 
