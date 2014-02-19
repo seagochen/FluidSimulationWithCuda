@@ -17,6 +17,7 @@ using namespace sge;
 #define MACRO_VELOCITY_U  1
 #define MACRO_VELOCITY_V  2
 #define MACRO_VELOCITY_W  3
+#define MACRO_SIMPLE      4
 
 #define MACRO_BOUNDARY_BLANK      0
 #define MACRO_BOUNDARY_SOURCE     1
@@ -40,7 +41,7 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	BuildOrder();
 
 	/* select node */
-	ActiveNode(1, 0, 1);
+	ActiveNode(NODES_X/2, 0, NODES_X/2);
 
 	/* clear buffer */
 	ZeroBuffers();
@@ -448,16 +449,14 @@ __host__ void hostPickData( SGUCHAR *data, const double *bufs, SGINT3 *nodeIX )
 		( data, bufs, nodeIX->x, nodeIX->y, nodeIX->z );
 };
 
-__global__ void kernelCopyBuffer
-	( double *grid_out, double const *grid_in )
+__global__ void kernelCopyBuffer( double *grid_out, double const *grid_in )
 {
 	GetIndex ();
 
 	grid_out [ Index(i,j,k) ] = grid_in [ Index(i, j, k) ];
 };
 
-__global__ void kernelSwapBuffer
-	( double *grid1, double *grid2 )
+__global__ void kernelSwapBuffer( double *grid1, double *grid2 )
 {
 	GetIndex ();
 
@@ -466,36 +465,110 @@ __global__ void kernelSwapBuffer
 	grid2 [ Index(i,j,k) ] = temp;
 };
 
-__host__ void hostSwapBuffer
-	( double *grid1, double *grid2 )
+__host__ void hostSwapBuffer( double *grid1, double *grid2 )
 {
 	cudaDeviceDim3D();
 	kernelSwapBuffer cudaDevice(gridDim, blockDim) (grid1, grid2);
 };
 
-__device__ void atomicDensityBound( double *grids, double const *obstacle )
+__device__ void atomicDensityBound( double *grids, const double *obstacle )
 {
 	GetIndex();
+	BeginSimArea();
+	/* 当前格点有障碍物，且密度大于0 */
+	if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE and grids[Index(i,j,k)] > 0.f )
+	{
+		int cells  = 0;
+		double val = 0; 
+
+		if ( obstacle[Index(i-1,j,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+		if ( obstacle[Index(i+1,j,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+		if ( obstacle[Index(i,j-1,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+		if ( obstacle[Index(i,j+1,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+		if ( obstacle[Index(i,j,k-1)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+		if ( obstacle[Index(i,j,k+1)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+
+		if ( cells > 0 ) val = grids[Index(i,j,k)] / cells;
+		else val = 0.f;
+
+		if ( obstacle[Index(i-1,j,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i-1,j,k)] += val;
+		if ( obstacle[Index(i+1,j,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i+1,j,k)] += val;
+		if ( obstacle[Index(i,j-1,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j-1,k)] += val;
+		if ( obstacle[Index(i,j+1,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j+1,k)] += val;
+		if ( obstacle[Index(i,j,k-1)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j,k-1)] += val;
+		if ( obstacle[Index(i,j,k+1)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j,k+1)] += val;
+
+		grids[Index(i,j,k)] = 0.f;
+	}
+	EndSimArea();
 };
 
-__device__ void atomicVelocityBound_U( double *grids, double const *obstacle )
+__device__ void atomicVelocityBound_U( double *grids, const double *obstacle )
 {
 	GetIndex();
+	BeginSimArea();
+	if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
+	{
+		if ( grids[Index(i,j,k)] > 0.f )
+		{
+			if ( obstacle[Index(i-1,j,k)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index(i-1,j,k)] = grids[Index(i-1,j,k)] -  grids[Index(i,j,k)];
+		}
+		else
+		{
+			if ( obstacle[Index(i+1,j,k)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index(i+1,j,k)] = grids[Index(i+1,j,k)] -  grids[Index(i,j,k)];
+		}
+		grids[Index(i,j,k)] = 0.f;
+	}
+	EndSimArea();
 };
 
-__device__ void atomicVelocityBound_V( double *grids, double const *obstacle )
+__device__ void atomicVelocityBound_V( double *grids, const double *obstacle )
 {
 	GetIndex();
+	BeginSimArea();
+	if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
+	{
+		if ( grids[Index(i,j,k)] > 0.f )
+		{
+			if ( obstacle[Index(i,j-1,k)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index(i,j-1,k)] = grids[Index(i,j-1,k)] - grids[Index(i,j,k)];
+		}
+		else
+		{
+			if ( obstacle[Index(i,j+1,k)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index(i,j+1,k)] = grids[Index(i,j+1,k)] - grids[Index(i,j,k)];
+		}
+		grids[Index(i,j,k)] = 0.f;
+	}
+	EndSimArea();
 };
 
-__device__ void atomicVelocityBound_W( double *grids, double const *obstacle )
+__device__ void atomicVelocityBound_W( double *grids, const double *obstacle )
 {
 	GetIndex();
+	BeginSimArea();
+	if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
+	{
+		if ( grids[Index(i,j,k)] > 0.f )
+		{
+			if ( obstacle[Index(i,j,k-1)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index(i,j,k-1)] = grids[Index(i,j,k-1)] - grids[Index(i,j,k)];
+		}
+		else
+		{
+			if ( obstacle[Index(i,j,k+1)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index(i,j,k+1)] = grids[Index(i,j,k+1)] - grids[Index(i,j,k)];
+		}
+		grids[Index(i,j,k)] = 0.f;
+	}
+	EndSimArea();
 };
 
-__global__ void kernelBoundary( double *grids, double const *obstacle, int const cd )
+__global__ void kernelBoundary( double *grids, const double *obstacle, const int field )
 {
-	switch ( cd )
+	switch( field )
 	{
 	case MACRO_DENSITY:
 		atomicDensityBound( grids, obstacle );
@@ -518,8 +591,7 @@ __global__ void kernelBoundary( double *grids, double const *obstacle, int const
 	}
 };
 
-__global__ void kernelJacobi
-( double *grid_out, double const *grid_in, int const cd, double const diffusion, double const divisor )
+__global__ void kernelJacobi( double *grid_out, double const *grid_in, double const diffusion, double const divisor )
 {
 	GetIndex();
 	BeginSimArea();
@@ -542,19 +614,17 @@ __global__ void kernelJacobi
 
 __host__ void hostJacobi
 	( double *grid_out, double const *grid_in,
-	double const *obstacle, int const cd,
-	double const diffusion, double const divisor )
+	double const *obstacle, int const field, double const diffusion, double const divisor )
 {
 	cudaDeviceDim3D();
 	for ( int k=0; k<20; k++)
 	{
-		kernelJacobi cudaDevice(gridDim, blockDim) (grid_out, grid_in, cd, diffusion, divisor);
-		kernelBoundary cudaDevice(gridDim, blockDim) (grid_out, obstacle, cd);
+		kernelJacobi cudaDevice(gridDim, blockDim) (grid_out, grid_in, diffusion, divisor);
 	}
+	kernelBoundary cudaDevice(gridDim, blockDim) ( grid_out, obstacle, field );
 };
 
-__global__ void kernelGridAdvection
-( double *grid_out, double const *grid_in, double const *u_in, double const *v_in, double const *w_in )
+__global__ void kernelGridAdvection( double *grid_out, double const *grid_in, double const *u_in, double const *v_in, double const *w_in )
 {
 	GetIndex();
 	BeginSimArea();
@@ -569,28 +639,25 @@ __global__ void kernelGridAdvection
 
 __host__ void hostAdvection
 	( double *grid_out, double const *grid_in,
-	double const *obstacle, int const cd, 
+	double const *obstacle, int const field,
 	double const *u_in, double const *v_in, double const *w_in )
 {
 	cudaDeviceDim3D();
 	kernelGridAdvection cudaDevice(gridDim, blockDim) ( grid_out, grid_in, u_in, v_in, w_in );
-	kernelBoundary cudaDevice(gridDim, blockDim) ( grid_out, obstacle, cd );
-
+	kernelBoundary cudaDevice(gridDim, blockDim) ( grid_out, obstacle, field );
 };
 
 __host__ void hostDiffusion
-	( double *grid_out, double const *grid_in,
-	double const *obstacle, int const cd,
-	double const diffusion )
+	( double *grid_out, double const *grid_in, double const diffusion,
+	double const *obstacle, int const field )
 {
 //	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
 	double rate = diffusion;
-	hostJacobi ( grid_out, grid_in, obstacle, cd, rate, 1+6*rate );
+	hostJacobi ( grid_out, grid_in, obstacle, field, rate, 1+6*rate );
 };
 
 
-__global__ void kernelGradient
-	( double *div, double *p, double const *vel_u, double const *vel_v, double const *vel_w )
+__global__ void kernelGradient( double *div, double *p, double const *vel_u, double const *vel_v, double const *vel_w )
 {
 	GetIndex();
 	BeginSimArea();
@@ -610,8 +677,7 @@ __global__ void kernelGradient
 	EndSimArea();
 };
 
-__global__ void kernelSubtract
-	( double *vel_u, double *vel_v, double *vel_w, double const *p )
+__global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, double const *p )
 {
 	GetIndex();
 	BeginSimArea();
@@ -625,32 +691,31 @@ __global__ void kernelSubtract
 	EndSimArea();
 };
 
-__host__ void hostProject
-	( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, double const *obstacle )
+__host__ void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, double const *obs )
 {
 	cudaDeviceDim3D();
 
 	// the velocity gradient
-	kernelGradient cudaDevice(gridDim, blockDim) (div, p, vel_u, vel_v, vel_w);
-	kernelBoundary cudaDevice(gridDim, blockDim) (div, obstacle, MACRO_DENSITY);
-	kernelBoundary cudaDevice(gridDim, blockDim) (p, obstacle, MACRO_DENSITY);
+	kernelGradient cudaDevice(gridDim, blockDim) ( div, p, vel_u, vel_v, vel_w );
+	kernelBoundary cudaDevice(gridDim, blockDim) ( div, obs, MACRO_SIMPLE );
+	kernelBoundary cudaDevice(gridDim, blockDim) ( p, obs, MACRO_SIMPLE );
 
 	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
-	hostJacobi(p, div, obstacle, MACRO_DENSITY, 1.f, 6.f);
+	hostJacobi(p, div, obs, MACRO_SIMPLE, 1.f, 6.f);
 
 	// now subtract this gradient from our current velocity field
-	kernelSubtract cudaDevice(gridDim, blockDim) (vel_u, vel_v, vel_w, p);
-	kernelBoundary cudaDevice(gridDim, blockDim) (vel_u, obstacle, MACRO_VELOCITY_U);
-	kernelBoundary cudaDevice(gridDim, blockDim) (vel_v, obstacle, MACRO_VELOCITY_V);
-	kernelBoundary cudaDevice(gridDim, blockDim) (vel_w, obstacle, MACRO_VELOCITY_W);
+	kernelSubtract cudaDevice(gridDim, blockDim) ( vel_u, vel_v, vel_w, p );
+	kernelBoundary cudaDevice(gridDim, blockDim) ( vel_u, obs, MACRO_VELOCITY_U );
+	kernelBoundary cudaDevice(gridDim, blockDim) ( vel_v, obs, MACRO_VELOCITY_V );
+	kernelBoundary cudaDevice(gridDim, blockDim) ( vel_w, obs, MACRO_VELOCITY_W );
 };
 
 void FluidSimProc::VelocitySolver( void )
 {
 	// diffuse the velocity field (per axis):
-	hostDiffusion( dev_u0, dev_u, dev_obs, MACRO_VELOCITY_U, VISOCITY );
-	hostDiffusion( dev_v0, dev_v, dev_obs, MACRO_VELOCITY_V, VISOCITY );
-	hostDiffusion( dev_w0, dev_w, dev_obs, MACRO_VELOCITY_W, VISOCITY );
+	hostDiffusion( dev_u0, dev_u, VISOCITY, dev_obs, MACRO_VELOCITY_U );
+	hostDiffusion( dev_v0, dev_v, VISOCITY, dev_obs, MACRO_VELOCITY_V );
+	hostDiffusion( dev_w0, dev_w, VISOCITY, dev_obs, MACRO_VELOCITY_W );
 	hostSwapBuffer( dev_u0, dev_u );
 	hostSwapBuffer( dev_v0, dev_v );
 	hostSwapBuffer( dev_w0, dev_w );
@@ -672,7 +737,7 @@ void FluidSimProc::VelocitySolver( void )
 
 void FluidSimProc::DensitySolver( void )
 {
-	hostDiffusion( dev_den0, dev_den, dev_obs, MACRO_DENSITY, DIFFUSION );
+	hostDiffusion( dev_den0, dev_den, DIFFUSION, dev_obs, MACRO_DENSITY );
 	hostSwapBuffer( dev_den0, dev_den );
 	hostAdvection ( dev_den, dev_den0, dev_obs, MACRO_DENSITY, dev_u, dev_v, dev_w );
 };
@@ -826,7 +891,7 @@ void FluidSimProc::InitBoundary( void )
 	}
 
 	/* select middle node */
-	SelectNode(1, 0, 1);
+	SelectNode(NODES_X/2, 0, NODES_X/2);
 
 	const int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
 
