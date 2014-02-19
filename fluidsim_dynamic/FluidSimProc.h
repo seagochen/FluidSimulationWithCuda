@@ -85,7 +85,7 @@ namespace sge
 		void DevicetoNode( void );
 
 		/* select a node */
-		void SelectNode( int i, int j, int k );
+		bool SelectNode( int i, int j, int k );
 
 		/* mark the node as actived */
 		bool ActiveNode( int i, int j, int k );
@@ -106,7 +106,13 @@ namespace sge
 		SGRUNTIMEMSG AllocateResource( FLUIDSPARAM *fluid );
 
 		/* solving density */
-		void DensitySolver ( void );
+		void DensitySolver( void );
+
+		/* add source */
+		void AddSource( void );
+
+		/* initialize boundary condition */
+		void InitBoundary( void );
 
 		/* solving velocity */
 		void VelocitySolver ( void );
