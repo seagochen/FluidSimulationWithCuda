@@ -279,6 +279,14 @@ void FluidSimProc::DevicetoNode ( void )
 	cudaMemcpy( host_velocity_v[ix], dev_v, m_node_size, cudaMemcpyDeviceToHost );
 	cudaMemcpy( host_velocity_w[ix], dev_w, m_node_size, cudaMemcpyDeviceToHost );
 	cudaMemcpy( host_density[ix], dev_den, m_node_size, cudaMemcpyDeviceToHost  );
+
+#if 0
+	system("cls");
+	printf( "no.1: %f \n", host_density[ix][Index(gst_header,gst_header,gst_header)] );
+	printf( "no.2: %f \n", host_density[ix][Index(gst_tailer,gst_header,gst_header)] );
+	printf( "no.3: %f \n", host_density[ix][Index(gst_tailer,gst_header,gst_tailer)] );
+	printf( "no.4: %f \n", host_density[ix][Index(gst_header,gst_header,gst_tailer)] );
+#endif
 };
 
 inline __host__ __device__ int atomicRand( int *seed )
@@ -292,7 +300,7 @@ inline __host__ __device__ double atomicRandom( int *seed )
 	return ( atomicRand( seed ) & 0xffff ) / (double)0x10000;
 };
 
-inline __host__ __device__  double sgcrandom( int *seed )
+inline __host__ __device__  double atomicCrandom( int *seed )
 {
 	return 2.0 * ( atomicRandom( seed ) - 0.5 );
 };
@@ -471,7 +479,7 @@ __host__ void hostSwapBuffer( double *grid1, double *grid2 )
 	kernelSwapBuffer cudaDevice(gridDim, blockDim) (grid1, grid2);
 };
 
-__device__ void atomicDensityBound( double *grids, const double *obstacle )
+__device__ void atomicDensityObs( double *grids, const double *obstacle )
 {
 	GetIndex();
 	BeginSimArea();
@@ -503,7 +511,7 @@ __device__ void atomicDensityBound( double *grids, const double *obstacle )
 	EndSimArea();
 };
 
-__device__ void atomicVelocityBound_U( double *grids, const double *obstacle )
+__device__ void atomicVelocityObs_U( double *grids, const double *obstacle )
 {
 	GetIndex();
 	BeginSimArea();
@@ -524,7 +532,7 @@ __device__ void atomicVelocityBound_U( double *grids, const double *obstacle )
 	EndSimArea();
 };
 
-__device__ void atomicVelocityBound_V( double *grids, const double *obstacle )
+__device__ void atomicVelocityObs_V( double *grids, const double *obstacle )
 {
 	GetIndex();
 	BeginSimArea();
@@ -545,7 +553,7 @@ __device__ void atomicVelocityBound_V( double *grids, const double *obstacle )
 	EndSimArea();
 };
 
-__device__ void atomicVelocityBound_W( double *grids, const double *obstacle )
+__device__ void atomicVelocityObs_W( double *grids, const double *obstacle )
 {
 	GetIndex();
 	BeginSimArea();
@@ -566,24 +574,24 @@ __device__ void atomicVelocityBound_W( double *grids, const double *obstacle )
 	EndSimArea();
 };
 
-__global__ void kernelBoundary( double *grids, const double *obstacle, const int field )
+__global__ void kernelObstacle( double *grids, const double *obstacle, const int field )
 {
 	switch( field )
 	{
 	case MACRO_DENSITY:
-		atomicDensityBound( grids, obstacle );
+		atomicDensityObs( grids, obstacle );
 		break;
 
 	case MACRO_VELOCITY_U:
-		atomicVelocityBound_U( grids, obstacle );
+		atomicVelocityObs_U( grids, obstacle );
 		break;
 
 	case MACRO_VELOCITY_V:
-		atomicVelocityBound_V( grids, obstacle );
+		atomicVelocityObs_V( grids, obstacle );
 		break;
 
 	case MACRO_VELOCITY_W:
-		atomicVelocityBound_W( grids, obstacle );
+		atomicVelocityObs_W( grids, obstacle );
 		break;
 
 	default:
@@ -621,7 +629,7 @@ __host__ void hostJacobi
 	{
 		kernelJacobi cudaDevice(gridDim, blockDim) (grid_out, grid_in, diffusion, divisor);
 	}
-	kernelBoundary cudaDevice(gridDim, blockDim) ( grid_out, obstacle, field );
+	kernelObstacle cudaDevice(gridDim, blockDim) ( grid_out, obstacle, field );
 };
 
 __global__ void kernelGridAdvection( double *grid_out, double const *grid_in, double const *u_in, double const *v_in, double const *w_in )
@@ -632,7 +640,11 @@ __global__ void kernelGridAdvection( double *grid_out, double const *grid_in, do
 	double u = i - u_in [ Index(i,j,k) ] * DELTATIME;
 	double v = j - v_in [ Index(i,j,k) ] * DELTATIME;
 	double w = k - w_in [ Index(i,j,k) ] * DELTATIME;
-	grid_out [ Index(i,j,k) ] = atomicTrilinear ( grid_in, u, v, w );
+
+//	if ( u >= 0.f and u < GRIDS_X and v >= 0.f and v < GRIDS_X and v >= 0.f and v < GRIDS_X )
+		grid_out [ Index(i,j,k) ] = atomicTrilinear ( grid_in, u, v, w );
+//	else
+//		grid_out [ Index(i,j,k) ] = 0.f;
 
 	EndSimArea();
 };
@@ -644,7 +656,7 @@ __host__ void hostAdvection
 {
 	cudaDeviceDim3D();
 	kernelGridAdvection cudaDevice(gridDim, blockDim) ( grid_out, grid_in, u_in, v_in, w_in );
-	kernelBoundary cudaDevice(gridDim, blockDim) ( grid_out, obstacle, field );
+	kernelObstacle cudaDevice(gridDim, blockDim) ( grid_out, obstacle, field );
 };
 
 __host__ void hostDiffusion
@@ -697,17 +709,17 @@ __host__ void hostProject( double *vel_u, double *vel_v, double *vel_w, double *
 
 	// the velocity gradient
 	kernelGradient cudaDevice(gridDim, blockDim) ( div, p, vel_u, vel_v, vel_w );
-	kernelBoundary cudaDevice(gridDim, blockDim) ( div, obs, MACRO_SIMPLE );
-	kernelBoundary cudaDevice(gridDim, blockDim) ( p, obs, MACRO_SIMPLE );
+	kernelObstacle cudaDevice(gridDim, blockDim) ( div, obs, MACRO_SIMPLE );
+	kernelObstacle cudaDevice(gridDim, blockDim) ( p, obs, MACRO_SIMPLE );
 
 	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
 	hostJacobi(p, div, obs, MACRO_SIMPLE, 1.f, 6.f);
 
 	// now subtract this gradient from our current velocity field
 	kernelSubtract cudaDevice(gridDim, blockDim) ( vel_u, vel_v, vel_w, p );
-	kernelBoundary cudaDevice(gridDim, blockDim) ( vel_u, obs, MACRO_VELOCITY_U );
-	kernelBoundary cudaDevice(gridDim, blockDim) ( vel_v, obs, MACRO_VELOCITY_V );
-	kernelBoundary cudaDevice(gridDim, blockDim) ( vel_w, obs, MACRO_VELOCITY_W );
+	kernelObstacle cudaDevice(gridDim, blockDim) ( vel_u, obs, MACRO_VELOCITY_U );
+	kernelObstacle cudaDevice(gridDim, blockDim) ( vel_v, obs, MACRO_VELOCITY_V );
+	kernelObstacle cudaDevice(gridDim, blockDim) ( vel_w, obs, MACRO_VELOCITY_W );
 };
 
 void FluidSimProc::VelocitySolver( void )
@@ -765,9 +777,12 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 					
 					/* retrieve data back to host */
 					DevicetoNode();
-					
+
 					/* pick density */
 					DensitytoVolumetric();
+
+					/* flood data */
+					FloodBuffers();
 				}
 			}
 		}
@@ -907,7 +922,33 @@ void FluidSimProc::InitBoundary( void )
 	}
 };
 
+__global__ void kernelFloodBoundary( double *grids )
+{
+	GetIndex();
+
+	/* faces */
+	grids[Index(gst_header,j,k)] = grids[Index(sim_header,j,k)];
+	grids[Index(gst_tailer,j,k)] = grids[Index(sim_tailer,j,k)];
+	grids[Index(i,gst_header,k)] = grids[Index(i,sim_header,k)];
+	grids[Index(i,gst_tailer,k)] = grids[Index(i,sim_tailer,k)];
+	grids[Index(i,j,gst_header)] = grids[Index(i,j,sim_header)];
+	grids[Index(i,j,gst_tailer)] = grids[Index(i,j,sim_tailer)];
+
+	/* edges */
+};
+
 void FluidSimProc::FloodBuffers( void )
 {
+	cudaDeviceDim3D();
 
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_den0, dev_den );
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_u0, dev_u );
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_v0, dev_v );
+	kernelCopyBuffer cudaDevice(gridDim, blockDim) ( dev_w0, dev_w );
+
+	/* flood data to boundary */
+	kernelFloodBoundary cudaDevice(gridDim, blockDim) ( dev_den0 );
+	kernelFloodBoundary cudaDevice(gridDim, blockDim) ( dev_u0 );
+	kernelFloodBoundary cudaDevice(gridDim, blockDim) ( dev_v0 );
+	kernelFloodBoundary cudaDevice(gridDim, blockDim) ( dev_w0 );
 };

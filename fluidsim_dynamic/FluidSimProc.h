@@ -17,18 +17,31 @@
 #include "CUDAMacroDef.h"
 #include "FunctionHelper.h"
 
-#define dev_buffers_num                 11
-#define dev_u                dev_buffers [ 0 ]
-#define dev_v                dev_buffers [ 1 ]
-#define dev_w                dev_buffers [ 2 ]
-#define dev_u0               dev_buffers [ 3 ]
-#define dev_v0               dev_buffers [ 4 ]
-#define dev_w0               dev_buffers [ 5 ]
-#define dev_den              dev_buffers [ 6 ]
-#define dev_den0             dev_buffers [ 7 ]
-#define dev_div              dev_buffers [ 8 ]
-#define dev_p                dev_buffers [ 9 ]
-#define dev_obs              dev_buffers [ 10 ]
+#define dev_buffers_num                   11
+#define dev_center           dev_buffers[ 0 ]
+#define dev_den              dev_buffers[ 0 ]
+#define dev_den0             dev_buffers[ 1 ]
+
+#define dev_left             dev_buffers[ 2 ]
+#define dev_u                dev_buffers[ 2 ]
+#define dev_u0               dev_buffers[ 3 ]
+
+#define dev_right            dev_buffers[ 4 ]
+#define dev_v                dev_buffers[ 4 ]
+#define dev_v0               dev_buffers[ 5 ]
+
+#define dev_up               dev_buffers[ 6 ]
+#define dev_w                dev_buffers[ 6 ]
+#define dev_w0               dev_buffers[ 7 ]
+
+#define dev_down             dev_buffers[ 8 ]
+#define dev_div              dev_buffers[ 8 ]
+
+#define dev_front            dev_buffers[ 9 ]
+#define dev_p                dev_buffers[ 9 ]
+
+#define dev_back             dev_buffers[ 10 ]
+#define dev_obs              dev_buffers[ 10 ]
 
 using std::vector;
 
