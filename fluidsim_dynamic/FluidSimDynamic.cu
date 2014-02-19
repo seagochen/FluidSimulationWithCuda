@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Feb 18, 2014
+* <Last Time>     Feb 19, 2014
 * <File Name>     FluidSimDynamic.cu
 */
 
@@ -13,13 +13,17 @@
 
 using namespace sge;
 
-#define DENSITY_FIELD     0
-#define VELOCITY_FIELD_U  1
-#define VELOCITY_FIELD_V  2
-#define VELOCITY_FIELD_W  3
+#define MACRO_DENSITY     0
+#define MACRO_VELOCITY_U  1
+#define MACRO_VELOCITY_V  2
+#define MACRO_VELOCITY_W  3
 
-size_t node_size = GRIDS_X * GRIDS_X * GRIDS_X * sizeof(double);
-size_t visual_size = VOLUME_X * VOLUME_X * VOLUME_X * sizeof(SGUCHAR);
+#define MACRO_BOUNDARY_BLANK      0
+#define MACRO_BOUNDARY_SOURCE     1
+#define MACRO_BOUNDARY_OBSTACLE 100
+
+const size_t m_node_size = GRIDS_X * GRIDS_X * GRIDS_X * sizeof(double);
+const size_t m_volm_size = VOLUME_X * VOLUME_X * VOLUME_X * sizeof(SGUCHAR);
 
 FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 {
@@ -127,15 +131,15 @@ SGRUNTIMEMSG FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 	{
 		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
 
-		if ( helper.CreateHostBuffers( node_size, 1, &ptrDens ) not_eq SG_RUNTIME_OK )
+		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrDens ) not_eq SG_RUNTIME_OK )
 			return SG_RUNTIME_FALSE;
-		if ( helper.CreateHostBuffers( node_size, 1, &ptrU ) not_eq SG_RUNTIME_OK )
+		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrU ) not_eq SG_RUNTIME_OK )
 			return SG_RUNTIME_FALSE;
-		if ( helper.CreateHostBuffers( node_size, 1, &ptrV ) not_eq SG_RUNTIME_OK )
+		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrV ) not_eq SG_RUNTIME_OK )
 			return SG_RUNTIME_FALSE;
-		if ( helper.CreateHostBuffers( node_size, 1, &ptrW ) not_eq SG_RUNTIME_OK )
+		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrW ) not_eq SG_RUNTIME_OK )
 			return SG_RUNTIME_FALSE;
-		if ( helper.CreateHostBuffers( node_size, 1, &ptrObs ) not_eq SG_RUNTIME_OK )
+		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrObs ) not_eq SG_RUNTIME_OK )
 			return SG_RUNTIME_FALSE;
 
 		/* simulation nodes */
@@ -158,16 +162,16 @@ SGRUNTIMEMSG FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 	for ( int i = 0; i < dev_buffers_num; i++ )
 	{
 		double *ptr;
-		if ( helper.CreateDeviceBuffers( node_size, 1, &ptr ) not_eq SG_RUNTIME_OK )
+		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptr ) not_eq SG_RUNTIME_OK )
 			return SG_RUNTIME_FALSE;
 
 		dev_buffers.push_back(ptr);
 	}
 
 	/* allocate visual buffers */
-	if ( helper.CreateDeviceBuffers( visual_size, 1, &dev_visual ) not_eq SG_RUNTIME_OK )
+	if ( helper.CreateDeviceBuffers( m_volm_size, 1, &dev_visual ) not_eq SG_RUNTIME_OK )
 		return SG_RUNTIME_FALSE;
-	if ( helper.CreateHostBuffers( visual_size, 1, &host_visual ) not_eq SG_RUNTIME_OK )
+	if ( helper.CreateHostBuffers( m_volm_size, 1, &host_visual ) not_eq SG_RUNTIME_OK )
 		return SG_RUNTIME_FALSE;
 
 	/* finally */
@@ -233,10 +237,10 @@ void FluidSimProc::ZeroBuffers ( void )
 	/* zero host buffer */
 	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
 	{
-		cudaMemcpy( host_density[i], dev_den, node_size, cudaMemcpyDeviceToHost);
-		cudaMemcpy( host_velocity_u[i], dev_u, node_size, cudaMemcpyDeviceToHost );
-		cudaMemcpy( host_velocity_v[i], dev_v, node_size, cudaMemcpyDeviceToHost );
-		cudaMemcpy( host_velocity_w[i], dev_w, node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_density[i], dev_den, m_node_size, cudaMemcpyDeviceToHost);
+		cudaMemcpy( host_velocity_u[i], dev_u, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_v[i], dev_v, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_w[i], dev_w, m_node_size, cudaMemcpyDeviceToHost );
 	}
 
 	/* zero visual buffer */
@@ -251,18 +255,18 @@ void FluidSimProc::ZeroBuffers ( void )
 			}
 		}
 	}
-	cudaMemcpy( host_visual, dev_visual, visual_size, cudaMemcpyDeviceToHost );
+	cudaMemcpy( host_visual, dev_visual, m_volm_size, cudaMemcpyDeviceToHost );
 };
 
 void FluidSimProc::NodetoDevice ( void )
 {
 	int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
 
-	cudaMemcpy( dev_u, host_velocity_u[ix], node_size, cudaMemcpyHostToDevice );
-	cudaMemcpy( dev_v, host_velocity_v[ix], node_size, cudaMemcpyHostToDevice );
-	cudaMemcpy( dev_w, host_velocity_w[ix], node_size, cudaMemcpyHostToDevice );
-	cudaMemcpy( dev_den, host_density[ix], node_size, cudaMemcpyHostToDevice  );
-	cudaMemcpy( dev_obs, host_obstacle[ix], node_size, cudaMemcpyHostToDevice );
+	cudaMemcpy( dev_u, host_velocity_u[ix], m_node_size, cudaMemcpyHostToDevice );
+	cudaMemcpy( dev_v, host_velocity_v[ix], m_node_size, cudaMemcpyHostToDevice );
+	cudaMemcpy( dev_w, host_velocity_w[ix], m_node_size, cudaMemcpyHostToDevice );
+	cudaMemcpy( dev_den, host_density[ix], m_node_size, cudaMemcpyHostToDevice  );
+	cudaMemcpy( dev_obs, host_obstacle[ix], m_node_size, cudaMemcpyHostToDevice );
 };
 
 
@@ -270,10 +274,10 @@ void FluidSimProc::DevicetoNode ( void )
 {
 	int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
 
-	cudaMemcpy( host_velocity_u[ix], dev_u, node_size, cudaMemcpyDeviceToHost );
-	cudaMemcpy( host_velocity_v[ix], dev_v, node_size, cudaMemcpyDeviceToHost );
-	cudaMemcpy( host_velocity_w[ix], dev_w, node_size, cudaMemcpyDeviceToHost );
-	cudaMemcpy( host_density[ix], dev_den, node_size, cudaMemcpyDeviceToHost  );
+	cudaMemcpy( host_velocity_u[ix], dev_u, m_node_size, cudaMemcpyDeviceToHost );
+	cudaMemcpy( host_velocity_v[ix], dev_v, m_node_size, cudaMemcpyDeviceToHost );
+	cudaMemcpy( host_velocity_w[ix], dev_w, m_node_size, cudaMemcpyDeviceToHost );
+	cudaMemcpy( host_density[ix], dev_den, m_node_size, cudaMemcpyDeviceToHost  );
 };
 
 inline __host__ __device__ int atomicRand( int *seed )
@@ -588,25 +592,25 @@ __host__ void hostProject
 
 	// the velocity gradient
 	kernelGradient cudaDevice(gridDim, blockDim) (div, p, vel_u, vel_v, vel_w);
-	kernelBoundary cudaDevice(gridDim, blockDim) (div, DENSITY_FIELD);
-	kernelBoundary cudaDevice(gridDim, blockDim) (p, DENSITY_FIELD);
+	kernelBoundary cudaDevice(gridDim, blockDim) (div, MACRO_DENSITY);
+	kernelBoundary cudaDevice(gridDim, blockDim) (p, MACRO_DENSITY);
 
 	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
-	hostJacobi(p, div, DENSITY_FIELD, 1.f, 6.f);
+	hostJacobi(p, div, MACRO_DENSITY, 1.f, 6.f);
 
 	// now subtract this gradient from our current velocity field
 	kernelSubtract cudaDevice(gridDim, blockDim) (vel_u, vel_v, vel_w, p);
-	kernelBoundary cudaDevice(gridDim, blockDim) (vel_u, VELOCITY_FIELD_U);
-	kernelBoundary cudaDevice(gridDim, blockDim) (vel_v, VELOCITY_FIELD_V);
-	kernelBoundary cudaDevice(gridDim, blockDim) (vel_w, VELOCITY_FIELD_W);
+	kernelBoundary cudaDevice(gridDim, blockDim) (vel_u, MACRO_VELOCITY_U);
+	kernelBoundary cudaDevice(gridDim, blockDim) (vel_v, MACRO_VELOCITY_V);
+	kernelBoundary cudaDevice(gridDim, blockDim) (vel_w, MACRO_VELOCITY_W);
 };
 
 void FluidSimProc::VelocitySolver( void )
 {
 	// diffuse the velocity field (per axis):
-	hostDiffusion( dev_u0, dev_u, VELOCITY_FIELD_U, VISOCITY );
-	hostDiffusion( dev_v0, dev_v, VELOCITY_FIELD_V, VISOCITY );
-	hostDiffusion( dev_w0, dev_w, VELOCITY_FIELD_W, VISOCITY );
+	hostDiffusion( dev_u0, dev_u, MACRO_VELOCITY_U, VISOCITY );
+	hostDiffusion( dev_v0, dev_v, MACRO_VELOCITY_V, VISOCITY );
+	hostDiffusion( dev_w0, dev_w, MACRO_VELOCITY_W, VISOCITY );
 	hostSwapBuffer( dev_u0, dev_u );
 	hostSwapBuffer( dev_v0, dev_v );
 	hostSwapBuffer( dev_w0, dev_w );
@@ -615,9 +619,9 @@ void FluidSimProc::VelocitySolver( void )
 	hostProject( dev_u, dev_v, dev_w, dev_div, dev_p );
 	
 	// advect the velocity field (per axis):
-	hostAdvection( dev_u0, dev_u, VELOCITY_FIELD_U, dev_u, dev_v, dev_w );
-	hostAdvection( dev_v0, dev_v, VELOCITY_FIELD_V, dev_u, dev_v, dev_w );
-	hostAdvection( dev_w0, dev_w, VELOCITY_FIELD_W, dev_u, dev_v, dev_w );
+	hostAdvection( dev_u0, dev_u, MACRO_VELOCITY_U, dev_u, dev_v, dev_w );
+	hostAdvection( dev_v0, dev_v, MACRO_VELOCITY_V, dev_u, dev_v, dev_w );
+	hostAdvection( dev_w0, dev_w, MACRO_VELOCITY_W, dev_u, dev_v, dev_w );
 	hostSwapBuffer( dev_u0, dev_u );
 	hostSwapBuffer( dev_v0, dev_v );
 	hostSwapBuffer( dev_w0, dev_w );
@@ -628,9 +632,9 @@ void FluidSimProc::VelocitySolver( void )
 
 void FluidSimProc::DensitySolver( void )
 {
-	hostDiffusion( dev_den0, dev_den, DENSITY_FIELD, DIFFUSION );
+	hostDiffusion( dev_den0, dev_den, MACRO_DENSITY, DIFFUSION );
 	hostSwapBuffer( dev_den0, dev_den );
-	hostAdvection ( dev_den, dev_den0, DENSITY_FIELD, dev_u, dev_v, dev_w );
+	hostAdvection ( dev_den, dev_den0, MACRO_DENSITY, dev_u, dev_v, dev_w );
 };
 
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
@@ -675,7 +679,7 @@ void FluidSimProc::DensitytoVolumetric( void )
 
 void FluidSimProc::GetVolumetric( FLUIDSPARAM *fluid )
 {
-	cudaMemcpy( host_visual, dev_visual, visual_size, cudaMemcpyDeviceToHost );
+	cudaMemcpy( host_visual, dev_visual, m_volm_size, cudaMemcpyDeviceToHost );
 	fluid->volume.ptrData = host_visual;
 };
 
@@ -720,15 +724,80 @@ bool FluidSimProc::DeactiveNode( int i, int j, int k )
 __global__ void kernelAddSource
 	( double *density, double *vel_u, double *vel_v, double *vel_w, double *obs )
 {
+	GetIndex();
 
+	const int half = GRIDS_X / 2;
+
+	if ( obs[ Index(i,j,k) ] eqt MACRO_BOUNDARY_SOURCE )
+	{
+		/* add source to grids */
+		density[Index(i,j,k)] = SOURCE_DENSITY;
+
+		/* add velocity to grids */
+		if ( i < half )
+			vel_u[Index(i,j,k)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
+		elif( i >= half )
+			vel_u[Index(i,j,k)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
+
+		vel_v[Index(i,j,k)] = SOURCE_VELOCITY;
+
+		if ( k < half )
+			vel_w[Index(i,j,k)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
+		elif ( k >= half )
+			vel_w[Index(i,j,k)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
+	}
 };
 
 /* add source */
 void FluidSimProc::AddSource( void )
 {
+	cudaDeviceDim3D();
+
+	kernelAddSource<<<gridDim, blockDim>>> ( dev_den, dev_u, dev_v, dev_w, dev_obs );
+};
+
+__global__ void kernelSetBoundary( double *grids )
+{
+	GetIndex();
+	
+	const int half = GRIDS_X / 2;
+	
+	if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
+		grids[ Index(i,j,k) ] = MACRO_BOUNDARY_SOURCE;
 };
 
 /* initialize boundary condition */
 void FluidSimProc::InitBoundary( void )
 {
+	cudaDeviceDim3D();
+
+	/* zero boundary buffers */
+	kernelZeroBuffer<<<gridDim, blockDim>>>( dev_obs );
+
+	for ( int i = 0; i < host_obstacle.size(); i++ )
+	{
+		if ( cudaMemcpy( host_obstacle[i], dev_obs,
+			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	/* select middle node */
+	SelectNode(1, 0, 1);
+
+	const int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
+
+	/* set boundary */
+	kernelSetBoundary<<<gridDim, blockDim>>>( dev_obs );
+	
+	if ( cudaMemcpy( host_obstacle[ix], dev_obs,
+		m_node_size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
+	{
+		helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit( 1 );
+	}
 };
