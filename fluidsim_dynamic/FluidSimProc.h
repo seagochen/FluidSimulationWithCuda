@@ -42,16 +42,15 @@ using std::vector;
 
 namespace sge
 {
+	struct SimNode
+	{
+		SGINT3 nodeIX;
+		SGBOOLEAN active;
+		SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+	};
+
 	class FluidSimProc
 	{
-	private:
-		struct SimNode
-		{
-			SGINT3 nodeIX;
-			SGBOOLEAN active;
-			SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
-		};
-
 	private:
 		vector <double*> dev_buffers;
 
@@ -86,11 +85,17 @@ namespace sge
 		void ZeroBuffers( void );
 
 	private:
+		/* upload neighbouring buffers to GPU device */
+		void UploadNeighbouringBuffers( vector<double*> container, int i, int j, int k );
+
+		/* download neightbouring buffers to host */
+		void DownloadNeighbouringBuffers( vector<double*> container, int i, int j, int k );
+
 		/* flood buffer for multiple nodes */
 		void TracingDensity( void );
 
 		/* data flooding */
-		void DataFlooding( vector<double*> container, bool bDens );
+		void DataFlooding( vector<double*> container, int i, int j, int k, bool isDensity );
 
 		/* initialize FPS and etc. */
 		void InitParams( FLUIDSPARAM *fluid );

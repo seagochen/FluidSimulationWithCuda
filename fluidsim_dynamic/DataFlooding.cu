@@ -160,15 +160,6 @@ __global__ void kernelSumDensity( double *grids, double *buffs, const int ops )
 
 };
 
-__global__ void kernelZeroBuffers
-	( double *center, double *left, double *right, double *front, double *back, double *up, double *down )
-{
-	GetIndex();
-
-	int ix = Index(i,j,k);
-	center[ix] = left[ix] = right[ix] = up[ix] = down[ix] = front[ix] = back[ix] = 0.f;
-};
-
 __global__ void kernelFloodBoundary( double *grids )
 {
 	GetIndex();
@@ -210,64 +201,207 @@ __global__ void kernelFloodBoundary( double *grids )
 
 void FluidSimProc::TracingDensity( void )
 {
-//	for ( int i = 0; i < NODES_X; i++ )
-//	{
-//		for ( int j = 0; j < NODES_X; j++ )
-//		{
-//			for ( int k = 0; k < NODES_X; k++ )
-//			{
-//				if ( SelectNode( i, j, k ) )
-//				{
-//					DataFlooding( host_density, true );
-//					DataFlooding( host_velocity_u, false );
-//					DataFlooding( host_velocity_v, false );
-//					DataFlooding( host_velocity_w, false );
-//				}
-//			}
-//		}
-//	}
+	for ( int i = 0; i < NODES_X; i++ )
+	{
+		for ( int j = 0; j < NODES_X; j++ )
+		{
+			for ( int k = 0; k < NODES_X; k++ )
+			{
+				if ( SelectNode( i, j, k ) )
+				{
+					DataFlooding( host_density,    i, j, k, true );
+					DataFlooding( host_velocity_u, i, j, k, false );
+					DataFlooding( host_velocity_v, i, j, k, false );
+					DataFlooding( host_velocity_w, i, j, k, false );
+				}
+			}
+		}
+	}
 };
 
-void FluidSimProc::DataFlooding( vector<double*> container, bool bDens )
+void FluidSimProc::UploadNeighbouringBuffers( vector<double*> container, int i, int j, int k )
 {
+	/* navigated current node from node list */
+	SimNode *node = host_node[cudaIndex3D( i, j, k, NODES_X )];
+		
+	/* upload center buffers */
+	if ( cudaMemcpy( dev_center, container[cudaIndex3D(i,j,k,NODES_X)],
+		m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+	{
+		helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+
+	/* upload left buffers */
+	if ( node->ptrLeft not_eq nullptr )
+	{
+		if ( cudaMemcpy( dev_left, container[cudaIndex3D(i-1,j,k,NODES_X)],
+			m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+
+	/* upload right buffers */
+	if ( node->ptrRight not_eq nullptr )
+	{
+		if ( cudaMemcpy( dev_right, container[cudaIndex3D(i+1,j,k,NODES_X)],
+			m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+
+	/* upload up buffers */
+	if ( node->ptrUp not_eq nullptr )
+	{
+		if ( cudaMemcpy( dev_up, container[cudaIndex3D(i,j+1,k,NODES_X)],
+			m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+
+	/* upload down buffers */
+	if ( node->ptrDown not_eq nullptr )
+	{
+		if ( cudaMemcpy( dev_down, container[cudaIndex3D(i,j-1,k,NODES_X)],
+			m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+
+	/* upload front buffers */
+	if ( node->ptrFront not_eq nullptr )
+	{
+		if ( cudaMemcpy( dev_front, container[cudaIndex3D(i,j,k+1,NODES_X)],
+			m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+
+	/* upload back buffers */
+	if ( node->ptrBack not_eq nullptr )
+	{
+		if ( cudaMemcpy( dev_back, container[cudaIndex3D(i,j,k-1,NODES_X)],
+			m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+};
+
+void FluidSimProc::DownloadNeighbouringBuffers( vector<double*> container, int i, int j, int k )
+{
+	/* navigated current node from node list */
+	SimNode *node = host_node[cudaIndex3D( i, j, k, NODES_X )];
+		
+	/* download center buffers */
+	if ( cudaMemcpy( container[cudaIndex3D(i,j,k,NODES_X)], dev_center,
+		m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+	{
+		helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit(1);
+	}
+
+	/* download left buffers */
+	if ( node->ptrLeft not_eq nullptr )
+	{
+		if ( cudaMemcpy( container[cudaIndex3D(i-1,j,k,NODES_X)], dev_left, 
+			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+
+	/* download right buffers */
+	if ( node->ptrRight not_eq nullptr )
+	{
+		if ( cudaMemcpy( container[cudaIndex3D(i+1,j,k,NODES_X)], dev_right,
+			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+
+	/* download up buffers */
+	if ( node->ptrUp not_eq nullptr )
+	{
+		if ( cudaMemcpy( container[cudaIndex3D(i,j+1,k,NODES_X)], dev_up,
+			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+
+	/* download down buffers */
+	if ( node->ptrDown not_eq nullptr )
+	{
+		if ( cudaMemcpy( container[cudaIndex3D(i,j-1,k,NODES_X)], dev_down,
+			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+
+	/* download front buffers */
+	if ( node->ptrFront not_eq nullptr )
+	{
+		if ( cudaMemcpy( container[cudaIndex3D(i,j,k+1,NODES_X)], dev_front,
+			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+
+	/* download back buffers */
+	if ( node->ptrBack not_eq nullptr )
+	{
+		if ( cudaMemcpy( container[cudaIndex3D(i,j,k-1,NODES_X)], dev_back,
+			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit(1);
+		}
+	}
+};
+
+void FluidSimProc::DataFlooding( vector<double*> container, int i, int j, int k, bool isDensity )
+{
+	/* upload neighbouring data to GPU buffers */
+	UploadNeighbouringBuffers( container, i, j, k );
+
+	/* flooding neighbouring buffers*/
 	cudaDeviceDim3D();
-	
-	kernelZeroBuffers cudaDevice(gridDim, blockDim)
-		( dev_center, dev_left, dev_right, dev_up, dev_down, dev_front, dev_back );
- 
- 	int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
-	cudaMemcpy( dev_center, container[ix], m_node_size, cudaMemcpyHostToDevice );
- 	
- 	if ( nPos.x - 1 >= 0 ) // left
- 	{
-		ix = cudaIndex3D( nPos.x-1, nPos.y, nPos.z, NODES_X );
-		cudaMemcpy( dev_left, container[ix], m_node_size, cudaMemcpyHostToDevice );
- 	}
- 	if ( nPos.x + 1 < NODES_X ) // right
- 	{
- 		ix = cudaIndex3D( nPos.x + 1, nPos.y, nPos.z, NODES_X );
-		cudaMemcpy( dev_right, container[ix], m_node_size, cudaMemcpyHostToDevice );
- 	}
- 	if ( nPos.y - 1 >= 0 ) // down
- 	{
- 		ix = cudaIndex3D( nPos.x, nPos.y - 1, nPos.z, NODES_X );
-		cudaMemcpy( dev_down, container[ix], m_node_size, cudaMemcpyHostToDevice );
- 	}
- 	if ( nPos.y + 1 < NODES_X ) // up
- 	{
- 		ix = cudaIndex3D( nPos.x, nPos.y + 1, nPos.z, NODES_X );
-		cudaMemcpy( dev_up, container[ix], m_node_size, cudaMemcpyHostToDevice );
- 	}
- 	if ( nPos.z - 1 >= 0 ) // back
- 	{
- 		ix = cudaIndex3D( nPos.x, nPos.y, nPos.z - 1, NODES_X );
-		cudaMemcpy( dev_back, container[ix], m_node_size, cudaMemcpyHostToDevice );
- 	}
- 	if ( nPos.z + 1 < NODES_X ) // front
- 	{
- 		ix = cudaIndex3D( nPos.x, nPos.y, nPos.z + 1, NODES_X );
-		cudaMemcpy( dev_front, container[ix], m_node_size, cudaMemcpyHostToDevice );
- 	}
+
+	/*
 
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_left, dev_center, MACRO_LEFT );
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_right, dev_center, MACRO_RIGHT );
@@ -324,44 +458,9 @@ void FluidSimProc::DataFlooding( vector<double*> container, bool bDens )
 		printf( "back:    %f\n", num_dens_back );
 #endif
  	}
-
-	/* retrieve data back to node if density filled */
-	if ( nPos.x - 1 >= 0 and num_dens_left > 0.f ) // left
- 	{
-		ix = cudaIndex3D( nPos.x-1, nPos.y, nPos.z, NODES_X );
-		host_node[ix]->active = true;
-		cudaMemcpy( container[ix], dev_left, m_node_size, cudaMemcpyDeviceToHost );
- 	}
-	if ( nPos.x + 1 < NODES_X and num_dens_right > 0.f ) // right
- 	{
- 		ix = cudaIndex3D( nPos.x + 1, nPos.y, nPos.z, NODES_X );
-		host_node[ix]->active = true;
-		cudaMemcpy( container[ix], dev_right, m_node_size, cudaMemcpyDeviceToHost );
- 	}
-	if ( nPos.y - 1 >= 0 and num_dens_down > 0.f ) // down
- 	{
- 		ix = cudaIndex3D( nPos.x, nPos.y - 1, nPos.z, NODES_X );
-		host_node[ix]->active = true;
-		cudaMemcpy( container[ix], dev_down, m_node_size, cudaMemcpyDeviceToHost );
- 	}
-	if ( nPos.y + 1 < NODES_X and num_dens_up > 0.f ) // up
- 	{
- 		ix = cudaIndex3D( nPos.x, nPos.y + 1, nPos.z, NODES_X );
-		host_node[ix]->active = true;
-		cudaMemcpy( container[ix], dev_up, m_node_size, cudaMemcpyDeviceToHost );
- 	}
-	if ( nPos.z - 1 >= 0 and num_dens_back > 0.f ) // back
- 	{
- 		ix = cudaIndex3D( nPos.x, nPos.y, nPos.z - 1, NODES_X );
-		host_node[ix]->active = true;
-		cudaMemcpy( container[ix], dev_back, m_node_size, cudaMemcpyDeviceToHost );
- 	}
-	if ( nPos.z + 1 < NODES_X and num_dens_front > 0.f ) // front
- 	{
- 		ix = cudaIndex3D( nPos.x, nPos.y, nPos.z + 1, NODES_X );
-		host_node[ix]->active = true;
-		cudaMemcpy( container[ix], dev_front, m_node_size, cudaMemcpyDeviceToHost );
- 	}
+	*/
+	/* retrieve data back to node */
+	DownloadNeighbouringBuffers( container, i, j, k );
 
 #undef num_dens_center
 #undef num_dens_left  
