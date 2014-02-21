@@ -13,24 +13,6 @@
 
 using namespace sge;
 
-#define MACRO_DENSITY     0
-#define MACRO_VELOCITY_U  1
-#define MACRO_VELOCITY_V  2
-#define MACRO_VELOCITY_W  3
-#define MACRO_SIMPLE      4
-
-#define MACRO_BOUNDARY_BLANK      0
-#define MACRO_BOUNDARY_SOURCE     1
-#define MACRO_BOUNDARY_OBSTACLE 100
-
-#define MACRO_CENTER     0
-#define MACRO_LEFT       1
-#define MACRO_RIGHT      2
-#define MACRO_UP         3
-#define MACRO_DOWN       4
-#define MACRO_FRONT      5
-#define MACRO_BACK       6
-
 __device__ void atomicHandleFaceLR( double *grids, double const *center, int header, int tailer )
 {
 	GetIndex();

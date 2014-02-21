@@ -79,10 +79,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FloodingData.cu">
+    <CudaCompile Include="FluidSimulation.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
-    <CudaCompile Include="FluidSimulation.cu">
+    <CudaCompile Include="DataFlooding.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>
