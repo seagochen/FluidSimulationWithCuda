@@ -129,7 +129,7 @@ namespace sge
 		void AddSource( void );
 
 		/* initialize boundary condition */
-		void InitBoundary( void );
+		void InitBoundary( int i, int j, int k );
 
 		/* solving velocity */
 		void VelocitySolver ( void );

@@ -74,9 +74,15 @@
     <ClCompile Include="FunctionHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FluidSimProc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimDynamic.cu">
+    <CudaCompile Include="FloodingData.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="FluidSimulation.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>
