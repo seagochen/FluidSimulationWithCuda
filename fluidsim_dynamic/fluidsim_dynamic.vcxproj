@@ -40,12 +40,14 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FluidSimProc.cpp" />
     <ClCompile Include="FrameworkDynamic.cpp" />
     <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimDynamic.cu" />
+    <CudaCompile Include="DataFlooding.cu" />
+    <CudaCompile Include="FluidSimulation.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E4B0508D-90FB-4516-AA56-9CA6AEB290F6}</ProjectGuid>
