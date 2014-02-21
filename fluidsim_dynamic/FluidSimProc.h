@@ -71,6 +71,7 @@ namespace sge
 		size_t m_node_size;
 		size_t m_volm_size;
 		double *dev_tpbufs, *host_tpbufs;
+		int    increase_times, decrease_times;
 
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );

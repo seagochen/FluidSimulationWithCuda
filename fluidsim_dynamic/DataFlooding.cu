@@ -108,10 +108,11 @@ __global__ void kernelFloodBuffersBetweenNodes( double *grids, double *center, c
 	center[Index(i,j,gst_tailer)] = grids[Index(i,j,gst_tailer)] = 0.f;
 };
 
-__global__ void kernelSumDensity( double *grids, double *buffs, const int ops )
+__global__ void kernelSumDensity
+	( double *buffs, 
+	const double *center, const double *left, const double *right,
+	const double *up,     const double *down, const double *front, const double *back )
 {
-	GetIndex();
-
 #define num_dens_center  buffs[ 0 ]
 #define num_dens_left    buffs[ 1 ]
 #define num_dens_right   buffs[ 2 ]
@@ -119,37 +120,17 @@ __global__ void kernelSumDensity( double *grids, double *buffs, const int ops )
 #define num_dens_down    buffs[ 4 ]
 #define num_dens_front   buffs[ 5 ]
 #define num_dens_back    buffs[ 6 ]
- 	
-	if ( grids[Index(i,j,k)] > 0.f )
- 	{
-		switch ( ops )
-		{
-		case MACRO_LEFT:
-			num_dens_left += grids[Index(i,j,k)];
-			break;
-		case MACRO_RIGHT:
-			num_dens_right += grids[Index(i,j,k)];
-			break;
-		case MACRO_UP:
-			num_dens_up += grids[Index(i,j,k)];
-			break;
-		case MACRO_DOWN:
-			num_dens_down += grids[Index(i,j,k)];
-			break;
-		case MACRO_FRONT:
-			num_dens_front += grids[Index(i,j,k)];
-			break;
-		case MACRO_BACK:
-			num_dens_back += grids[Index(i,j,k)];
-			break;
-		case MACRO_CENTER:
-			num_dens_center += grids[Index(i,j,k)];
-			break;
 
-		default:
-			break;
-		}
- 	}
+	GetIndex();
+
+	num_dens_left   += left[Index(i,j,k)];
+	num_dens_right  += right[Index(i,j,k)];
+	num_dens_up     += up[Index(i,j,k)];
+	num_dens_down   += down[Index(i,j,k)];
+	num_dens_front  += front[Index(i,j,k)];
+	num_dens_back   += back[Index(i,j,k)];
+	num_dens_center += center[Index(i,j,k)];
+ 	
 #undef num_dens_center
 #undef num_dens_left  
 #undef num_dens_right 
@@ -197,6 +178,13 @@ __global__ void kernelFloodBoundary( double *grids )
 	grids[Index(gst_tailer,gst_header,gst_tailer)] = ( grids[Index(sim_tailer,gst_header,gst_tailer)] + grids[Index(gst_tailer,sim_header,gst_tailer)] + grids[Index(gst_tailer,gst_header,sim_tailer)] ) / 3.f;
 	grids[Index(gst_tailer,gst_tailer,gst_header)] = ( grids[Index(sim_tailer,gst_tailer,gst_header)] + grids[Index(gst_tailer,sim_tailer,gst_header)] + grids[Index(gst_tailer,gst_tailer,sim_header)] ) / 3.f;
 	grids[Index(gst_tailer,gst_tailer,gst_tailer)] = ( grids[Index(sim_tailer,gst_tailer,gst_tailer)] + grids[Index(gst_tailer,sim_tailer,gst_tailer)] + grids[Index(gst_tailer,gst_tailer,sim_tailer)]) / 3.f;
+};
+
+__global__ void kernelZeroTempBuffers( double *bufs )
+{
+	GetIndex();
+
+	bufs[threadIdx.x] = 0.f;
 };
 
 void FluidSimProc::TracingDensity( void )
@@ -400,9 +388,7 @@ void FluidSimProc::DataFlooding( vector<double*> container, int i, int j, int k,
 
 	/* flooding neighbouring buffers*/
 	cudaDeviceDim3D();
-
-	/*
-
+	
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_left, dev_center, MACRO_LEFT );
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_right, dev_center, MACRO_RIGHT );
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_up, dev_center, MACRO_UP );
@@ -410,63 +396,45 @@ void FluidSimProc::DataFlooding( vector<double*> container, int i, int j, int k,
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_front, dev_center, MACRO_FRONT );
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_back, dev_center, MACRO_BACK );
 
-	if ( bDens )
- 	{
-		for ( int i = 0; i < TPBUFFER_X; i++)
-		{
-			host_tpbufs[i] = 0.f;
-		}
-		if ( cudaMemcpy( dev_tpbufs, host_tpbufs, 
-			sizeof(double) * TPBUFFER_X, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
-		{
-			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
-			FreeResource();
-			exit( 1 );
-		}
+	if ( isDensity )
+	{
+		/* zero temporary buffers */
+		kernelZeroTempBuffers <<<1, TPBUFFER_X>>> ( dev_tpbufs );
 
-		kernelSumDensity<<<gridDim, blockDim>>> ( dev_center, dev_tpbufs, MACRO_CENTER );
-		kernelSumDensity<<<gridDim, blockDim>>> ( dev_left, dev_tpbufs, MACRO_LEFT );
-		kernelSumDensity<<<gridDim, blockDim>>> ( dev_right, dev_tpbufs, MACRO_RIGHT );
-		kernelSumDensity<<<gridDim, blockDim>>> ( dev_up, dev_tpbufs, MACRO_UP );
-		kernelSumDensity<<<gridDim, blockDim>>> ( dev_down, dev_tpbufs, MACRO_DOWN );
-		kernelSumDensity<<<gridDim, blockDim>>> ( dev_front, dev_tpbufs, MACRO_FRONT );
-		kernelSumDensity<<<gridDim, blockDim>>> ( dev_back, dev_tpbufs, MACRO_BACK );
-		
+		/* check */
+		kernelSumDensity<<<gridDim, blockDim>>> 
+			( dev_tpbufs, dev_center, dev_left, dev_right, dev_up, dev_down, dev_front, dev_back );
+
 		if ( cudaMemcpy( host_tpbufs, dev_tpbufs, sizeof(double) * TPBUFFER_X, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
 		{
 			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
 			FreeResource();
 			exit( 1 );
 		}
-		
-#define num_dens_center  host_tpbufs[ 0 ]
-#define num_dens_left    host_tpbufs[ 1 ]
-#define num_dens_right   host_tpbufs[ 2 ]
-#define num_dens_up      host_tpbufs[ 3 ]
-#define num_dens_down    host_tpbufs[ 4 ]
-#define num_dens_front   host_tpbufs[ 5 ]
-#define num_dens_back    host_tpbufs[ 6 ]
 
-#if 0
+#if 1
+		/* navigated current node from node list */
+		SimNode *node = host_node[cudaIndex3D( i, j, k, NODES_X )];
+
 		system( "cls" );
-		printf( "center:  %f\n", num_dens_center );
-		printf( "left:    %f\n", num_dens_left );
-		printf( "right:   %f\n", num_dens_right );
-		printf( "up:      %f\n", num_dens_up );
-		printf( "down:    %f\n", num_dens_down );
-		printf( "front:   %f\n", num_dens_front );
-		printf( "back:    %f\n", num_dens_back );
+		printf( "%d %d %d || left: %d right %d up %d down %d front %d back %d\n",
+			node->nodeIX.x, node->nodeIX.y, node->nodeIX.z, 
+			node->ptrLeft  not_eq nullptr,
+			node->ptrRight not_eq nullptr,
+			node->ptrUp    not_eq nullptr,
+			node->ptrDown  not_eq nullptr,
+			node->ptrFront not_eq nullptr,
+			node->ptrBack  not_eq nullptr );
+		printf( "center:  %f\n", host_tpbufs[ 0 ] );
+		printf( "left:    %f\n", host_tpbufs[ 1 ] );
+		printf( "right:   %f\n", host_tpbufs[ 2 ] );
+		printf( "up:      %f\n", host_tpbufs[ 3 ] );
+		printf( "down:    %f\n", host_tpbufs[ 4 ] );
+		printf( "front:   %f\n", host_tpbufs[ 5 ] );
+		printf( "back:    %f\n", host_tpbufs[ 6 ] );
 #endif
- 	}
-	*/
+
+	}	
 	/* retrieve data back to node */
 	DownloadNeighbouringBuffers( container, i, j, k );
-
-#undef num_dens_center
-#undef num_dens_left  
-#undef num_dens_right 
-#undef num_dens_up    
-#undef num_dens_down  
-#undef num_dens_front 
-#undef num_dens_back
 };

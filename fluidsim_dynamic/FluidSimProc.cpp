@@ -51,6 +51,8 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 
 	m_node_size = GRIDS_X * GRIDS_X * GRIDS_X * sizeof(double);
 	m_volm_size = VOLUME_X * VOLUME_X * VOLUME_X * sizeof(SGUCHAR);
+
+	increase_times = decrease_times = 0;
 };
 
 void FluidSimProc::BuildOrder( void )

@@ -508,9 +508,22 @@ __global__ void kernelAddSource
 
 void FluidSimProc::AddSource( void )
 {
-	cudaDeviceDim3D();
+	if ( decrease_times eqt 0 )
+	{
+		cudaDeviceDim3D();
+		kernelAddSource<<<gridDim, blockDim>>> ( dev_den, dev_u, dev_v, dev_w, dev_obs );
+		increase_times++;
 
-	kernelAddSource<<<gridDim, blockDim>>> ( dev_den, dev_u, dev_v, dev_w, dev_obs );
+		if ( increase_times eqt 200 )
+		{
+			decrease_times = increase_times;
+			increase_times = 0;
+		}
+	}
+	else
+	{
+		decrease_times--;
+	}
 };
 
 void FluidSimProc::InitBoundary( int i, int j, int k )
@@ -585,7 +598,7 @@ void FluidSimProc::DensitytoVolumetric( void )
 	hostPickData( dev_visual, dev_den, &nPos );
 }
 
-void FluidSimProc::ZeroBuffers ( void )
+void FluidSimProc::ZeroBuffers( void )
 {
 	cudaDeviceDim3D();
 
