@@ -207,6 +207,7 @@ void FluidSimProc::FreeResource ( void )
 
 bool FluidSimProc::SelectNode( int i, int j, int k )
 {
+#if !TESTING_MODE
 	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
 	{
 		nPos.x = i;
@@ -218,6 +219,32 @@ bool FluidSimProc::SelectNode( int i, int j, int k )
 	}
 
 	return false;
+#else
+	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
+	{
+		nPos.x = i;
+		nPos.y = j;
+		nPos.z = k;
+
+		int ix = cudaIndex3D(i,j,k,NODES_X);
+		int center = cudaIndex3D(1,0,1,NODES_X);
+		int left   = cudaIndex3D(0,0,1,NODES_X);
+		int right  = cudaIndex3D(2,0,1,NODES_X);
+		int up     = cudaIndex3D(1,1,1,NODES_X);
+		int front  = cudaIndex3D(1,0,2,NODES_X);
+		int back   = cudaIndex3D(1,0,0,NODES_X);
+
+		if ( ix eqt center or
+			ix eqt left or
+			ix eqt right or 
+			ix eqt front or
+			ix eqt back or
+			ix eqt up )
+			return true;
+	}
+
+	return false;
+#endif
 };
 
 bool FluidSimProc::ActiveNode( int i, int j, int k )
@@ -255,14 +282,9 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 			for ( int k = 0; k < NODES_X; k++ )
 			{
 
-#if TESTING_MODE
-				SelectNode( i, j, k );
-
-#else
 				/* select node */
 				if ( SelectNode( i, j, k ) )
 				{
-#endif				
 					/* for fluid simulation, copy the data to device */
 					NodetoDevice();
 					
@@ -276,9 +298,7 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 
 					/* pick density */
 					DensitytoVolumetric();
-#if !TESTING_MODE
 				}
-#endif
 			}
 		}
 	}

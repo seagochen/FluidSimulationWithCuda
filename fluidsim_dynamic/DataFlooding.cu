@@ -66,6 +66,22 @@ __device__ void atomicHandleFaceUD( double *grids, double const *center, int hea
 	grids[Index(sim_tailer,sim_tailer,header)] = center[Index(sim_tailer,sim_tailer,tailer)] / 3.f;
 };
 
+
+__global__ void kernelFloodingBuffers
+	( double *left, double *right, double *up, double *down,
+	double *front, double *back, double const *center )
+{
+	GetIndex();
+
+	/* copying buffers from center grids */
+	left [Index(sim_tailer,j,k)] = center[Index(sim_header,j,k)];
+	right[Index(sim_header,j,k)] = center[Index(sim_tailer,j,k)];
+	up   [Index(i,sim_header,k)] = center[Index(i,sim_tailer,k)];
+	down [Index(i,sim_tailer,k)] = center[Index(i,sim_header,k)];
+	back [Index(i,j,sim_tailer)] = center[Index(i,j,sim_header)];
+	front[Index(i,j,sim_header)] = center[Index(i,j,sim_tailer)];
+};
+
 __global__ void kernelFloodBuffersBetweenNodes( double *grids, double *center, const int ops )
 {
 	switch ( ops )
@@ -388,14 +404,17 @@ void FluidSimProc::DataFlooding( vector<double*> container, int i, int j, int k,
 
 	/* flooding neighbouring buffers*/
 	cudaDeviceDim3D();
-	
+
+	kernelFloodingBuffers <<<gridDim,blockDim>>> 
+		( dev_left, dev_right, dev_up, dev_down, dev_front, dev_back, dev_center );
+/*	
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_left, dev_center, MACRO_LEFT );
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_right, dev_center, MACRO_RIGHT );
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_up, dev_center, MACRO_UP );
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_down, dev_center, MACRO_DOWN );
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_front, dev_center, MACRO_FRONT );
 	kernelFloodBuffersBetweenNodes <<<gridDim,blockDim>>> ( dev_back, dev_center, MACRO_BACK );
-
+*/
 	if ( isDensity )
 	{
 		/* zero temporary buffers */
