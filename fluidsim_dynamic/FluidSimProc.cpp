@@ -254,9 +254,15 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 		{
 			for ( int k = 0; k < NODES_X; k++ )
 			{
+
+#if TESTING_MODE
+				SelectNode( i, j, k );
+
+#else
 				/* select node */
 				if ( SelectNode( i, j, k ) )
 				{
+#endif				
 					/* for fluid simulation, copy the data to device */
 					NodetoDevice();
 					
@@ -270,7 +276,9 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 
 					/* pick density */
 					DensitytoVolumetric();
+#if !TESTING_MODE
 				}
+#endif
 			}
 		}
 	}

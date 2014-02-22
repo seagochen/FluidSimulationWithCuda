@@ -412,7 +412,7 @@ void FluidSimProc::DataFlooding( vector<double*> container, int i, int j, int k,
 			exit( 1 );
 		}
 
-#if 1
+#if TESTING_MODE
 		/* navigated current node from node list */
 		SimNode *node = host_node[cudaIndex3D( i, j, k, NODES_X )];
 
