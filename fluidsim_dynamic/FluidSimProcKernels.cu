@@ -9,6 +9,7 @@
 #include <iostream>
 #include <utility>
 #include "FluidSimulationKernels.h"
+#include "CUDATracingKernels.h"
 
 using namespace sge;
 
@@ -562,11 +563,12 @@ void FluidSimProc::DeviceToNode ( void )
 			exit( 1 );
 		}
 	}
-	
+
 	/* draw volumetric data back */
 	cudaDeviceDim3D();
 	kernelPickData <<<gridDim, blockDim>>>
 		( dev_visual, dev_den, nPos.x * GRIDS_X, nPos.y * GRIDS_X, nPos.z * GRIDS_X );
+
 };
 
 void FluidSimProc::AddSource( void )
@@ -681,5 +683,45 @@ void FluidSimProc::ZeroBuffers( void )
 
 void FluidSimProc::TracingTheFlow( void )
 {
+	cudaDeviceDim3D();
+
+	/* flooding data */
+	kernelFloodingBuffers <<<gridDim, blockDim>>> ( dens_L, dens_R, dens_U, dens_D, dens_F, dens_B, dens_C );
+	kernelFloodingBuffers <<<gridDim, blockDim>>> ( velu_L, velu_R, velu_U, velu_D, velu_F, velu_B, velu_C );
+	kernelFloodingBuffers <<<gridDim, blockDim>>> ( velv_L, velv_R, velv_U, velv_D, velv_F, velv_B, velv_C );
+	kernelFloodingBuffers <<<gridDim, blockDim>>> ( velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, velw_C );
+
+	/* clear temporary buffers and halo */
+	kernelZeroTemporaryBuffers <<<1, TPBUFFER_X>>> ( dev_tpbufs );
+	kernelClearHalo <<<gridDim, blockDim>>> ( dens_L, dens_R, dens_U, dens_D, dens_F, dens_B, dens_C );
+	kernelClearHalo <<<gridDim, blockDim>>> ( velu_L, velu_R, velu_U, velu_D, velu_F, velu_B, velu_C );
+	kernelClearHalo <<<gridDim, blockDim>>> ( velv_L, velv_R, velv_U, velv_D, velv_F, velv_B, velv_C );
+	kernelClearHalo <<<gridDim, blockDim>>> ( velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, velw_C );
+
+	/* sum the density of each node */
+	kernelSumBufsDens <<<gridDim, blockDim>>>
+		( dev_tpbufs, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B, dens_C );
+
+	/* retrieve temporary buffer back */
+	if ( cudaMemcpy(host_tpbufs, dev_tpbufs, 
+		sizeof(double) * TPBUFFER_X, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+	{
+		helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit( 1 );
+	}
+
+#if TESTING_MODE
+	system( "cls" );
+	printf( "CENTER: %f\n", host_tpbufs[TEMP_BUF_CENTER] );
+	printf( "LEFT:   %f\n", host_tpbufs[TEMP_BUF_LEFT] );
+	printf( "RIGHT:  %f\n", host_tpbufs[TEMP_BUF_RIGHT] );
+	printf( "UP:     %f\n", host_tpbufs[TEMP_BUF_UP] );
+	printf( "DOWN:   %f\n", host_tpbufs[TEMP_BUF_DOWN] );
+	printf( "FRONT:  %f\n", host_tpbufs[TEMP_BUF_FRONT] );
+	printf( "BACK:   %f\n", host_tpbufs[TEMP_BUF_BACK] );
+
+#endif
+
 
 };

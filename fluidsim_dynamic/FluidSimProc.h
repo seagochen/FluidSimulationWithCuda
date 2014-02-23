@@ -172,6 +172,6 @@ namespace sge
 #define MACRO_FRONT      5
 #define MACRO_BACK       6
 
-#define TESTING_MODE     0
+#define TESTING_MODE     1
 
 #endif

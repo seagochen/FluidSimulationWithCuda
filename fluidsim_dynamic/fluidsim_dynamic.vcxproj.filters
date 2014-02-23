@@ -45,6 +45,9 @@
     <ClInclude Include="FluidSimulationKernels.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CUDATracingKernels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="fluidsim_dynamic.rc">
@@ -85,5 +88,8 @@
     <CudaCompile Include="FluidSimProcKernels.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="backup.txt" />
   </ItemGroup>
 </Project>

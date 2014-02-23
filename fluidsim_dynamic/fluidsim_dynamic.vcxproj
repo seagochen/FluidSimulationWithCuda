@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="CUDACustomeMath.h" />
     <ClInclude Include="CUDAMacroDef.h" />
+    <ClInclude Include="CUDATracingKernels.h" />
     <ClInclude Include="DataStructures.h" />
     <ClInclude Include="FluidSimProc.h" />
     <ClInclude Include="FluidSimulationKernels.h" />
@@ -48,6 +49,9 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="FluidSimProcKernels.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="backup.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E4B0508D-90FB-4516-AA56-9CA6AEB290F6}</ProjectGuid>

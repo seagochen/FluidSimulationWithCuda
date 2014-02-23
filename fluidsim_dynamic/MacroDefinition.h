@@ -13,8 +13,8 @@
 #define STEPSIZE               0.001f // 定义0.001为一个步长深度
 #define DIFFUSION              0.1f   // diffusion的定义值为0.1
 #define VISOCITY               0.0f   // visocity的定义值为0.1
-#define SOURCE_DENSITY         30     // 为计算网格中添加的density的浓度
-#define SOURCE_VELOCITY        15     // 为计算网格中添加的velocity的量
+#define SOURCE_DENSITY         15     // 为计算网格中添加的density的浓度
+#define SOURCE_VELOCITY        50     // 为计算网格中添加的velocity的量
 
 #define GRIDS_X                64     // 计算网格在单维度上所拥有的数量
 #define NODES_X                 3
