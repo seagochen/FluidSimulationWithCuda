@@ -19,9 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CUDACustomeMath.h" />
     <ClInclude Include="CUDAMacroDef.h" />
     <ClInclude Include="DataStructures.h" />
     <ClInclude Include="FluidSimProc.h" />
+    <ClInclude Include="FluidSimulationKernels.h" />
     <ClInclude Include="FrameworkDynamic.h" />
     <ClInclude Include="FunctionHelper.h" />
     <ClInclude Include="MacroDefinition.h" />
@@ -40,14 +42,12 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FluidSimProc.cpp" />
     <ClCompile Include="FrameworkDynamic.cpp" />
     <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="DataFlooding.cu" />
-    <CudaCompile Include="FluidSimulation.cu" />
+    <CudaCompile Include="FluidSimProcKernels.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E4B0508D-90FB-4516-AA56-9CA6AEB290F6}</ProjectGuid>

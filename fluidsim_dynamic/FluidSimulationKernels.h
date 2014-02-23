@@ -1,121 +1,21 @@
 /**
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
-* <First Time>    Dec 15, 2013
-* <Last Time>     Feb 20, 2014
-* <File Name>     FluidSimulation.cu
+* <First Time>    Feb 23, 2014
+* <Last Time>     Feb 23, 2014
+* <File Name>     FluidSimulationKernels.h
 */
 
-#include <iostream>
-#include <cuda_runtime.h>
+#ifndef __fluid_simulation_kernels_h__
+#define __fluid_simulation_kernels_h__
+
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#include <device_launch_parameters.h>
+#include "CUDACustomeMath.h"
 #include "MacroDefinition.h"
+#include "CUDAMacroDef.h"
 #include "FluidSimProc.h"
-
-using namespace sge;
-
-__global__ void kernelZeroBuffer( double *grid )
-{
-	GetIndex ();
-	grid [ Index(i,j,k) ] = 0.f;
-};
-
-__global__ void kernelZeroVisual( SGUCHAR *visual )
-{
-	GetIndex();
-
-	for ( int ii = 0; ii < NODES_X; ii++ )
-	{
-		for ( int jj = 0; jj < NODES_X; jj++ )
-		{
-			for ( int kk = 0; kk < NODES_X; kk++ )
-			{
-				int di = ii * GRIDS_X + i;
-				int dj = jj * GRIDS_X + j;
-				int dk = kk * GRIDS_X + k;
-				
-				/* zero data */
-				visual[ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
-			}
-		}
-	}
-};
-
-inline __host__ __device__ int atomicRand( int *seed )
-{
-	*seed = (69069 * *seed + 1);
-	return *seed;
-};
-
-inline __host__ __device__ double atomicRandom( int *seed ) 
-{
-	return ( atomicRand( seed ) & 0xffff ) / (double)0x10000;
-};
-
-inline __host__ __device__  double atomicCrandom( int *seed )
-{
-	return 2.0 * ( atomicRandom( seed ) - 0.5 );
-};
-
-inline __host__ __device__ double atomicInvsqrt( double x ) 
-{
-	double xhalf = 0.5f*x;
-	int i = *(int*)&x;
-	i = 0x5f3759df - (i>>1);
-	x = *(double*)&i;
-	x = x*(1.5f - xhalf*x*x);
-	return x;
-};
-
-inline __host__ __device__ double atomicSqrt( double x )
-{
-	double xhalf = 0.5f*x;
-	int i = *(int*)&x;
-	i = 0x5f3759df - (i>>1);
-	x = *(double*)&i;
-	x = x*(1.5f - xhalf*x*x);
-	return 1/x;
-};
-
-inline __host__ __device__ int atomicRound( double x)
-{
-     return (x >= 0) ? (int)(x + 0.5) : (int)(x - 0.5);
-};
-
-inline __host__ __device__ int atomicCeil( double x )
-{
-	int val = atomicRound(x);
-	if (x > 0)
-	{
-		return (val >= (int)x) ? val : (int)x;
-	}
-	else
-	{
-		return ((int)x >= val) ? x : val;
-	}
-};
-
-inline __host__ __device__  int atomicFloor(double x)
-{
-	int val = atomicRound(x);
-	if (x > 0)
-	{
-		return (val < (int)x) ? val : x;
-	}
-	else
-	{
-		return ((int)x < val) ? x : val;
-	}
-};
-
-inline __host__ __device__ int atomicFabs(int value)
-{
-	return (value >= 0) ? value : -value;
-};
-
-inline __host__ __device__ double atomicFabs(double value)
-{
-	return (value >= 0.f) ? value : -value;
-};
 
 inline __host__ __device__  double atomicGetValue
 	( double const *grid, int const x, int const y, int const z )
@@ -172,61 +72,6 @@ inline __host__ __device__  double atomicTrilinear
 	double c = c0 * ( 1 - dz ) + c1 * dz;
 
 	return c;
-};
-
-__global__ void kernelPickData
-( unsigned char *data, const double *bufs, int const offseti, int const offsetj, int const offsetk )
-{
-	GetIndex();
-
-	int di = offseti + i;
-	int dj = offsetj + j;
-	int dk = offsetk + k;
-
-	/* zero data first */
-	data[ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
-
-	/* retrieve data from grid */
-	double value = bufs[ Index(i, j, k) ];
-
-	/* append data to volume data */
-	int temp = atomicRound( value );
-	if ( temp > 0 and temp < 250 )
-		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (unsigned char) temp;
-};
-
-__host__ void hostPickData( SGUCHAR *data, const double *bufs, SGINT3 *nodeIX )
-{
-	cudaDeviceDim3D();
-
-	nodeIX->x *= GRIDS_X;
-	nodeIX->y *= GRIDS_X;
-	nodeIX->z *= GRIDS_X;
-
-	kernelPickData cudaDevice(gridDim, blockDim)
-		( data, bufs, nodeIX->x, nodeIX->y, nodeIX->z );
-};
-
-__global__ void kernelCopyBuffer( double *grid_out, double const *grid_in )
-{
-	GetIndex ();
-
-	grid_out [ Index(i,j,k) ] = grid_in [ Index(i, j, k) ];
-};
-
-__global__ void kernelSwapBuffer( double *grid1, double *grid2 )
-{
-	GetIndex ();
-
-	double temp = grid1 [ Index(i,j,k) ];
-	grid1 [ Index(i,j,k) ] = grid2 [ Index(i,j,k) ];
-	grid2 [ Index(i,j,k) ] = temp;
-};
-
-__host__ void hostSwapBuffer( double *grid1, double *grid2 )
-{
-	cudaDeviceDim3D();
-	kernelSwapBuffer cudaDevice(gridDim, blockDim) (grid1, grid2);
 };
 
 __device__ void atomicDensityObs( double *grids, const double *obstacle )
@@ -506,117 +351,4 @@ __global__ void kernelAddSource
 	}
 };
 
-void FluidSimProc::AddSource( void )
-{
-	if ( decrease_times eqt 0 )
-	{
-		cudaDeviceDim3D();
-		kernelAddSource<<<gridDim, blockDim>>> ( dev_den, dev_u, dev_v, dev_w, dev_obs );
-		increase_times++;
-
-		if ( increase_times eqt 200 )
-		{
-			decrease_times = increase_times;
-			increase_times = 0;
-		}
-	}
-	else
-	{
-		decrease_times--;
-	}
-};
-
-void FluidSimProc::InitBoundary( int i, int j, int k )
-{
-	cudaDeviceDim3D();
-
-	/* zero boundary buffers */
-	kernelZeroBuffer<<<gridDim, blockDim>>>( dev_obs );
-
-	for ( int i = 0; i < host_obstacle.size(); i++ )
-	{
-		if ( cudaMemcpy( host_obstacle[i], dev_obs,
-			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
-		{
-			helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
-			FreeResource();
-			exit( 1 );
-		}
-	}
-
-	/* select middle node */
-	SelectNode( i, j, k );
-
-	const int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
-
-	/* set boundary */
-	kernelSetBoundary<<<gridDim, blockDim>>>( dev_obs );
-	
-	if ( cudaMemcpy( host_obstacle[ix], dev_obs,
-		m_node_size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
-	{
-		helper.CheckRuntimeErrors( "cudaMemcpy failed", __FILE__, __LINE__ );
-		FreeResource();
-		exit( 1 );
-	}
-};
-
-void FluidSimProc::VelocitySolver( void )
-{
-	// diffuse the velocity field (per axis):
-	hostDiffusion( dev_u0, dev_u, VISOCITY, dev_obs, MACRO_VELOCITY_U );
-	hostDiffusion( dev_v0, dev_v, VISOCITY, dev_obs, MACRO_VELOCITY_V );
-	hostDiffusion( dev_w0, dev_w, VISOCITY, dev_obs, MACRO_VELOCITY_W );
-	hostSwapBuffer( dev_u0, dev_u );
-	hostSwapBuffer( dev_v0, dev_v );
-	hostSwapBuffer( dev_w0, dev_w );
-
-	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	hostProject( dev_u, dev_v, dev_w, dev_div, dev_p, dev_obs );
-	
-	// advect the velocity field (per axis):
-	hostAdvection( dev_u0, dev_u, dev_obs, MACRO_VELOCITY_U, dev_u, dev_v, dev_w );
-	hostAdvection( dev_v0, dev_v, dev_obs, MACRO_VELOCITY_V, dev_u, dev_v, dev_w );
-	hostAdvection( dev_w0, dev_w, dev_obs, MACRO_VELOCITY_W, dev_u, dev_v, dev_w );
-	hostSwapBuffer( dev_u0, dev_u );
-	hostSwapBuffer( dev_v0, dev_v );
-	hostSwapBuffer( dev_w0, dev_w );
-	
-	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	hostProject( dev_u, dev_v, dev_w, dev_div, dev_p, dev_obs );
-};
-
-void FluidSimProc::DensitySolver( void )
-{
-	hostDiffusion( dev_den0, dev_den, DIFFUSION, dev_obs, MACRO_DENSITY );
-	hostSwapBuffer( dev_den0, dev_den );
-	hostAdvection ( dev_den, dev_den0, dev_obs, MACRO_DENSITY, dev_u, dev_v, dev_w );
-};
-
-void FluidSimProc::DensitytoVolumetric( void )
-{
-	hostPickData( dev_visual, dev_den, &nPos );
-}
-
-void FluidSimProc::ZeroBuffers( void )
-{
-	cudaDeviceDim3D();
-
-	/* zero GPU buffer */
-	for ( int i = 0; i < dev_buffers_num; i++ )
-		kernelZeroBuffer <<<gridDim, blockDim>>> ( dev_buffers[i] );
-
-	/* zero host buffer */
-	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
-	{
-		cudaMemcpy( host_density[i], dev_den, m_node_size, cudaMemcpyDeviceToHost);
-		cudaMemcpy( host_velocity_u[i], dev_u, m_node_size, cudaMemcpyDeviceToHost );
-		cudaMemcpy( host_velocity_v[i], dev_v, m_node_size, cudaMemcpyDeviceToHost );
-		cudaMemcpy( host_velocity_w[i], dev_w, m_node_size, cudaMemcpyDeviceToHost );
-	}
-
-	/* zero visual buffer */
-	kernelZeroVisual <<< gridDim, blockDim>>> ( dev_visual );
-
-	cudaMemcpy( host_visual, dev_visual, m_volm_size, cudaMemcpyDeviceToHost );
-};
+#endif
