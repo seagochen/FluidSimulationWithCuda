@@ -711,7 +711,7 @@ void FluidSimProc::TracingTheFlow( void )
 		exit( 1 );
 	}
 
-#if TESTING_MODE
+#if TESTING_MODE_SWITCH
 	system( "cls" );
 	printf( "CENTER: %f\n", host_tpbufs[TEMP_BUF_CENTER] );
 	printf( "LEFT:   %f\n", host_tpbufs[TEMP_BUF_LEFT] );

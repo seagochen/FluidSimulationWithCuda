@@ -266,11 +266,23 @@ __global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, dou
 __global__ void kernelSetBoundary( double *grids )
 {
 	GetIndex();
+
+	BeginSimArea();
 	
 	const int half = GRIDS_X / 2;
+
+#if !TESTING_MODE_SWITCH
 	
 	if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
 		grids[ Index(i,j,k) ] = MACRO_BOUNDARY_SOURCE;
+#else
+	if ( i >= half-2 and i < half+2 and
+		j >= half-2 and j < half+2 and
+		k >= half-2 and k < half+2 )
+		grids[Index(i,j,k)] = MACRO_BOUNDARY_SOURCE;
+#endif
+
+	EndSimArea();
 };
 
 __global__ void kernelAddSource
@@ -279,12 +291,14 @@ __global__ void kernelAddSource
 	GetIndex();
 	BeginSimArea();
 
-	const int half = GRIDS_X / 2;
-
 	if ( obs[ Index(i,j,k) ] eqt MACRO_BOUNDARY_SOURCE )
 	{
 		/* add source to grids */
 		density[Index(i,j,k)] = SOURCE_DENSITY;
+
+#if !TESTING_MODE_SWITCH
+	const int half = GRIDS_X / 2;
+
 
 		/* add velocity to grids */
 		if ( i < half )
@@ -298,7 +312,26 @@ __global__ void kernelAddSource
 			vel_w[Index(i,j,k)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
 		elif ( k >= half )
 			vel_w[Index(i,j,k)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
+#else
+
+	/* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
+#if TESTING_MODE==0
+		vel_v[Index(i,j,k)] =  SOURCE_VELOCITY;
+#elif TESTING_MODE==1
+		vel_v[Index(i,j,k)] = -SOURCE_VELOCITY;
+#elif TESTING_MODE==2
+		vel_u[Index(i,j,k)] = -SOURCE_VELOCITY;
+#elif TESTING_MODE==3
+		vel_u[Index(i,j,k)] =  SOURCE_VELOCITY;
+#elif TESTING_MODE==4
+		vel_w[Index(i,j,k)] =  SOURCE_VELOCITY;
+#elif TESTING_MODE==5
+		vel_w[Index(i,j,k)] = -SOURCE_VELOCITY;
+#endif
+
+#endif
 	}
+
 
 	EndSimArea();
 };
