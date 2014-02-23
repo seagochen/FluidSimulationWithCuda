@@ -6,6 +6,8 @@
 * <File Name>     FluidSimProcKernels.cu
 */
 
+#include <iostream>
+#include <utility>
 #include "FluidSimulationKernels.h"
 
 using namespace sge;
@@ -70,39 +72,7 @@ __global__ void kernelPickData
 		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (unsigned char) temp;
 };
 
-__host__ void hostPickData( SGUCHAR *data, const double *bufs, SGINT3 *nodeIX )
-{
-	cudaDeviceDim3D();
 
-	nodeIX->x *= GRIDS_X;
-	nodeIX->y *= GRIDS_X;
-	nodeIX->z *= GRIDS_X;
-
-	kernelPickData cudaDevice(gridDim, blockDim)
-		( data, bufs, nodeIX->x, nodeIX->y, nodeIX->z );
-};
-
-__global__ void kernelCopyBuffer( double *grid_out, double const *grid_in )
-{
-	GetIndex ();
-
-	grid_out [ Index(i,j,k) ] = grid_in [ Index(i, j, k) ];
-};
-
-__global__ void kernelSwapBuffer( double *grid1, double *grid2 )
-{
-	GetIndex ();
-
-	double temp = grid1 [ Index(i,j,k) ];
-	grid1 [ Index(i,j,k) ] = grid2 [ Index(i,j,k) ];
-	grid2 [ Index(i,j,k) ] = temp;
-};
-
-__host__ void hostSwapBuffer( double *grid1, double *grid2 )
-{
-	cudaDeviceDim3D();
-	kernelSwapBuffer cudaDevice(gridDim, blockDim) (grid1, grid2);
-};
 
 void FluidSimProc::AddSource( void )
 {
@@ -143,7 +113,7 @@ void FluidSimProc::InitBoundary( int i, int j, int k )
 	}
 
 	/* select middle node */
-	SelectNode( i, j, k );
+	SelectTheNode( i, j, k );
 
 	const int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
 
@@ -165,9 +135,10 @@ void FluidSimProc::VelocitySolver( void )
 	hostDiffusion( dev_u0, dev_u, VISOCITY, dev_obs, MACRO_VELOCITY_U );
 	hostDiffusion( dev_v0, dev_v, VISOCITY, dev_obs, MACRO_VELOCITY_V );
 	hostDiffusion( dev_w0, dev_w, VISOCITY, dev_obs, MACRO_VELOCITY_W );
-	hostSwapBuffer( dev_u0, dev_u );
-	hostSwapBuffer( dev_v0, dev_v );
-	hostSwapBuffer( dev_w0, dev_w );
+	
+	std::swap( dev_u0, dev_u );
+	std::swap( dev_v0, dev_v );
+	std::swap( dev_w0, dev_w );
 
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
 	hostProject( dev_u, dev_v, dev_w, dev_div, dev_p, dev_obs );
@@ -176,9 +147,9 @@ void FluidSimProc::VelocitySolver( void )
 	hostAdvection( dev_u0, dev_u, dev_obs, MACRO_VELOCITY_U, dev_u, dev_v, dev_w );
 	hostAdvection( dev_v0, dev_v, dev_obs, MACRO_VELOCITY_V, dev_u, dev_v, dev_w );
 	hostAdvection( dev_w0, dev_w, dev_obs, MACRO_VELOCITY_W, dev_u, dev_v, dev_w );
-	hostSwapBuffer( dev_u0, dev_u );
-	hostSwapBuffer( dev_v0, dev_v );
-	hostSwapBuffer( dev_w0, dev_w );
+	std::swap( dev_u0, dev_u );
+	std::swap( dev_v0, dev_v );
+	std::swap( dev_w0, dev_w );
 	
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
 	hostProject( dev_u, dev_v, dev_w, dev_div, dev_p, dev_obs );
@@ -187,14 +158,9 @@ void FluidSimProc::VelocitySolver( void )
 void FluidSimProc::DensitySolver( void )
 {
 	hostDiffusion( dev_den0, dev_den, DIFFUSION, dev_obs, MACRO_DENSITY );
-	hostSwapBuffer( dev_den0, dev_den );
+	std::swap( dev_den0, dev_den );
 	hostAdvection ( dev_den, dev_den0, dev_obs, MACRO_DENSITY, dev_u, dev_v, dev_w );
 };
-
-void FluidSimProc::DensitytoVolumetric( void )
-{
-	hostPickData( dev_visual, dev_den, &nPos );
-}
 
 void FluidSimProc::ZeroBuffers( void )
 {
@@ -225,17 +191,13 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	InitParams( fluid );
 
 	/* allocate resources */
-	if ( AllocateResource ( fluid ) != SG_RUNTIME_OK )
-	{
-		FreeResource ();
-		exit (1);
-	}
+	if ( !AllocateResource ( fluid ) ) { FreeResource (); exit (1); }
 
 	/* build order */
 	BuildOrder();
 
 	/* select node */
-	ActiveNode( 1, 0, 1 );
+	ActiveTheNode( 1, 0, 1 );
 
 	/* clear buffer */
 	ZeroBuffers();
@@ -316,11 +278,14 @@ void FluidSimProc::BuildOrder( void )
 	}
 };
 
-SGRUNTIMEMSG FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
+bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 {
 	/* choose which GPU to run on, change this on a multi-GPU system. */
 	if ( cudaSetDevice ( 0 ) != cudaSuccess )
+	{
 		helper.GetCUDALastError ( "cudaSetDevices", __FILE__, __LINE__ );
+		return false;
+	}
 
 	/* allocate memory on host */
 	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
@@ -328,15 +293,15 @@ SGRUNTIMEMSG FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
 
 		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrDens ) not_eq SG_RUNTIME_OK )
-			return SG_RUNTIME_FALSE;
+			return false;
 		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrU ) not_eq SG_RUNTIME_OK )
-			return SG_RUNTIME_FALSE;
+			return false;
 		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrV ) not_eq SG_RUNTIME_OK )
-			return SG_RUNTIME_FALSE;
+			return false;
 		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrW ) not_eq SG_RUNTIME_OK )
-			return SG_RUNTIME_FALSE;
+			return false;
 		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrObs ) not_eq SG_RUNTIME_OK )
-			return SG_RUNTIME_FALSE;
+			return false;
 
 		/* simulation nodes */
 		SimNode *node = (SimNode*)malloc(sizeof(SimNode));
@@ -359,25 +324,25 @@ SGRUNTIMEMSG FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 	{
 		double *ptr;
 		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptr ) not_eq SG_RUNTIME_OK )
-			return SG_RUNTIME_FALSE;
+			return false;
 
 		dev_buffers.push_back(ptr);
 	}
 
 	/* allocate visual buffers */
 	if ( helper.CreateDeviceBuffers( m_volm_size, 1, &dev_visual ) not_eq SG_RUNTIME_OK )
-		return SG_RUNTIME_FALSE;
+		return false;
 	if ( helper.CreateHostBuffers( m_volm_size, 1, &host_visual ) not_eq SG_RUNTIME_OK )
-		return SG_RUNTIME_FALSE;
+		return false;
 
 	/* allocate temporary buffers */
 	if ( helper.CreateDeviceBuffers( sizeof(double)*TPBUFFER_X, 1, &dev_tpbufs ) not_eq SG_RUNTIME_OK )
-		return SG_RUNTIME_FALSE;
+		return false;
 	if ( helper.CreateHostBuffers(sizeof(double)*TPBUFFER_X, 1, &host_tpbufs ) not_eq SG_RUNTIME_OK )
-		return SG_RUNTIME_FALSE;
+		return false;
 
 	/* finally */
-	return SG_RUNTIME_OK;
+	return true;
 }  
 
 void FluidSimProc::FreeResource ( void )
@@ -411,7 +376,7 @@ void FluidSimProc::FreeResource ( void )
 	dev_buffers.empty( );
 }
 
-bool FluidSimProc::SelectNode( int i, int j, int k )
+bool FluidSimProc::SelectTheNode( int i, int j, int k )
 {
 #if !TESTING_MODE
 	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
@@ -453,7 +418,7 @@ bool FluidSimProc::SelectNode( int i, int j, int k )
 #endif
 };
 
-bool FluidSimProc::ActiveNode( int i, int j, int k )
+bool FluidSimProc::ActiveTheNode( int i, int j, int k )
 {
 	int ix;
 	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
@@ -465,7 +430,7 @@ bool FluidSimProc::ActiveNode( int i, int j, int k )
 	return host_node[ix]->active == true;
 };
 
-bool FluidSimProc::DeactiveNode( int i, int j, int k )
+bool FluidSimProc::DeactiveTheNode( int i, int j, int k )
 {
 	int ix;
 	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
@@ -487,32 +452,35 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 		{
 			for ( int k = 0; k < NODES_X; k++ )
 			{
-
 				/* select node */
-				if ( SelectNode( i, j, k ) )
+				if ( SelectTheNode( i, j, k ) )
 				{
 					/* for fluid simulation, copy the data to device */
-					NodetoDevice();
+					NodeToDevice();
 					
 					/* Fluid process */
 					AddSource();
 					VelocitySolver();
 					DensitySolver();
 					
-					/* retrieve data back to host */
-					DevicetoNode();
+					/* tracing */
+					TracingTheFlow();
 
-					/* pick density */
-					DensitytoVolumetric();
+					/* retrieve data back to host */
+					DeviceToNode();
+
+					if ( cudaThreadSynchronize() not_eq cudaSuccess )
+					{
+						printf( "cudaThreadSynchronize failed\n" );
+						FreeResource();
+						exit( 1 );
+					}
 				}
 			}
 		}
 	}
 	/* finally, generate volumetric image */
 	GetVolumetric( fluid );
-
-	/* tracing */
-	TracingDensity();
 };
 
 void FluidSimProc::GetVolumetric( FLUIDSPARAM *fluid )
@@ -521,34 +489,224 @@ void FluidSimProc::GetVolumetric( FLUIDSPARAM *fluid )
 	fluid->volume.ptrData = host_visual;
 };
 
-void FluidSimProc::NodetoDevice ( void )
+void FluidSimProc::NodeToDevice ( void )
 {
-	int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
+	/* navigate the node's position */
+	int i = nPos.x;
+	int j = nPos.y;
+	int k = nPos.z;
 
-	cudaMemcpy( dev_u, host_velocity_u[ix], m_node_size, cudaMemcpyHostToDevice );
-	cudaMemcpy( dev_v, host_velocity_v[ix], m_node_size, cudaMemcpyHostToDevice );
-	cudaMemcpy( dev_w, host_velocity_w[ix], m_node_size, cudaMemcpyHostToDevice );
-	cudaMemcpy( dev_den, host_density[ix], m_node_size, cudaMemcpyHostToDevice  );
-	cudaMemcpy( dev_obs, host_obstacle[ix], m_node_size, cudaMemcpyHostToDevice );
+	SimNode *ptr = host_node[cudaIndex3D( i, j, k, NODES_X )];
+
+	/* upload center node to GPU device */
+	cudaMemcpy( dev_u, host_velocity_u[cudaIndex3D( i, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+	cudaMemcpy( dev_v, host_velocity_v[cudaIndex3D( i, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+	cudaMemcpy( dev_w, host_velocity_w[cudaIndex3D( i, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+	cudaMemcpy( dev_den,  host_density[cudaIndex3D( i, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+	cudaMemcpy( dev_obs, host_obstacle[cudaIndex3D( i, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+
+	if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+
+	/* upload neighbouring buffers to GPU device */
+	if ( ptr->ptrLeft not_eq nullptr )
+	{
+		cudaMemcpy( velu_L, host_velocity_u[cudaIndex3D( i-1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velv_L, host_velocity_v[cudaIndex3D( i-1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velw_L, host_velocity_w[cudaIndex3D( i-1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( dens_L,    host_density[cudaIndex3D( i-1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	if ( ptr->ptrRight not_eq nullptr )
+	{
+		cudaMemcpy( velu_R, host_velocity_u[cudaIndex3D( i+1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velv_R, host_velocity_v[cudaIndex3D( i+1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velw_R, host_velocity_w[cudaIndex3D( i+1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( dens_R,    host_density[cudaIndex3D( i+1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	if ( ptr->ptrUp not_eq nullptr )
+	{
+		cudaMemcpy( velu_U, host_velocity_u[cudaIndex3D( i, j+1, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velv_U, host_velocity_v[cudaIndex3D( i, j+1, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velw_U, host_velocity_w[cudaIndex3D( i, j+1, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( dens_U,    host_density[cudaIndex3D( i, j+1, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	if ( ptr->ptrDown not_eq nullptr )
+	{
+		cudaMemcpy( velu_D, host_velocity_u[cudaIndex3D( i, j-1, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velv_D, host_velocity_v[cudaIndex3D( i, j-1, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velw_D, host_velocity_w[cudaIndex3D( i, j-1, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( dens_D,    host_density[cudaIndex3D( i, j-1, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	if ( ptr->ptrFront not_eq nullptr )
+	{
+		cudaMemcpy( velu_F, host_velocity_u[cudaIndex3D( i, j, k+1, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velv_F, host_velocity_v[cudaIndex3D( i, j, k+1, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velw_F, host_velocity_w[cudaIndex3D( i, j, k+1, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( dens_F,    host_density[cudaIndex3D( i, j, k+1, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	if ( ptr->ptrBack not_eq nullptr )
+	{
+		cudaMemcpy( velu_B, host_velocity_u[cudaIndex3D( i, j, k-1, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velv_B, host_velocity_v[cudaIndex3D( i, j, k-1, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( velw_B, host_velocity_w[cudaIndex3D( i, j, k-1, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( dens_B,    host_density[cudaIndex3D( i, j, k-1, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
 };
 
 
-void FluidSimProc::DevicetoNode ( void )
+void FluidSimProc::DeviceToNode ( void )
 {
-	int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
+	/* navigate the node's position */
+	int i = nPos.x;
+	int j = nPos.y;
+	int k = nPos.z;
+	SimNode *ptr = host_node[cudaIndex3D( i, j, k, NODES_X )];
 
-	cudaMemcpy( host_velocity_u[ix], dev_u, m_node_size, cudaMemcpyDeviceToHost );
-	cudaMemcpy( host_velocity_v[ix], dev_v, m_node_size, cudaMemcpyDeviceToHost );
-	cudaMemcpy( host_velocity_w[ix], dev_w, m_node_size, cudaMemcpyDeviceToHost );
-	cudaMemcpy( host_density[ix], dev_den, m_node_size, cudaMemcpyDeviceToHost  );
+	/* draw data back */
+	cudaMemcpy( host_velocity_u[cudaIndex3D( i, j, k, NODES_X )], dev_u, m_node_size, cudaMemcpyDeviceToHost );
+	cudaMemcpy( host_velocity_v[cudaIndex3D( i, j, k, NODES_X )], dev_v, m_node_size, cudaMemcpyDeviceToHost );
+	cudaMemcpy( host_velocity_w[cudaIndex3D( i, j, k, NODES_X )], dev_w, m_node_size, cudaMemcpyDeviceToHost );
+	cudaMemcpy( host_density[cudaIndex3D( i, j, k, NODES_X )],  dev_den, m_node_size, cudaMemcpyDeviceToHost );
 
-#if 0
-	system("cls");
-	printf( "no.1: %f \n", host_density[ix][Index(gst_header,gst_header,gst_header)] );
-	printf( "no.2: %f \n", host_density[ix][Index(gst_tailer,gst_header,gst_header)] );
-	printf( "no.3: %f \n", host_density[ix][Index(gst_tailer,gst_header,gst_tailer)] );
-	printf( "no.4: %f \n", host_density[ix][Index(gst_header,gst_header,gst_tailer)] );
-#endif
+	if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+
+	/* draw neighbouring buffers back */
+	if ( ptr->ptrLeft not_eq nullptr )
+	{
+		cudaMemcpy( host_velocity_u[cudaIndex3D( i-1, j, k, NODES_X )], velu_L, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_v[cudaIndex3D( i-1, j, k, NODES_X )], velv_L, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_w[cudaIndex3D( i-1, j, k, NODES_X )], velw_L, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy(    host_density[cudaIndex3D( i-1, j, k, NODES_X )], dens_L, m_node_size, cudaMemcpyDeviceToHost );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	if ( ptr->ptrRight not_eq nullptr )
+	{
+		cudaMemcpy( host_velocity_u[cudaIndex3D( i+1, j, k, NODES_X )], velu_R, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_v[cudaIndex3D( i+1, j, k, NODES_X )], velv_R, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_w[cudaIndex3D( i+1, j, k, NODES_X )], velw_R, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy(    host_density[cudaIndex3D( i+1, j, k, NODES_X )], dens_R, m_node_size, cudaMemcpyDeviceToHost );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	if ( ptr->ptrUp not_eq nullptr )
+	{
+		cudaMemcpy( host_velocity_u[cudaIndex3D( i, j+1, k, NODES_X )], velu_U, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_v[cudaIndex3D( i, j+1, k, NODES_X )], velv_U, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_w[cudaIndex3D( i, j+1, k, NODES_X )], velw_U, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy(    host_density[cudaIndex3D( i, j+1, k, NODES_X )], dens_U, m_node_size, cudaMemcpyDeviceToHost );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	if ( ptr->ptrDown not_eq nullptr )
+	{
+		cudaMemcpy( host_velocity_u[cudaIndex3D( i, j-1, k, NODES_X )], velu_D, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_v[cudaIndex3D( i, j-1, k, NODES_X )], velv_D, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_w[cudaIndex3D( i, j-1, k, NODES_X )], velw_D, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy(    host_density[cudaIndex3D( i, j-1, k, NODES_X )], dens_D, m_node_size, cudaMemcpyDeviceToHost );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	if ( ptr->ptrFront not_eq nullptr )
+	{
+		cudaMemcpy( host_velocity_u[cudaIndex3D( i, j, k+1, NODES_X )], velu_F, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_v[cudaIndex3D( i, j, k+1, NODES_X )], velv_F, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_w[cudaIndex3D( i, j, k+1, NODES_X )], velw_F, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy(    host_density[cudaIndex3D( i, j, k+1, NODES_X )], dens_F, m_node_size, cudaMemcpyDeviceToHost );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	if ( ptr->ptrBack not_eq nullptr )
+	{
+		cudaMemcpy( host_velocity_u[cudaIndex3D( i, j, k-1, NODES_X )], velu_B, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_v[cudaIndex3D( i, j, k-1, NODES_X )], velv_B, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_w[cudaIndex3D( i, j, k-1, NODES_X )], velw_B, m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy(    host_density[cudaIndex3D( i, j, k-1, NODES_X )], dens_B, m_node_size, cudaMemcpyDeviceToHost );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit( 1 );
+		}
+	}
+	
+	/* draw volumetric data back */
+	cudaDeviceDim3D();
+	kernelPickData <<<gridDim, blockDim>>>
+		( dev_visual, dev_den, nPos.x * GRIDS_X, nPos.y * GRIDS_X, nPos.z * GRIDS_X );
 };
 
 __device__ void atomicHandleFaceLR( double *grids, double const *center, int header, int tailer )
@@ -736,26 +894,12 @@ __global__ void kernelFloodBoundary( double *grids )
 
 
 
-void FluidSimProc::TracingDensity( void )
+void FluidSimProc::TracingTheFlow( void )
 {
-	for ( int i = 0; i < NODES_X; i++ )
-	{
-		for ( int j = 0; j < NODES_X; j++ )
-		{
-			for ( int k = 0; k < NODES_X; k++ )
-			{
-				if ( SelectNode( i, j, k ) )
-				{
-					DataFlooding( host_density,    i, j, k, true );
-					DataFlooding( host_velocity_u, i, j, k, false );
-					DataFlooding( host_velocity_v, i, j, k, false );
-					DataFlooding( host_velocity_w, i, j, k, false );
-				}
-			}
-		}
-	}
+
 };
 
+#if 0
 void FluidSimProc::UploadNeighbouringBuffers( vector<double*> container, int i, int j, int k )
 {
 	/* navigated current node from node list */
@@ -990,3 +1134,5 @@ void FluidSimProc::DataFlooding( vector<double*> container, int i, int j, int k,
 	/* retrieve data back to node */
 	DownloadNeighbouringBuffers( container, i, j, k );
 };
+
+#endif
