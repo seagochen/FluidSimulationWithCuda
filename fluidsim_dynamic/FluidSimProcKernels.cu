@@ -342,9 +342,11 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 		{
 			for ( int k = 0; k < NODES_X; k++ )
 			{
-				/* select node */
-				if ( SelectTheNode( i, j, k ) )
+				//if ( SelectTheNode( i, j, k ) )
 				{
+					/* select node */
+					SelectTheNode( i, j, k );
+
 					/* for fluid simulation, copy the data to device */
 					NodeToDevice();
 					
@@ -601,6 +603,7 @@ void FluidSimProc::DeviceToNode ( void )
 
 void FluidSimProc::AddSource( void )
 {
+#if TESTING_MODE_SWITCH
 	if ( decrease_times eqt 0 )
 	{
 		cudaDeviceDim3D();
@@ -617,6 +620,10 @@ void FluidSimProc::AddSource( void )
 	{
 		decrease_times--;
 	}
+#else
+	cudaDeviceDim3D();
+	kernelAddSource<<<gridDim, blockDim>>> ( dev_den, dev_u, dev_v, dev_w, dev_obs );
+#endif
 };
 
 void FluidSimProc::InitBoundary( int i, int j, int k )
@@ -737,7 +744,7 @@ void FluidSimProc::TracingTheFlow( void )
 	kernelClearHalo <<<gridDim, blockDim>>> ( velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, velw_C );
 
 	/* zero buffers if they not exists */
-	SimNode *ptr = host_node[nix];
+	SimNode *ptr = host_node[cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X )];
 
 	if ( !ptr->ptrLeft )
 	{
@@ -809,5 +816,42 @@ void FluidSimProc::TracingTheFlow( void )
 	printf( "BACK:   %f\n", host_tpbufs[TEMP_BUF_BACK] );
 #endif
 
+#if 0
+	/* dead or live */
+	if ( ptr->ptrLeft not_eq nullptr )
+		if ( host_tpbufs[TEMP_BUF_LEFT] > 0.f )
+			ptr->ptrLeft->active = true;
+		else
+			ptr->ptrLeft->active = false;
 
+	if ( ptr->ptrRight not_eq nullptr )
+		if ( host_tpbufs[TEMP_BUF_RIGHT] > 0.f )
+			ptr->ptrRight->active = true;
+		else
+			ptr->ptrRight->active = false;
+
+	if ( ptr->ptrUp not_eq nullptr )
+		if ( host_tpbufs[TEMP_BUF_UP] > 0.f )
+			ptr->ptrUp->active = true;
+		else
+			ptr->ptrUp->active = false;
+
+	if ( ptr->ptrDown not_eq nullptr )
+		if ( host_tpbufs[TEMP_BUF_DOWN] > 0.f )
+			ptr->ptrDown->active = true;
+		else
+			ptr->ptrDown->active = false;
+
+	if ( ptr->ptrFront not_eq nullptr )
+		if ( host_tpbufs[TEMP_BUF_FRONT] > 0.f )
+			ptr->ptrFront->active = true;
+		else
+			ptr->ptrFront->active = false;
+
+	if ( ptr->ptrBack not_eq nullptr )
+		if ( host_tpbufs[TEMP_BUF_BACK] > 0.f )
+			ptr->ptrBack->active = true;
+		else
+			ptr->ptrBack->active = false;
+#endif
 };

@@ -128,12 +128,21 @@ __device__ void atomicTracingBack( double *back, double const *center )
 __global__ void kernelFloodingBuffers
 	( double *left, double *right, double *up, double *down, double *front, double *back, double *center )
 {
-	atomicTracingUp(       up, center );
-	atomicTracingDown(   down, center );
-	atomicTracingLeft(   left, center );
-	atomicTracingRight( right, center );
-	atomicTracingFront( front, center );
-	atomicTracingBack (  back, center );
+	GetIndex();
+
+	up[Index(i,sim_header,k)] = center[Index(i,sim_tailer,k)];
+	down[Index(i,sim_tailer,k)] = center[Index(i,sim_header,k)];
+	left[Index(sim_tailer,j,k)] = center[Index(sim_header,j,k)];
+	right[Index(sim_header,j,k)] = center[Index(sim_tailer,j,k)];
+	front[Index(i,j,sim_header)] = center[Index(i,j,sim_tailer)];
+	back[Index(i,j,sim_tailer)] = center[Index(i,j,sim_header)];
+
+//	atomicTracingUp(       up, center );
+//	atomicTracingDown(   down, center );
+//	atomicTracingLeft(   left, center );
+//	atomicTracingRight( right, center );
+//	atomicTracingFront( front, center );
+//	atomicTracingBack (  back, center );
 };
 
 __device__ void atomicClearHalo( double *grids )
@@ -162,17 +171,29 @@ __global__ void kernelClearHalo
 };
 
 __global__ void kernelSumBufsDens
-	( double *bufs, double *left, double *right, double *up, double *down, double *front, double *back, double *center )
+	( double *bufs, 
+	const double *left,  const double *right,
+	const double *up,    const double *down,
+	const double *front, const double *back,
+	const double *center )
 {
 	GetIndex();
 
-	bufs[TEMP_BUF_CENTER] += center[Index(i,j,k)];
-	bufs[TEMP_BUF_LEFT]   +=   left[Index(i,j,k)];
-	bufs[TEMP_BUF_RIGHT]  +=  right[Index(i,j,k)];
-	bufs[TEMP_BUF_UP]     +=     up[Index(i,j,k)];
-	bufs[TEMP_BUF_DOWN]   +=   down[Index(i,j,k)];
-	bufs[TEMP_BUF_FRONT]  +=  front[Index(i,j,k)];
-	bufs[TEMP_BUF_BACK]   +=   back[Index(i,j,k)];
+	bufs[TEMP_BUF_LEFT]   += (  left[Index(i,j,k)] > 0.f ) ?  left[Index(i,j,k)] : 0.f;
+	bufs[TEMP_BUF_RIGHT]  += ( right[Index(i,j,k)] > 0.f ) ? right[Index(i,j,k)] : 0.f;
+	bufs[TEMP_BUF_UP]     += (    up[Index(i,j,k)] > 0.f ) ?    up[Index(i,j,k)] : 0.f;
+	bufs[TEMP_BUF_DOWN]   += (  down[Index(i,j,k)] > 0.f ) ?  down[Index(i,j,k)] : 0.f;
+	bufs[TEMP_BUF_FRONT]  += ( front[Index(i,j,k)] > 0.f ) ? front[Index(i,j,k)] : 0.f;
+	bufs[TEMP_BUF_BACK]   += (  back[Index(i,j,k)] > 0.f ) ?  back[Index(i,j,k)] : 0.f;
+	bufs[TEMP_BUF_CENTER] += ( center[Index(i,j,k)] > 0.f ) ? center[Index(i,j,k)] : 0.f;
+
+
+	bufs[TEMP_BUF_LEFT]   += ( center[Index(sim_header,j,k)] > 0.f ) ? center[Index(sim_header,j,k)] : 0.f;
+	bufs[TEMP_BUF_RIGHT]  += ( center[Index(sim_tailer,j,k)] > 0.f ) ? center[Index(sim_tailer,j,k)] : 0.f;
+	bufs[TEMP_BUF_UP]     += ( center[Index(i,sim_header,k)] > 0.f ) ? center[Index(i,sim_header,k)] : 0.f;
+	bufs[TEMP_BUF_DOWN]   += ( center[Index(i,sim_tailer,k)] > 0.f ) ? center[Index(i,sim_tailer,k)] : 0.f;
+	bufs[TEMP_BUF_FRONT]  += ( center[Index(i,j,sim_header)] > 0.f ) ? center[Index(i,j,sim_header)] : 0.f;
+	bufs[TEMP_BUF_BACK]   += ( center[Index(i,j,sim_tailer)] > 0.f ) ? center[Index(i,j,sim_tailer)] : 0.f;
 };
 
 #endif
