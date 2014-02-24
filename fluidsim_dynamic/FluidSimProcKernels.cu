@@ -85,6 +85,7 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	/* build order */
 	BuildOrder();
 
+#if !TESTING_MODE_SWITCH
 	/* select node */
 	ActiveTheNode( 1, 0, 1 );
 
@@ -93,6 +94,16 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 
 	/* set boundary */
 	InitBoundary( 1, 0, 1 );
+#else
+	/* select node */
+	ActiveTheNode( 1, 1, 1 );
+
+	/* clear buffer */
+	ZeroBuffers();
+
+	/* set boundary */
+	InitBoundary( 1, 1, 1 );
+#endif
 
 	/* finally, print message */
 	printf( "fluid simulation ready...\n" );
@@ -273,8 +284,25 @@ bool FluidSimProc::SelectTheNode( int i, int j, int k )
 		nPos.y = j;
 		nPos.z = k;
 		
+#if !TESTING_MODE_SWITCH
 		int ix = cudaIndex3D( i, j, k, NODES_X );
 		return host_node[ix]->active;
+#else
+		int ix    = cudaIndex3D( i, j, k, NODES_X );
+		int left  = cudaIndex3D( 0, 1, 1, NODES_X );
+		int right = cudaIndex3D( 2, 1, 1, NODES_X );
+		int up    = cudaIndex3D( 1, 2, 1, NODES_X );
+		int down  = cudaIndex3D( 1, 0, 1, NODES_X );
+		int front = cudaIndex3D( 1, 1, 2, NODES_X );
+		int back  = cudaIndex3D( 1, 1, 0, NODES_X );
+		int center= cudaIndex3D( 1, 1, 1, NODES_X );
+
+		return 
+			ix eqt center or
+			ix eqt left  or ix eqt right or
+			ix eqt up 	 or ix eqt down  or
+			ix eqt front or ix eqt back;
+#endif
 	}
 
 	return false;
@@ -683,6 +711,11 @@ void FluidSimProc::ZeroBuffers( void )
 
 void FluidSimProc::TracingTheFlow( void )
 {
+#if TESTING_MODE_SWITCH
+	int ix  = cudaIndex3D( 1, 1, 1, NODES_X );
+	int nix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
+#endif
+
 	cudaDeviceDim3D();
 
 	/* flooding data */
@@ -691,13 +724,67 @@ void FluidSimProc::TracingTheFlow( void )
 	kernelFloodingBuffers <<<gridDim, blockDim>>> ( velv_L, velv_R, velv_U, velv_D, velv_F, velv_B, velv_C );
 	kernelFloodingBuffers <<<gridDim, blockDim>>> ( velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, velw_C );
 
-	/* clear temporary buffers and halo */
+	/* clear temporary buffers for next step */
+#if TESTING_MODE_SWITCH
+	if ( ix eqt nix )
+#endif
 	kernelZeroTemporaryBuffers <<<1, TPBUFFER_X>>> ( dev_tpbufs );
+
+	/* clear halo to avoid data obstruction */
 	kernelClearHalo <<<gridDim, blockDim>>> ( dens_L, dens_R, dens_U, dens_D, dens_F, dens_B, dens_C );
 	kernelClearHalo <<<gridDim, blockDim>>> ( velu_L, velu_R, velu_U, velu_D, velu_F, velu_B, velu_C );
 	kernelClearHalo <<<gridDim, blockDim>>> ( velv_L, velv_R, velv_U, velv_D, velv_F, velv_B, velv_C );
 	kernelClearHalo <<<gridDim, blockDim>>> ( velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, velw_C );
 
+	/* zero buffers if they not exists */
+	SimNode *ptr = host_node[nix];
+
+	if ( !ptr->ptrLeft )
+	{
+		kernelZeroGrids <<<gridDim, blockDim>>> ( dens_L );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velu_L );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velv_L );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velw_L );
+	}
+	if ( !ptr->ptrRight )
+	{
+		kernelZeroGrids <<<gridDim, blockDim>>> ( dens_R );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velu_R );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velv_R );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velw_R );
+	}
+	if ( !ptr->ptrUp )
+	{
+		kernelZeroGrids <<<gridDim, blockDim>>> ( dens_U );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velu_U );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velv_U );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velw_U );
+	}
+	if ( !ptr->ptrDown )
+	{
+		kernelZeroGrids <<<gridDim, blockDim>>> ( dens_D );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velu_D );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velv_D );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velw_D );	
+	}
+	if ( !ptr->ptrFront )
+	{
+		kernelZeroGrids <<<gridDim, blockDim>>> ( dens_F );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velu_F );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velv_F );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velw_F );
+	}
+	if ( !ptr->ptrBack )
+	{
+		kernelZeroGrids <<<gridDim, blockDim>>> ( dens_B );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velu_B );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velv_B );
+		kernelZeroGrids <<<gridDim, blockDim>>> ( velw_B );
+	}
+
+#if TESTING_MODE_SWITCH
+	if ( ix eqt nix )
+#endif
 	/* sum the density of each node */
 	kernelSumBufsDens <<<gridDim, blockDim>>>
 		( dev_tpbufs, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B, dens_C );
@@ -720,7 +807,6 @@ void FluidSimProc::TracingTheFlow( void )
 	printf( "DOWN:   %f\n", host_tpbufs[TEMP_BUF_DOWN] );
 	printf( "FRONT:  %f\n", host_tpbufs[TEMP_BUF_FRONT] );
 	printf( "BACK:   %f\n", host_tpbufs[TEMP_BUF_BACK] );
-
 #endif
 
 

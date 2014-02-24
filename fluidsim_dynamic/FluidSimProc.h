@@ -173,6 +173,6 @@ namespace sge
 #define MACRO_BACK       6
 
 #define TESTING_MODE_SWITCH     1 /* switch: close(0) open(1) */
-#define TESTING_MODE            0 /* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
+#define TESTING_MODE            5 /* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
 
 #endif
