@@ -39,6 +39,15 @@
     <ClInclude Include="FunctionHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CUDACustomeMath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FluidSimulationKernels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CUDATracingKernels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="fluidsim_dynamic.rc">
@@ -74,16 +83,13 @@
     <ClCompile Include="FunctionHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FluidSimProc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimulation.cu">
+    <CudaCompile Include="FluidSimProcKernels.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
-    <CudaCompile Include="DataFlooding.cu">
-      <Filter>Source Files</Filter>
-    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="backup.txt" />
   </ItemGroup>
 </Project>

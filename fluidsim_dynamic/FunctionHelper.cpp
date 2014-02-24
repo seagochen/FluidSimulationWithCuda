@@ -11,15 +11,19 @@
 
 using namespace sge;
 
-SGVOID FunctionHelper::CheckRuntimeErrors( const char* msg, const char *file, const int line )
+SGBOOLEAN FunctionHelper::GetCUDALastError( const char* msg, const char *file, const int line )
 {
 	cudaError_t __err = cudaGetLastError();
-	if (__err != cudaSuccess) 
+	if ( __err != cudaSuccess) 
 	{ 
 		printf ( "<<< file: %s, line %d >>> \n", file, line );
-		printf ( "*error: %s \n", cudaGetErrorString(__err) );
+		printf ( "*error: %s \n", cudaGetErrorString( __err ) );
 		printf ( "%s \n", msg );
+	
+		return true;
 	}
+
+	return false;
 };
 
 #pragma region obsoleted functions
@@ -102,7 +106,7 @@ SGRUNTIMEMSG FunctionHelper::CreateDeviceCharBuffers( size_t size, SGINT nPtrs, 
 
 		if ( cudaMalloc( (void**)ptr, size) not_eq cudaSuccess )
 		{
-			CheckRuntimeErrors( "malloc temporary stores failed!", __FILE__, __LINE__ );
+			GetCUDALastError( "malloc temporary stores failed!", __FILE__, __LINE__ );
 			return SG_MALLOC_SPACE_FAILED;
 		}
 	}
@@ -123,7 +127,7 @@ SGRUNTIMEMSG FunctionHelper::CreateDeviceIntegerBuffers( size_t size, SGINT nPtr
 
 		if ( cudaMalloc( (void**)ptr, size) not_eq cudaSuccess )
 		{
-			CheckRuntimeErrors( "malloc temporary stores failed!", __FILE__, __LINE__ );
+			GetCUDALastError( "malloc temporary stores failed!", __FILE__, __LINE__ );
 			return SG_MALLOC_SPACE_FAILED;
 		}
 	}
@@ -144,7 +148,7 @@ SGRUNTIMEMSG FunctionHelper::CreateDeviceDoubleBuffers( size_t size, SGINT nPtrs
 
 		if ( cudaMalloc( (void**)ptr, size) not_eq cudaSuccess )
 		{
-			CheckRuntimeErrors( "malloc temporary stores failed!", __FILE__, __LINE__ );
+			GetCUDALastError( "malloc temporary stores failed!", __FILE__, __LINE__ );
 			return SG_MALLOC_SPACE_FAILED;
 		}
 	}
@@ -273,7 +277,7 @@ SGRUNTIMEMSG FunctionHelper::CreateDeviceBuffers( size_t size, SGINT nPtrs, ... 
 
 		if ( cudaMalloc( (void**)ptr, size) not_eq cudaSuccess )
 		{
-			CheckRuntimeErrors( "malloc temporary stores failed!", __FILE__, __LINE__ );
+			GetCUDALastError( "malloc temporary stores failed!", __FILE__, __LINE__ );
 			return SG_MALLOC_SPACE_FAILED;
 		}
 	}

@@ -17,7 +17,7 @@
 #include "CUDAMacroDef.h"
 #include "FunctionHelper.h"
 
-#define dev_buffers_num                   18
+#define dev_buffers_num                   35
 #define dev_den              dev_buffers[ 0 ]
 #define dev_den0             dev_buffers[ 1 ]
 #define dev_u                dev_buffers[ 2 ]
@@ -30,13 +30,37 @@
 #define dev_p                dev_buffers[ 9 ]
 #define dev_obs              dev_buffers[ 10 ]
 
-#define dev_center           dev_buffers[ 11 ]
-#define dev_left             dev_buffers[ 12 ]
-#define dev_right            dev_buffers[ 13 ]
-#define dev_up               dev_buffers[ 14 ]
-#define dev_down             dev_buffers[ 15 ]
-#define dev_front            dev_buffers[ 16 ]
-#define dev_back             dev_buffers[ 17 ]
+#define dens_C               dev_buffers[ 0 ]
+#define dens_L               dev_buffers[ 11 ]
+#define dens_R               dev_buffers[ 12 ]
+#define dens_U               dev_buffers[ 13 ]
+#define dens_D               dev_buffers[ 14 ]
+#define dens_F               dev_buffers[ 15 ]
+#define dens_B               dev_buffers[ 16 ]
+
+#define velu_C               dev_buffers[ 2 ]
+#define velu_L               dev_buffers[ 17 ] 
+#define velu_R               dev_buffers[ 18 ]
+#define velu_U               dev_buffers[ 19 ]
+#define velu_D               dev_buffers[ 20 ]
+#define velu_F               dev_buffers[ 21 ]
+#define velu_B               dev_buffers[ 22 ]
+
+#define velv_C               dev_buffers[ 4 ]
+#define velv_L               dev_buffers[ 23 ]
+#define velv_R               dev_buffers[ 24 ]
+#define velv_U               dev_buffers[ 25 ]
+#define velv_D               dev_buffers[ 26 ]
+#define velv_F               dev_buffers[ 27 ]
+#define velv_B               dev_buffers[ 28 ]
+
+#define velw_C               dev_buffers[ 6 ]
+#define velw_L               dev_buffers[ 29 ]
+#define velw_R               dev_buffers[ 30 ]
+#define velw_U               dev_buffers[ 31 ]
+#define velw_D               dev_buffers[ 32 ]
+#define velw_F               dev_buffers[ 33 ]
+#define velw_B               dev_buffers[ 34 ]
 
 using std::vector;
 
@@ -71,6 +95,7 @@ namespace sge
 		size_t m_node_size;
 		size_t m_volm_size;
 		double *dev_tpbufs, *host_tpbufs;
+		int    increase_times, decrease_times;
 
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
@@ -85,39 +110,27 @@ namespace sge
 		void ZeroBuffers( void );
 
 	private:
-		/* upload neighbouring buffers to GPU device */
-		void UploadNeighbouringBuffers( vector<double*> container, int i, int j, int k );
-
-		/* download neightbouring buffers to host */
-		void DownloadNeighbouringBuffers( vector<double*> container, int i, int j, int k );
-
 		/* flood buffer for multiple nodes */
-		void TracingDensity( void );
-
-		/* data flooding */
-		void DataFlooding( vector<double*> container, int i, int j, int k, bool isDensity );
+		void TracingTheFlow( void );
 
 		/* initialize FPS and etc. */
 		void InitParams( FLUIDSPARAM *fluid );
 
 		/* copy host data to CUDA device */
-		void NodetoDevice( void );
+		void NodeToDevice( void );
 
 		/* retrieve data back to host */
-		void DevicetoNode( void );
+		void DeviceToNode( void );
 
 		/* select a node */
-		bool SelectNode( int i, int j, int k );
+		bool SelectTheNode( int i, int j, int k );
 
 		/* mark the node as actived */
-		bool ActiveNode( int i, int j, int k );
+		bool ActiveTheNode( int i, int j, int k );
 
 		/* mark the node as deactived */
-		bool DeactiveNode( int i, int j, int k );
-		
-		/* cast density to volumetric data */
-		void DensitytoVolumetric( void );
-		
+		bool DeactiveTheNode( int i, int j, int k );
+				
 		/* retrieve the density back and load into volumetric data for rendering */
 		void GetVolumetric( FLUIDSPARAM *fluid );
 		
@@ -125,7 +138,7 @@ namespace sge
 		void BuildOrder( void );
 
 		/* allocate resource */
-		SGRUNTIMEMSG AllocateResource( FLUIDSPARAM *fluid );
+		bool AllocateResource( FLUIDSPARAM *fluid );
 
 		/* solving density */
 		void DensitySolver( void );
@@ -158,5 +171,8 @@ namespace sge
 #define MACRO_DOWN       4
 #define MACRO_FRONT      5
 #define MACRO_BACK       6
+
+#define TESTING_MODE_SWITCH     0 /* switch: close(0) open(1) */
+#define TESTING_MODE            0 /* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
 
 #endif

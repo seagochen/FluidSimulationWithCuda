@@ -21,7 +21,7 @@ namespace sge
 	{
 	public:
 		/* check CUDA runtime errors */
-		SGVOID CheckRuntimeErrors( const char* msg, const char *file, const int line );
+		SGBOOLEAN GetCUDALastError( const char* msg, const char *file, const int line );
 
 		/* malloc buffers for paticular data type */
 		SGRUNTIMEMSG CreateHostCharBuffers( size_t size, SGINT nPtrs, ... );     // obsoleted
