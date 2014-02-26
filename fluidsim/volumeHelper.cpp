@@ -50,7 +50,7 @@ void VolumeHelper::CreateShaderProg ( fluidsim *fluid )
 #pragma endregion
 
 	// Create shader helper
-	Shader *shader_out = new Shader();
+	SGSHADER *shader_out = new SGSHADER();
 
 	// Create shader objects from source
 	shader_out->CreateShaderObj ( fluid->shader.szCanvasVert, SG_VERTEX,   bfVert_out );

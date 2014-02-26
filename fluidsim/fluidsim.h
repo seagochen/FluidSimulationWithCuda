@@ -153,7 +153,7 @@ struct fluidsim
 		/// Handles for shader objects, and programs ///
 		GLuint hProgram, hBFVert, hBFFrag, hRCVert, hRCFrag;
 		/// Shader Helper ///
-		sge::Shader *ptrShader;
+		sge::SGSHADER *ptrShader;
 		/// Source files for GLSL ///
 		char *szCanvasVert, *szCanvasFrag, *szVolumVert, *szVolumFrag;
 	};

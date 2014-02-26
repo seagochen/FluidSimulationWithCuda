@@ -18,7 +18,7 @@ using namespace std;
 fluidsim      m_fluid;
 VolumeHelper  m_vh;
 FluidSimProc *m_fs;
-MainActivity *activity;
+SGMAINACTIVITY *activity;
 
 #define K_ON 100
 
@@ -187,9 +187,9 @@ void onDestroy ()
 	cout << "memory freed, program exits..." << endl;
 };
 
-void onKeyboard ( SG_KEYS keys, SG_KEY_STATUS status )
+void onKeyboard ( SGKEYS keys, SGKEYSTATUS status )
 {
-	if ( status == SG_KEY_STATUS::SG_KEY_DOWN )
+	if ( status == SG_KEY_DOWN )
 	switch (keys)
 	{
 	case sge::SG_KEY_ESCAPE:
@@ -217,7 +217,7 @@ int main()
 {
 	initialize ();
 
-	activity = new MainActivity ( m_fluid.drawing.nCanvasWidth, m_fluid.drawing.nCanvasHeight );
+	activity = new SGMAINACTIVITY ( m_fluid.drawing.nCanvasWidth, m_fluid.drawing.nCanvasHeight );
 
 	activity->SetAppClientInfo ( IDI_ICON1, IDI_ICON1 );
 	activity->RegisterCreateFunc ( onCreate );

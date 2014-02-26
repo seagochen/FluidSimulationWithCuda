@@ -4,7 +4,6 @@
 #pragma once
 
 #include <cuda_runtime.h>
-#include "helper_math.h"
 #include "fluidsim.h"
 
 inline __host__ __device__ int sgrand( int *seed )
