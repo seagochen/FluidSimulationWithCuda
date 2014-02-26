@@ -13,6 +13,13 @@
 
 using namespace sge;
 
+__global__ void kernelCopyGrids( double *dst, double const *src )
+{
+	GetIndex();
+
+	dst[Index(i,j,k)] = src[Index(i,j,k)];
+};
+
 __global__ void kernelZeroGrids( double *grid )
 {
 	GetIndex ();
@@ -105,8 +112,29 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	InitBoundary( 1, 1, 1 );
 #endif
 
+	/* upload buffers */
+	UploadBuffers();
+
 	/* finally, print message */
 	printf( "fluid simulation ready...\n" );
+};
+
+void FluidSimProc::UploadBuffers()
+{
+	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
+	{
+		cudaMemcpy( dev_density[i], host_density[i], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( dev_velocity_u[i], host_velocity_u[i], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( dev_velocity_v[i], host_velocity_v[i], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( dev_velocity_w[i], host_velocity_w[i], m_node_size, cudaMemcpyHostToDevice );
+		cudaMemcpy( dev_obstacle[i], host_obstacle[i], m_node_size, cudaMemcpyHostToDevice );
+
+		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
+		{
+			FreeResource();
+			exit(1);
+		}
+	}
 };
 
 void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
@@ -219,6 +247,29 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		host_obstacle.push_back( ptrObs );
 	}
 
+	/* allocate memory on GPU */
+	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
+	{
+		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
+
+		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrDens ) not_eq SG_RUNTIME_OK )
+			return false;
+		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrU ) not_eq SG_RUNTIME_OK )
+			return false;
+		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrV ) not_eq SG_RUNTIME_OK )
+			return false;
+		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrW ) not_eq SG_RUNTIME_OK )
+			return false;
+		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrObs ) not_eq SG_RUNTIME_OK )
+			return false;
+
+		dev_density.push_back( ptrDens );
+		dev_velocity_u.push_back( ptrU );
+		dev_velocity_v.push_back( ptrV );
+		dev_velocity_w.push_back( ptrW );
+		dev_obstacle.push_back( ptrObs );
+	}
+
 	/* allocate memory on GPU devices */
 	for ( int i = 0; i < dev_buffers_num; i++ )
 	{
@@ -250,11 +301,8 @@ void FluidSimProc::FreeResource ( void )
 	/* free host resource */
 	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
 	{
-		helper.FreeHostBuffers( 1, &host_density[i] );
-		helper.FreeHostBuffers( 1, &host_velocity_u[i] );
-		helper.FreeHostBuffers( 1, &host_velocity_v[i] );
-		helper.FreeHostBuffers( 1, &host_velocity_w[i] );
-		helper.FreeHostBuffers( 1, &host_obstacle[i] );
+		helper.FreeHostBuffers( 5, &host_density[i], &host_velocity_u[i], &host_velocity_v[i], &host_velocity_w[i], &host_obstacle[i] );
+		helper.FreeDeviceBuffers( 5, &dev_density[i], &dev_velocity_u[i], &dev_velocity_v[i], &dev_velocity_w[i], &dev_obstacle[i] );
 	}
 
 	/* free device resource */
@@ -266,14 +314,6 @@ void FluidSimProc::FreeResource ( void )
 	/* free... */
 	helper.FreeHostBuffers( 2, &host_visual, &host_tpbufs );
 	helper.FreeDeviceBuffers( 2, &dev_visual, &dev_tpbufs );
-
-	/* empty the vector */
-	host_density.empty();
-	host_velocity_u.empty();
-	host_velocity_v.empty();
-	host_velocity_w.empty();
-	host_obstacle.empty();
-	dev_buffers.empty( );
 }
 
 bool FluidSimProc::SelectTheNode( int i, int j, int k )
@@ -389,13 +429,15 @@ void FluidSimProc::NodeToDevice ( void )
 	int k = nPos.z;
 
 	SimNode *ptr = host_node[cudaIndex3D( i, j, k, NODES_X )];
+	int ix = cudaIndex3D( i, j, k, NODES_X );
 
 	/* upload center node to GPU device */
-	cudaMemcpy( dev_u, host_velocity_u[cudaIndex3D( i, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
-	cudaMemcpy( dev_v, host_velocity_v[cudaIndex3D( i, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
-	cudaMemcpy( dev_w, host_velocity_w[cudaIndex3D( i, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
-	cudaMemcpy( dev_den,  host_density[cudaIndex3D( i, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
-	cudaMemcpy( dev_obs, host_obstacle[cudaIndex3D( i, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+	cudaDeviceDim3D();
+	kernelCopyGrids <<<gridDim, blockDim>>> ( dev_u, dev_velocity_u[ix] );
+	kernelCopyGrids <<<gridDim, blockDim>>> ( dev_v, dev_velocity_v[ix] );
+	kernelCopyGrids <<<gridDim, blockDim>>> ( dev_w, dev_velocity_w[ix] );
+	kernelCopyGrids <<<gridDim, blockDim>>> ( dev_den, dev_density[ix] );
+	kernelCopyGrids <<<gridDim, blockDim>>> ( dev_obs, dev_obstacle[ix] );
 
 	if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
 	{
@@ -406,10 +448,11 @@ void FluidSimProc::NodeToDevice ( void )
 	/* upload neighbouring buffers to GPU device */
 	if ( ptr->ptrLeft not_eq nullptr )
 	{
-		cudaMemcpy( velu_L, host_velocity_u[cudaIndex3D( i-1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
-		cudaMemcpy( velv_L, host_velocity_v[cudaIndex3D( i-1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
-		cudaMemcpy( velw_L, host_velocity_w[cudaIndex3D( i-1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
-		cudaMemcpy( dens_L,    host_density[cudaIndex3D( i-1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		ix = cudaIndex3D( i-1, j, k, NODES_X );
+		kernelCopyGrids <<<gridDim, blockDim>>> ( velu_L, dev_velocity_u[ix] );
+		kernelCopyGrids <<<gridDim, blockDim>>> ( velv_L, dev_velocity_v[ix] );
+		kernelCopyGrids <<<gridDim, blockDim>>> ( velw_L, dev_velocity_w[ix] );
+		kernelCopyGrids <<<gridDim, blockDim>>> ( dens_L, dev_density[ix] );
 
 		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
 		{
@@ -420,10 +463,11 @@ void FluidSimProc::NodeToDevice ( void )
 
 	if ( ptr->ptrRight not_eq nullptr )
 	{
-		cudaMemcpy( velu_R, host_velocity_u[cudaIndex3D( i+1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
-		cudaMemcpy( velv_R, host_velocity_v[cudaIndex3D( i+1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
-		cudaMemcpy( velw_R, host_velocity_w[cudaIndex3D( i+1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
-		cudaMemcpy( dens_R,    host_density[cudaIndex3D( i+1, j, k, NODES_X )], m_node_size, cudaMemcpyHostToDevice );
+		ix = cudaIndex3D( i+1, j, k, NODES_X );
+		kernelCopyGrids <<<gridDim, blockDim>>> ( velu_R, dev_velocity_u[ix] );
+		kernelCopyGrids <<<gridDim, blockDim>>> ( velv_R, dev_velocity_v[ix] );
+		kernelCopyGrids <<<gridDim, blockDim>>> ( velw_R, dev_velocity_w[ix] );
+		kernelCopyGrids <<<gridDim, blockDim>>> ( dens_R, dev_density[ix] );
 
 		if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
 		{

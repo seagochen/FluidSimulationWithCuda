@@ -77,6 +77,11 @@ namespace sge
 	{
 	private:
 		vector <double*> dev_buffers;
+		vector <double*> dev_density;
+		vector <double*> dev_velocity_u;
+		vector <double*> dev_velocity_v;
+		vector <double*> dev_velocity_w;
+		vector <double*> dev_obstacle;
 
 		vector <double*> host_density;
 		vector <double*> host_velocity_u;
@@ -150,7 +155,10 @@ namespace sge
 		void InitBoundary( int i, int j, int k );
 
 		/* solving velocity */
-		void VelocitySolver ( void );
+		void VelocitySolver( void );
+
+		/* upload all buffers */
+		void UploadBuffers( void );
 	};
 };
 
