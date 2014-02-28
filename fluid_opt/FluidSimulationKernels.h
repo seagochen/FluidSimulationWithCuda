@@ -286,7 +286,7 @@ __global__ void kernelSetBoundary( double *grids )
 };
 
 __global__ void kernelAddSource
-	( double *density, double *vel_u, double *vel_v, double *vel_w, double *obs )
+	( double *density, double *vel_u, double *vel_v, double *vel_w, double *obs, double const times )
 {
 	GetIndex();
 	BeginSimArea();
@@ -298,41 +298,38 @@ __global__ void kernelAddSource
 
 #if !TESTING_MODE_SWITCH
 	const int half = GRIDS_X / 2;
-
-
-		/* add velocity to grids */
-		if ( i < half )
-			vel_u[Index(i,j,k)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
-		elif( i >= half )
-			vel_u[Index(i,j,k)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
-
-		vel_v[Index(i,j,k)] = SOURCE_VELOCITY;
-
-		if ( k < half )
-			vel_w[Index(i,j,k)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
-		elif ( k >= half )
-			vel_w[Index(i,j,k)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
+	
+	/* add velocity to grids */
+	if ( i < half )
+		vel_u[Index(i,j,k)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
+	elif( i >= half )
+		vel_u[Index(i,j,k)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
+	
+	vel_v[Index(i,j,k)] = SOURCE_VELOCITY * times;
+	
+	if ( k < half )
+		vel_w[Index(i,j,k)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
+	elif ( k >= half )
+		vel_w[Index(i,j,k)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
 #else
 
 	/* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
 #if TESTING_MODE==0
-		vel_v[Index(i,j,k)] =  SOURCE_VELOCITY;
+		vel_v[Index(i,j,k)] =  SOURCE_VELOCITY * times;
 #elif TESTING_MODE==1
-		vel_v[Index(i,j,k)] = -SOURCE_VELOCITY;
+		vel_v[Index(i,j,k)] = -SOURCE_VELOCITY * times;
 #elif TESTING_MODE==2
-		vel_u[Index(i,j,k)] = -SOURCE_VELOCITY;
+		vel_u[Index(i,j,k)] = -SOURCE_VELOCITY * times;
 #elif TESTING_MODE==3
-		vel_u[Index(i,j,k)] =  SOURCE_VELOCITY;
+		vel_u[Index(i,j,k)] =  SOURCE_VELOCITY * times;
 #elif TESTING_MODE==4
-		vel_w[Index(i,j,k)] =  SOURCE_VELOCITY;
+		vel_w[Index(i,j,k)] =  SOURCE_VELOCITY * times;
 #elif TESTING_MODE==5
-		vel_w[Index(i,j,k)] = -SOURCE_VELOCITY;
+		vel_w[Index(i,j,k)] = -SOURCE_VELOCITY * times;
 #endif
 
 #endif
 	}
-
-
 	EndSimArea();
 };
 

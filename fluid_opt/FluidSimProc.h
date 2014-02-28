@@ -101,6 +101,7 @@ namespace sge
 		size_t m_volm_size;
 		double *dev_tpbufs, *host_tpbufs;
 		int    increase_times, decrease_times;
+		double dTimes;
 
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
@@ -180,7 +181,7 @@ namespace sge
 #define MACRO_FRONT      5
 #define MACRO_BACK       6
 
-#define TESTING_MODE_SWITCH     0 /* switch: close(0) open(1) */
+#define TESTING_MODE_SWITCH     1 /* switch: close(0) open(1) */
 #define TESTING_MODE            0 /* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
 
 #endif

@@ -80,6 +80,28 @@ __global__ void kernelPickData
 		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (unsigned char) temp;
 };
 
+__global__ void kernelSmoothVolumetric (SGUCHAR *visual)
+{
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	int k = 0;
+	cudaTrans2DTo3D( i, j, k, 192 );
+
+	if ( i > 0 and i < 191 and  j > 0 and j < 191 and  k > 0 and k < 191 )
+	{
+		SGUCHAR center = visual[cudaIndex3D(i,j,k, 192)];
+		SGUCHAR left   = visual[cudaIndex3D(i-1,j,k,192)];
+		SGUCHAR right  = visual[cudaIndex3D(i+1,j,k,192)];
+		SGUCHAR up     = visual[cudaIndex3D(i,j+1,k,192)];
+		SGUCHAR down   = visual[cudaIndex3D(i,j-1,k,192)];
+		SGUCHAR front  = visual[cudaIndex3D(i,j,k+1,192)];
+		SGUCHAR back   = visual[cudaIndex3D(i,j,k-1,192)];
+
+		visual[cudaIndex3D(i,j,k,192)] = ( center + (left + right + up + down + front + back) / 6.f );
+	}
+	else
+		visual[cudaIndex3D(i,j,k,192)] = 0;
+};
 
 FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 {
@@ -149,6 +171,7 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	m_volm_size = VOLUME_X * VOLUME_X * VOLUME_X * sizeof(SGUCHAR);
 
 	increase_times = decrease_times = 0;
+	dTimes = 0.f;
 };
 
 void FluidSimProc::BuildOrder( void )
@@ -400,13 +423,6 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 
 					/* retrieve data back to host */
 					DeviceToNode();
-
-					if ( cudaThreadSynchronize() not_eq cudaSuccess )
-					{
-						printf( "cudaThreadSynchronize failed\n" );
-						FreeResource();
-						exit( 1 );
-					}
 				}
 			}
 		}
@@ -417,6 +433,29 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 
 void FluidSimProc::GetVolumetric( FLUIDSPARAM *fluid )
 {
+	/* smooth data */
+	dim3 gridDim, blockDim;
+	blockDim.x = (192 / TILE_X); \
+	blockDim.y = (THREADS_X / TILE_X); \
+	gridDim.x  = (192 / blockDim.x); \
+	gridDim.y  = (192 * 192 * 192) / (blockDim.x * blockDim.y * (192 / blockDim.x)); \
+
+	kernelSmoothVolumetric <<<gridDim, blockDim>>> ( dev_visual );
+	
+	if ( helper.GetCUDALastError( "smooth volumetric data failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+
+	/* retrieve and rendering data */
+	if ( cudaThreadSynchronize() not_eq cudaSuccess )
+	{
+		printf( "cudaThreadSynchronize failed\n" );
+		FreeResource();
+		exit( 1 );
+	}
+
 	cudaMemcpy( host_visual, dev_visual, m_volm_size, cudaMemcpyDeviceToHost );
 	fluid->volume.ptrData = host_visual;
 };
@@ -659,11 +698,12 @@ void FluidSimProc::DeviceToNode ( void )
 
 void FluidSimProc::AddSource( void )
 {
-#if TESTING_MODE_SWITCH
 	if ( decrease_times eqt 0 )
 	{
+		if ( (increase_times % 10) eqt 0 ) dTimes += 0.7f;
+
 		cudaDeviceDim3D();
-		kernelAddSource<<<gridDim, blockDim>>> ( dev_den, dev_u, dev_v, dev_w, dev_obs );
+		kernelAddSource<<<gridDim, blockDim>>> ( dev_den, dev_u, dev_v, dev_w, dev_obs, dTimes );
 		increase_times++;
 
 		if ( increase_times eqt 200 )
@@ -675,11 +715,8 @@ void FluidSimProc::AddSource( void )
 	else
 	{
 		decrease_times--;
+		dTimes = 1.f;
 	}
-#else
-	cudaDeviceDim3D();
-	kernelAddSource<<<gridDim, blockDim>>> ( dev_den, dev_u, dev_v, dev_w, dev_obs );
-#endif
 };
 
 void FluidSimProc::InitBoundary( int i, int j, int k )

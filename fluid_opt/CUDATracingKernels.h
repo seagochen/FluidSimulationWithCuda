@@ -23,126 +23,63 @@
 #define TEMP_BUF_FRONT    5
 #define TEMP_BUF_BACK     6
 
-__device__ void atomicTracingUp( double *up, double const *center )
+__device__ void atomicTracingUp( double *center, const double *up )
 {
 	GetIndex();
+	BeginSimArea();
 
-	up[Index(i,sim_header,k)] = center[Index(i,sim_tailer,k)];
 
-	up[Index(sim_header,sim_header,k)] = center[Index(sim_header,sim_tailer,k)] / 2.f;
-	up[Index(sim_tailer,sim_header,k)] = center[Index(sim_tailer,sim_tailer,k)] / 2.f;
-	up[Index(i,sim_header,sim_header)] = center[Index(i,sim_tailer,sim_header)] / 2.f;
-	up[Index(i,sim_header,sim_tailer)] = center[Index(i,sim_tailer,sim_tailer)] / 2.f;
-
-	up[Index(sim_header,sim_header,sim_header)] = center[Index(sim_header,sim_tailer,sim_header)] / 3.f;
-	up[Index(sim_tailer,sim_header,sim_header)] = center[Index(sim_tailer,sim_tailer,sim_header)] / 3.f;
-	up[Index(sim_header,sim_header,sim_tailer)] = center[Index(sim_header,sim_tailer,sim_tailer)] / 3.f;
-	up[Index(sim_tailer,sim_header,sim_tailer)] = center[Index(sim_tailer,sim_tailer,sim_tailer)] / 3.f;
+	EndSimArea();
 };
 
-__device__ void atomicTracingDown( double *down, double const *center )
+__device__ void atomicTracingDown( double *center, const double *down )
 {
 	GetIndex();
+	BeginSimArea();
 
-	down[Index(i,sim_tailer,k)] = center[Index(i,sim_header,k)];
 
-	down[Index(sim_header,sim_tailer,k)] = center[Index(sim_header,sim_header,k)] / 2.f;
-	down[Index(sim_tailer,sim_tailer,k)] = center[Index(sim_tailer,sim_header,k)] / 2.f;
-	down[Index(i,sim_tailer,sim_header)] = center[Index(i,sim_header,sim_header)] / 2.f;
-	down[Index(i,sim_tailer,sim_tailer)] = center[Index(i,sim_header,sim_tailer)] / 2.f;
-
-	down[Index(sim_header,sim_tailer,sim_header)] = center[Index(sim_header,sim_header,sim_header)] / 3.f;
-	down[Index(sim_tailer,sim_tailer,sim_header)] = center[Index(sim_tailer,sim_header,sim_header)] / 3.f;
-	down[Index(sim_header,sim_tailer,sim_tailer)] = center[Index(sim_header,sim_header,sim_tailer)] / 3.f;
-	down[Index(sim_tailer,sim_tailer,sim_tailer)] = center[Index(sim_tailer,sim_header,sim_tailer)] / 3.f;
+	EndSimArea();
 };
 
-__device__ void atomicTracingLeft( double *left, double const *center )
+__device__ void atomicTracingLeft( double *center, const double *left )
 {
 	GetIndex();
-
-	left[Index(sim_tailer,j,k)] = center[Index(sim_header,j,k)];
-
-	left[Index(sim_tailer,sim_header,k)] = center[Index(sim_header,sim_header,k)] / 2.f;
-	left[Index(sim_tailer,sim_tailer,k)] = center[Index(sim_header,sim_tailer,k)] / 2.f;
-	left[Index(sim_tailer,j,sim_header)] = center[Index(sim_header,j,sim_header)] / 2.f;
-	left[Index(sim_tailer,j,sim_tailer)] = center[Index(sim_header,j,sim_tailer)] / 2.f;
-
-	left[Index(sim_tailer,sim_header,sim_header)] = center[Index(sim_header,sim_header,sim_header)] / 3.f; 
-	left[Index(sim_tailer,sim_header,sim_tailer)] = center[Index(sim_header,sim_header,sim_tailer)] / 3.f;
-	left[Index(sim_tailer,sim_tailer,sim_header)] = center[Index(sim_header,sim_tailer,sim_header)] / 3.f;
-	left[Index(sim_tailer,sim_tailer,sim_tailer)] = center[Index(sim_header,sim_tailer,sim_tailer)] / 3.f;
-};
-
-__device__ void atomicTracingRight( double *right, double const *center )
-{
-	GetIndex();
-
-	right[Index(sim_header,j,k)] = center[Index(sim_tailer,j,k)];
-
-	right[Index(sim_header,sim_header,k)] = center[Index(sim_tailer,sim_header,k)] / 2.f;
-	right[Index(sim_header,sim_tailer,k)] = center[Index(sim_tailer,sim_tailer,k)] / 2.f;
-	right[Index(sim_header,j,sim_header)] = center[Index(sim_tailer,j,sim_header)] / 2.f;
-	right[Index(sim_header,j,sim_tailer)] = center[Index(sim_tailer,j,sim_tailer)] / 2.f;
-
-	right[Index(sim_header,sim_header,sim_header)] = center[Index(sim_tailer,sim_header,sim_header)] / 3.f;
-	right[Index(sim_header,sim_header,sim_tailer)] = center[Index(sim_tailer,sim_header,sim_tailer)] / 3.f;
-	right[Index(sim_header,sim_tailer,sim_header)] = center[Index(sim_tailer,sim_tailer,sim_header)] / 3.f;
-	right[Index(sim_header,sim_tailer,sim_tailer)] = center[Index(sim_tailer,sim_tailer,sim_tailer)] / 3.f;
-};
-
-__device__ void atomicTracingFront( double *front, double const *center )
-{
-	GetIndex();
-
-	front[Index(i,j,sim_header)] = center[Index(i,j,sim_tailer)];
+	BeginSimArea();
 	
-	front[Index(sim_header,j,sim_header)] = center[Index(sim_header,j,sim_tailer)] / 2.f;
-	front[Index(sim_tailer,j,sim_header)] = center[Index(sim_tailer,j,sim_tailer)] / 2.f;
-	front[Index(i,sim_header,sim_header)] = center[Index(i,sim_header,sim_tailer)] / 2.f;
-	front[Index(i,sim_tailer,sim_header)] = center[Index(i,sim_tailer,sim_tailer)] / 2.f;
 
-	front[Index(sim_header,sim_header,sim_header)] = center[Index(sim_header,sim_header,sim_tailer)] / 3.f;
-	front[Index(sim_header,sim_tailer,sim_header)] = center[Index(sim_header,sim_tailer,sim_tailer)] / 3.f;
-	front[Index(sim_tailer,sim_header,sim_header)] = center[Index(sim_tailer,sim_header,sim_tailer)] / 3.f;
-	front[Index(sim_tailer,sim_tailer,sim_header)] = center[Index(sim_tailer,sim_tailer,sim_tailer)] / 3.f;
+	EndSimArea();
 };
 
-__device__ void atomicTracingBack( double *back, double const *center )
+__device__ void atomicTracingRight( double *center, const double *right )
 {
 	GetIndex();
+	BeginSimArea();
 
-	back[Index(i,j,sim_tailer)] = center[Index(i,j,sim_header)];
+	EndSimArea();
+};
+
+__device__ void atomicTracingFront( double *center, const double *front )
+{
+	GetIndex();
+	BeginSimArea();
 	
-	back[Index(sim_header,j,sim_tailer)] = center[Index(sim_header,j,sim_header)] / 2.f;
-	back[Index(sim_tailer,j,sim_tailer)] = center[Index(sim_tailer,j,sim_header)] / 2.f;
-	back[Index(i,sim_header,sim_tailer)] = center[Index(i,sim_header,sim_header)] / 2.f;
-	back[Index(i,sim_tailer,sim_tailer)] = center[Index(i,sim_tailer,sim_header)] / 2.f;
 
-	back[Index(sim_header,sim_header,sim_tailer)] = center[Index(sim_header,sim_header,sim_header)] / 3.f;
-	back[Index(sim_header,sim_tailer,sim_tailer)] = center[Index(sim_header,sim_tailer,sim_header)] / 3.f;
-	back[Index(sim_tailer,sim_header,sim_tailer)] = center[Index(sim_tailer,sim_header,sim_header)] / 3.f;
-	back[Index(sim_tailer,sim_tailer,sim_tailer)] = center[Index(sim_tailer,sim_tailer,sim_header)] / 3.f;
+	EndSimArea();	
+};
+
+__device__ void atomicTracingBack( double *center, const double *back )
+{
+	GetIndex();
+	BeginSimArea();
+
+
+	EndSimArea();
 };
 
 __global__ void kernelFloodingBuffers
 	( double *left, double *right, double *up, double *down, double *front, double *back, double *center )
 {
-	GetIndex();
 
-	up[Index(i,sim_header,k)] = center[Index(i,sim_tailer,k)];
-	down[Index(i,sim_tailer,k)] = center[Index(i,sim_header,k)];
-	left[Index(sim_tailer,j,k)] = center[Index(sim_header,j,k)];
-	right[Index(sim_header,j,k)] = center[Index(sim_tailer,j,k)];
-	front[Index(i,j,sim_header)] = center[Index(i,j,sim_tailer)];
-	back[Index(i,j,sim_tailer)] = center[Index(i,j,sim_header)];
-
-//	atomicTracingUp(       up, center );
-//	atomicTracingDown(   down, center );
-//	atomicTracingLeft(   left, center );
-//	atomicTracingRight( right, center );
-//	atomicTracingFront( front, center );
-//	atomicTracingBack (  back, center );
 };
 
 __device__ void atomicClearHalo( double *grids )
