@@ -339,38 +339,6 @@ void FluidSimProc::FreeResource ( void )
 	helper.FreeDeviceBuffers( 2, &dev_visual, &dev_tpbufs );
 }
 
-bool FluidSimProc::SelectTheNode( int i, int j, int k )
-{
-	if ( i >= 0 and i < NODES_X and j >= 0 and j < NODES_X and k >= 0 and k < NODES_X )
-	{
-		nPos.x = i;
-		nPos.y = j;
-		nPos.z = k;
-		
-#if !TESTING_MODE_SWITCH
-		int ix = cudaIndex3D( i, j, k, NODES_X );
-		return host_node[ix]->active;
-#else
-		int ix    = cudaIndex3D( i, j, k, NODES_X );
-		int left  = cudaIndex3D( 0, 1, 1, NODES_X );
-		int right = cudaIndex3D( 2, 1, 1, NODES_X );
-		int up    = cudaIndex3D( 1, 2, 1, NODES_X );
-		int down  = cudaIndex3D( 1, 0, 1, NODES_X );
-		int front = cudaIndex3D( 1, 1, 2, NODES_X );
-		int back  = cudaIndex3D( 1, 1, 0, NODES_X );
-		int center= cudaIndex3D( 1, 1, 1, NODES_X );
-
-		return 
-			ix eqt center or
-			ix eqt left  or ix eqt right or
-			ix eqt up 	 or ix eqt down  or
-			ix eqt front or ix eqt back;
-#endif
-	}
-
-	return false;
-};
-
 bool FluidSimProc::ActiveTheNode( int i, int j, int k )
 {
 	int ix;
@@ -405,25 +373,19 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 		{
 			for ( int k = 0; k < NODES_X; k++ )
 			{
-				//if ( SelectTheNode( i, j, k ) )
-				{
-					/* select node */
-					SelectTheNode( i, j, k );
+				/* for fluid simulation, copy the data to device */
+				NodeToDevice( i, j, k );
 
-					/* for fluid simulation, copy the data to device */
-					NodeToDevice();
-					
-					/* Fluid process */
-					AddSource();
-					VelocitySolver();
-					DensitySolver();
-					
-					/* tracing */
-					TracingTheFlow();
+				/* tracing */
+				TracingTheFlow( i, j, k );
+				
+				/* Fluid process */
+				AddSource();
+				VelocitySolver();
+				DensitySolver();
 
-					/* retrieve data back to host */
-					DeviceToNode();
-				}
+				/* retrieve data back to host */
+				DeviceToNode( i, j, k );
 			}
 		}
 	}
@@ -434,20 +396,13 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 void FluidSimProc::GetVolumetric( FLUIDSPARAM *fluid )
 {
 	/* smooth data */
-	dim3 gridDim, blockDim;
-	blockDim.x = (192 / TILE_X); \
-	blockDim.y = (THREADS_X / TILE_X); \
-	gridDim.x  = (192 / blockDim.x); \
-	gridDim.y  = (192 * 192 * 192) / (blockDim.x * blockDim.y * (192 / blockDim.x)); \
+	cudaDeviceDim3D();
 
+	/* smooth the final image */
+	for ( int i = 0; i < NODES_X; i++ ) for ( int j = 0; j < NODES_X; j++ ) for ( int k = 0; k < NODES_X; k++ )
+		kernelFloodBound <<<gridDim, blockDim>>> ( dev_visual, i, j, k );
 	kernelSmoothVolumetric <<<gridDim, blockDim>>> ( dev_visual );
 	
-	if ( helper.GetCUDALastError( "smooth volumetric data failed", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit(1);
-	}
-
 	/* retrieve and rendering data */
 	if ( cudaThreadSynchronize() not_eq cudaSuccess )
 	{
@@ -460,17 +415,13 @@ void FluidSimProc::GetVolumetric( FLUIDSPARAM *fluid )
 	fluid->volume.ptrData = host_visual;
 };
 
-void FluidSimProc::NodeToDevice ( void )
+void FluidSimProc::NodeToDevice ( int i, int j, int k )
 {
 	/* navigate the node's position */
-	int i = nPos.x;
-	int j = nPos.y;
-	int k = nPos.z;
-
 	SimNode *ptr = host_node[cudaIndex3D( i, j, k, NODES_X )];
 	int ix = cudaIndex3D( i, j, k, NODES_X );
 
-	/* upload center node to GPU device */
+	/* upload center node */
 	cudaDeviceDim3D();
 	kernelCopyGrids <<<gridDim, blockDim>>> ( dev_u, dev_velocity_u[ix] );
 	kernelCopyGrids <<<gridDim, blockDim>>> ( dev_v, dev_velocity_v[ix] );
@@ -485,7 +436,7 @@ void FluidSimProc::NodeToDevice ( void )
 	}
 
 	/* upload neighbouring buffers to GPU device */
-	if ( ptr->ptrLeft not_eq nullptr )
+	if ( ptr->ptrLeft )
 	{
 		ix = cudaIndex3D( i-1, j, k, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( velu_L, dev_velocity_u[ix] );
@@ -500,7 +451,7 @@ void FluidSimProc::NodeToDevice ( void )
 		}
 	}
 
-	if ( ptr->ptrRight not_eq nullptr )
+	if ( ptr->ptrRight )
 	{
 		ix = cudaIndex3D( i+1, j, k, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( velu_R, dev_velocity_u[ix] );
@@ -515,7 +466,7 @@ void FluidSimProc::NodeToDevice ( void )
 		}
 	}
 
-	if ( ptr->ptrUp not_eq nullptr )
+	if ( ptr->ptrUp )
 	{
 		ix = cudaIndex3D( i, j+1, k, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( velu_U, dev_velocity_u[ix] );
@@ -530,7 +481,7 @@ void FluidSimProc::NodeToDevice ( void )
 		}
 	}
 
-	if ( ptr->ptrDown not_eq nullptr )
+	if ( ptr->ptrDown )
 	{
 		ix = cudaIndex3D( i, j-1, k, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( velu_D, dev_velocity_u[ix] );
@@ -545,7 +496,7 @@ void FluidSimProc::NodeToDevice ( void )
 		}
 	}
 
-	if ( ptr->ptrFront not_eq nullptr )
+	if ( ptr->ptrFront )
 	{
 		ix = cudaIndex3D( i, j, k+1, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( velu_F, dev_velocity_u[ix] );
@@ -560,7 +511,7 @@ void FluidSimProc::NodeToDevice ( void )
 		}
 	}
 
-	if ( ptr->ptrBack not_eq nullptr )
+	if ( ptr->ptrBack )
 	{
 		ix = cudaIndex3D( i, j, k-1, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( velu_B, dev_velocity_u[ix] );
@@ -576,12 +527,9 @@ void FluidSimProc::NodeToDevice ( void )
 	}
 };
 
-void FluidSimProc::DeviceToNode ( void )
+void FluidSimProc::DeviceToNode ( int i, int j, int k )
 {
 	/* navigate the node's position */
-	int i = nPos.x;
-	int j = nPos.y;
-	int k = nPos.z;
 	SimNode *ptr = host_node[cudaIndex3D( i, j, k, NODES_X )];
 	int ix = cudaIndex3D( i, j, k, NODES_X );
 
@@ -600,7 +548,7 @@ void FluidSimProc::DeviceToNode ( void )
 	}
 
 	/* draw neighbouring buffers back */
-	if ( ptr->ptrLeft not_eq nullptr )
+	if ( ptr->ptrLeft )
 	{
 		ix = cudaIndex3D( i-1, j, k, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( dev_density[ix], dens_L );
@@ -615,7 +563,7 @@ void FluidSimProc::DeviceToNode ( void )
 		}
 	}
 
-	if ( ptr->ptrRight not_eq nullptr )
+	if ( ptr->ptrRight )
 	{
 		ix = cudaIndex3D( i+1, j, k, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( dev_density[ix], dens_R );
@@ -630,7 +578,7 @@ void FluidSimProc::DeviceToNode ( void )
 		}
 	}
 
-	if ( ptr->ptrUp not_eq nullptr )
+	if ( ptr->ptrUp )
 	{
 		ix = cudaIndex3D( i, j+1, k, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( dev_density[ix], dens_U );
@@ -645,7 +593,7 @@ void FluidSimProc::DeviceToNode ( void )
 		}
 	}
 
-	if ( ptr->ptrDown not_eq nullptr )
+	if ( ptr->ptrDown )
 	{
 		ix = cudaIndex3D( i, j-1, k, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( dev_density[ix], dens_D );
@@ -660,7 +608,7 @@ void FluidSimProc::DeviceToNode ( void )
 		}
 	}
 
-	if ( ptr->ptrFront not_eq nullptr )
+	if ( ptr->ptrFront )
 	{
 		ix = cudaIndex3D( i, j, k+1, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( dev_density[ix], dens_F );
@@ -675,7 +623,7 @@ void FluidSimProc::DeviceToNode ( void )
 		}
 	}
 
-	if ( ptr->ptrBack not_eq nullptr )
+	if ( ptr->ptrBack )
 	{
 		ix = cudaIndex3D( i, j, k-1, NODES_X );
 		kernelCopyGrids <<<gridDim, blockDim>>> ( dev_density[ix], dens_B );
@@ -692,8 +640,11 @@ void FluidSimProc::DeviceToNode ( void )
 
 	/* draw volumetric data back */
 	kernelPickData <<<gridDim, blockDim>>>
-		( dev_visual, dev_den, nPos.x * GRIDS_X, nPos.y * GRIDS_X, nPos.z * GRIDS_X );
+		( dev_visual, dev_den, i * GRIDS_X, j * GRIDS_X, k * GRIDS_X );
 
+	/* zero buffers */
+	for ( int i = 0; i < dev_buffers_num; i++ )
+		kernelZeroGrids <<<gridDim, blockDim>>> ( dev_buffers[i] );
 };
 
 void FluidSimProc::AddSource( void )
@@ -736,11 +687,8 @@ void FluidSimProc::InitBoundary( int i, int j, int k )
 			exit( 1 );
 		}
 	}
-
-	/* select middle node */
-	SelectTheNode( i, j, k );
-
-	const int ix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
+	
+	const int ix = cudaIndex3D( i, j, k, NODES_X );
 
 	/* set boundary */
 	kernelSetBoundary<<<gridDim, blockDim>>>( dev_obs );
@@ -816,13 +764,8 @@ void FluidSimProc::ZeroBuffers( void )
 	cudaMemcpy( host_visual, dev_visual, m_volm_size, cudaMemcpyDeviceToHost );
 };
 
-void FluidSimProc::TracingTheFlow( void )
+void FluidSimProc::TracingTheFlow( int i, int j, int k )
 {
-#if TESTING_MODE_SWITCH
-	int ix  = cudaIndex3D( 1, 1, 1, NODES_X );
-	int nix = cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X );
-#endif
-
 	cudaDeviceDim3D();
 
 	/* flooding data */
@@ -831,20 +774,8 @@ void FluidSimProc::TracingTheFlow( void )
 	kernelFloodingBuffers <<<gridDim, blockDim>>> ( velv_L, velv_R, velv_U, velv_D, velv_F, velv_B, velv_C );
 	kernelFloodingBuffers <<<gridDim, blockDim>>> ( velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, velw_C );
 
-	/* clear temporary buffers for next step */
-#if TESTING_MODE_SWITCH
-	if ( ix eqt nix )
-#endif
-	kernelZeroTemporaryBuffers <<<1, TPBUFFER_X>>> ( dev_tpbufs );
-
-	/* clear halo to avoid data obstruction */
-	kernelClearHalo <<<gridDim, blockDim>>> ( dens_L, dens_R, dens_U, dens_D, dens_F, dens_B, dens_C );
-	kernelClearHalo <<<gridDim, blockDim>>> ( velu_L, velu_R, velu_U, velu_D, velu_F, velu_B, velu_C );
-	kernelClearHalo <<<gridDim, blockDim>>> ( velv_L, velv_R, velv_U, velv_D, velv_F, velv_B, velv_C );
-	kernelClearHalo <<<gridDim, blockDim>>> ( velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, velw_C );
-
 	/* zero buffers if they not exists */
-	SimNode *ptr = host_node[cudaIndex3D( nPos.x, nPos.y, nPos.z, NODES_X )];
+	SimNode *ptr = host_node[cudaIndex3D( i, j, k, NODES_X )];
 
 	if ( !ptr->ptrLeft )
 	{
@@ -888,70 +819,4 @@ void FluidSimProc::TracingTheFlow( void )
 		kernelZeroGrids <<<gridDim, blockDim>>> ( velv_B );
 		kernelZeroGrids <<<gridDim, blockDim>>> ( velw_B );
 	}
-
-#if TESTING_MODE_SWITCH
-	if ( ix eqt nix )
-#endif
-	/* sum the density of each node */
-	kernelSumBufsDens <<<gridDim, blockDim>>>
-		( dev_tpbufs, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B, dens_C );
-
-	/* retrieve temporary buffer back */
-	if ( cudaMemcpy(host_tpbufs, dev_tpbufs, 
-		sizeof(double) * TPBUFFER_X, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
-	{
-		helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ );
-		FreeResource();
-		exit( 1 );
-	}
-
-#if TESTING_MODE_SWITCH
-	system( "cls" );
-	printf( "CENTER: %f\n", host_tpbufs[TEMP_BUF_CENTER] );
-	printf( "LEFT:   %f\n", host_tpbufs[TEMP_BUF_LEFT] );
-	printf( "RIGHT:  %f\n", host_tpbufs[TEMP_BUF_RIGHT] );
-	printf( "UP:     %f\n", host_tpbufs[TEMP_BUF_UP] );
-	printf( "DOWN:   %f\n", host_tpbufs[TEMP_BUF_DOWN] );
-	printf( "FRONT:  %f\n", host_tpbufs[TEMP_BUF_FRONT] );
-	printf( "BACK:   %f\n", host_tpbufs[TEMP_BUF_BACK] );
-#endif
-
-#if 0
-	/* dead or live */
-	if ( ptr->ptrLeft not_eq nullptr )
-		if ( host_tpbufs[TEMP_BUF_LEFT] > 0.f )
-			ptr->ptrLeft->active = true;
-		else
-			ptr->ptrLeft->active = false;
-
-	if ( ptr->ptrRight not_eq nullptr )
-		if ( host_tpbufs[TEMP_BUF_RIGHT] > 0.f )
-			ptr->ptrRight->active = true;
-		else
-			ptr->ptrRight->active = false;
-
-	if ( ptr->ptrUp not_eq nullptr )
-		if ( host_tpbufs[TEMP_BUF_UP] > 0.f )
-			ptr->ptrUp->active = true;
-		else
-			ptr->ptrUp->active = false;
-
-	if ( ptr->ptrDown not_eq nullptr )
-		if ( host_tpbufs[TEMP_BUF_DOWN] > 0.f )
-			ptr->ptrDown->active = true;
-		else
-			ptr->ptrDown->active = false;
-
-	if ( ptr->ptrFront not_eq nullptr )
-		if ( host_tpbufs[TEMP_BUF_FRONT] > 0.f )
-			ptr->ptrFront->active = true;
-		else
-			ptr->ptrFront->active = false;
-
-	if ( ptr->ptrBack not_eq nullptr )
-		if ( host_tpbufs[TEMP_BUF_BACK] > 0.f )
-			ptr->ptrBack->active = true;
-		else
-			ptr->ptrBack->active = false;
-#endif
 };

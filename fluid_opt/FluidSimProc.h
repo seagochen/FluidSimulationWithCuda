@@ -96,7 +96,6 @@ namespace sge
 		FunctionHelper helper;
 
 	private:
-		SGINT3 nPos;
 		size_t m_node_size;
 		size_t m_volm_size;
 		double *dev_tpbufs, *host_tpbufs;
@@ -117,19 +116,16 @@ namespace sge
 
 	private:
 		/* flood buffer for multiple nodes */
-		void TracingTheFlow( void );
+		void TracingTheFlow( int i, int j, int k  );
 
 		/* initialize FPS and etc. */
 		void InitParams( FLUIDSPARAM *fluid );
 
 		/* copy host data to CUDA device */
-		void NodeToDevice( void );
+		void NodeToDevice( int i, int j, int k );
 
 		/* retrieve data back to host */
-		void DeviceToNode( void );
-
-		/* select a node */
-		bool SelectTheNode( int i, int j, int k );
+		void DeviceToNode( int i, int j, int k );
 
 		/* mark the node as actived */
 		bool ActiveTheNode( int i, int j, int k );
@@ -181,7 +177,7 @@ namespace sge
 #define MACRO_FRONT      5
 #define MACRO_BACK       6
 
-#define TESTING_MODE_SWITCH     1 /* switch: close(0) open(1) */
+#define TESTING_MODE_SWITCH     0 /* switch: close(0) open(1) */
 #define TESTING_MODE            0 /* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
 
 #endif

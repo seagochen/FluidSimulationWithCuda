@@ -23,64 +23,61 @@
 #define TEMP_BUF_FRONT    5
 #define TEMP_BUF_BACK     6
 
-__device__ void atomicTracingUp( double *center, const double *up )
-{
-	GetIndex();
-	BeginSimArea();
-
-
-	EndSimArea();
-};
-
-__device__ void atomicTracingDown( double *center, const double *down )
-{
-	GetIndex();
-	BeginSimArea();
-
-
-	EndSimArea();
-};
-
-__device__ void atomicTracingLeft( double *center, const double *left )
-{
-	GetIndex();
-	BeginSimArea();
-	
-
-	EndSimArea();
-};
-
-__device__ void atomicTracingRight( double *center, const double *right )
-{
-	GetIndex();
-	BeginSimArea();
-
-	EndSimArea();
-};
-
-__device__ void atomicTracingFront( double *center, const double *front )
-{
-	GetIndex();
-	BeginSimArea();
-	
-
-	EndSimArea();	
-};
-
-__device__ void atomicTracingBack( double *center, const double *back )
-{
-	GetIndex();
-	BeginSimArea();
-
-
-	EndSimArea();
-};
-
 __global__ void kernelFloodingBuffers
 	( double *left, double *right, double *up, double *down, double *front, double *back, double *center )
 {
-
+	GetIndex();
+	center[Index(sim_header,j,k)] = ( left[Index(sim_tailer,j,k)] + center[Index(sim_header,j,k)] ) / 2.f;
+	center[Index(sim_tailer,j,k)] = ( right[Index(sim_header,j,k)] + center[Index(sim_tailer,j,k)] ) / 2.f;
+	center[Index(i,sim_tailer,k)] = ( up[Index(i,sim_header,k)] + center[Index(i,sim_tailer,k)] ) / 2.f;
+	center[Index(i,sim_header,k)] = ( down[Index(i,sim_tailer,k)] + center[Index(i,sim_header,k)] ) / 2.f;
+	center[Index(i,j,sim_tailer)] = ( front[Index(i,j,sim_header)] + center[Index(i,j,sim_tailer)] ) / 2.f;
+	center[Index(i,j,sim_header)] = ( back[Index(i,j,sim_tailer)] + center[Index(i,j,sim_header)] ) / 2.f;
 };
+
+__global__ void kernelFloodBound( unsigned char *grids, int offi, int offj, int offk )
+{
+	GetIndex();
+
+	i = offi * GRIDS_X + i;
+	j = offj * GRIDS_X + j;
+	k = offk * GRIDS_X + k;
+
+	/* faces */
+	grids[Index(gst_header,j,k)] = grids[Index(sim_header,j,k)];
+	grids[Index(gst_tailer,j,k)] = grids[Index(sim_tailer,j,k)];
+	grids[Index(i,gst_header,k)] = grids[Index(i,sim_header,k)];
+	grids[Index(i,gst_tailer,k)] = grids[Index(i,sim_tailer,k)];
+	grids[Index(i,j,gst_header)] = grids[Index(i,j,sim_header)];
+	grids[Index(i,j,gst_tailer)] = grids[Index(i,j,sim_tailer)];
+
+	/* edges */
+	grids[Index(i,gst_header,gst_header)] = ( grids[Index(i,sim_header,gst_header)] + grids[Index(i,gst_header,sim_header)] ) / 2.f;
+	grids[Index(i,gst_tailer,gst_header)] = ( grids[Index(i,sim_tailer,gst_header)] + grids[Index(i,gst_tailer,sim_header)] ) / 2.f;
+	grids[Index(i,gst_header,gst_tailer)] = ( grids[Index(i,sim_header,gst_tailer)] + grids[Index(i,gst_header,sim_tailer)] ) / 2.f;
+	grids[Index(i,gst_tailer,gst_tailer)] = ( grids[Index(i,sim_tailer,gst_tailer)] + grids[Index(i,gst_tailer,sim_tailer)] ) / 2.f;
+
+	grids[Index(gst_header,j,gst_header)] = ( grids[Index(sim_header,j,gst_header)] + grids[Index(gst_header,j,sim_header)] ) / 2.f;
+	grids[Index(gst_tailer,j,gst_header)] = ( grids[Index(sim_tailer,j,gst_header)] + grids[Index(gst_tailer,j,sim_header)] ) / 2.f;
+	grids[Index(gst_header,j,gst_tailer)] = ( grids[Index(sim_header,j,gst_tailer)] + grids[Index(gst_header,j,sim_tailer)] ) / 2.f;
+	grids[Index(gst_tailer,j,gst_tailer)] = ( grids[Index(sim_tailer,j,gst_tailer)] + grids[Index(gst_tailer,j,sim_tailer)] ) / 2.f;
+
+	grids[Index(gst_header,gst_header,k)] = ( grids[Index(sim_header,gst_header,k)] + grids[Index(gst_header,sim_header,k)] ) / 2.f;
+	grids[Index(gst_tailer,gst_header,k)] = ( grids[Index(sim_tailer,gst_header,k)] + grids[Index(gst_tailer,sim_header,k)] ) / 2.f;
+	grids[Index(gst_header,gst_tailer,k)] = ( grids[Index(sim_header,gst_tailer,k)] + grids[Index(gst_header,sim_tailer,k)] ) / 2.f;
+	grids[Index(gst_tailer,gst_tailer,k)] = ( grids[Index(sim_tailer,gst_tailer,k)] + grids[Index(gst_tailer,sim_tailer,k)] ) / 2.f;
+
+	/* vetices */
+	grids[Index(gst_header,gst_header,gst_header)] = ( grids[Index(sim_header,gst_header,gst_header)] + grids[Index(gst_header,sim_header,gst_header)] + grids[Index(gst_header,gst_header,sim_header)] ) / 3.f;
+	grids[Index(gst_header,gst_header,gst_tailer)] = ( grids[Index(sim_header,gst_header,gst_tailer)] + grids[Index(gst_header,sim_header,gst_tailer)] + grids[Index(gst_header,gst_header,sim_tailer)] ) / 3.f;
+	grids[Index(gst_header,gst_tailer,gst_header)] = ( grids[Index(sim_header,gst_tailer,gst_header)] + grids[Index(gst_header,sim_tailer,gst_header)] + grids[Index(gst_header,gst_tailer,sim_header)] ) / 3.f;
+	grids[Index(gst_header,gst_tailer,gst_tailer)] = ( grids[Index(sim_header,gst_tailer,gst_tailer)] + grids[Index(gst_header,sim_tailer,gst_tailer)] + grids[Index(gst_header,gst_tailer,sim_tailer)] ) / 3.f;
+	grids[Index(gst_tailer,gst_header,gst_header)] = ( grids[Index(sim_tailer,gst_header,gst_header)] + grids[Index(gst_tailer,sim_header,gst_header)] + grids[Index(gst_tailer,gst_header,sim_header)] ) / 3.f;
+	grids[Index(gst_tailer,gst_header,gst_tailer)] = ( grids[Index(sim_tailer,gst_header,gst_tailer)] + grids[Index(gst_tailer,sim_header,gst_tailer)] + grids[Index(gst_tailer,gst_header,sim_tailer)] ) / 3.f;
+	grids[Index(gst_tailer,gst_tailer,gst_header)] = ( grids[Index(sim_tailer,gst_tailer,gst_header)] + grids[Index(gst_tailer,sim_tailer,gst_header)] + grids[Index(gst_tailer,gst_tailer,sim_header)] ) / 3.f;
+	grids[Index(gst_tailer,gst_tailer,gst_tailer)] = ( grids[Index(sim_tailer,gst_tailer,gst_tailer)] + grids[Index(gst_tailer,sim_tailer,gst_tailer)] + grids[Index(gst_tailer,gst_tailer,sim_tailer)] ) / 3.f;
+};
+
 
 __device__ void atomicClearHalo( double *grids )
 {
