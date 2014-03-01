@@ -18,62 +18,51 @@
 #include "FunctionHelper.h"
 
 #define dev_slot_num         11
-#define dev_den              dev_slot[ 0 ]
-#define dev_den0             dev_slot[ 1 ]
-#define dev_u                dev_slot[ 2 ]
-#define dev_u0               dev_slot[ 3 ]
-#define dev_v                dev_slot[ 4 ]
-#define dev_v0               dev_slot[ 5 ]
-#define dev_w                dev_slot[ 6 ]
-#define dev_w0               dev_slot[ 7 ]
-#define dev_div              dev_slot[ 8 ]
-#define dev_p                dev_slot[ 9 ]
-#define dev_obs              dev_slot[ 10 ]
+#define dev_slot_d           dev_slot[ 0 ]
+#define dev_slot_d0          dev_slot[ 1 ]
+#define dev_slot_u           dev_slot[ 2 ]
+#define dev_slot_u0          dev_slot[ 3 ]
+#define dev_slot_v           dev_slot[ 4 ]
+#define dev_slot_v0          dev_slot[ 5 ]
+#define dev_slot_w           dev_slot[ 6 ]
+#define dev_slot_w0          dev_slot[ 7 ]
+#define dev_slot_div         dev_slot[ 8 ]
+#define dev_slot_p           dev_slot[ 9 ]
+#define dev_slot_obs         dev_slot[ 10 ]
 
-#define dev_buffers_num      35
-#define dev_den              dev_buffers[ 0 ]
-#define dev_den0             dev_buffers[ 1 ]
-#define dev_u                dev_buffers[ 2 ]
-#define dev_u0               dev_buffers[ 3 ]
-#define dev_v                dev_buffers[ 4 ]
-#define dev_v0               dev_buffers[ 5 ]
-#define dev_w                dev_buffers[ 6 ]
-#define dev_w0               dev_buffers[ 7 ]
-#define dev_div              dev_buffers[ 8 ]
-#define dev_p                dev_buffers[ 9 ]
-#define dev_obs              dev_buffers[ 10 ]
 
-#define dens_C               dev_buffers[ 0 ]
-#define dens_L               dev_buffers[ 11 ]
-#define dens_R               dev_buffers[ 12 ]
-#define dens_U               dev_buffers[ 13 ]
-#define dens_D               dev_buffers[ 14 ]
-#define dens_F               dev_buffers[ 15 ]
-#define dens_B               dev_buffers[ 16 ]
+#define dev_bufs_num         28
+#define dev_dens_C           dev_bufs[ 0 ]
+#define dev_dens_L           dev_bufs[ 1 ]
+#define dev_dens_R           dev_bufs[ 2 ]
+#define dev_dens_U           dev_bufs[ 3 ]
+#define dev_dens_D           dev_bufs[ 4 ]
+#define dev_dens_F           dev_bufs[ 5 ]
+#define dev_dens_B           dev_bufs[ 6 ]
 
-#define velu_C               dev_buffers[ 2 ]
-#define velu_L               dev_buffers[ 17 ] 
-#define velu_R               dev_buffers[ 18 ]
-#define velu_U               dev_buffers[ 19 ]
-#define velu_D               dev_buffers[ 20 ]
-#define velu_F               dev_buffers[ 21 ]
-#define velu_B               dev_buffers[ 22 ]
+#define dev_velu_C           dev_bufs[ 7 ]
+#define dev_velu_L           dev_bufs[ 8 ] 
+#define dev_velu_R           dev_bufs[ 9 ]
+#define dev_velu_U           dev_bufs[ 10 ]
+#define dev_velu_D           dev_bufs[ 11 ]
+#define dev_velu_F           dev_bufs[ 12 ]
+#define dev_velu_B           dev_bufs[ 13 ]
 
-#define velv_C               dev_buffers[ 4 ]
-#define velv_L               dev_buffers[ 23 ]
-#define velv_R               dev_buffers[ 24 ]
-#define velv_U               dev_buffers[ 25 ]
-#define velv_D               dev_buffers[ 26 ]
-#define velv_F               dev_buffers[ 27 ]
-#define velv_B               dev_buffers[ 28 ]
+#define dev_velv_C           dev_bufs[ 14 ]
+#define dev_velv_L           dev_bufs[ 15 ]
+#define dev_velv_R           dev_bufs[ 16 ]
+#define dev_velv_U           dev_bufs[ 17 ]
+#define dev_velv_D           dev_bufs[ 18 ]
+#define dev_velv_F           dev_bufs[ 19 ]
+#define dev_velv_B           dev_bufs[ 20 ]
 
-#define velw_C               dev_buffers[ 6 ]
-#define velw_L               dev_buffers[ 29 ]
-#define velw_R               dev_buffers[ 30 ]
-#define velw_U               dev_buffers[ 31 ]
-#define velw_D               dev_buffers[ 32 ]
-#define velw_F               dev_buffers[ 33 ]
-#define velw_B               dev_buffers[ 34 ]
+#define dev_velw_C           dev_bufs[ 21 ]
+#define dev_velw_L           dev_bufs[ 22 ]
+#define dev_velw_R           dev_bufs[ 23 ]
+#define dev_velw_U           dev_bufs[ 24 ]
+#define dev_velw_D           dev_bufs[ 25 ]
+#define dev_velw_F           dev_bufs[ 26 ]
+#define dev_velw_B           dev_bufs[ 27 ]
 
 using std::vector;
 
@@ -89,31 +78,44 @@ namespace sge
 	class FluidSimProc
 	{
 	private:
+		/* GPU slot */
 		vector <double*> dev_slot;
-		vector <double*> dev_buffers;
-		vector <double*> dev_density;
-		vector <double*> dev_velocity_u;
-		vector <double*> dev_velocity_v;
-		vector <double*> dev_velocity_w;
-		vector <double*> dev_obstacle;
+		/* level-S GPU nodes */
+		vector <double*> dev_densS;
+		vector <double*> dev_veluS;
+		vector <double*> dev_velvS;
+		vector <double*> dev_velwS;
+		/* level-T GPU nodes */
+		vector <double*> dev_densT;
+		vector <double*> dev_veluT;
+		vector <double*> dev_velvT;
+		vector <double*> dev_velwT;
+		/* GPU obstacle */
+		vector <double*> dev_obst;
+		/* temporary buffers */
+		vector <double*> dev_bufs;
 
-		vector <double*> host_density;
-		vector <double*> host_velocity_u;
-		vector <double*> host_velocity_v;
-		vector <double*> host_velocity_w;
-		vector <double*> host_obstacle;
+		/* Host nodes */
+		vector <double*> host_dens;   // density
+		vector <double*> host_velu;   // velocity u
+		vector <double*> host_velv;   // velocity v
+		vector <double*> host_velw;   // velocity w
+		vector <double*> host_obst;    // obstacle
 		vector <SimNode*> host_node;
 
+		/* visualization */
 		SGUCHAR *dev_visual, *host_visual;
 
 	private:
 		FunctionHelper helper;
 
 	private:
+		/* size for allocation memories */
 		size_t m_node_size;
 		size_t m_volm_size;
 		size_t m_slot_size;
-		double *dev_tpbufs, *host_tpbufs;
+
+		/* for add source */
 		int    increase_times, decrease_times;
 		double dTimes;
 
@@ -130,17 +132,14 @@ namespace sge
 		void ZeroBuffers( void );
 
 	private:
-		/* flood buffer for multiple nodes */
-		void TracingTheFlow( int i, int j, int k  );
-
 		/* initialize FPS and etc. */
 		void InitParams( FLUIDSPARAM *fluid );
 
 		/* copy host data to CUDA device */
-		void NodeToDevice( int i, int j, int k );
+		void LoadBullet( int i, int j, int k );
 
 		/* retrieve data back to host */
-		void DeviceToNode( int i, int j, int k );
+		void ExitBullet( int i, int j, int k );
 
 		/* mark the node as actived */
 		bool ActiveTheNode( int i, int j, int k );

@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Feb 23, 2014
-* <Last Time>     Feb 23, 2014
+* <Last Time>     Mar 01, 2014
 * <File Name>     FluidSimulationKernels.h
 */
 
@@ -19,40 +19,36 @@
 
 __device__  double atomicGetValue( double const *grid, int const x, int const y, int const z )
 {
-	if ( x < gst_header ) return 0.f;
-	if ( y < gst_header ) return 0.f;
-	if ( z < gst_header ) return 0.f;
-	if ( x > gst_tailer ) return 0.f;
-	if ( y > gst_tailer ) return 0.f;
-	if ( z > gst_tailer ) return 0.f;
+	if ( x < 0 or x > 65 )  return 0.f;
+	if ( y < 0 or y > 65 )  return 0.f;
+	if ( z < 0 or z > 65 )  return 0.f;
 
-	return grid[ Index(x,y,z) ];
+	return grid[ Index3D(x,y,z,SLOT_X) ];
 };
 
 __device__  void atomicVertices
-	( double *c000, double *c001, double *c011, double *c010, double *c100, double *c101, double *c111,
-	double *c110, double const *grid, double const x, double const y, double const z )
+	( double *c000, double *c001, double *c011, double *c010, double *c100, 
+	double *c101, double *c111, double *c110, double const *grid, double const x, double const y, double const z )
 {
 	int i = (int)x;
 	int j = (int)y;
 	int k = (int)z;
 
-	*c000 = atomicGetValue ( grid, i, j, k );
-	*c001 = atomicGetValue ( grid, i, j+1, k );
-	*c011 = atomicGetValue ( grid, i, j+1, k+1 );
-	*c010 = atomicGetValue ( grid, i, j, k+1 );
-	*c100 = atomicGetValue ( grid, i+1, j, k );
-	*c101 = atomicGetValue ( grid, i+1, j+1, k );
-	*c111 = atomicGetValue ( grid, i+1, j+1, k+1 );
-	*c110 = atomicGetValue ( grid, i+1, j, k+1 );
+	*c000 = atomicGetValue( grid, i, j, k );
+	*c001 = atomicGetValue( grid, i, j+1, k );
+	*c011 = atomicGetValue( grid, i, j+1, k+1 );
+	*c010 = atomicGetValue( grid, i, j, k+1 );
+	*c100 = atomicGetValue( grid, i+1, j, k );
+	*c101 = atomicGetValue( grid, i+1, j+1, k );
+	*c111 = atomicGetValue( grid, i+1, j+1, k+1 );
+	*c110 = atomicGetValue( grid, i+1, j, k+1 );
 }
 
 __device__  double atomicTrilinear( double const *grid, double const x, double const y, double const z )
 {
 	double v000, v001, v010, v011, v100, v101, v110, v111;
-	atomicVertices ( &v000, &v001, &v011, &v010,
-		&v100, &v101, &v111, &v110,
-		grid, x, y, z );
+	
+	atomicVertices( &v000, &v001, &v011, &v010, &v100, &v101, &v111, &v110, grid, x, y, z );
 
 	double dx = x - (int)(x);
 	double dy = y - (int)(y);
@@ -74,96 +70,108 @@ __device__  double atomicTrilinear( double const *grid, double const x, double c
 __device__ void atomicDensityObs( double *grids, const double *obstacle )
 {
 	GetIndex();
-	BeginSimArea();
+
+	i = i + 1;
+	j = j + 1;
+	k = k + 1;
+
 	/* 当前格点有障碍物，且密度大于0 */
-	if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE and grids[Index(i,j,k)] > 0.f )
+	if ( obstacle[Index3D(i,j,k,SLOT_X)] eqt MACRO_BOUNDARY_OBSTACLE and grids[Index3D(i,j,k,SLOT_X)] > 0.f )
 	{
 		int cells  = 0;
 		double val = 0; 
 
-		if ( obstacle[Index(i-1,j,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
-		if ( obstacle[Index(i+1,j,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
-		if ( obstacle[Index(i,j-1,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
-		if ( obstacle[Index(i,j+1,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
-		if ( obstacle[Index(i,j,k-1)] eqt MACRO_BOUNDARY_BLANK ) cells++;
-		if ( obstacle[Index(i,j,k+1)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+		if ( obstacle[Index3D(i-1,j,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+		if ( obstacle[Index3D(i+1,j,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+		if ( obstacle[Index3D(i,j-1,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+		if ( obstacle[Index3D(i,j+1,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+		if ( obstacle[Index3D(i,j,k-1,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) cells++;
+		if ( obstacle[Index3D(i,j,k+1,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) cells++;
 
-		if ( cells > 0 ) val = grids[Index(i,j,k)] / cells;
+		if ( cells > 0 ) val = grids[Index3D(i,j,k,SLOT_X)] / cells;
 		else val = 0.f;
 
-		if ( obstacle[Index(i-1,j,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i-1,j,k)] += val;
-		if ( obstacle[Index(i+1,j,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i+1,j,k)] += val;
-		if ( obstacle[Index(i,j-1,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j-1,k)] += val;
-		if ( obstacle[Index(i,j+1,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j+1,k)] += val;
-		if ( obstacle[Index(i,j,k-1)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j,k-1)] += val;
-		if ( obstacle[Index(i,j,k+1)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j,k+1)] += val;
+		if ( obstacle[Index3D(i-1,j,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) grids[Index3D(i-1,j,k,SLOT_X)] += val;
+		if ( obstacle[Index3D(i+1,j,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) grids[Index3D(i+1,j,k,SLOT_X)] += val;
+		if ( obstacle[Index3D(i,j-1,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) grids[Index3D(i,j-1,k,SLOT_X)] += val;
+		if ( obstacle[Index3D(i,j+1,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) grids[Index3D(i,j+1,k,SLOT_X)] += val;
+		if ( obstacle[Index3D(i,j,k-1,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) grids[Index3D(i,j,k-1,SLOT_X)] += val;
+		if ( obstacle[Index3D(i,j,k+1,SLOT_X)] eqt MACRO_BOUNDARY_BLANK ) grids[Index3D(i,j,k+1,SLOT_X)] += val;
 
-		grids[Index(i,j,k)] = 0.f;
+		grids[Index3D(i,j,k,SLOT_X)] = 0.f;
 	}
-	EndSimArea();
 };
 
 __device__ void atomicVelocityObs_U( double *grids, const double *obstacle )
 {
 	GetIndex();
-	BeginSimArea();
-	if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
+
+	i = i + 1;
+	j = j + 1;
+	k = k + 1;
+
+	if ( obstacle[Index3D(i,j,k,SLOT_X)] eqt MACRO_BOUNDARY_OBSTACLE )
 	{
-		if ( grids[Index(i,j,k)] > 0.f )
+		if ( grids[Index3D(i,j,k,SLOT_X)] > 0.f )
 		{
-			if ( obstacle[Index(i-1,j,k)] eqt MACRO_BOUNDARY_BLANK )
-				grids[Index(i-1,j,k)] = grids[Index(i-1,j,k)] -  grids[Index(i,j,k)];
+			if ( obstacle[Index3D(i-1,j,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index3D(i-1,j,k,SLOT_X)] = grids[Index3D(i-1,j,k,SLOT_X)] -  grids[Index3D(i,j,k,SLOT_X)];
 		}
 		else
 		{
-			if ( obstacle[Index(i+1,j,k)] eqt MACRO_BOUNDARY_BLANK )
-				grids[Index(i+1,j,k)] = grids[Index(i+1,j,k)] -  grids[Index(i,j,k)];
+			if ( obstacle[Index3D(i+1,j,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index3D(i+1,j,k,SLOT_X)] = grids[Index3D(i+1,j,k,SLOT_X)] -  grids[Index3D(i,j,k,SLOT_X)];
 		}
-		grids[Index(i,j,k)] = 0.f;
+		grids[Index3D(i,j,k,SLOT_X)] = 0.f;
 	}
-	EndSimArea();
 };
 
 __device__ void atomicVelocityObs_V( double *grids, const double *obstacle )
 {
 	GetIndex();
-	BeginSimArea();
-	if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
+
+	i = i + 1;
+	j = j + 1;
+	k = k + 1;
+
+	if ( obstacle[Index3D(i,j,k,SLOT_X)] eqt MACRO_BOUNDARY_OBSTACLE )
 	{
-		if ( grids[Index(i,j,k)] > 0.f )
+		if ( grids[Index3D(i,j,k,SLOT_X)] > 0.f )
 		{
-			if ( obstacle[Index(i,j-1,k)] eqt MACRO_BOUNDARY_BLANK )
-				grids[Index(i,j-1,k)] = grids[Index(i,j-1,k)] - grids[Index(i,j,k)];
+			if ( obstacle[Index3D(i,j-1,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index3D(i,j-1,k,SLOT_X)] = grids[Index3D(i,j-1,k,SLOT_X)] - grids[Index3D(i,j,k,SLOT_X)];
 		}
 		else
 		{
-			if ( obstacle[Index(i,j+1,k)] eqt MACRO_BOUNDARY_BLANK )
-				grids[Index(i,j+1,k)] = grids[Index(i,j+1,k)] - grids[Index(i,j,k)];
+			if ( obstacle[Index3D(i,j+1,k,SLOT_X)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index3D(i,j+1,k,SLOT_X)] = grids[Index3D(i,j+1,k,SLOT_X)] - grids[Index3D(i,j,k,SLOT_X)];
 		}
-		grids[Index(i,j,k)] = 0.f;
+		grids[Index3D(i,j,k,SLOT_X)] = 0.f;
 	}
-	EndSimArea();
 };
 
 __device__ void atomicVelocityObs_W( double *grids, const double *obstacle )
 {
 	GetIndex();
-	BeginSimArea();
-	if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
+
+	i = i + 1;
+	j = j + 1;
+	k = k + 1;
+
+	if ( obstacle[Index3D(i,j,k,SLOT_X)] eqt MACRO_BOUNDARY_OBSTACLE )
 	{
-		if ( grids[Index(i,j,k)] > 0.f )
+		if ( grids[Index3D(i,j,k,SLOT_X)] > 0.f )
 		{
-			if ( obstacle[Index(i,j,k-1)] eqt MACRO_BOUNDARY_BLANK )
-				grids[Index(i,j,k-1)] = grids[Index(i,j,k-1)] - grids[Index(i,j,k)];
+			if ( obstacle[Index3D(i,j,k-1,SLOT_X)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index3D(i,j,k-1,SLOT_X)] = grids[Index3D(i,j,k-1,SLOT_X)] - grids[Index3D(i,j,k,SLOT_X)];
 		}
 		else
 		{
-			if ( obstacle[Index(i,j,k+1)] eqt MACRO_BOUNDARY_BLANK )
-				grids[Index(i,j,k+1)] = grids[Index(i,j,k+1)] - grids[Index(i,j,k)];
+			if ( obstacle[Index3D(i,j,k+1,SLOT_X)] eqt MACRO_BOUNDARY_BLANK )
+				grids[Index3D(i,j,k+1,SLOT_X)] = grids[Index3D(i,j,k+1,SLOT_X)] - grids[Index3D(i,j,k,SLOT_X)];
 		}
-		grids[Index(i,j,k)] = 0.f;
+		grids[Index3D(i,j,k,SLOT_X)] = 0.f;
 	}
-	EndSimArea();
 };
 
 __global__ void kernelObstacle( double *grids, const double *obstacle, const int field )
@@ -195,142 +203,144 @@ __global__ void kernelJacobi
 	( double *grid_out, double const *grid_in, double const diffusion, double const divisor )
 {
 	GetIndex();
-	BeginSimArea();
+
+	i = i + 1;
+	j = j + 1;
+	k = k + 1;
 
 	double div = 0.f;
 	if ( divisor <= 0.f ) div = 1.f;
 	else div = divisor;
 
-	grid_out [ Index(i,j,k) ] = 
-		( grid_in [ Index(i,j,k) ] + diffusion * 
+	grid_out [ Index3D(i,j,k,SLOT_X) ] = 
+		( grid_in [ Index3D(i,j,k,SLOT_X) ] + diffusion * 
 			(
-				grid_out [ Index(i-1, j, k) ] + grid_out [ Index(i+1, j, k) ] +
-				grid_out [ Index(i, j-1, k) ] + grid_out [ Index(i, j+1, k) ] +
-				grid_out [ Index(i, j, k-1) ] + grid_out [ Index(i, j, k+1) ]
+				grid_out [ Index3D(i-1, j, k, SLOT_X) ] + grid_out [ Index3D(i+1, j, k, SLOT_X) ] +
+				grid_out [ Index3D(i, j-1, k, SLOT_X) ] + grid_out [ Index3D(i, j+1, k, SLOT_X) ] +
+				grid_out [ Index3D(i, j, k-1, SLOT_X) ] + grid_out [ Index3D(i, j, k+1, SLOT_X) ]
 			) 
 		) / div;
-
-	EndSimArea();
 }
 
 __global__ void kernelGridAdvection
 	( double *grid_out, double const *grid_in, double const *u_in, double const *v_in, double const *w_in )
 {
 	GetIndex();
-	BeginSimArea();
 
-	double u = i - u_in [ Index(i,j,k) ] * DELTATIME;
-	double v = j - v_in [ Index(i,j,k) ] * DELTATIME;
-	double w = k - w_in [ Index(i,j,k) ] * DELTATIME;
+	i = i + 1;
+	j = j + 1;
+	k = k + 1;
+
+	double u = i - u_in [ Index3D(i,j,k,SLOT_X) ] * DELTATIME;
+	double v = j - v_in [ Index3D(i,j,k,SLOT_X) ] * DELTATIME;
+	double w = k - w_in [ Index3D(i,j,k,SLOT_X) ] * DELTATIME;
 	
-	grid_out [ Index(i,j,k) ] = atomicTrilinear ( grid_in, u, v, w );
-
-	EndSimArea();
+	grid_out [ Index3D(i,j,k,SLOT_X) ] = atomicTrilinear ( grid_in, u, v, w );
 };
 
 __global__ void kernelGradient
 	( double *div, double *p, double const *vel_u, double const *vel_v, double const *vel_w )
 {
 	GetIndex();
-	BeginSimArea();
-	
+	i = i + 1;
+	j = j + 1;
+	k = k + 1;
+
 	const double h = 1.f / GRID_X;
 
 	// previous instantaneous magnitude of velocity gradient 
 	//		= (sum of velocity gradients per axis)/2N:
-	div [ Index(i,j,k) ] = -0.5f * h * (
-			vel_u [ Index(i+1, j, k) ] - vel_u [ Index(i-1, j, k) ] + // gradient of u
-			vel_v [ Index(i, j+1, k) ] - vel_v [ Index(i, j-1, k) ] + // gradient of v
-			vel_w [ Index(i, j, k+1) ] - vel_w [ Index(i, j, k-1) ]   // gradient of w
+	div [ Index3D(i,j,k,SLOT_X) ] = -0.5f * h * (
+			vel_u [ Index3D(i+1, j, k, SLOT_X) ] - vel_u [ Index3D(i-1, j, k, SLOT_X) ] + // gradient of u
+			vel_v [ Index3D(i, j+1, k, SLOT_X) ] - vel_v [ Index3D(i, j-1, k, SLOT_X) ] + // gradient of v
+			vel_w [ Index3D(i, j, k+1, SLOT_X) ] - vel_w [ Index3D(i, j, k-1, SLOT_X) ]   // gradient of w
 		);
 	// zero out the present velocity gradient
-	p [ Index(i,j,k) ] = 0.f;
-	
-	EndSimArea();
+	p [ Index3D(i,j,k,SLOT_X) ] = 0.f;
 };
 
 __global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, double const *p )
 {
 	GetIndex();
-	BeginSimArea();
-
+	i = i + 1;
+	j = j + 1;
+	k = k + 1;
 	// gradient calculated by neighbors
 
-	vel_u [ Index(i, j, k) ] -= 0.5f * GRID_X * ( p [ Index(i+1, j, k) ] - p [ Index(i-1, j, k) ] );
-	vel_v [ Index(i, j, k) ] -= 0.5f * GRID_X * ( p [ Index(i, j+1, k) ] - p [ Index(i, j-1, k) ] );
-	vel_w [ Index(i, j, k) ] -= 0.5f * GRID_X * ( p [ Index(i, j, k+1) ] - p [ Index(i, j, k-1) ] );
-
-	EndSimArea();
+	vel_u [ Index3D(i, j, k, SLOT_X) ] -= 0.5f * GRID_X * ( p [ Index3D(i+1, j, k, SLOT_X) ] - p [ Index3D(i-1, j, k, SLOT_X) ] );
+	vel_v [ Index3D(i, j, k, SLOT_X) ] -= 0.5f * GRID_X * ( p [ Index3D(i, j+1, k, SLOT_X) ] - p [ Index3D(i, j-1, k, SLOT_X) ] );
+	vel_w [ Index3D(i, j, k, SLOT_X) ] -= 0.5f * GRID_X * ( p [ Index3D(i, j, k+1, SLOT_X) ] - p [ Index3D(i, j, k-1, SLOT_X) ] );
 };
 
 __global__ void kernelSetBoundary( double *grids )
 {
 	GetIndex();
 
-	BeginSimArea();
+	i = i + 1;
+	j = j + 1;
+	k = k + 1;
 	
 	const int half = GRID_X / 2;
 
 #if !TESTING_MODE_SWITCH
 	
 	if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
-		grids[ Index(i,j,k) ] = MACRO_BOUNDARY_SOURCE;
+		grids[ Index3D(i,j,k,SLOT_X) ] = MACRO_BOUNDARY_SOURCE;
 #else
 	if ( i >= half-2 and i < half+2 and
 		j >= half-2 and j < half+2 and
 		k >= half-2 and k < half+2 )
-		grids[Index(i,j,k)] = MACRO_BOUNDARY_SOURCE;
+		grids[Index3D(i,j,k,SLOT_X)] = MACRO_BOUNDARY_SOURCE;
 #endif
-
-	EndSimArea();
 };
 
 __global__ void kernelAddSource
 	( double *density, double *vel_u, double *vel_v, double *vel_w, double *obs, double const times )
 {
 	GetIndex();
-	BeginSimArea();
+	i = i + 1;
+	j = j + 1;
+	k = k + 1;
 
-	if ( obs[ Index(i,j,k) ] eqt MACRO_BOUNDARY_SOURCE )
+	if ( obs[ Index3D(i,j,k,SLOT_X) ] eqt MACRO_BOUNDARY_SOURCE )
 	{
 		/* add source to grids */
-		density[Index(i,j,k)] = SOURCE_DENSITY;
+		density[Index3D(i,j,k,SLOT_X)] = SOURCE_DENSITY;
 
 #if !TESTING_MODE_SWITCH
 	const int half = GRID_X / 2;
 	
 	/* add velocity to grids */
 	if ( i < half )
-		vel_u[Index(i,j,k)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
+		vel_u[Index3D(i,j,k,SLOT_X)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
 	elif( i >= half )
-		vel_u[Index(i,j,k)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
+		vel_u[Index3D(i,j,k,SLOT_X)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
 	
-	vel_v[Index(i,j,k)] = SOURCE_VELOCITY * times;
+	vel_v[Index3D(i,j,k,SLOT_X)] = SOURCE_VELOCITY * times;
 	
 	if ( k < half )
-		vel_w[Index(i,j,k)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
+		vel_w[Index3D(i,j,k,SLOT_X)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
 	elif ( k >= half )
-		vel_w[Index(i,j,k)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
+		vel_w[Index3D(i,j,k,SLOT_X)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
 #else
 
 	/* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
 #if TESTING_MODE==0
-		vel_v[Index(i,j,k)] =  SOURCE_VELOCITY * times;
+		vel_v[Index3D(i,j,k,SLOT_X)] =  SOURCE_VELOCITY * times;
 #elif TESTING_MODE==1
-		vel_v[Index(i,j,k)] = -SOURCE_VELOCITY * times;
+		vel_v[Index3D(i,j,k,SLOT_X)] = -SOURCE_VELOCITY * times;
 #elif TESTING_MODE==2
-		vel_u[Index(i,j,k)] = -SOURCE_VELOCITY * times;
+		vel_u[Index3D(i,j,k,SLOT_X)] = -SOURCE_VELOCITY * times;
 #elif TESTING_MODE==3
-		vel_u[Index(i,j,k)] =  SOURCE_VELOCITY * times;
+		vel_u[Index3D(i,j,k,SLOT_X)] =  SOURCE_VELOCITY * times;
 #elif TESTING_MODE==4
-		vel_w[Index(i,j,k)] =  SOURCE_VELOCITY * times;
+		vel_w[Index3D(i,j,k,SLOT_X)] =  SOURCE_VELOCITY * times;
 #elif TESTING_MODE==5
-		vel_w[Index(i,j,k)] = -SOURCE_VELOCITY * times;
+		vel_w[Index3D(i,j,k,SLOT_X)] = -SOURCE_VELOCITY * times;
 #endif
 
 #endif
 	}
-	EndSimArea();
 };
 
 void hostJacobi
@@ -359,7 +369,7 @@ void hostDiffusion
 {
 //	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
 	double rate = diffusion;
-	hostJacobi ( grid_out, grid_in, obstacle, field, rate, 1+6*rate );
+	hostJacobi( grid_out, grid_in, obstacle, field, rate, 1+6*rate );
 };
 
 void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, double const *obs )

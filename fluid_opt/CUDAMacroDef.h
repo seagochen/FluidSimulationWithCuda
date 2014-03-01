@@ -54,6 +54,4 @@
 
 #define EndSimArea() }
 
-#define Alignment() {i=i+1; j=j+1; k=k+1;}
-
 #endif
