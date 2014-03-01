@@ -234,7 +234,7 @@ __global__ void kernelGradient
 	GetIndex();
 	BeginSimArea();
 	
-	const double h = 1.f / GRIDS_X;
+	const double h = 1.f / GRID_X;
 
 	// previous instantaneous magnitude of velocity gradient 
 	//		= (sum of velocity gradients per axis)/2N:
@@ -256,9 +256,9 @@ __global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, dou
 
 	// gradient calculated by neighbors
 
-	vel_u [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i+1, j, k) ] - p [ Index(i-1, j, k) ] );
-	vel_v [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j+1, k) ] - p [ Index(i, j-1, k) ] );
-	vel_w [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j, k+1) ] - p [ Index(i, j, k-1) ] );
+	vel_u [ Index(i, j, k) ] -= 0.5f * GRID_X * ( p [ Index(i+1, j, k) ] - p [ Index(i-1, j, k) ] );
+	vel_v [ Index(i, j, k) ] -= 0.5f * GRID_X * ( p [ Index(i, j+1, k) ] - p [ Index(i, j-1, k) ] );
+	vel_w [ Index(i, j, k) ] -= 0.5f * GRID_X * ( p [ Index(i, j, k+1) ] - p [ Index(i, j, k-1) ] );
 
 	EndSimArea();
 };
@@ -269,7 +269,7 @@ __global__ void kernelSetBoundary( double *grids )
 
 	BeginSimArea();
 	
-	const int half = GRIDS_X / 2;
+	const int half = GRID_X / 2;
 
 #if !TESTING_MODE_SWITCH
 	
@@ -297,7 +297,7 @@ __global__ void kernelAddSource
 		density[Index(i,j,k)] = SOURCE_DENSITY;
 
 #if !TESTING_MODE_SWITCH
-	const int half = GRIDS_X / 2;
+	const int half = GRID_X / 2;
 	
 	/* add velocity to grids */
 	if ( i < half )
@@ -340,9 +340,9 @@ void hostJacobi
 	cudaDeviceDim3D();
 	for ( int k=0; k<20; k++)
 	{
-		kernelJacobi cudaDevice(gridDim, blockDim) (grid_out, grid_in, diffusion, divisor);
+		kernelJacobi <<<gridDim, blockDim>>> (grid_out, grid_in, diffusion, divisor);
 	}
-	kernelObstacle cudaDevice(gridDim, blockDim) ( grid_out, obstacle, field );
+	kernelObstacle <<<gridDim, blockDim>>> ( grid_out, obstacle, field );
 };
 
 void hostAdvection
@@ -350,8 +350,8 @@ void hostAdvection
 	double const *u_in, double const *v_in, double const *w_in )
 {
 	cudaDeviceDim3D();
-	kernelGridAdvection cudaDevice(gridDim, blockDim) ( grid_out, grid_in, u_in, v_in, w_in );
-	kernelObstacle cudaDevice(gridDim, blockDim) ( grid_out, obstacle, field );
+	kernelGridAdvection <<<gridDim, blockDim>>> ( grid_out, grid_in, u_in, v_in, w_in );
+	kernelObstacle <<<gridDim, blockDim>>> ( grid_out, obstacle, field );
 };
 
 void hostDiffusion
@@ -367,18 +367,18 @@ void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, doub
 	cudaDeviceDim3D();
 
 	// the velocity gradient
-	kernelGradient cudaDevice(gridDim, blockDim) ( div, p, vel_u, vel_v, vel_w );
-	kernelObstacle cudaDevice(gridDim, blockDim) ( div, obs, MACRO_SIMPLE );
-	kernelObstacle cudaDevice(gridDim, blockDim) ( p, obs, MACRO_SIMPLE );
+	kernelGradient <<<gridDim, blockDim>>> ( div, p, vel_u, vel_v, vel_w );
+	kernelObstacle <<<gridDim, blockDim>>> ( div, obs, MACRO_SIMPLE );
+	kernelObstacle <<<gridDim, blockDim>>> ( p, obs, MACRO_SIMPLE );
 
 	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
 	hostJacobi(p, div, obs, MACRO_SIMPLE, 1.f, 6.f);
 
 	// now subtract this gradient from our current velocity field
-	kernelSubtract cudaDevice(gridDim, blockDim) ( vel_u, vel_v, vel_w, p );
-	kernelObstacle cudaDevice(gridDim, blockDim) ( vel_u, obs, MACRO_VELOCITY_U );
-	kernelObstacle cudaDevice(gridDim, blockDim) ( vel_v, obs, MACRO_VELOCITY_V );
-	kernelObstacle cudaDevice(gridDim, blockDim) ( vel_w, obs, MACRO_VELOCITY_W );
+	kernelSubtract <<<gridDim, blockDim>>> ( vel_u, vel_v, vel_w, p );
+	kernelObstacle <<<gridDim, blockDim>>> ( vel_u, obs, MACRO_VELOCITY_U );
+	kernelObstacle <<<gridDim, blockDim>>> ( vel_v, obs, MACRO_VELOCITY_V );
+	kernelObstacle <<<gridDim, blockDim>>> ( vel_w, obs, MACRO_VELOCITY_W );
 };
 
 #endif

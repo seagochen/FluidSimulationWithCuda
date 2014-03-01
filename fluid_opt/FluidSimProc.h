@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Feb 20, 2014
+* <Last Time>     Mar 01, 2014
 * <File Name>     FluidSimProc.h
 */
 
@@ -17,7 +17,20 @@
 #include "CUDAMacroDef.h"
 #include "FunctionHelper.h"
 
-#define dev_buffers_num                   35
+#define dev_slot_num         11
+#define dev_den              dev_slot[ 0 ]
+#define dev_den0             dev_slot[ 1 ]
+#define dev_u                dev_slot[ 2 ]
+#define dev_u0               dev_slot[ 3 ]
+#define dev_v                dev_slot[ 4 ]
+#define dev_v0               dev_slot[ 5 ]
+#define dev_w                dev_slot[ 6 ]
+#define dev_w0               dev_slot[ 7 ]
+#define dev_div              dev_slot[ 8 ]
+#define dev_p                dev_slot[ 9 ]
+#define dev_obs              dev_slot[ 10 ]
+
+#define dev_buffers_num      35
 #define dev_den              dev_buffers[ 0 ]
 #define dev_den0             dev_buffers[ 1 ]
 #define dev_u                dev_buffers[ 2 ]
@@ -76,6 +89,7 @@ namespace sge
 	class FluidSimProc
 	{
 	private:
+		vector <double*> dev_slot;
 		vector <double*> dev_buffers;
 		vector <double*> dev_density;
 		vector <double*> dev_velocity_u;
@@ -98,6 +112,7 @@ namespace sge
 	private:
 		size_t m_node_size;
 		size_t m_volm_size;
+		size_t m_slot_size;
 		double *dev_tpbufs, *host_tpbufs;
 		int    increase_times, decrease_times;
 		double dTimes;

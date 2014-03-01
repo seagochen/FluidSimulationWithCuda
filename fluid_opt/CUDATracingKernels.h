@@ -39,9 +39,9 @@ __global__ void kernelFloodBound( unsigned char *grids, int offi, int offj, int 
 {
 	GetIndex();
 
-	i = offi * GRIDS_X + i;
-	j = offj * GRIDS_X + j;
-	k = offk * GRIDS_X + k;
+	i = offi * GRID_X + i;
+	j = offj * GRID_X + j;
+	k = offk * GRID_X + k;
 
 	/* faces */
 	grids[Index(gst_header,j,k)] = grids[Index(sim_header,j,k)];
