@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fluidsim_dynamic", "fluidsi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fluid_opt", "fluid_opt\fluid_opt.vcxproj", "{A2999610-EEE9-4D95-B0B6-09AB9784599A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fluid_slot", "fluid_slot\fluid_slot.vcxproj", "{DCC65534-294B-4094-ABDC-111AF0DFE477}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -39,6 +41,14 @@ Global
 		{A2999610-EEE9-4D95-B0B6-09AB9784599A}.Release|Win32.Build.0 = Release|Win32
 		{A2999610-EEE9-4D95-B0B6-09AB9784599A}.Release|x64.ActiveCfg = Release|x64
 		{A2999610-EEE9-4D95-B0B6-09AB9784599A}.Release|x64.Build.0 = Release|x64
+		{DCC65534-294B-4094-ABDC-111AF0DFE477}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DCC65534-294B-4094-ABDC-111AF0DFE477}.Debug|Win32.Build.0 = Debug|Win32
+		{DCC65534-294B-4094-ABDC-111AF0DFE477}.Debug|x64.ActiveCfg = Debug|x64
+		{DCC65534-294B-4094-ABDC-111AF0DFE477}.Debug|x64.Build.0 = Debug|x64
+		{DCC65534-294B-4094-ABDC-111AF0DFE477}.Release|Win32.ActiveCfg = Release|Win32
+		{DCC65534-294B-4094-ABDC-111AF0DFE477}.Release|Win32.Build.0 = Release|Win32
+		{DCC65534-294B-4094-ABDC-111AF0DFE477}.Release|x64.ActiveCfg = Release|x64
+		{DCC65534-294B-4094-ABDC-111AF0DFE477}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
