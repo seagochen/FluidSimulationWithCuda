@@ -18,6 +18,35 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CUDACustomeMath.h" />
+    <ClInclude Include="FluidSimProc.h" />
+    <ClInclude Include="Kernels.h" />
+    <ClInclude Include="FrameworkDynamic.h" />
+    <ClInclude Include="FunctionHelper.h" />
+    <ClInclude Include="MacroDefinition.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="FluidSimProcKernels.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FrameworkDynamic.cpp" />
+    <ClCompile Include="FunctionHelper.cpp" />
+    <ClCompile Include="MainDynamic.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="fluidsim_nodes.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icons\main.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\backface.frag" />
+    <None Include="shader\backface.vert" />
+    <None Include="shader\raycasting.frag" />
+    <None Include="shader\raycasting.vert" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3041F2AA-DDAF-43FE-928A-0B5F10F4623E}</ProjectGuid>
     <RootNamespace>fluidsim_nodes</RootNamespace>
