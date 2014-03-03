@@ -19,14 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CUDACustomMath.h" />
-    <ClInclude Include="CUDAMacroDef.h" />
-    <ClInclude Include="DataStructures.h" />
+    <ClInclude Include="CUDACustomeMath.h" />
     <ClInclude Include="FluidSimProc.h" />
+    <ClInclude Include="Kernels.h" />
     <ClInclude Include="FrameworkDynamic.h" />
     <ClInclude Include="FunctionHelper.h" />
     <ClInclude Include="MacroDefinition.h" />
     <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="FluidSimProcKernels.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameworkDynamic.cpp" />
@@ -34,10 +36,7 @@
     <ClCompile Include="MainDynamic.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProcKernels.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="fluid_slot.rc" />
+    <ResourceCompile Include="fluidsim_nodes.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icons\main.ico" />
@@ -49,8 +48,8 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{DCC65534-294B-4094-ABDC-111AF0DFE477}</ProjectGuid>
-    <RootNamespace>fluid_slot</RootNamespace>
+    <ProjectGuid>{3041F2AA-DDAF-43FE-928A-0B5F10F4623E}</ProjectGuid>
+    <RootNamespace>fluidsim_nodes</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -98,8 +97,6 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>

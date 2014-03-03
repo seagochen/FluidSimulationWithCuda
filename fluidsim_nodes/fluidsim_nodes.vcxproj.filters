@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{472a23d5-1b92-4dd7-957c-22df572bcb52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{be719c2f-6a90-41c8-bf7a-37db6a095d40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{8631d300-bf7e-4026-96f7-3eee432635fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shader Files">
+      <UniqueIdentifier>{92d4c216-6393-409a-a9d4-bfd3aa9af74a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Icon Files">
+      <UniqueIdentifier>{fb0e8bfb-84d8-43b4-9ed0-4732cf8c9102}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CUDACustomeMath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resource Files\Icon Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameworkDynamic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FunctionHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MacroDefinition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FluidSimProc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Kernels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FrameworkDynamic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FunctionHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MainDynamic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\backface.frag">
+      <Filter>Resource Files\Shader Files</Filter>
+    </None>
+    <None Include="shader\backface.vert">
+      <Filter>Resource Files\Shader Files</Filter>
+    </None>
+    <None Include="shader\raycasting.frag">
+      <Filter>Resource Files\Shader Files</Filter>
+    </None>
+    <None Include="shader\raycasting.vert">
+      <Filter>Resource Files\Shader Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="fluidsim_nodes.rc">
+      <Filter>Resource Files\Icon Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="FluidSimProcKernels.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icons\main.ico">
+      <Filter>Resource Files\Icon Files</Filter>
+    </Image>
+  </ItemGroup>
+</Project>
