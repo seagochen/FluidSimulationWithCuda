@@ -10,7 +10,7 @@
 #define __macro_definition_h_
 
 #include <device_launch_parameters.h>
-
+#include <string>
 
 typedef double3 SGDOUBLE3;
 typedef double4 SGDOUBLE4;
@@ -20,6 +20,7 @@ typedef int4    SGINT4;
 typedef double const  cdouble;
 typedef int const     cint;
 typedef unsigned char uchar;
+typedef std::string*  ptrStr;
 
 #define DELTATIME              0.5f   // 定义0.5s为一个步长的delta time
 #define STEPSIZE              0.001f  // 定义0.001为一个步长深度

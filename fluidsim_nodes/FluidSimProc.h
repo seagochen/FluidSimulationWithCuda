@@ -76,6 +76,9 @@ namespace sge
 		size_t m_node_size;
 		size_t m_volm_size;
 
+		/* 程序窗口标题 */
+		std::string m_sz_title;
+
 		/* 与AddSource时有关的变量 */
 		int    increase_times, decrease_times;
 
@@ -91,9 +94,17 @@ namespace sge
 		/* zero the buffers for fluid simulation */
 		void ZeroBuffers( void );
 
+		/* 上传内存节点数据 */
+		void UploadNodes( void );
+
+		/* 下载缓存节点数据 */
+		void DownloadNodes( void );
+
+		ptrStr GetTitleBar( void );
+
 	private:
 		/* flood buffer for multiple nodes */
-		void TracingTheFlow( int i, int j, int k );
+		void InteractNodes( int i, int j, int k );
 
 		/* initialize FPS and etc. */
 		void InitParams( FLUIDSPARAM *fluid );
@@ -105,7 +116,7 @@ namespace sge
 		void SaveNode( int i, int j, int k );
 			
 		/* retrieve the density back and load into volumetric data for rendering */
-		void GetVolumetric( FLUIDSPARAM *fluid );
+		void Finally( FLUIDSPARAM *fluid );
 		
 		/* create simulation nodes' topological structure */
 		void CreateTopology( void );
@@ -125,11 +136,8 @@ namespace sge
 		/* solving velocity */
 		void VelocitySolver( void );
 
-		/* 上传内存节点数据 */
-		void UploadNodes( void );
-
-		/* 下载缓存节点数据 */
-		void DownloadNodes( void );
+		/* 设置激活点 */
+		void SetActiveNodes( int i, int j, int k );
 	};
 };
 

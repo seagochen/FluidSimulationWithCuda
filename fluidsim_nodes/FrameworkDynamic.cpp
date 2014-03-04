@@ -4,7 +4,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Oct 16, 2013
-* <Last Time>     Feb 15, 2014
+* <Last Time>     Mar 04, 2014
 * <File Name>     FrameworkDynamic.cpp
 */
 
@@ -542,31 +542,13 @@ void Framework_v1_0::onCreate()
 
 void Framework_v1_0::CountFPS()
 {
-	/* counting FPS */
-	m_fluid.fps.dwFrames ++;
-	m_fluid.fps.dwCurrentTime = GetTickCount();
-	m_fluid.fps.dwElapsedTime = m_fluid.fps.dwCurrentTime - m_fluid.fps.dwLastUpdateTime;
-
-	/* 1 second */
-	if ( m_fluid.fps.dwElapsedTime >= 1000 )
-	{
-		m_fluid.fps.uFPS     = m_fluid.fps.dwFrames * 1000 / m_fluid.fps.dwElapsedTime;
-		m_fluid.fps.dwFrames = 0;
-		m_fluid.fps.dwLastUpdateTime = m_fluid.fps.dwCurrentTime;
-	}
-
 	/* finally, print the message on the tile bar */
-	SetWindowText (	m_activity->GetHWND(), 
-		string_fmt( "Excalibur OTL 1.10.00 alpha test  |  FPS: %d  |  dynamic tracking  |",
-		m_fluid.fps.uFPS ).c_str() );
+	SetWindowText( m_activity->GetHWND(), string_fmt( *m_simproc->GetTitleBar(), m_fluid.fps.uFPS ).c_str() );
 }
 
 
 void Framework_v1_0::onDisplay()
 {
-	/* get volumetric data from fluid simulation processor */
-//	m_simproc->PickVolumetric( &m_fluid );
-
 	/* do something before rendering */
 	glEnable ( GL_DEPTH_TEST );
 	
@@ -623,12 +605,17 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 	{
 		switch (keys)
 		{
-		case sge::SG_KEY_Q:
-		case sge::SG_KEY_ESCAPE:
+		case SG_KEY_Q:
+		case SG_KEY_ESCAPE:
+			m_simproc->DownloadNodes();
 			onDestroy();
 			break;
+
+		case SG_KEY_S:
+			m_simproc->DownloadNodes();
+			break;
 	
-		case sge::SG_KEY_C:
+		case SG_KEY_C:
 			m_simproc->ZeroBuffers();
 			break;
 		

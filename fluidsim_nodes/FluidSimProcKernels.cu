@@ -38,6 +38,10 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	printf( "fluid simulation ready...\n" );
 };
 
+ptrStr FluidSimProc::GetTitleBar( void ) { return &m_sz_title; };
+
+void FluidSimProc::SetActiveNodes( int i, int j, int k ) { host_node[cudaIndex3D(i,j,k,NODES_X)]->active = true; };
+
 void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 {
 	fluid->fps.dwCurrentTime = 0;
@@ -50,6 +54,8 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	m_volm_size = VOLUME_X * VOLUME_X * VOLUME_X * sizeof(SGUCHAR);
 
 	increase_times = decrease_times = 0;
+
+	m_sz_title = "Excalibur OTL 2.00.00, multi-nodes. ------------ FPS: %d ";
 };
 
 void FluidSimProc::CreateTopology( void )
@@ -256,7 +262,8 @@ void FluidSimProc::FreeResource ( void )
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( !fluid->run ) return;
-
+	
+	/* 更新节点状态 */
 	for ( int i = 0; i < NODES_X; i++ )
 	{
 		for ( int j = 0; j < NODES_X; j++ )
@@ -267,7 +274,7 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 				if ( LoadNode(i,j,k) )
 				{
 					/* 对节点的状况进行跟踪 */
-					TracingTheFlow(i,j,k);
+					InteractNodes(i,j,k);
 
 					/* Fluid process */
 					AddSource();
@@ -290,23 +297,7 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 	}
 
 	/* finally, generate volumetric image */
-	GetVolumetric( fluid );
-};
-
-void FluidSimProc::GetVolumetric( FLUIDSPARAM *fluid )
-{
-	/* 更新节点数据 */
-	cudaDeviceDim3D();	
-	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
-	{
-		kernelCopyGrids __device_func__ ( dev_density_s[i], dev_density_t[i] );
-		kernelCopyGrids __device_func__ ( dev_velocity_u_s[i], dev_velocity_u_t[i] );
-		kernelCopyGrids __device_func__ ( dev_velocity_v_s[i], dev_velocity_v_t[i] );
-		kernelCopyGrids __device_func__ ( dev_velocity_w_s[i], dev_velocity_w_t[i] );
-	}
-
-	cudaMemcpy( host_visual, dev_visual, m_volm_size, cudaMemcpyDeviceToHost );
-	fluid->volume.ptrData = host_visual;
+	Finally( fluid );
 };
 
 bool FluidSimProc::LoadNode( int i, int j, int k )
@@ -485,7 +476,8 @@ void FluidSimProc::InitBoundary( int i, int j, int k )
 		exit( 1 );
 	}
 
-	host_node[cudaIndex3D(i,j,k,NODES_X)]->active = true;
+	/* 设置需要激活的节点 */
+	SetActiveNodes(i,j,k);
 };
 
 void FluidSimProc::VelocitySolver( void )
@@ -550,34 +542,41 @@ void FluidSimProc::ZeroBuffers( void )
 	DownloadNodes();
 };
 
-void FluidSimProc::TracingTheFlow( int i, int j, int k )
+void FluidSimProc::InteractNodes( int i, int j, int k )
 {
 	cudaDeviceDim3D();
 	kernelInteractNodes __device_func__ ( dens_C, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B );
 	kernelInteractNodes __device_func__ ( velu_C, velu_L, velu_R, velu_U, velu_D, velu_F, velu_B );
 	kernelInteractNodes __device_func__ ( velv_C, velv_L, velv_R, velv_U, velv_D, velv_F, velv_B );
 	kernelInteractNodes __device_func__ ( velw_C, velw_L, velw_R, velw_U, velw_D, velw_F, velw_B );
+};
 
-	kernelSumDensity __device_func__ ( dev_ntpbuf, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B );
-
-	if ( cudaMemcpy( host_ntpbuf, dev_ntpbuf, sizeof(int) * TPBUFFER_X, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
-	{
-		helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ );
-		FreeResource();
-		exit( 1 );
+void FluidSimProc::Finally( FLUIDSPARAM *fluid )
+{
+	/* 更新节点数据 */
+	cudaDeviceDim3D();	
+	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
+	{		
+		std::swap( dev_density_s[i], dev_density_t[i] );
+		std::swap( dev_velocity_u_s[i], dev_velocity_u_t[i] );
+		std::swap( dev_velocity_v_s[i], dev_velocity_v_t[i] );
+		std::swap( dev_velocity_w_s[i], dev_velocity_w_t[i] );
 	}
 
-	SimNode *ptr = host_node[cudaIndex3D(i,j,k,NODES_X)];
+	/* 获取更新后的图形数据 */
+	cudaMemcpy( host_visual, dev_visual, m_volm_size, cudaMemcpyDeviceToHost );
+	fluid->volume.ptrData = host_visual;
 
-	if ( ptr->ptrLeft not_eq nullptr and host_ntpbuf[MACRO_LEFT] eqt MACRO_TRUE )
-		ptr->ptrLeft->active = true;
+	/* counting FPS */
+	fluid->fps.dwFrames ++;
+	fluid->fps.dwCurrentTime = GetTickCount();
+	fluid->fps.dwElapsedTime = fluid->fps.dwCurrentTime - fluid->fps.dwLastUpdateTime;
 
-	if ( ptr->ptrRight not_eq nullptr and host_ntpbuf[MACRO_RIGHT] eqt MACRO_TRUE )
-		ptr->ptrRight->active = true;
-
-	if ( ptr->ptrUp not_eq nullptr and host_ntpbuf[MACRO_UP] eqt MACRO_TRUE )
-		ptr->ptrUp->active = true;
-
-	if ( ptr->ptrDown not_eq nullptr and host_ntpbuf[MACRO_DOWN] eqt MACRO_TRUE )
-		ptr->ptrDown->active = true;
+	/* 1 second */
+	if ( fluid->fps.dwElapsedTime >= 1000 )
+	{
+		fluid->fps.uFPS     = fluid->fps.dwFrames * 1000 / fluid->fps.dwElapsedTime;
+		fluid->fps.dwFrames = 0;
+		fluid->fps.dwLastUpdateTime = fluid->fps.dwCurrentTime;
+	}
 };

@@ -128,19 +128,6 @@ void onCreate ()
 
 void CountFPS()
 {
-	// Counting FPS
-	m_fluid.fps.dwFrames ++;
-	m_fluid.fps.dwCurrentTime = GetTickCount();
-	m_fluid.fps.dwElapsedTime = m_fluid.fps.dwCurrentTime - m_fluid.fps.dwLastUpdateTime;
-
-	// 1 second
-	if ( m_fluid.fps.dwElapsedTime >= 1000 )
-	{
-		m_fluid.fps.FPS = m_fluid.fps.dwFrames * 1000 / m_fluid.fps.dwElapsedTime;
-		m_fluid.fps.dwFrames = 0;
-		m_fluid.fps.dwLastUpdateTime = m_fluid.fps.dwCurrentTime;
-	}
-
 	SetWindowText (	activity->GetHWND(), string_format ( "Excalibur OTL 0.00.02.01 ---- Current FPS: %d", m_fluid.fps.FPS ).c_str() );
 }
 
