@@ -65,6 +65,9 @@ namespace sge
 		double *dev_dtpbuf, *host_dtpbuf;
 		int    *dev_ntpbuf, *host_ntpbuf;
 
+		/* CUDA */
+		dim3 gridDim, blockDim;
+
 	private:
 		FunctionHelper helper;
 
@@ -90,7 +93,7 @@ namespace sge
 
 	private:
 		/* flood buffer for multiple nodes */
-		void TracingTheFlow( void );
+		void TracingTheFlow( int i, int j, int k );
 
 		/* initialize FPS and etc. */
 		void InitParams( FLUIDSPARAM *fluid );
