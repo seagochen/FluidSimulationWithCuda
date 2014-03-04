@@ -56,7 +56,7 @@ typedef std::string*  ptrStr;
 #define MACRO_FRONT               5
 #define MACRO_BACK                6
 
-#define DEFAULT_MODE          false
+#define DEFAULT_MODE           false
 
 #define MACRO_FALSE               0
 #define MACRO_TRUE                1
