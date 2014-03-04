@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 23, 2014
-* <Last Time>     Mar 03, 2014
+* <Last Time>     Mar 04, 2014
 * <File Name>     MacroDefiniton.h
 */
 
@@ -11,13 +11,15 @@
 
 #include <device_launch_parameters.h>
 
-namespace sge
-{
-	typedef double3 SGDOUBLE3;
-	typedef double4 SGDOUBLE4;
-	typedef int3    SGINT3;
-	typedef int4    SGINT4;
-}
+
+typedef double3 SGDOUBLE3;
+typedef double4 SGDOUBLE4;
+typedef int3    SGINT3;
+typedef int4    SGINT4;
+
+typedef double const  cdouble;
+typedef int const     cint;
+typedef unsigned char uchar;
 
 #define DELTATIME              0.5f   // 定义0.5s为一个步长的delta time
 #define STEPSIZE              0.001f  // 定义0.001为一个步长深度
@@ -52,6 +54,11 @@ namespace sge
 #define MACRO_DOWN                4
 #define MACRO_FRONT               5
 #define MACRO_BACK                6
+
+#define DEFAULT_MODE          false
+
+#define MACRO_FALSE               0
+#define MACRO_TRUE                1
 
 #define TESTING_MODE_SWITCH       0 /* switch: close(0) open(1) */
 #define TESTING_MODE              0 /* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
@@ -124,25 +131,24 @@ namespace sge
 	j = j % (elements_x); \
 
 #define cudaDeviceDim1D() \
-	dim3 blockDim, gridDim; \
 	blockDim.x = TPBUFFER_X; \
 	blockDim.y = 1; \
 	gridDim.x  = 1; \
 	gridDim.y  = 1; \
 
 #define cudaDeviceDim2D() \
-	dim3 blockDim, gridDim; \
 	blockDim.x = TILE_X; \
 	blockDim.y = TILE_X; \
 	gridDim.x  = GRIDS_X / TILE_X; \
 	gridDim.y  = GRIDS_X / TILE_X; \
 
 #define cudaDeviceDim3D() \
-	dim3 blockDim, gridDim; \
 	blockDim.x = (GRIDS_X / TILE_X); \
 	blockDim.y = (THREADS_X / TILE_X); \
 	gridDim.x  = (GRIDS_X / blockDim.x); \
 	gridDim.y  = (GRIDS_X * GRIDS_X * GRIDS_X) / (blockDim.x * blockDim.y * (GRIDS_X / blockDim.x)); \
+
+#define __device_func__ <<<gridDim,blockDim>>>
 
 #define GetIndex1D() \
 	int i = blockIdx.x * blockDim.x + threadIdx.x; \

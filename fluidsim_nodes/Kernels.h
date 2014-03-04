@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Feb 23, 2014
-* <Last Time>     Feb 23, 2014
+* <Last Time>     Mar 04, 2014
 * <File Name>     Kernels.h
 */
 
@@ -16,7 +16,7 @@
 #include "MacroDefinition.h"
 #include "FluidSimProc.h"
 
-__device__  double atomicGetValue( double const *grid, int const x, int const y, int const z )
+__device__  double atomicGetValue( cdouble *grid, cint x, cint y, cint z )
 {
 	if ( x < gst_header ) return 0.f;
 	if ( y < gst_header ) return 0.f;
@@ -30,7 +30,7 @@ __device__  double atomicGetValue( double const *grid, int const x, int const y,
 
 __device__  void atomicVertices
 	( double *c000, double *c001, double *c011, double *c010, double *c100, double *c101, double *c111,
-	double *c110, double const *grid, double const x, double const y, double const z )
+	double *c110, cdouble *grid, cdouble x, cdouble y, cdouble z )
 {
 	int i = (int)x;
 	int j = (int)y;
@@ -46,7 +46,7 @@ __device__  void atomicVertices
 	*c110 = atomicGetValue ( grid, i+1, j, k+1 );
 }
 
-__device__  double atomicTrilinear( double const *grid, double const x, double const y, double const z )
+__device__  double atomicTrilinear( cdouble *grid, cdouble x, cdouble y, cdouble z )
 {
 	double v000, v001, v010, v011, v100, v101, v110, v111;
 	atomicVertices ( &v000, &v001, &v011, &v010,
@@ -70,7 +70,7 @@ __device__  double atomicTrilinear( double const *grid, double const x, double c
 	return c;
 };
 
-__device__ void atomicDensityObs( double *grids, const double *obstacle )
+__device__ void atomicDensityObs( double *grids, cdouble *obstacle )
 {
 	GetIndex3D();
 	BeginSimArea();
@@ -102,7 +102,7 @@ __device__ void atomicDensityObs( double *grids, const double *obstacle )
 	EndSimArea();
 };
 
-__device__ void atomicVelocityObs_U( double *grids, const double *obstacle )
+__device__ void atomicVelocityObs_U( double *grids, cdouble *obstacle )
 {
 	GetIndex3D();
 	BeginSimArea();
@@ -123,7 +123,7 @@ __device__ void atomicVelocityObs_U( double *grids, const double *obstacle )
 	EndSimArea();
 };
 
-__device__ void atomicVelocityObs_V( double *grids, const double *obstacle )
+__device__ void atomicVelocityObs_V( double *grids, cdouble *obstacle )
 {
 	GetIndex3D();
 	BeginSimArea();
@@ -144,7 +144,7 @@ __device__ void atomicVelocityObs_V( double *grids, const double *obstacle )
 	EndSimArea();
 };
 
-__device__ void atomicVelocityObs_W( double *grids, const double *obstacle )
+__device__ void atomicVelocityObs_W( double *grids, cdouble *obstacle )
 {
 	GetIndex3D();
 	BeginSimArea();
@@ -165,7 +165,7 @@ __device__ void atomicVelocityObs_W( double *grids, const double *obstacle )
 	EndSimArea();
 };
 
-__global__ void kernelObstacle( double *grids, const double *obstacle, const int field )
+__global__ void kernelObstacle( double *grids, cdouble *obstacle, cint field )
 {
 	switch( field )
 	{
@@ -190,8 +190,7 @@ __global__ void kernelObstacle( double *grids, const double *obstacle, const int
 	}
 };
 
-__global__ void kernelJacobi
-	( double *grid_out, double const *grid_in, double const diffusion, double const divisor )
+__global__ void kernelJacobi( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble divisor )
 {
 	GetIndex3D();
 	BeginSimArea();
@@ -212,8 +211,7 @@ __global__ void kernelJacobi
 	EndSimArea();
 }
 
-__global__ void kernelGridAdvection
-	( double *grid_out, double const *grid_in, double const *u_in, double const *v_in, double const *w_in )
+__global__ void kernelGridAdvection( double *grid_out, cdouble *grid_in, cdouble *u_in, cdouble *v_in, cdouble *w_in )
 {
 	GetIndex3D();
 	BeginSimArea();
@@ -227,13 +225,12 @@ __global__ void kernelGridAdvection
 	EndSimArea();
 };
 
-__global__ void kernelGradient
-	( double *div, double *p, double const *vel_u, double const *vel_v, double const *vel_w )
+__global__ void kernelGradient( double *div, double *p, cdouble *vel_u, cdouble *vel_v, cdouble *vel_w )
 {
 	GetIndex3D();
 	BeginSimArea();
 	
-	const double h = 1.f / GRIDS_X;
+	cdouble h = 1.f / GRIDS_X;
 
 	// previous instantaneous magnitude of velocity gradient 
 	//		= (sum of velocity gradients per axis)/2N:
@@ -248,7 +245,7 @@ __global__ void kernelGradient
 	EndSimArea();
 };
 
-__global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, double const *p )
+__global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, cdouble *p )
 {
 	GetIndex3D();
 	BeginSimArea();
@@ -268,7 +265,7 @@ __global__ void kernelSetBoundary( double *grids )
 
 	BeginSimArea();
 	
-	const int half = GRIDS_X / 2;
+	cint half = GRIDS_X / 2;
 
 #if !TESTING_MODE_SWITCH
 	
@@ -284,8 +281,7 @@ __global__ void kernelSetBoundary( double *grids )
 	EndSimArea();
 };
 
-__global__ void kernelAddSource
-	( double *density, double *vel_u, double *vel_v, double *vel_w, double *obs )
+__global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w, double *obs )
 {
 	GetIndex3D();
 	BeginSimArea();
@@ -296,7 +292,7 @@ __global__ void kernelAddSource
 		density[Index(i,j,k)] = SOURCE_DENSITY;
 
 #if !TESTING_MODE_SWITCH
-	const int half = GRIDS_X / 2;
+	cint half = GRIDS_X / 2;
 
 
 		/* add velocity to grids */
@@ -330,15 +326,12 @@ __global__ void kernelAddSource
 
 #endif
 	}
-
-
 	EndSimArea();
 };
 
-void hostJacobi
-	( double *grid_out, double const *grid_in, double const *obstacle, 
-	int const field, double const diffusion, double const divisor )
+void hostJacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor )
 {
+	dim3 gridDim, blockDim;
 	cudaDeviceDim3D();
 	for ( int k=0; k<20; k++)
 	{
@@ -348,24 +341,25 @@ void hostJacobi
 };
 
 void hostAdvection
-	( double *grid_out, double const *grid_in, double const *obstacle, int const field, 
-	double const *u_in, double const *v_in, double const *w_in )
+	( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, 
+	cdouble *u_in, cdouble *v_in, cdouble *w_in )
 {
+	dim3 gridDim, blockDim;
 	cudaDeviceDim3D();
 	kernelGridAdvection<<<gridDim,blockDim>>>( grid_out, grid_in, u_in, v_in, w_in );
 	kernelObstacle<<<gridDim,blockDim>>>( grid_out, obstacle, field );
 };
 
-void hostDiffusion
-	( double *grid_out, double const *grid_in, double const diffusion, double const *obstacle, int const field )
+void hostDiffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field )
 {
 //	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
 	double rate = diffusion;
 	hostJacobi ( grid_out, grid_in, obstacle, field, rate, 1+6*rate );
 };
 
-void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, double const *obs )
+void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, cdouble *obs )
 {
+	dim3 gridDim, blockDim;
 	cudaDeviceDim3D();
 
 	// the velocity gradient
@@ -421,11 +415,10 @@ __global__ void kernelZeroTemporaryBuffers( int *bufs )
 {
 	GetIndex1D();
 
-	bufs[threadIdx.x] = 0;
+	bufs[i] = 0;
 };
 
-__global__ void kernelPickData
-( unsigned char *data, const double *bufs, int const offseti, int const offsetj, int const offsetk )
+__global__ void kernelPickData( uchar *data, cdouble *bufs, cint offseti, cint offsetj, cint offsetk )
 {
 	GetIndex3D();
 
@@ -442,14 +435,59 @@ __global__ void kernelPickData
 	/* append data to volume data */
 	int temp = atomicRound( value );
 	if ( temp > 0 and temp < 250 )
-		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (unsigned char) temp;
+		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (uchar) temp;
 };
 
-__global__ void kernelCopyGrids( double *src, double const *dst )
+__global__ void kernelCopyGrids( double *src, cdouble *dst )
 {
 	GetIndex3D();
 
 	src[Index(i,j,k)] = dst[Index(i,j,k)];
+};
+
+__global__ void kernelInteractNodes( double *center, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back )
+{
+	GetIndex3D();
+
+    if ( up[Index(i,sim_header,k)] )
+		center[Index(i,sim_tailer,k)] = ( center[Index(i,sim_tailer,k)] + up[Index(i,sim_header,k)] ) / 2.f;
+
+    if ( down[Index(i,sim_tailer,k)] )
+        center[Index(i,sim_header,k)] = ( down[Index(i,sim_tailer,k)] + center[Index(i,sim_header,k)] ) / 2.f;
+
+    if ( left[Index(sim_tailer,j,k)] )
+        center[Index(sim_header,j,k)] = ( center[Index(sim_header,j,k)] + left[Index(sim_tailer,j,k)] ) / 2.f;
+
+	if ( right[Index(sim_header,j,k)] )
+		center[Index(sim_tailer,j,k)] = ( center[Index(sim_tailer,j,k)] + right[Index(sim_header,j,k)] ) / 2.f;
+
+    if ( front[Index(i,j,sim_header)] )
+        center[Index(i,j,sim_tailer)] = ( front[Index(i,j,sim_header)] + center[Index(i,j,sim_tailer)] ) / 2.f;
+
+    if ( back[Index(i,j,sim_tailer)] )
+        center[Index(i,j,sim_header)] = ( center[Index(i,j,sim_header)] + back[Index(i,j,sim_tailer)] ) / 2.f;
+};
+
+__global__ void kernelSumDensity( int *tpbuf, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back )
+{
+	GetIndex3D();
+	if ( tpbuf[MACRO_LEFT] eqt MACRO_FALSE and left[Index(i,j,k)] > 0.f )
+		tpbuf[MACRO_LEFT] = MACRO_TRUE;
+
+	if ( tpbuf[MACRO_RIGHT] eqt MACRO_FALSE and right[Index(i,j,k)] > 0.f )	
+		tpbuf[MACRO_RIGHT] = MACRO_TRUE;
+ 
+	if ( tpbuf[MACRO_UP] eqt MACRO_FALSE and up[Index(i,j,k)] > 0.f )
+		tpbuf[MACRO_UP] = MACRO_TRUE;
+ 
+	if ( tpbuf[MACRO_DOWN] eqt MACRO_FALSE and down[Index(i,j,k)] > 0.f )
+		tpbuf[MACRO_DOWN] = MACRO_TRUE;
+ 
+	if ( tpbuf[MACRO_FRONT] eqt MACRO_FALSE and front[Index(i,j,k)] > 0.f )
+		tpbuf[MACRO_FRONT] = MACRO_TRUE;
+
+	if ( tpbuf[MACRO_BACK] eqt MACRO_FALSE and back[Index(i,j,k)] > 0.f )
+		tpbuf[MACRO_BACK] = MACRO_TRUE;
 };
 
 #endif

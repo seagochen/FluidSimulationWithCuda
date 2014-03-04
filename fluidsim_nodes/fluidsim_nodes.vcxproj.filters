@@ -30,13 +30,13 @@
     <ClInclude Include="FunctionHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MacroDefinition.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FluidSimProc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Kernels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MacroDefinition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
