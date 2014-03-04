@@ -14,6 +14,7 @@
 #include <GLM\gtc\type_ptr.hpp>
 #include <iostream>
 #include "FrameworkDynamic.h"
+#include "FluidSimProc.h"
 
 using namespace sge;
 using namespace glm;
