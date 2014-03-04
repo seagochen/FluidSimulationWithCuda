@@ -452,4 +452,17 @@ __global__ void kernelCopyGrids( double *src, double const *dst )
 	src[Index(i,j,k)] = dst[Index(i,j,k)];
 };
 
+__global__ void kernelInteractNodes
+	( double *left, double *right, double *up, double *down, double *front, double *back, double *center )
+{
+	GetIndex3D();
+
+	up[Index(i,sim_header,k)] = center[Index(i,sim_tailer,k)];
+	down[Index(i,sim_tailer,k)] = center[Index(i,sim_header,k)];
+	left[Index(sim_tailer,j,k)] = center[Index(sim_header,j,k)];
+	right[Index(sim_header,j,k)] = center[Index(sim_tailer,j,k)];
+	front[Index(i,j,sim_header)] = center[Index(i,j,sim_tailer)];
+	back[Index(i,j,sim_tailer)] = center[Index(i,j,sim_header)];
+};
+
 #endif

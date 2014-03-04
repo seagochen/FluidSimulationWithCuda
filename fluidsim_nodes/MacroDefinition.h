@@ -144,6 +144,8 @@ namespace sge
 	gridDim.x  = (GRIDS_X / blockDim.x); \
 	gridDim.y  = (GRIDS_X * GRIDS_X * GRIDS_X) / (blockDim.x * blockDim.y * (GRIDS_X / blockDim.x)); \
 
+#define __device_func__ <<<gridDim,blockDim>>>
+
 #define GetIndex1D() \
 	int i = blockIdx.x * blockDim.x + threadIdx.x; \
 

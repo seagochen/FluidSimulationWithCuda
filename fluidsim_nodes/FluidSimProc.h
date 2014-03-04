@@ -26,6 +26,7 @@ namespace sge
 	private:
 		struct SimNode
 		{
+			SGBOOLEAN active;
 			SGINT3 nodeIX;
 			SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 		};
@@ -60,6 +61,10 @@ namespace sge
 		/* 可视化 */
 		SGUCHAR *dev_visual, *host_visual;
 
+		/* 临时数据 */
+		double *dev_dtpbuf, *host_dtpbuf;
+		int    *dev_ntpbuf, *host_ntpbuf;
+
 	private:
 		FunctionHelper helper;
 
@@ -91,7 +96,7 @@ namespace sge
 		void InitParams( FLUIDSPARAM *fluid );
 
 		/* copy host data to CUDA device */
-		void LoadNode( int i, int j, int k );
+		bool LoadNode( int i, int j, int k );
 
 		/* retrieve data back to host */
 		void SaveNode( int i, int j, int k );
