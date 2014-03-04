@@ -277,6 +277,19 @@ void FluidSimProc::FluidSimSolver ( fluidsim *fluid )
 {
 	if ( !fluid->drawing.bContinue ) return ;
 
+	// Counting FPS
+	fluid->fps.dwFrames ++;
+	fluid->fps.dwCurrentTime = GetTickCount();
+	fluid->fps.dwElapsedTime = fluid->fps.dwCurrentTime - fluid->fps.dwLastUpdateTime;
+
+	// 1 second
+	if ( fluid->fps.dwElapsedTime >= 1000 )
+	{
+		fluid->fps.FPS = fluid->fps.dwFrames * 1000 / fluid->fps.dwElapsedTime;
+		fluid->fps.dwFrames = 0;
+		fluid->fps.dwLastUpdateTime = fluid->fps.dwCurrentTime;
+	}
+
 	// For fluid simulation, copy the data to device
 	CopyDataToDevice();
 

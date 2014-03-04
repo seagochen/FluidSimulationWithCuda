@@ -20,11 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CUDACustomeMath.h" />
-    <ClInclude Include="CUDAMacroDef.h" />
-    <ClInclude Include="CUDATracingKernels.h" />
-    <ClInclude Include="DataStructures.h" />
     <ClInclude Include="FluidSimProc.h" />
-    <ClInclude Include="FluidSimulationKernels.h" />
+    <ClInclude Include="Kernels.h" />
     <ClInclude Include="FrameworkDynamic.h" />
     <ClInclude Include="FunctionHelper.h" />
     <ClInclude Include="MacroDefinition.h" />
@@ -39,7 +36,7 @@
     <ClCompile Include="MainDynamic.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="fluid_opt1.rc" />
+    <ResourceCompile Include="fluidsim_nodes.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icons\main.ico" />
@@ -51,8 +48,8 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{A2999610-EEE9-4D95-B0B6-09AB9784599A}</ProjectGuid>
-    <RootNamespace>fluid_opt</RootNamespace>
+    <ProjectGuid>{3041F2AA-DDAF-43FE-928A-0B5F10F4623E}</ProjectGuid>
+    <RootNamespace>fluidsim_nodes</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -100,8 +97,6 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
