@@ -32,7 +32,7 @@ typedef std::string*  ptrStr;
 #define GRIDS_X                 64    // 计算网格在单维度上所拥有的数量
 #define NODES_X                  2    // 计算节点在单维度上所拥有的数量, obsoleted
 #define GNODES_X                 2    // GPU上使用的计算节点
-#define HNODES_X                 2    // HOST上使用的计算节点
+#define HNODES_X                 3    // HOST上使用的计算节点
 #define VOLUME_X  GRIDS_X*HNODES_X    // 三维体数据在单维度上的长度
 #define THREADS_X             1024    // 定义CUDA的线程数量
 #define TILE_X                  16    // 将16x16的GPU-threads捆绑打包为一个block
