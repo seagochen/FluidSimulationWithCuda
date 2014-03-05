@@ -30,8 +30,10 @@ typedef std::string*  ptrStr;
 #define SOURCE_VELOCITY        100    // 为计算网格中添加的velocity的量
 
 #define GRIDS_X                 64    // 计算网格在单维度上所拥有的数量
-#define NODES_X                  3    // 计算节点在单维度上所拥有的数量
-#define VOLUME_X   GRIDS_X*NODES_X    // 三维体数据在单维度上的长度
+#define NODES_X                  2    // 计算节点在单维度上所拥有的数量
+#define GNODES_X                 2    // GPU上使用的计算节点
+#define HNODES_X                 2    // HOST上使用的计算节点
+#define VOLUME_X  GRIDS_X*HNODES_X    // 三维体数据在单维度上的长度
 #define THREADS_X             1024    // 定义CUDA的线程数量
 #define TILE_X                  16    // 将16x16的GPU-threads捆绑打包为一个block
 #define WINDOWS_X              600    // Windows application's size
@@ -55,8 +57,6 @@ typedef std::string*  ptrStr;
 #define MACRO_DOWN                4
 #define MACRO_FRONT               5
 #define MACRO_BACK                6
-
-#define DEFAULT_MODE           false
 
 #define MACRO_FALSE               0
 #define MACRO_TRUE                1

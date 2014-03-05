@@ -445,49 +445,29 @@ __global__ void kernelCopyGrids( double *src, cdouble *dst )
 	src[Index(i,j,k)] = dst[Index(i,j,k)];
 };
 
-__global__ void kernelInteractNodes( double *center, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back )
+__global__ void kernelInteractNodes
+	( double *center, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back,
+	cint uL, cint uR, cint uU, cint uD, cint uF, cint uB )
 {
 	GetIndex3D();
 
-    if ( up[Index(i,sim_header,k)] )
-		center[Index(i,sim_tailer,k)] = ( center[Index(i,sim_tailer,k)] + up[Index(i,sim_header,k)] ) / 2.f;
+	if ( uL eqt MACRO_TRUE )
+		center[Index(sim_header,j,k)] = left[Index(sim_tailer,j,k)];
 
-    if ( down[Index(i,sim_tailer,k)] )
-        center[Index(i,sim_header,k)] = ( down[Index(i,sim_tailer,k)] + center[Index(i,sim_header,k)] ) / 2.f;
+	if ( uR eqt MACRO_TRUE )
+		center[Index(sim_tailer,j,k)] = right[Index(sim_header,j,k)];
 
-    if ( left[Index(sim_tailer,j,k)] )
-        center[Index(sim_header,j,k)] = ( center[Index(sim_header,j,k)] + left[Index(sim_tailer,j,k)] ) / 2.f;
+	if ( uU eqt MACRO_TRUE )
+		center[Index(i,sim_tailer,k)] = up[Index(i,sim_header,k)];
 
-	if ( right[Index(sim_header,j,k)] )
-		center[Index(sim_tailer,j,k)] = ( center[Index(sim_tailer,j,k)] + right[Index(sim_header,j,k)] ) / 2.f;
+	if ( uD eqt MACRO_TRUE )
+        center[Index(i,sim_header,k)] = down[Index(i,sim_tailer,k)];
 
-    if ( front[Index(i,j,sim_header)] )
-        center[Index(i,j,sim_tailer)] = ( front[Index(i,j,sim_header)] + center[Index(i,j,sim_tailer)] ) / 2.f;
+	if ( uF eqt MACRO_TRUE )
+		center[Index(i,j,sim_tailer)] = front[Index(i,j,sim_header)];
 
-    if ( back[Index(i,j,sim_tailer)] )
-        center[Index(i,j,sim_header)] = ( center[Index(i,j,sim_header)] + back[Index(i,j,sim_tailer)] ) / 2.f;
-};
-
-__global__ void kernelSumDensity( int *tpbuf, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back )
-{
-	GetIndex3D();
-	if ( tpbuf[MACRO_LEFT] eqt MACRO_FALSE and left[Index(i,j,k)] > 0.f )
-		tpbuf[MACRO_LEFT] = MACRO_TRUE;
-
-	if ( tpbuf[MACRO_RIGHT] eqt MACRO_FALSE and right[Index(i,j,k)] > 0.f )	
-		tpbuf[MACRO_RIGHT] = MACRO_TRUE;
- 
-	if ( tpbuf[MACRO_UP] eqt MACRO_FALSE and up[Index(i,j,k)] > 0.f )
-		tpbuf[MACRO_UP] = MACRO_TRUE;
- 
-	if ( tpbuf[MACRO_DOWN] eqt MACRO_FALSE and down[Index(i,j,k)] > 0.f )
-		tpbuf[MACRO_DOWN] = MACRO_TRUE;
- 
-	if ( tpbuf[MACRO_FRONT] eqt MACRO_FALSE and front[Index(i,j,k)] > 0.f )
-		tpbuf[MACRO_FRONT] = MACRO_TRUE;
-
-	if ( tpbuf[MACRO_BACK] eqt MACRO_FALSE and back[Index(i,j,k)] > 0.f )
-		tpbuf[MACRO_BACK] = MACRO_TRUE;
+	if ( uB eqt MACRO_TRUE )
+		center[Index(i,j,sim_header)] = back[Index(i,j,sim_tailer)];
 };
 
 #endif

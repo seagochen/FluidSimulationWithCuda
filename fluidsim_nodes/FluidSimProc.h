@@ -26,7 +26,7 @@ namespace sge
 	private:
 		struct SimNode
 		{
-			SGBOOLEAN active;
+			SGBOOLEAN updated;
 			SGINT3 nodeIX;
 			SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 		};
@@ -56,7 +56,8 @@ namespace sge
 		vector <double*> host_velocity_v;
 		vector <double*> host_velocity_w;
 		vector <double*> host_obstacle;
-		vector <SimNode*> host_node;
+
+		vector <SimNode*> gpu_node, host_node;
 
 		/* 可视化 */
 		SGUCHAR *dev_visual, *host_visual;
@@ -100,7 +101,11 @@ namespace sge
 		/* 下载缓存节点数据 */
 		void DownloadNodes( void );
 
+		/* 获得窗口标题，版本号，采用的技术, etc. */
 		ptrStr GetTitleBar( void );
+
+		/* 打印当前的节点信息 */
+		void PrintMSG( void );
 
 	private:
 		/* flood buffer for multiple nodes */
@@ -110,7 +115,7 @@ namespace sge
 		void InitParams( FLUIDSPARAM *fluid );
 
 		/* copy host data to CUDA device */
-		bool LoadNode( int i, int j, int k );
+		void LoadNode( int i, int j, int k );
 
 		/* retrieve data back to host */
 		void SaveNode( int i, int j, int k );
@@ -135,9 +140,6 @@ namespace sge
 
 		/* solving velocity */
 		void VelocitySolver( void );
-
-		/* 设置激活点 */
-		void SetActiveNodes( int i, int j, int k );
 	};
 };
 

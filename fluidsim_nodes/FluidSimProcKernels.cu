@@ -29,7 +29,7 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	ZeroBuffers();
 
 	/* set boundary */
-	InitBoundary( 1, 0, 1 );
+	InitBoundary( 0, 0, 0 );
 
 	/* 上传节点数据 */
 	UploadNodes();
@@ -38,9 +38,10 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	printf( "fluid simulation ready...\n" );
 };
 
-ptrStr FluidSimProc::GetTitleBar( void ) { return &m_sz_title; };
-
-void FluidSimProc::SetActiveNodes( int i, int j, int k ) { host_node[cudaIndex3D(i,j,k,NODES_X)]->active = true; };
+ptrStr FluidSimProc::GetTitleBar( void )
+{
+	return &m_sz_title; 
+};
 
 void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 {
@@ -68,29 +69,48 @@ void FluidSimProc::CreateTopology( void )
 			{
 				/* left */
 				if ( i >= 1 )
-					host_node[cudaIndex3D( i, j, k, NODES_X )]->ptrLeft  = host_node[cudaIndex3D( i-1, j, k, NODES_X )];
+					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrLeft  = gpu_node[cudaIndex3D( i-1, j, k, NODES_X )];
 				/* right */
 				if ( i <= NODES_X - 2 )
-					host_node[cudaIndex3D( i, j, k, NODES_X )]->ptrRight = host_node[cudaIndex3D( i+1, j, k, NODES_X )];
+					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrRight = gpu_node[cudaIndex3D( i+1, j, k, NODES_X )];
 				/* down */
 				if ( j >= 1 )
-					host_node[cudaIndex3D( i, j, k, NODES_X )]->ptrDown  = host_node[cudaIndex3D( i, j-1, k, NODES_X )];
+					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrDown  = gpu_node[cudaIndex3D( i, j-1, k, NODES_X )];
 				/* up */
 				if ( j <= NODES_X - 2 )
-					host_node[cudaIndex3D( i, j, k, NODES_X )]->ptrUp    = host_node[cudaIndex3D( i, j+1, k, NODES_X )];
+					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrUp    = gpu_node[cudaIndex3D( i, j+1, k, NODES_X )];
 				/* back */
 				if ( k >= 1 )
-					host_node[cudaIndex3D( i, j, k, NODES_X )]->ptrBack  = host_node[cudaIndex3D( i, j, k-1, NODES_X )];
+					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrBack  = gpu_node[cudaIndex3D( i, j, k-1, NODES_X )];
 				/* front */
 				if ( k <= NODES_X - 2 )
-					host_node[cudaIndex3D( i, j, k, NODES_X )]->ptrFront = host_node[cudaIndex3D( i, j, k+1, NODES_X )];
+					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrFront = gpu_node[cudaIndex3D( i, j, k+1, NODES_X )];
 
-				host_node[cudaIndex3D( i, j, k, NODES_X )]->nodeIX.x = i;
-				host_node[cudaIndex3D( i, j, k, NODES_X )]->nodeIX.y = j;
-				host_node[cudaIndex3D( i, j, k, NODES_X )]->nodeIX.z = k;
+				gpu_node[cudaIndex3D( i, j, k, NODES_X )]->nodeIX.x = i;
+				gpu_node[cudaIndex3D( i, j, k, NODES_X )]->nodeIX.y = j;
+				gpu_node[cudaIndex3D( i, j, k, NODES_X )]->nodeIX.z = k;
 			}
 		}
 	}
+};
+
+void FluidSimProc::PrintMSG( void )
+{
+	using namespace std;
+
+	system( "cls" );
+	cout 
+		<< "**************** operation to confirm *******************" << endl
+		<< "mouse wheel ------------ to rotate the observation matrix" << endl
+		<< "keyboard: Q ------------ to quit the program" << endl
+		<< "keyboard: Esc ---------- to quit the program" << endl
+		<< "keyboard: S ------------ to retrieve the data from GPU" << endl
+		<< "keyboard: C ------------ to clear the data of stage" << endl
+		<< "keyboard: P ------------ to print the information of node" << endl
+		<< "**************** fluid simulation info ******************" << endl
+		<< "number of GPU nodes for fluid simulation: " << gpu_node.size() << endl
+		<< "number of HOST nodes for fluid simulation: " << host_node.size() << endl
+		<< "grid size per computation node : 64 x 64 x 64" << endl;
 };
 
 /* 上传内存节点数据 */
@@ -129,7 +149,6 @@ void FluidSimProc::DownloadNodes( void )
 		}
 	}
 };
-
 
 bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 {
@@ -171,8 +190,8 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		node->ptrFront = node->ptrBack = nullptr;
 		node->ptrLeft  = node->ptrRight = nullptr;
 		node->ptrDown  = node->ptrUp = nullptr;
-		node->active   = DEFAULT_MODE;		
-		host_node.push_back( node );
+		node->updated  = false;
+		gpu_node.push_back( node );
 	}
 
 	/* 创建GPU节点 STEP 01 */
@@ -271,19 +290,18 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 			for ( int k = 0; k < NODES_X; k++ )
 			{
 				/* for fluid simulation, copy the data to device */
-				if ( LoadNode(i,j,k) )
-				{
-					/* 对节点的状况进行跟踪 */
-					InteractNodes(i,j,k);
+				LoadNode(i,j,k) ;
 
-					/* Fluid process */
-					AddSource();
-					VelocitySolver();
-					DensitySolver();
+				/* 对节点的状况进行跟踪 */
+				InteractNodes(i,j,k);
+
+				/* Fluid process */
+				AddSource();
+				VelocitySolver();
+				DensitySolver();
 					
-					/* retrieve data back to host */
-					SaveNode(i,j,k);
-				}
+				/* retrieve data back to host */
+				SaveNode(i,j,k);
 			}
 		}
 	}
@@ -300,13 +318,10 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 	Finally( fluid );
 };
 
-bool FluidSimProc::LoadNode( int i, int j, int k )
+void FluidSimProc::LoadNode( int i, int j, int k )
 {
 	cudaDeviceDim3D();
-	SimNode *ptr = host_node[cudaIndex3D( i, j, k, NODES_X )];
-
-	/* check if deactive */
-	if ( not ptr->active ) return false;
+	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, NODES_X )];
 
 	/* upload center node to GPU device */
 	kernelCopyGrids __device_func__ ( dev_u, dev_velocity_u_s[cudaIndex3D( i, j, k, NODES_X )] );
@@ -411,14 +426,12 @@ bool FluidSimProc::LoadNode( int i, int j, int k )
 		FreeResource();
 		exit( 1 );
 	}
-
-	return true;
 };
 
 void FluidSimProc::SaveNode( int i, int j, int k )
 {
 	cudaDeviceDim3D();
-	SimNode *ptr = host_node[cudaIndex3D( i, j, k, NODES_X )];
+	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, NODES_X )];
 
 	/* draw data back */
 	kernelCopyGrids __device_func__( dev_velocity_u_t[cudaIndex3D(i,j,k,NODES_X)], velu_C );
@@ -428,6 +441,9 @@ void FluidSimProc::SaveNode( int i, int j, int k )
 
 	/* draw volumetric data back */	
 	kernelPickData __device_func__( dev_visual, dev_den, i * GRIDS_X, j * GRIDS_X, k * GRIDS_X );
+
+	/* 将当前节点的标记设置为已更新 */
+	ptr->updated = true;
 };
 
 void FluidSimProc::AddSource( void )
@@ -475,9 +491,6 @@ void FluidSimProc::InitBoundary( int i, int j, int k )
 		FreeResource();
 		exit( 1 );
 	}
-
-	/* 设置需要激活的节点 */
-	SetActiveNodes(i,j,k);
 };
 
 void FluidSimProc::VelocitySolver( void )
@@ -544,11 +557,27 @@ void FluidSimProc::ZeroBuffers( void )
 
 void FluidSimProc::InteractNodes( int i, int j, int k )
 {
+	SimNode *ptr = gpu_node[cudaIndex3D(i,j,k,NODES_X)];
+	int left, right, up, down, front, back;
+
+	left = right = up = down = front = back = MACRO_FALSE;
+	
+	if ( ptr->ptrLeft  not_eq nullptr ) left  = ( (ptr->ptrLeft->updated) ? MACRO_TRUE : MACRO_FALSE );
+	if ( ptr->ptrRight not_eq nullptr )	right = ( (ptr->ptrRight->updated)? MACRO_TRUE : MACRO_FALSE );
+	if ( ptr->ptrUp    not_eq nullptr ) up    = ( (ptr->ptrUp->updated)   ? MACRO_TRUE : MACRO_FALSE );
+	if ( ptr->ptrDown  not_eq nullptr )	down  = ( (ptr->ptrDown->updated) ? MACRO_TRUE : MACRO_FALSE );
+	if ( ptr->ptrFront not_eq nullptr )	front = ( (ptr->ptrFront->updated)? MACRO_TRUE : MACRO_FALSE );
+	if ( ptr->ptrBack  not_eq nullptr ) back  = ( (ptr->ptrBack->updated) ? MACRO_TRUE : MACRO_FALSE );
+
 	cudaDeviceDim3D();
-	kernelInteractNodes __device_func__ ( dens_C, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B );
-	kernelInteractNodes __device_func__ ( velu_C, velu_L, velu_R, velu_U, velu_D, velu_F, velu_B );
-	kernelInteractNodes __device_func__ ( velv_C, velv_L, velv_R, velv_U, velv_D, velv_F, velv_B );
-	kernelInteractNodes __device_func__ ( velw_C, velw_L, velw_R, velw_U, velw_D, velw_F, velw_B );
+	kernelInteractNodes __device_func__
+		( dens_C, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B, left, right, up, down, front, back );
+	kernelInteractNodes __device_func__
+		( velu_C, velu_L, velu_R, velu_U, velu_D, velu_F, velu_B, left, right, up, down, front, back );
+	kernelInteractNodes __device_func__
+		( velv_C, velv_L, velv_R, velv_U, velv_D, velv_F, velv_B, left, right, up, down, front, back );
+	kernelInteractNodes __device_func__
+		( velw_C, velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, left, right, up, down, front, back );
 };
 
 void FluidSimProc::Finally( FLUIDSPARAM *fluid )
@@ -561,6 +590,7 @@ void FluidSimProc::Finally( FLUIDSPARAM *fluid )
 		std::swap( dev_velocity_u_s[i], dev_velocity_u_t[i] );
 		std::swap( dev_velocity_v_s[i], dev_velocity_v_t[i] );
 		std::swap( dev_velocity_w_s[i], dev_velocity_w_t[i] );
+		gpu_node[i]->updated = false;
 	}
 
 	/* 获取更新后的图形数据 */
