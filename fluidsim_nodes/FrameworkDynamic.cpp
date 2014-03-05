@@ -1,12 +1,12 @@
-#pragma region framework basic functions
-
 /**
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Oct 16, 2013
-* <Last Time>     Mar 04, 2014
+* <Last Time>     Mar 05, 2014
 * <File Name>     FrameworkDynamic.cpp
 */
+
+#pragma region framework basic functions
 
 #include <GLM\glm.hpp>
 #include <GLM\gtc\matrix_transform.hpp>
@@ -536,16 +536,23 @@ void Framework_v1_0::onCreate()
 	m_fluid.ray.hCluster          = CreateVerticesBufferObj ();
 	m_fluid.textures.hFramebuffer = Create2DFrameBuffer ( &m_fluid );
 
-	cout << "initialize finished, sge will start soon!" << endl;
+	/* 打印操作信息 */
+	cout << "ok, fluid simulation with multiple nodes will start soon!" << endl
+	     << "*********************************************************" << endl
+		 << "**************** operation to confirm *******************" << endl
+		 << "mouse wheel ------------ to rotate the observation matrix" << endl
+		 << "keyboard: Q ------------ to quit the program" << endl
+		 << "keyboard: Esc ---------- to quit the program" << endl
+		 << "keyboard: S ------------ to retrieve the data from GPU" << endl
+		 << "keyboard: C ------------ to clear the data of stage" << endl
+		 << "keyboard: P ------------ to print the information of node" << endl;
 };
-
 
 void Framework_v1_0::CountFPS()
 {
 	/* finally, print the message on the tile bar */
 	SetWindowText( m_activity->GetHWND(), string_fmt( *m_simproc->GetTitleBar(), m_fluid.fps.uFPS ).c_str() );
 }
-
 
 void Framework_v1_0::onDisplay()
 {
@@ -578,7 +585,6 @@ void Framework_v1_0::onDisplay()
 	CountFPS ();
 };
 
-
 void Framework_v1_0::onDestroy()
 {
 	/* 启动退出程序的命令后，先关闭子线程 */
@@ -597,7 +603,6 @@ void Framework_v1_0::onDestroy()
 	cout << "memory freed, program exits..." << endl;
 	exit(1);
 };
-
 
 void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 {
@@ -619,6 +624,10 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 			m_simproc->ZeroBuffers();
 			break;
 		
+		case SG_KEY_P:
+			m_simproc->PrintMSG();
+			break;
+
 		default:
 			break;
 		}
