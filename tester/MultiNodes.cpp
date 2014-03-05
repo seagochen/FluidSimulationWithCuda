@@ -5,6 +5,7 @@
 
 #define HNODES_X 3
 #define GNODES_X 2
+#define CURSOR_X 2
 
 using std::endl;
 using std::cout;
@@ -22,6 +23,7 @@ struct SimNode
 
 int *host_nodes, *gpu_nodes;
 vector<SimNode*> host_link, gpu_link;
+int3 m_cursor;
 
 bool CreateHostBuffers( size_t size, int nPtrs, ... )
 {
@@ -181,13 +183,64 @@ void PrintHostNode()
 	}
 };
 
+void PrintDevNode()
+{
+	printf( "\n------------\n" );
+	for ( int k = 0; k < GNODES_X; k++ )
+	{
+		for ( int j = 0; j < GNODES_X; j++ )
+		{
+			for ( int i = 0; i < GNODES_X; i++ )
+			{
+				printf( "%d ", gpu_nodes[cudaIndex3D(i,j,k,GNODES_X)] );
+			}
+			printf( "\n" );
+		}
+		printf( "------------\n" );
+	}
+}
+
+void PickHostNode()
+{
+	for ( int k = 0; k < GNODES_X; k++ )
+	{
+		for ( int j = 0; j < GNODES_X; j++ )
+		{
+			for ( int i = 0; i < GNODES_X; i++ )
+			{
+				gpu_nodes[cudaIndex3D(i,j,k,GNODES_X)] =
+					host_nodes[cudaIndex3D(i+m_cursor.x,j+m_cursor.y,k+m_cursor.z,HNODES_X)];
+			}
+		}
+	}
+};
+
 int main()
 {
 	MallocSpace();
 	CreateLink();
 	CreateTopology();
 	InitHostNode();
+
+	cout << " host info " << endl;
 	PrintHostNode();
+
+	cout << " gpu info " << endl;
+	for ( int k = 0; k < CURSOR_X; k++ )
+	{
+		for ( int j = 0; j < CURSOR_X; j++ )
+		{
+			for ( int i = 0; i < CURSOR_X; i++ )
+			{
+				m_cursor.x = i;
+				m_cursor.y = j;
+				m_cursor.z = k;
+
+				PickHostNode();
+				PrintDevNode();
+			}
+		}
+	}
 
 	printf("bye!\n");
 	free(host_nodes);
