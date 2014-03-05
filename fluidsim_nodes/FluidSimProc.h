@@ -26,7 +26,7 @@ namespace sge
 	private:
 		struct SimNode
 		{
-			SGBOOLEAN active;
+			SGBOOLEAN updated;
 			SGINT3 nodeIX;
 			SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 		};
@@ -110,7 +110,7 @@ namespace sge
 		void InitParams( FLUIDSPARAM *fluid );
 
 		/* copy host data to CUDA device */
-		bool LoadNode( int i, int j, int k );
+		void LoadNode( int i, int j, int k );
 
 		/* retrieve data back to host */
 		void SaveNode( int i, int j, int k );
@@ -135,9 +135,6 @@ namespace sge
 
 		/* solving velocity */
 		void VelocitySolver( void );
-
-		/* …Ë÷√º§ªÓµ„ */
-		void SetActiveNodes( int i, int j, int k );
 	};
 };
 
