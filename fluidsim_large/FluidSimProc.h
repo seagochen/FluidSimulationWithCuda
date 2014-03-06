@@ -99,12 +99,6 @@ namespace sge
 		/* zero the buffers for fluid simulation */
 		void ZeroBuffers( void );
 
-		/* 上传内存节点数据 */
-		void UploadNodes( void );
-
-		/* 下载缓存节点数据 */
-		void DownloadNodes( void );
-
 		/* 获得窗口标题，版本号，采用的技术, etc. */
 		ptrStr GetTitleBar( void );
 
@@ -117,6 +111,12 @@ namespace sge
 
 		/* initialize FPS and etc. */
 		void InitParams( FLUIDSPARAM *fluid );
+
+		/* 上传内存节点数据 */
+		void UploadNodes( void );
+
+		/* 下载缓存节点数据 */
+		void DownloadNodes( void );
 
 		/* copy host data to CUDA device */
 		void LoadNode( int i, int j, int k );

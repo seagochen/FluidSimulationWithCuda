@@ -106,7 +106,6 @@ void FluidSimProc::PrintMSG( void )
 		<< "keyboard: Esc ---------- to quit the program" << endl
 		<< "keyboard: S ------------ to retrieve the data from GPU" << endl
 		<< "keyboard: C ------------ to clear the data of stage" << endl
-		<< "keyboard: P ------------ to print the information of node" << endl
 		<< "**************** fluid simulation info ******************" << endl
 		<< "number of GPU nodes for fluid simulation: " << gpu_node.size() << endl
 		<< "number of HOST nodes for fluid simulation: " << host_node.size() << endl
