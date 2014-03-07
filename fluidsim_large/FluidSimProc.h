@@ -111,7 +111,7 @@ namespace sge
 		void InitParams( FLUIDSPARAM *fluid );
 			
 		/* retrieve the density back and load into volumetric data for rendering */
-		void Finally( FLUIDSPARAM *fluid );
+		void RefreshStatus( FLUIDSPARAM *fluid );
 		
 		/* create simulation nodes' topological structure */
 		void CreateTopology( void );
