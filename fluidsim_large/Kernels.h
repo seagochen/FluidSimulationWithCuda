@@ -418,6 +418,58 @@ __global__ void kernelZeroTemporaryBuffers( int *bufs )
 	bufs[i] = 0;
 };
 
+__device__ void atomicFloodData( uchar *data, cint offseti, cint offsetj, cint offsetk )
+{
+	GetIndex3D();
+
+	int di = offseti + i;
+	int dj = offsetj + j;
+	int dk = offsetk + k;
+
+	int ghi = offseti + gst_header;
+	int gti = offseti + gst_tailer;
+	int ghj = offsetj + gst_header;
+	int gtj = offsetj + gst_tailer;
+	int ghk = offsetk + gst_header;
+	int gtk = offsetk + gst_tailer;
+
+	int shi = offseti + sim_header;
+	int sti = offseti + sim_tailer;
+	int shj = offsetj + sim_header;
+	int stj = offsetj + sim_tailer;
+	int shk = offsetk + sim_header;
+	int stk = offsetk + sim_tailer;
+
+	data[cudaIndex3D(ghi,dj,dk,VOLUME_X)] = data[cudaIndex3D(shi,dj,dk,VOLUME_X)];
+	data[cudaIndex3D(gti,dj,dk,VOLUME_X)] = data[cudaIndex3D(sti,dj,dk,VOLUME_X)];
+	data[cudaIndex3D(di,ghj,dk,VOLUME_X)] = data[cudaIndex3D(di,shj,dk,VOLUME_X)];
+	data[cudaIndex3D(di,gtj,dk,VOLUME_X)] = data[cudaIndex3D(di,stj,dk,VOLUME_X)];
+	data[cudaIndex3D(di,dj,ghk,VOLUME_X)] = data[cudaIndex3D(di,dj,shk,VOLUME_X)];
+	data[cudaIndex3D(di,dj,gtk,VOLUME_X)] = data[cudaIndex3D(di,dj,stk,VOLUME_X)];
+
+	data[cudaIndex3D(ghi,ghj,dk,VOLUME_X)] = ( data[cudaIndex3D(shi,ghj,dk,VOLUME_X)] + data[cudaIndex3D(ghi,shj,dk,VOLUME_X)] ) / 2;
+	data[cudaIndex3D(ghi,gtj,dk,VOLUME_X)] = ( data[cudaIndex3D(shi,gtj,dk,VOLUME_X)] + data[cudaIndex3D(ghi,stj,dk,VOLUME_X)] ) / 2;
+	data[cudaIndex3D(gti,ghj,dk,VOLUME_X)] = ( data[cudaIndex3D(sti,ghj,dk,VOLUME_X)] + data[cudaIndex3D(gti,shj,dk,VOLUME_X)] ) / 2;
+	data[cudaIndex3D(gti,gtj,dk,VOLUME_X)] = ( data[cudaIndex3D(sti,gtj,dk,VOLUME_X)] + data[cudaIndex3D(gti,stj,dk,VOLUME_X)] ) / 2;
+	data[cudaIndex3D(ghi,dj,ghk,VOLUME_X)] = ( data[cudaIndex3D(shi,dj,ghk,VOLUME_X)] + data[cudaIndex3D(ghi,dj,shk,VOLUME_X)] ) / 2;
+	data[cudaIndex3D(ghi,dj,gtk,VOLUME_X)] = ( data[cudaIndex3D(shi,dj,gtk,VOLUME_X)] + data[cudaIndex3D(ghi,dj,stk,VOLUME_X)] ) / 2;
+	data[cudaIndex3D(gti,dj,ghk,VOLUME_X)] = ( data[cudaIndex3D(sti,dj,ghk,VOLUME_X)] + data[cudaIndex3D(gti,dj,shk,VOLUME_X)] ) / 2;
+	data[cudaIndex3D(gti,dj,gtk,VOLUME_X)] = ( data[cudaIndex3D(sti,dj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,dj,stk,VOLUME_X)] ) / 2;
+	data[cudaIndex3D(di,ghj,ghk,VOLUME_X)] = ( data[cudaIndex3D(di,shj,ghk,VOLUME_X)] + data[cudaIndex3D(di,ghj,shk,VOLUME_X)] ) / 2;
+	data[cudaIndex3D(di,ghj,gtk,VOLUME_X)] = ( data[cudaIndex3D(di,shj,gtk,VOLUME_X)] + data[cudaIndex3D(di,ghj,stk,VOLUME_X)] ) / 2;
+	data[cudaIndex3D(di,gtj,ghk,VOLUME_X)] = ( data[cudaIndex3D(di,stj,ghk,VOLUME_X)] + data[cudaIndex3D(di,gtj,shk,VOLUME_X)] ) / 2;
+	data[cudaIndex3D(di,gtj,gtk,VOLUME_X)] = ( data[cudaIndex3D(di,stj,gtk,VOLUME_X)] + data[cudaIndex3D(di,gtj,stk,VOLUME_X)] ) / 2;
+
+	data[cudaIndex3D(ghi,ghj,ghk,VOLUME_X)] = ( data[cudaIndex3D(shi,ghj,ghk,VOLUME_X)] + data[cudaIndex3D(ghi,shj,ghk,VOLUME_X)] + data[cudaIndex3D(ghi,ghj,shk,VOLUME_X)] ) / 3;
+	data[cudaIndex3D(ghi,ghj,gtk,VOLUME_X)] = ( data[cudaIndex3D(shi,ghj,gtk,VOLUME_X)] + data[cudaIndex3D(ghi,shj,gtk,VOLUME_X)] + data[cudaIndex3D(ghi,ghj,stk,VOLUME_X)] ) / 3;
+	data[cudaIndex3D(ghi,gtj,ghk,VOLUME_X)] = ( data[cudaIndex3D(shi,gtj,ghk,VOLUME_X)] + data[cudaIndex3D(ghi,stj,ghk,VOLUME_X)] + data[cudaIndex3D(ghi,gtj,shk,VOLUME_X)] ) / 3;
+	data[cudaIndex3D(ghi,gtj,gtk,VOLUME_X)] = ( data[cudaIndex3D(shi,gtj,gtk,VOLUME_X)] + data[cudaIndex3D(ghi,stj,gtk,VOLUME_X)] + data[cudaIndex3D(ghi,gtj,stk,VOLUME_X)] ) / 3;
+	data[cudaIndex3D(gti,ghj,ghk,VOLUME_X)] = ( data[cudaIndex3D(sti,ghj,ghk,VOLUME_X)] + data[cudaIndex3D(gti,shj,ghk,VOLUME_X)] + data[cudaIndex3D(gti,ghj,shk,VOLUME_X)] ) / 3;
+	data[cudaIndex3D(gti,ghj,gtk,VOLUME_X)] = ( data[cudaIndex3D(sti,ghj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,shj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,ghj,stk,VOLUME_X)] ) / 3;
+	data[cudaIndex3D(gti,gtj,ghk,VOLUME_X)] = ( data[cudaIndex3D(sti,gtj,ghk,VOLUME_X)] + data[cudaIndex3D(gti,stj,ghk,VOLUME_X)] + data[cudaIndex3D(gti,gtj,shk,VOLUME_X)] ) / 3;
+	data[cudaIndex3D(gti,gtj,gtk,VOLUME_X)] = ( data[cudaIndex3D(sti,gtj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,stj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,gtj,stk,VOLUME_X)] ) / 3;
+};
+
 __global__ void kernelPickData( uchar *data, cdouble *bufs, cint offseti, cint offsetj, cint offsetk )
 {
 	GetIndex3D();
@@ -427,15 +479,14 @@ __global__ void kernelPickData( uchar *data, cdouble *bufs, cint offseti, cint o
 	int dk = offsetk + k;
 
 	/* zero data first */
-	data[ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
-
-	/* retrieve data from grid */
-	double value = bufs[ Index(i, j, k) ];
+	data[cudaIndex3D(di,dj,dk,VOLUME_X)] = 0;
 
 	/* append data to volume data */
-	int temp = atomicRound( value );
+	int temp = atomicRound( bufs[ Index(i, j, k) ] );
 	if ( temp > 0 and temp < 250 )
 		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (uchar) temp;
+
+	atomicFloodData( data, offseti, offsetj, offsetk );
 };
 
 __global__ void kernelCopyGrids( double *src, cdouble *dst )
@@ -476,22 +527,22 @@ __global__ void kernelInteractNodes
 	GetIndex3D();
 
 	if ( uL eqt MACRO_TRUE )
-		center[Index(gst_header,j,k)] = ( left[Index(gst_tailer,j,k)] + center[Index(sim_header,j,k)] ) / 2.f;
+		center[Index(sim_header,j,k)] = left[Index(sim_tailer,j,k)];
 
 	if ( uR eqt MACRO_TRUE )
-		center[Index(gst_tailer,j,k)] = ( right[Index(gst_header,j,k)] + center[Index(sim_tailer,j,k)] ) / 2.f;
+		center[Index(sim_tailer,j,k)] = right[Index(sim_header,j,k)];
 
 	if ( uU eqt MACRO_TRUE )
-		center[Index(i,gst_tailer,k)] = ( up[Index(i,gst_header,k)] + center[Index(i,sim_tailer,k)] ) / 2.f;
+		center[Index(i,sim_tailer,k)] = up[Index(i,sim_header,k)];
 
 	if ( uD eqt MACRO_TRUE )
-        center[Index(i,gst_header,k)] = ( down[Index(i,gst_tailer,k)] + center[Index(i,sim_header,k)] ) / 2.f;
+        center[Index(i,sim_header,k)] = down[Index(i,sim_tailer,k)];
 
 	if ( uF eqt MACRO_TRUE )
-		center[Index(i,j,gst_tailer)] = ( front[Index(i,j,gst_header)] + center[Index(i,j,sim_tailer)] ) / 2.f;
+		center[Index(i,j,sim_tailer)] = front[Index(i,j,sim_header)];
 
 	if ( uB eqt MACRO_TRUE )
-		center[Index(i,j,gst_header)] = ( back[Index(i,j,gst_tailer)] + center[Index(i,j,sim_header)] ) / 2.f;
+		center[Index(i,j,sim_header)] = back[Index(i,j,sim_tailer)];
 };
 
 #endif

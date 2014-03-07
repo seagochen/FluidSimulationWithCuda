@@ -39,16 +39,10 @@ namespace sge
 		vector <double*> dev_buffers;
 
 		/* Level-1 GPU */
-		vector <double*> dev_density_s;
-		vector <double*> dev_velocity_u_s;
-		vector <double*> dev_velocity_v_s;
-		vector <double*> dev_velocity_w_s;
-		
-		/* Level-1 GPU */
-		vector <double*> dev_density_t;
-		vector <double*> dev_velocity_u_t;
-		vector <double*> dev_velocity_v_t;
-		vector <double*> dev_velocity_w_t;
+		vector <double*> dev_density;
+		vector <double*> dev_velocity_u;
+		vector <double*> dev_velocity_v;
+		vector <double*> dev_velocity_w;
 
 		/* Level-0 Host */
 		vector <double*> host_density;
