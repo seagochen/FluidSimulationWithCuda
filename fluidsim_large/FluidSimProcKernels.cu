@@ -122,12 +122,6 @@ void FluidSimProc::UploadNodes( void )
 		cudaMemcpy( dev_velocity_v_s[i], host_velocity_v[i], m_node_size, cudaMemcpyHostToDevice );
 		cudaMemcpy( dev_velocity_w_s[i], host_velocity_w[i], m_node_size, cudaMemcpyHostToDevice );
 		cudaMemcpy( dev_obstacle[i],     host_obstacle[i],   m_node_size, cudaMemcpyHostToDevice );
-
-		if ( helper.GetCUDALastError( "cudaMemcpy failed when upload nodes to device", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit(1);
-		}
 	}
 };
 
@@ -140,23 +134,13 @@ void FluidSimProc::DownloadNodes( void )
 		cudaMemcpy( host_velocity_u[i], dev_velocity_u_t[i], m_node_size, cudaMemcpyDeviceToHost );
 		cudaMemcpy( host_velocity_v[i], dev_velocity_v_t[i], m_node_size, cudaMemcpyDeviceToHost );
 		cudaMemcpy( host_velocity_w[i], dev_velocity_w_t[i], m_node_size, cudaMemcpyDeviceToHost );
-
-		if ( helper.GetCUDALastError( "cudaMemcpy failed when download nodes to host", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit(1);
-		}
 	}
 };
 
 bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 {
 	/* choose which GPU to run on, change this on a multi-GPU system. */
-	if ( cudaSetDevice ( 0 ) != cudaSuccess )
-	{
-		helper.GetCUDALastError ( "cudaSetDevices", __FILE__, __LINE__ );
-		return false;
-	}
+	if ( cudaSetDevice ( 0 ) != cudaSuccess ) return false; 
 
 	/* 创建临时数据 */
 	if ( helper.CreateDeviceBuffers( TPBUFFER_X*sizeof(double), 1, &dev_dtpbuf ) not_eq SG_RUNTIME_OK ) return false;
@@ -419,12 +403,6 @@ void FluidSimProc::LoadNode( int i, int j, int k )
 		kernelZeroGrids __device_func__ ( velw_B );
 		kernelZeroGrids __device_func__ ( dens_B );
 	}
-
-	if ( helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit( 1 );
-	}
 };
 
 void FluidSimProc::SaveNode( int i, int j, int k )
@@ -476,7 +454,6 @@ void FluidSimProc::InitBoundary( int i, int j, int k )
 	{
 		if ( cudaMemcpy( host_obstacle[i], dev_obs, m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
 		{
-			helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ );
 			FreeResource();
 			exit( 1 );
 		}
@@ -486,7 +463,6 @@ void FluidSimProc::InitBoundary( int i, int j, int k )
 	kernelSetBoundary __device_func__( dev_obs );
 	if ( cudaMemcpy( host_obstacle[cudaIndex3D(i,j,k,NODES_X)], dev_obs, m_node_size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 	{
-		helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ );
 		FreeResource();
 		exit( 1 );
 	}
