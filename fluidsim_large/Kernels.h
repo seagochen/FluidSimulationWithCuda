@@ -387,11 +387,11 @@ __global__ void kernelZeroVolumetric( sge::SGUCHAR *visual )
 {
 	GetIndex3D();
 
-	for ( int ii = 0; ii < NODES_X; ii++ )
+	for ( int ii = 0; ii < HNODES_X; ii++ )
 	{
-		for ( int jj = 0; jj < NODES_X; jj++ )
+		for ( int jj = 0; jj < HNODES_X; jj++ )
 		{
-			for ( int kk = 0; kk < NODES_X; kk++ )
+			for ( int kk = 0; kk < HNODES_X; kk++ )
 			{
 				int di = ii * GRIDS_X + i;
 				int dj = jj * GRIDS_X + j;

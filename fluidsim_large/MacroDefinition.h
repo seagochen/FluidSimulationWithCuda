@@ -31,7 +31,6 @@ typedef std::string*  ptrStr;
 
 #define GRIDS_X                 64    // 计算网格在单维度上所拥有的数量
 #define CURSOR_X                 2    // cursor的最大尺度
-#define NODES_X                  2    // define the num of node per dim
 #define GNODES_X                 2    // GPU上使用的计算节点
 #define HNODES_X                 2    // HOST上使用的计算节点
 #define CURSOR_X                 2    // define the max offset of cursor
