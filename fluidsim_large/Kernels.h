@@ -445,29 +445,53 @@ __global__ void kernelCopyGrids( double *src, cdouble *dst )
 	src[Index(i,j,k)] = dst[Index(i,j,k)];
 };
 
+__global__ void kernelFloodHalo( double *grids )
+{
+	GetIndex3D();
+
+	grids[Index(gst_header,j,k)] = grids[Index(sim_header,j,k)];
+	grids[Index(gst_tailer,j,k)] = grids[Index(sim_tailer,j,k)];
+	grids[Index(i,gst_header,k)] = grids[Index(i,sim_header,k)];
+	grids[Index(i,gst_tailer,k)] = grids[Index(i,sim_tailer,k)];
+	grids[Index(i,j,gst_header)] = grids[Index(i,j,sim_header)];
+	grids[Index(i,j,gst_tailer)] = grids[Index(i,j,sim_tailer)];
+
+	grids[Index(gst_header,gst_header,k)];
+	grids[Index(gst_tailer,gst_header,k)];
+	grids[Index(gst_header,gst_tailer,k)];
+	grids[Index(gst_tailer,gst_tailer,k)];
+
+	grids[Index(i,gst_header,k)];
+	grids[Index(i,gst_header,k)];
+	grids[Index(i,gst_header,k)];
+	grids[Index(i,gst_header,k)];
+
+
+};
+
 __global__ void kernelInteractNodes
-	( double *center, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back,
+	( double *center, double *left, double *right, double *up, double *down, double *front, double *back,
 	cint uL, cint uR, cint uU, cint uD, cint uF, cint uB )
 {
 	GetIndex3D();
 
 	if ( uL eqt MACRO_TRUE )
-		center[Index(sim_header,j,k)] = left[Index(sim_tailer,j,k)];
+		center[Index(gst_header,j,k)] = ( left[Index(gst_tailer,j,k)] + center[Index(sim_header,j,k)] ) / 2.f;
 
 	if ( uR eqt MACRO_TRUE )
-		center[Index(sim_tailer,j,k)] = right[Index(sim_header,j,k)];
+		center[Index(gst_tailer,j,k)] = ( right[Index(gst_header,j,k)] + center[Index(sim_tailer,j,k)] ) / 2.f;
 
 	if ( uU eqt MACRO_TRUE )
-		center[Index(i,sim_tailer,k)] = up[Index(i,sim_header,k)];
+		center[Index(i,gst_tailer,k)] = ( up[Index(i,gst_header,k)] + center[Index(i,sim_tailer,k)] ) / 2.f;
 
 	if ( uD eqt MACRO_TRUE )
-        center[Index(i,sim_header,k)] = down[Index(i,sim_tailer,k)];
+        center[Index(i,gst_header,k)] = ( down[Index(i,gst_tailer,k)] + center[Index(i,sim_header,k)] ) / 2.f;
 
 	if ( uF eqt MACRO_TRUE )
-		center[Index(i,j,sim_tailer)] = front[Index(i,j,sim_header)];
+		center[Index(i,j,gst_tailer)] = ( front[Index(i,j,gst_header)] + center[Index(i,j,sim_tailer)] ) / 2.f;
 
 	if ( uB eqt MACRO_TRUE )
-		center[Index(i,j,sim_header)] = back[Index(i,j,sim_tailer)];
+		center[Index(i,j,gst_header)] = ( back[Index(i,j,gst_tailer)] + center[Index(i,j,sim_header)] ) / 2.f;
 };
 
 #endif
