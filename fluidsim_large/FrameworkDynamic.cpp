@@ -537,14 +537,7 @@ void Framework_v1_0::onCreate()
 	m_fluid.textures.hFramebuffer = Create2DFrameBuffer ( &m_fluid );
 
 	/* 打印操作信息 */
-	cout << "ok, fluid simulation with multiple nodes will start soon!" << endl
-	     << "*********************************************************" << endl
-		 << "**************** operation to confirm *******************" << endl
-		 << "mouse wheel ------------ to rotate the observation matrix" << endl
-		 << "keyboard: Q ------------ to quit the program" << endl
-		 << "keyboard: Esc ---------- to quit the program" << endl
-		 << "keyboard: S ------------ to retrieve the data from GPU" << endl
-		 << "keyboard: C ------------ to clear the data of stage" << endl;
+	m_simproc->PrintMSG();
 };
 
 void Framework_v1_0::CountFPS()
