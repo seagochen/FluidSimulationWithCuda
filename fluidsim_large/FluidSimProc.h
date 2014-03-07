@@ -42,6 +42,13 @@ namespace sge
 		vector <double*> dev_velocity_w, host_velocity_w;
 		vector <double*> dev_obstacle,   host_obstacle;
 
+		/* local nodes */
+		vector <double*> node_density;
+		vector <double*> node_velocity_u;
+		vector <double*> node_velocity_v;
+		vector <double*> node_velocity_w;
+		vector <double*> node_obstacle;
+
 		/* topology of nodes on host and device */
 		vector <SimNode*> gpu_node, host_node;
 
@@ -87,6 +94,12 @@ namespace sge
 
 		/* print runtime message */
 		void PrintMSG( void );
+
+		/* upload buffers */
+		void IO_UploadBuffers( void );
+
+		/* download buffers */
+		void IO_DownloadBuffers( void );
 
 	private:
 		/* IO, host to device */

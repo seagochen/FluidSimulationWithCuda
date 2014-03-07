@@ -33,11 +33,11 @@
     <ClInclude Include="Kernels.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MacroDefinition.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Resource Files\Icon Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MacroDefinition.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
