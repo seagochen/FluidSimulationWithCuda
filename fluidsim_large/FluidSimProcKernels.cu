@@ -29,10 +29,7 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	ZeroBuffers();
 
 	/* set boundary */
-	InitBoundary( 0, 0, 0 );
-
-	/* 上传节点数据 */
-	UploadNodes();
+	InitBoundary();
 
 	/* finally, print message */
 	printf( "fluid simulation ready...\n" );
@@ -43,7 +40,6 @@ ptrStr FluidSimProc::GetTitleBar( void )
 	return &m_sz_title; 
 };
 
-/* initialize the parameters */
 void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 {
 	fluid->fps.dwCurrentTime = 0;
@@ -60,7 +56,6 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	m_sz_title = "Excalibur OTL 2.10.00, large-scale. ------------ FPS: %d ";
 };
 
-/* create the topology of fluid simulation nodes */
 void FluidSimProc::CreateTopology( void )
 {
 	for ( int k = 0; k < NODES_X; k++ )
@@ -113,8 +108,7 @@ void FluidSimProc::PrintMSG( void )
 		<< "grid size per computation node : 64 x 64 x 64" << endl;
 };
 
-/* pick host node to gpu device */
-void FluidSimProc::UploadNodes( void )
+void FluidSimProc::IO_ReadBuffers( void )
 {
 	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
 	{
@@ -132,8 +126,7 @@ void FluidSimProc::UploadNodes( void )
 	}
 };
 
-/* update host node's status and data */
-void FluidSimProc::DownloadNodes( void )
+void FluidSimProc::IO_WriteBuffers( void )
 {
 	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
 	{
@@ -259,35 +252,42 @@ void FluidSimProc::FreeResource ( void )
 		helper.FreeDeviceBuffers( 1, &dev_buffers[i] );
 }
 
-void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
+void FluidSimProc::SolveNavierStokers( void )
 {
-	if ( !fluid->run ) return;
-	
-	/* 更新节点状态 */
-	for ( int i = 0; i < NODES_X; i++ )
+	/* updating */
+	for ( int i = 0; i < GNODES_X; i++ )
 	{
-		for ( int j = 0; j < NODES_X; j++ )
+		for ( int j = 0; j < GNODES_X; j++ )
 		{
-			for ( int k = 0; k < NODES_X; k++ )
+			for ( int k = 0; k < GNODES_X; k++ )
 			{
-				/* for fluid simulation, copy the data to device */
 				LoadNode(i,j,k) ;
 
-				/* 对节点的状况进行跟踪 */
-				InteractNodes(i,j,k);
+				Interaction(i,j,k);
 
-				/* Fluid process */
 				AddSource();
+
 				VelocitySolver();
+
 				DensitySolver();
 					
-				/* retrieve data back to host */
 				SaveNode(i,j,k);
 			}
 		}
 	}
+};
 
-	/* 等待所有GPU kernels运行结束 */
+void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
+{
+	if ( !fluid->run ) return;
+
+	/* read host nodes */
+	IO_ReadBuffers();
+	
+	/* solving NS equations */
+	SolveNavierStokers();
+
+	/* waiting for all kernels end */
 	if ( cudaThreadSynchronize() not_eq cudaSuccess )
 	{
 		printf( "cudaThreadSynchronize failed\n" );
@@ -297,6 +297,9 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 
 	/* finally, generate volumetric image */
 	Finally( fluid );
+
+	/* save updated nodes */
+	IO_WriteBuffers();
 };
 
 void FluidSimProc::LoadNode( int i, int j, int k )
@@ -538,7 +541,7 @@ void FluidSimProc::AddSource( void )
 	}
 };
 
-void FluidSimProc::InitBoundary( int i, int j, int k )
+void FluidSimProc::InitBoundary( void )
 {
 	cudaDeviceDim3D();
 
@@ -555,9 +558,9 @@ void FluidSimProc::InitBoundary( int i, int j, int k )
 		}
 	}	
 	
-	/* 将边界条件拷贝至内存 */
+	/* set boundary condition */
 	kernelSetBoundary __device_func__( dev_obs );
-	if ( cudaMemcpy( host_obstacle[cudaIndex3D(i,j,k,NODES_X)], dev_obs, m_node_size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
+	if ( cudaMemcpy( host_obstacle[cudaIndex3D(0,0,0,NODES_X)], dev_obs, m_node_size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 	{
 		helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ );
 		FreeResource();
@@ -657,7 +660,7 @@ void FluidSimProc::ZeroBuffers( void )
 	}
 };
 
-void FluidSimProc::InteractNodes( int i, int j, int k )
+void FluidSimProc::Interaction( int i, int j, int k )
 {
 	SimNode *ptr = gpu_node[cudaIndex3D(i,j,k,NODES_X)];
 	int left, right, up, down, front, back;

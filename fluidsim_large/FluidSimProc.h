@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Feb 20, 2014
+* <Last Time>     Mar 07, 2014
 * <File Name>     FluidSimProc.h
 */
 
@@ -32,54 +32,43 @@ namespace sge
 		};
 
 	private:
-		/* Level-0 GPU */
-		vector <double*> dev_obstacle;
-
-		/* Level-0 GPU */
+		/* temporary buffers for fluid simulation */
 		vector <double*> dev_buffers;
 
-		/* Level-1 GPU */
-		vector <double*> dev_density;
-		vector <double*> dev_velocity_u;
-		vector <double*> dev_velocity_v;
-		vector <double*> dev_velocity_w;
+		/* nodes for gpu and host */
+		vector <double*> dev_density,    host_density;
+		vector <double*> dev_velocity_u, host_velocity_u;
+		vector <double*> dev_velocity_v, host_velocity_v;
+		vector <double*> dev_velocity_w, host_velocity_w;
+		vector <double*> dev_obstacle,   host_obstacle;
 
-		/* Level-0 Host */
-		vector <double*> host_density;
-		vector <double*> host_velocity_u;
-		vector <double*> host_velocity_v;
-		vector <double*> host_velocity_w;
-		vector <double*> host_obstacle;
-
+		/* topology of nodes on host and device */
 		vector <SimNode*> gpu_node, host_node;
 
-		/* 可视化 */
+		/* visualization */
 		SGUCHAR *dev_visual, *host_visual;
 
-		/* 临时数据 */
+		/* temporary buffers for some purpose */
 		double *dev_dtpbuf, *host_dtpbuf;
 		int    *dev_ntpbuf, *host_ntpbuf;
 
-	private:
 		/* cursor */
 		SGINT3 m_cursor;
 
 		/* CUDA */
 		dim3 gridDim, blockDim;
 
-	private:
-		FunctionHelper helper;
-
-	private:
 		/* node and volumetric size */
-		size_t m_node_size;
-		size_t m_volm_size;
+		size_t m_node_size, m_volm_size;
 
-		/* 程序窗口标题 */
+		/* title bar */
 		std::string m_sz_title;
 
-		/* 与AddSource时有关的变量 */
+		/* etc. */
 		int increase_times, decrease_times;
+
+	private:
+		FunctionHelper helper;
 
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
@@ -93,30 +82,33 @@ namespace sge
 		/* zero the buffers for fluid simulation */
 		void ZeroBuffers( void );
 
-		/* 获得窗口标题，版本号，采用的技术, etc. */
+		/* title bar */
 		ptrStr GetTitleBar( void );
 
-		/* 打印当前的节点信息 */
+		/* print runtime message */
 		void PrintMSG( void );
 
 	private:
+		/* IO, host to device */
+		void IO_ReadBuffers( void );
+
+		/* IO, device to host */
+		void IO_WriteBuffers( void );
+
+		/* loading gpu nodes for fluid simulation */
+		void LoadNode( int i, int j, int k );
+
+		/* saving the result of fluid simulation */
+		void SaveNode( int i, int j, int k );
+
+		/* solving the Navier-Stokers equations */
+		void SolveNavierStokers( void );
+
 		/* flood buffer for multiple nodes */
-		void InteractNodes( int i, int j, int k );
+		void Interaction( int i, int j, int k );
 
 		/* initialize FPS and etc. */
 		void InitParams( FLUIDSPARAM *fluid );
-
-		/* 上传内存节点数据 */
-		void UploadNodes( void );
-
-		/* 下载缓存节点数据 */
-		void DownloadNodes( void );
-
-		/* copy host data to CUDA device */
-		void LoadNode( int i, int j, int k );
-
-		/* retrieve data back to host */
-		void SaveNode( int i, int j, int k );
 			
 		/* retrieve the density back and load into volumetric data for rendering */
 		void Finally( FLUIDSPARAM *fluid );
@@ -134,7 +126,7 @@ namespace sge
 		void AddSource( void );
 
 		/* initialize boundary condition */
-		void InitBoundary( int i, int j, int k );
+		void InitBoundary( void );
 
 		/* solving velocity */
 		void VelocitySolver( void );

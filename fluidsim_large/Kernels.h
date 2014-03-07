@@ -496,30 +496,6 @@ __global__ void kernelCopyGrids( double *src, cdouble *dst )
 	src[Index(i,j,k)] = dst[Index(i,j,k)];
 };
 
-__global__ void kernelFloodHalo( double *grids )
-{
-	GetIndex3D();
-
-	grids[Index(gst_header,j,k)] = grids[Index(sim_header,j,k)];
-	grids[Index(gst_tailer,j,k)] = grids[Index(sim_tailer,j,k)];
-	grids[Index(i,gst_header,k)] = grids[Index(i,sim_header,k)];
-	grids[Index(i,gst_tailer,k)] = grids[Index(i,sim_tailer,k)];
-	grids[Index(i,j,gst_header)] = grids[Index(i,j,sim_header)];
-	grids[Index(i,j,gst_tailer)] = grids[Index(i,j,sim_tailer)];
-
-	grids[Index(gst_header,gst_header,k)];
-	grids[Index(gst_tailer,gst_header,k)];
-	grids[Index(gst_header,gst_tailer,k)];
-	grids[Index(gst_tailer,gst_tailer,k)];
-
-	grids[Index(i,gst_header,k)];
-	grids[Index(i,gst_header,k)];
-	grids[Index(i,gst_header,k)];
-	grids[Index(i,gst_header,k)];
-
-
-};
-
 __global__ void kernelInteractNodes
 	( double *center, double *left, double *right, double *up, double *down, double *front, double *back,
 	cint uL, cint uR, cint uU, cint uD, cint uF, cint uB )
