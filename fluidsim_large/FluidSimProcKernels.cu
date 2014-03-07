@@ -29,10 +29,7 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	ZeroBuffers();
 
 	/* set boundary */
-	InitBoundary( 0, 0, 0 );
-
-	/* 上传节点数据 */
-	UploadNodes();
+	InitBoundary();
 
 	/* finally, print message */
 	printf( "fluid simulation ready...\n" );
@@ -43,7 +40,6 @@ ptrStr FluidSimProc::GetTitleBar( void )
 	return &m_sz_title; 
 };
 
-/* initialize the parameters */
 void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 {
 	fluid->fps.dwCurrentTime = 0;
@@ -57,40 +53,69 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 
 	increase_times = decrease_times = 0;
 
+	m_cursor.x = m_cursor.y = m_cursor.z = 0;
+
 	m_sz_title = "Excalibur OTL 2.10.00, large-scale. ------------ FPS: %d ";
 };
 
-/* create the topology of fluid simulation nodes */
 void FluidSimProc::CreateTopology( void )
 {
-	for ( int k = 0; k < NODES_X; k++ )
+	for ( int k = 0; k < GNODES_X; k++ )
 	{
-		for ( int j = 0; j < NODES_X; j++ )
+		for ( int j = 0; j < GNODES_X; j++ )
 		{
-			for ( int i = 0; i < NODES_X; i++ )
+			for ( int i = 0; i < GNODES_X; i++ )
 			{
 				/* left */
 				if ( i >= 1 )
-					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrLeft  = gpu_node[cudaIndex3D( i-1, j, k, NODES_X )];
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrLeft  = gpu_node[cudaIndex3D( i-1, j, k, GNODES_X )];
 				/* right */
-				if ( i <= NODES_X - 2 )
-					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrRight = gpu_node[cudaIndex3D( i+1, j, k, NODES_X )];
+				if ( i <= GNODES_X - 2 )
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrRight = gpu_node[cudaIndex3D( i+1, j, k, GNODES_X )];
 				/* down */
 				if ( j >= 1 )
-					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrDown  = gpu_node[cudaIndex3D( i, j-1, k, NODES_X )];
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrDown  = gpu_node[cudaIndex3D( i, j-1, k, GNODES_X )];
 				/* up */
-				if ( j <= NODES_X - 2 )
-					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrUp    = gpu_node[cudaIndex3D( i, j+1, k, NODES_X )];
+				if ( j <= GNODES_X - 2 )
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrUp    = gpu_node[cudaIndex3D( i, j+1, k, GNODES_X )];
 				/* back */
 				if ( k >= 1 )
-					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrBack  = gpu_node[cudaIndex3D( i, j, k-1, NODES_X )];
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrBack  = gpu_node[cudaIndex3D( i, j, k-1, GNODES_X )];
 				/* front */
-				if ( k <= NODES_X - 2 )
-					gpu_node[cudaIndex3D( i, j, k, NODES_X )]->ptrFront = gpu_node[cudaIndex3D( i, j, k+1, NODES_X )];
+				if ( k <= GNODES_X - 2 )
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrFront = gpu_node[cudaIndex3D( i, j, k+1, GNODES_X )];
+			}
+		}
+	}
 
-				gpu_node[cudaIndex3D( i, j, k, NODES_X )]->nodeIX.x = i;
-				gpu_node[cudaIndex3D( i, j, k, NODES_X )]->nodeIX.y = j;
-				gpu_node[cudaIndex3D( i, j, k, NODES_X )]->nodeIX.z = k;
+	for ( int k = 0; k < HNODES_X; k++ )
+	{
+		for ( int j = 0; j < HNODES_X; j++ )
+		{
+			for ( int i = 0; i < HNODES_X; i++ )
+			{
+				/* left */
+				if ( i >= 1 )
+					host_node[cudaIndex3D( i, j, k, HNODES_X )]->ptrLeft  = host_node[cudaIndex3D( i-1, j, k, HNODES_X )];
+				/* right */
+				if ( i <= HNODES_X - 2 )
+					host_node[cudaIndex3D( i, j, k, HNODES_X )]->ptrRight = host_node[cudaIndex3D( i+1, j, k, HNODES_X )];
+				/* down */
+				if ( j >= 1 )
+					host_node[cudaIndex3D( i, j, k, HNODES_X )]->ptrDown  = host_node[cudaIndex3D( i, j-1, k, HNODES_X )];
+				/* up */
+				if ( j <= HNODES_X - 2 )
+					host_node[cudaIndex3D( i, j, k, HNODES_X )]->ptrUp    = host_node[cudaIndex3D( i, j+1, k, HNODES_X )];
+				/* back */
+				if ( k >= 1 )
+					host_node[cudaIndex3D( i, j, k, HNODES_X )]->ptrBack  = host_node[cudaIndex3D( i, j, k-1, HNODES_X )];
+				/* front */
+				if ( k <= HNODES_X - 2 )
+					host_node[cudaIndex3D( i, j, k, HNODES_X )]->ptrFront = host_node[cudaIndex3D( i, j, k+1, HNODES_X )];
+
+				host_node[cudaIndex3D( i, j, k, HNODES_X )]->nodeIX.x = i;
+				host_node[cudaIndex3D( i, j, k, HNODES_X )]->nodeIX.y = j;
+				host_node[cudaIndex3D( i, j, k, HNODES_X )]->nodeIX.z = k;
 			}
 		}
 	}
@@ -113,43 +138,6 @@ void FluidSimProc::PrintMSG( void )
 		<< "grid size per computation node : 64 x 64 x 64" << endl;
 };
 
-/* pick host node to gpu device */
-void FluidSimProc::UploadNodes( void )
-{
-	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
-	{
-		cudaMemcpy( dev_density[i],    host_density[i],    m_node_size, cudaMemcpyHostToDevice );
-		cudaMemcpy( dev_velocity_u[i], host_velocity_u[i], m_node_size, cudaMemcpyHostToDevice );
-		cudaMemcpy( dev_velocity_v[i], host_velocity_v[i], m_node_size, cudaMemcpyHostToDevice );
-		cudaMemcpy( dev_velocity_w[i], host_velocity_w[i], m_node_size, cudaMemcpyHostToDevice );
-		cudaMemcpy( dev_obstacle[i],     host_obstacle[i], m_node_size, cudaMemcpyHostToDevice );
-
-		if ( helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
-	}
-};
-
-/* update host node's status and data */
-void FluidSimProc::DownloadNodes( void )
-{
-	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
-	{
-		cudaMemcpy( host_density[i],    dev_density[i],    m_node_size, cudaMemcpyDeviceToHost );
-		cudaMemcpy( host_velocity_u[i], dev_velocity_u[i], m_node_size, cudaMemcpyDeviceToHost );
-		cudaMemcpy( host_velocity_v[i], dev_velocity_v[i], m_node_size, cudaMemcpyDeviceToHost );
-		cudaMemcpy( host_velocity_w[i], dev_velocity_w[i], m_node_size, cudaMemcpyDeviceToHost );
-
-		if ( helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
-	}
-};
-
 bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 {
 	/* choose which GPU to run on, change this on a multi-GPU system. */
@@ -162,7 +150,7 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 	if ( helper.CreateHostBuffers( TPBUFFER_X*sizeof(int), 1, &host_ntpbuf ) not_eq SG_RUNTIME_OK ) return false;
 
 	/* vector of fluid simulation buffers */
-	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
+	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
 	{
 		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
 
@@ -180,7 +168,7 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 	}
 
 	/* vector of node topology */
-	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
+	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X; i++ )
 	{		
 		SimNode *node  = (SimNode*)malloc(sizeof(SimNode));
 		node->ptrFront = node->ptrBack = nullptr;
@@ -190,8 +178,19 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		gpu_node.push_back( node );
 	}
 
+	/* vector of node topology */
+	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
+	{		
+		SimNode *node  = (SimNode*)malloc(sizeof(SimNode));
+		node->ptrFront = node->ptrBack = nullptr;
+		node->ptrLeft  = node->ptrRight = nullptr;
+		node->ptrDown  = node->ptrUp = nullptr;
+		node->updated  = false;
+		host_node.push_back( node );
+	}
+
 	/* create GPU node for fluid simulation */
-	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
+	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X; i++ )
 	{
 		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
 
@@ -205,7 +204,6 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		dev_velocity_u.push_back( ptrU );
 		dev_velocity_v.push_back( ptrV );
 		dev_velocity_w.push_back( ptrW );
-
 		dev_obstacle.push_back( ptrObs );
 	}
 
@@ -213,8 +211,7 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 	for ( int i = 0; i < dev_buffers_num; i++ )
 	{
 		double *ptr;
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptr ) not_eq SG_RUNTIME_OK )
-			return false;
+		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptr ) not_eq SG_RUNTIME_OK ) return false;
 
 		dev_buffers.push_back(ptr);
 	}
@@ -237,7 +234,7 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 void FluidSimProc::FreeResource ( void )
 {
 	/* free node resource */
-	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
+	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
 	{
 		/* release host resource */
 		helper.FreeHostBuffers( 1, &host_density[i] );
@@ -245,7 +242,10 @@ void FluidSimProc::FreeResource ( void )
 		helper.FreeHostBuffers( 1, &host_velocity_v[i] );
 		helper.FreeHostBuffers( 1, &host_velocity_w[i] );
 		helper.FreeHostBuffers( 1, &host_obstacle[i] );
+	}
 
+	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X; i++ )
+	{
 		/* release device resource */
 		helper.FreeDeviceBuffers( 1, &dev_obstacle[i] );
 		helper.FreeDeviceBuffers( 1, &dev_density[i] );
@@ -259,57 +259,48 @@ void FluidSimProc::FreeResource ( void )
 		helper.FreeDeviceBuffers( 1, &dev_buffers[i] );
 }
 
-void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
+void FluidSimProc::SolveNavierStokers( void )
 {
-	if ( !fluid->run ) return;
-	
-	/* 更新节点状态 */
-	for ( int i = 0; i < NODES_X; i++ )
+	/* updating */
+	for ( int i = 0; i < GNODES_X; i++ )
 	{
-		for ( int j = 0; j < NODES_X; j++ )
+		for ( int j = 0; j < GNODES_X; j++ )
 		{
-			for ( int k = 0; k < NODES_X; k++ )
+			for ( int k = 0; k < GNODES_X; k++ )
 			{
-				/* for fluid simulation, copy the data to device */
-				LoadNode(i,j,k) ;
-
-				/* 对节点的状况进行跟踪 */
-				InteractNodes(i,j,k);
-
-				/* Fluid process */
-				AddSource();
-				VelocitySolver();
-				DensitySolver();
+				/* update node if not updated */
+				if ( not gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated )
+				{
+					LoadNode(i,j,k);
 					
-				/* retrieve data back to host */
-				SaveNode(i,j,k);
+					Interaction(i,j,k);
+					
+					AddSource();
+					
+					VelocitySolver();
+
+					DensitySolver();
+					
+					SaveNode(i,j,k);
+
+					gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated = true;
+				}
 			}
 		}
 	}
-
-	/* 等待所有GPU kernels运行结束 */
-	if ( cudaThreadSynchronize() not_eq cudaSuccess )
-	{
-		printf( "cudaThreadSynchronize failed\n" );
-		FreeResource();
-		exit( 1 );
-	}
-
-	/* finally, generate volumetric image */
-	Finally( fluid );
 };
 
 void FluidSimProc::LoadNode( int i, int j, int k )
 {
 	cudaDeviceDim3D();
-	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, NODES_X )];
+	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, GNODES_X )];
 
 	/* upload center node to GPU device */
-	kernelCopyGrids __device_func__ ( dev_u, dev_velocity_u[cudaIndex3D( i, j, k, NODES_X )] );
-	kernelCopyGrids __device_func__ ( dev_v, dev_velocity_v[cudaIndex3D( i, j, k, NODES_X )] );
-	kernelCopyGrids __device_func__ ( dev_w, dev_velocity_w[cudaIndex3D( i, j, k, NODES_X )] );
-	kernelCopyGrids __device_func__ ( dev_den,  dev_density[cudaIndex3D( i, j, k, NODES_X )] );
-	kernelCopyGrids __device_func__ ( dev_obs, dev_obstacle[cudaIndex3D( i, j, k, NODES_X )] );
+	kernelCopyGrids __device_func__ ( dev_u, dev_velocity_u[cudaIndex3D( i, j, k, GNODES_X )] );
+	kernelCopyGrids __device_func__ ( dev_v, dev_velocity_v[cudaIndex3D( i, j, k, GNODES_X )] );
+	kernelCopyGrids __device_func__ ( dev_w, dev_velocity_w[cudaIndex3D( i, j, k, GNODES_X )] );
+	kernelCopyGrids __device_func__ ( dev_den,  dev_density[cudaIndex3D( i, j, k, GNODES_X )] );
+	kernelCopyGrids __device_func__ ( dev_obs, dev_obstacle[cudaIndex3D( i, j, k, GNODES_X )] );
 
 	if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
 	{
@@ -320,10 +311,10 @@ void FluidSimProc::LoadNode( int i, int j, int k )
 	/* upload neighbouring buffers to GPU device */
 	if ( ptr->ptrLeft not_eq nullptr )
 	{
-		kernelCopyGrids __device_func__( velu_L, dev_velocity_u[cudaIndex3D( i-1, j, k, NODES_X )] );
-		kernelCopyGrids __device_func__( velv_L, dev_velocity_v[cudaIndex3D( i-1, j, k, NODES_X )] );
-		kernelCopyGrids __device_func__( velw_L, dev_velocity_w[cudaIndex3D( i-1, j, k, NODES_X )] );
-		kernelCopyGrids __device_func__( dens_L,    dev_density[cudaIndex3D( i-1, j, k, NODES_X )] );
+		kernelCopyGrids __device_func__( velu_L, dev_velocity_u[cudaIndex3D( i-1, j, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( velv_L, dev_velocity_v[cudaIndex3D( i-1, j, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( velw_L, dev_velocity_w[cudaIndex3D( i-1, j, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( dens_L,    dev_density[cudaIndex3D( i-1, j, k, GNODES_X )] );
 
 		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
 		{
@@ -347,10 +338,10 @@ void FluidSimProc::LoadNode( int i, int j, int k )
 
 	if ( ptr->ptrRight not_eq nullptr )
 	{
-		kernelCopyGrids __device_func__( velu_R, dev_velocity_u[cudaIndex3D( i+1, j, k, NODES_X )] );
-		kernelCopyGrids __device_func__( velv_R, dev_velocity_v[cudaIndex3D( i+1, j, k, NODES_X )] );
-		kernelCopyGrids __device_func__( velw_R, dev_velocity_w[cudaIndex3D( i+1, j, k, NODES_X )] );
-		kernelCopyGrids __device_func__( dens_R,    dev_density[cudaIndex3D( i+1, j, k, NODES_X )] );
+		kernelCopyGrids __device_func__( velu_R, dev_velocity_u[cudaIndex3D( i+1, j, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( velv_R, dev_velocity_v[cudaIndex3D( i+1, j, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( velw_R, dev_velocity_w[cudaIndex3D( i+1, j, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( dens_R,    dev_density[cudaIndex3D( i+1, j, k, GNODES_X )] );
 
 		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
 		{
@@ -374,10 +365,10 @@ void FluidSimProc::LoadNode( int i, int j, int k )
 
 	if ( ptr->ptrUp not_eq nullptr )
 	{
-		kernelCopyGrids __device_func__( velu_U, dev_velocity_u[cudaIndex3D( i, j+1, k, NODES_X )] );
-		kernelCopyGrids __device_func__( velv_U, dev_velocity_v[cudaIndex3D( i, j+1, k, NODES_X )] );
-		kernelCopyGrids __device_func__( velw_U, dev_velocity_w[cudaIndex3D( i, j+1, k, NODES_X )] );
-		kernelCopyGrids __device_func__( dens_U,    dev_density[cudaIndex3D( i, j+1, k, NODES_X )] );
+		kernelCopyGrids __device_func__( velu_U, dev_velocity_u[cudaIndex3D( i, j+1, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( velv_U, dev_velocity_v[cudaIndex3D( i, j+1, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( velw_U, dev_velocity_w[cudaIndex3D( i, j+1, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( dens_U,    dev_density[cudaIndex3D( i, j+1, k, GNODES_X )] );
 
 		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
 		{
@@ -401,10 +392,10 @@ void FluidSimProc::LoadNode( int i, int j, int k )
 
 	if ( ptr->ptrDown not_eq nullptr )
 	{
-		kernelCopyGrids __device_func__( velu_D, dev_velocity_u[cudaIndex3D( i, j-1, k, NODES_X )] );
-		kernelCopyGrids __device_func__( velv_D, dev_velocity_v[cudaIndex3D( i, j-1, k, NODES_X )] );
-		kernelCopyGrids __device_func__( velw_D, dev_velocity_w[cudaIndex3D( i, j-1, k, NODES_X )] );
-		kernelCopyGrids __device_func__( dens_D,    dev_density[cudaIndex3D( i, j-1, k, NODES_X )] );
+		kernelCopyGrids __device_func__( velu_D, dev_velocity_u[cudaIndex3D( i, j-1, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( velv_D, dev_velocity_v[cudaIndex3D( i, j-1, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( velw_D, dev_velocity_w[cudaIndex3D( i, j-1, k, GNODES_X )] );
+		kernelCopyGrids __device_func__( dens_D,    dev_density[cudaIndex3D( i, j-1, k, GNODES_X )] );
 
 		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
 		{
@@ -428,10 +419,10 @@ void FluidSimProc::LoadNode( int i, int j, int k )
 
 	if ( ptr->ptrFront not_eq nullptr )
 	{
-		kernelCopyGrids __device_func__( velu_F, dev_velocity_u[cudaIndex3D( i, j, k+1, NODES_X )] );
-		kernelCopyGrids __device_func__( velv_F, dev_velocity_v[cudaIndex3D( i, j, k+1, NODES_X )] );
-		kernelCopyGrids __device_func__( velw_F, dev_velocity_w[cudaIndex3D( i, j, k+1, NODES_X )] );
-		kernelCopyGrids __device_func__( dens_F,    dev_density[cudaIndex3D( i, j, k+1, NODES_X )] );
+		kernelCopyGrids __device_func__( velu_F, dev_velocity_u[cudaIndex3D( i, j, k+1, GNODES_X )] );
+		kernelCopyGrids __device_func__( velv_F, dev_velocity_v[cudaIndex3D( i, j, k+1, GNODES_X )] );
+		kernelCopyGrids __device_func__( velw_F, dev_velocity_w[cudaIndex3D( i, j, k+1, GNODES_X )] );
+		kernelCopyGrids __device_func__( dens_F,    dev_density[cudaIndex3D( i, j, k+1, GNODES_X )] );
 
 		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
 		{
@@ -455,10 +446,10 @@ void FluidSimProc::LoadNode( int i, int j, int k )
 
 	if ( ptr->ptrBack not_eq nullptr )
 	{
-		kernelCopyGrids __device_func__( velu_B, dev_velocity_u[cudaIndex3D( i, j, k-1, NODES_X )] );
-		kernelCopyGrids __device_func__( velv_B, dev_velocity_v[cudaIndex3D( i, j, k-1, NODES_X )] );
-		kernelCopyGrids __device_func__( velw_B, dev_velocity_w[cudaIndex3D( i, j, k-1, NODES_X )] );
-		kernelCopyGrids __device_func__( dens_B,    dev_density[cudaIndex3D( i, j, k-1, NODES_X )] );
+		kernelCopyGrids __device_func__( velu_B, dev_velocity_u[cudaIndex3D( i, j, k-1, GNODES_X )] );
+		kernelCopyGrids __device_func__( velv_B, dev_velocity_v[cudaIndex3D( i, j, k-1, GNODES_X )] );
+		kernelCopyGrids __device_func__( velw_B, dev_velocity_w[cudaIndex3D( i, j, k-1, GNODES_X )] );
+		kernelCopyGrids __device_func__( dens_B,    dev_density[cudaIndex3D( i, j, k-1, GNODES_X )] );
 
 		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
 		{
@@ -484,13 +475,13 @@ void FluidSimProc::LoadNode( int i, int j, int k )
 void FluidSimProc::SaveNode( int i, int j, int k )
 {
 	cudaDeviceDim3D();
-	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, NODES_X )];
+	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, GNODES_X )];
 
 	/* draw data back */
-	kernelCopyGrids __device_func__( dev_velocity_u[cudaIndex3D(i,j,k,NODES_X)], velu_C );
-	kernelCopyGrids __device_func__( dev_velocity_v[cudaIndex3D(i,j,k,NODES_X)], velv_C );
-	kernelCopyGrids __device_func__( dev_velocity_w[cudaIndex3D(i,j,k,NODES_X)], velw_C );
-	kernelCopyGrids __device_func__(    dev_density[cudaIndex3D(i,j,k,NODES_X)], dens_C );
+	kernelCopyGrids __device_func__( dev_velocity_u[cudaIndex3D(i,j,k,GNODES_X)], velu_C );
+	kernelCopyGrids __device_func__( dev_velocity_v[cudaIndex3D(i,j,k,GNODES_X)], velv_C );
+	kernelCopyGrids __device_func__( dev_velocity_w[cudaIndex3D(i,j,k,GNODES_X)], velw_C );
+	kernelCopyGrids __device_func__(    dev_density[cudaIndex3D(i,j,k,GNODES_X)], dens_C );
 
 	if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
 	{
@@ -498,7 +489,10 @@ void FluidSimProc::SaveNode( int i, int j, int k )
 		exit( 1 );
 	}
 
-	/* draw volumetric data back */	
+	/* draw volumetric data back */
+	i += m_cursor.x;
+	j += m_cursor.y;
+	k += m_cursor.z;
 	kernelPickData __device_func__( dev_visual, dev_den, i * GRIDS_X, j * GRIDS_X, k * GRIDS_X );
 
 	if ( helper.GetCUDALastError( "device kernel: kernelPickData failed", __FILE__, __LINE__ ) )
@@ -506,9 +500,6 @@ void FluidSimProc::SaveNode( int i, int j, int k )
 		FreeResource();
 		exit( 1 );
 	}
-
-	/* 将当前节点的标记设置为已更新 */
-	ptr->updated = true;
 };
 
 void FluidSimProc::AddSource( void )
@@ -538,7 +529,7 @@ void FluidSimProc::AddSource( void )
 	}
 };
 
-void FluidSimProc::InitBoundary( int i, int j, int k )
+void FluidSimProc::InitBoundary( void )
 {
 	cudaDeviceDim3D();
 
@@ -555,9 +546,9 @@ void FluidSimProc::InitBoundary( int i, int j, int k )
 		}
 	}	
 	
-	/* 将边界条件拷贝至内存 */
+	/* set boundary condition */
 	kernelSetBoundary __device_func__( dev_obs );
-	if ( cudaMemcpy( host_obstacle[cudaIndex3D(i,j,k,NODES_X)], dev_obs, m_node_size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
+	if ( cudaMemcpy( host_obstacle[cudaIndex3D(1,0,1,HNODES_X)], dev_obs, m_node_size, cudaMemcpyDeviceToHost) not_eq cudaSuccess )
 	{
 		helper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ );
 		FreeResource();
@@ -632,7 +623,7 @@ void FluidSimProc::ZeroBuffers( void )
 		kernelZeroGrids  __device_func__ ( dev_buffers[i] );
 
 	/* zero host buffer */
-	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
+	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X; i++ )
 	{
 		kernelZeroGrids __device_func__ ( dev_density[i] );
 		kernelZeroGrids __device_func__ ( dev_velocity_u[i] );
@@ -657,9 +648,9 @@ void FluidSimProc::ZeroBuffers( void )
 	}
 };
 
-void FluidSimProc::InteractNodes( int i, int j, int k )
+void FluidSimProc::Interaction( int i, int j, int k )
 {
-	SimNode *ptr = gpu_node[cudaIndex3D(i,j,k,NODES_X)];
+	SimNode *ptr = gpu_node[cudaIndex3D(i,j,k,GNODES_X)];
 	int left, right, up, down, front, back;
 
 	left = right = up = down = front = back = MACRO_FALSE;
@@ -682,16 +673,162 @@ void FluidSimProc::InteractNodes( int i, int j, int k )
 		( velw_C, velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, left, right, up, down, front, back );
 };
 
-void FluidSimProc::Finally( FLUIDSPARAM *fluid )
+void FluidSimProc::IO_ReadBuffers( void )
 {
-	/* 更新节点数据 */
-	cudaDeviceDim3D();	
-	for ( int i = 0; i < NODES_X * NODES_X * NODES_X; i++ )
-		gpu_node[i]->updated = false;
+	int ni, nj, nk; ni = nj = nk = 0;
 
-	/* 获取更新后的图形数据 */
-	cudaMemcpy( host_visual, dev_visual, m_volm_size, cudaMemcpyDeviceToHost );
-	fluid->volume.ptrData = host_visual;
+	for ( int k = 0; k < GNODES_X; k++ ) for ( int j = 0; j < GNODES_X; j++ ) for ( int i = 0; i < GNODES_X; i++ )
+	{
+		ni = m_cursor.x + i;
+		nj = m_cursor.y + j;
+		nk = m_cursor.z + k;
+
+		/* load node status */
+		gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->nodeIX.x = host_node[cudaIndex3D(ni,nj,nk,HNODES_X)]->nodeIX.x;
+		gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->nodeIX.x = host_node[cudaIndex3D(ni,nj,nk,HNODES_X)]->nodeIX.x;
+		gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->nodeIX.x = host_node[cudaIndex3D(ni,nj,nk,HNODES_X)]->nodeIX.x;
+		gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated  = host_node[cudaIndex3D(ni,nj,nk,HNODES_X)]->updated;
+
+		/* load data */
+		if ( cudaMemcpy( dev_density[cudaIndex3D(i,j,k,GNODES_X)], host_density[cudaIndex3D(ni,nj,nk,HNODES_X)],
+			m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+		{
+			helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit( 1 );
+		}
+
+		if ( cudaMemcpy( dev_velocity_u[cudaIndex3D(i,j,k,GNODES_X)], host_velocity_u[cudaIndex3D(ni,nj,nk,HNODES_X)],
+			m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+		{
+			helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit( 1 );
+		}
+
+		if ( cudaMemcpy( dev_velocity_v[cudaIndex3D(i,j,k,GNODES_X)], host_velocity_v[cudaIndex3D(ni,nj,nk,HNODES_X)],
+			m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+		{
+			helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit( 1 );
+		}
+
+		if ( cudaMemcpy( dev_velocity_w[cudaIndex3D(i,j,k,GNODES_X)], host_velocity_w[cudaIndex3D(ni,nj,nk,HNODES_X)],
+			m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+		{
+			helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit( 1 );
+		}
+
+		if ( cudaMemcpy( dev_obstacle[cudaIndex3D(i,j,k,GNODES_X)],     host_obstacle[cudaIndex3D(ni,nj,nk,HNODES_X)],
+			m_node_size, cudaMemcpyHostToDevice ) not_eq cudaSuccess )
+		{
+			helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit( 1 );
+		}
+	}
+};
+
+void FluidSimProc::IO_WriteBuffers( void )
+{
+	int ni, nj, nk; ni = nj = nk = 0;
+
+	for ( int k = 0; k < GNODES_X; k++ ) for ( int j = 0; j < GNODES_X; j++ ) for ( int i = 0; i < GNODES_X; i++ )
+	{
+		ni = m_cursor.x + i;
+		nj = m_cursor.y + j;
+		nk = m_cursor.z + k;
+
+		/* updated the node status */
+		host_node[cudaIndex3D(ni,nj,nk,HNODES_X)]->updated = gpu_node[cudaIndex3D(i,j,k,GNODES_X)];
+
+		/* updated the data */
+		if ( cudaMemcpy( host_density[cudaIndex3D(ni,nj,nk,HNODES_X)], dev_density[cudaIndex3D(i,j,k,GNODES_X)],
+			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit( 1 );
+		}
+
+		if ( cudaMemcpy( host_velocity_u[cudaIndex3D(ni,nj,nk,HNODES_X)], dev_velocity_u[cudaIndex3D(i,j,k,GNODES_X)],
+			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit( 1 );
+		}
+
+		if ( cudaMemcpy( host_velocity_v[cudaIndex3D(ni,nj,nk,HNODES_X)], dev_velocity_v[cudaIndex3D(i,j,k,GNODES_X)],
+			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit( 1 );
+		}
+
+		if ( cudaMemcpy( host_velocity_w[cudaIndex3D(ni,nj,nk,HNODES_X)], dev_velocity_w[cudaIndex3D(i,j,k,GNODES_X)],
+			m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+		{
+			helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ );
+			FreeResource();
+			exit( 1 );
+		}
+	}
+
+	/* updating image */
+	if ( cudaMemcpy( host_visual, dev_visual, m_volm_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
+	{
+		helper.GetCUDALastError( "host function: cudaMemcpy failed", __FILE__, __LINE__ );
+		FreeResource();
+		exit( 1 );
+	}
+};
+
+void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
+{
+	if ( !fluid->run ) return;
+
+	for ( int k = 0; k < CURSOR_X; k++ )
+	{
+		for ( int j = 0; j < CURSOR_X; j++ )
+		{
+			for ( int i = 0; i < CURSOR_X; i++ )
+			{
+				m_cursor.x = i;
+				m_cursor.y = j;
+				m_cursor.z = k;
+				
+				/* read host nodes */
+				IO_ReadBuffers();
+				
+				/* solving NS equations */
+				SolveNavierStokers();
+				
+				/* save updated nodes */
+				IO_WriteBuffers();
+			}
+		}
+	}
+
+	/* finally, generate volumetric image */
+	RefreshStatus( fluid );
+};
+
+void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
+{
+	/* waiting for all kernels end */
+	if ( cudaThreadSynchronize() not_eq cudaSuccess )
+	{
+		printf( "cudaThreadSynchronize failed\n" );
+		FreeResource();
+		exit( 1 );
+	}
+
+	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ ) host_node[i]->updated = false;
 
 	/* counting FPS */
 	fluid->fps.dwFrames ++;
@@ -705,4 +842,7 @@ void FluidSimProc::Finally( FLUIDSPARAM *fluid )
 		fluid->fps.dwFrames = 0;
 		fluid->fps.dwLastUpdateTime = fluid->fps.dwCurrentTime;
 	}
+
+	/* updating image */
+	fluid->volume.ptrData = host_visual;
 };

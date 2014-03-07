@@ -387,11 +387,11 @@ __global__ void kernelZeroVolumetric( sge::SGUCHAR *visual )
 {
 	GetIndex3D();
 
-	for ( int ii = 0; ii < NODES_X; ii++ )
+	for ( int ii = 0; ii < HNODES_X; ii++ )
 	{
-		for ( int jj = 0; jj < NODES_X; jj++ )
+		for ( int jj = 0; jj < HNODES_X; jj++ )
 		{
-			for ( int kk = 0; kk < NODES_X; kk++ )
+			for ( int kk = 0; kk < HNODES_X; kk++ )
 			{
 				int di = ii * GRIDS_X + i;
 				int dj = jj * GRIDS_X + j;
@@ -494,30 +494,6 @@ __global__ void kernelCopyGrids( double *src, cdouble *dst )
 	GetIndex3D();
 
 	src[Index(i,j,k)] = dst[Index(i,j,k)];
-};
-
-__global__ void kernelFloodHalo( double *grids )
-{
-	GetIndex3D();
-
-	grids[Index(gst_header,j,k)] = grids[Index(sim_header,j,k)];
-	grids[Index(gst_tailer,j,k)] = grids[Index(sim_tailer,j,k)];
-	grids[Index(i,gst_header,k)] = grids[Index(i,sim_header,k)];
-	grids[Index(i,gst_tailer,k)] = grids[Index(i,sim_tailer,k)];
-	grids[Index(i,j,gst_header)] = grids[Index(i,j,sim_header)];
-	grids[Index(i,j,gst_tailer)] = grids[Index(i,j,sim_tailer)];
-
-	grids[Index(gst_header,gst_header,k)];
-	grids[Index(gst_tailer,gst_header,k)];
-	grids[Index(gst_header,gst_tailer,k)];
-	grids[Index(gst_tailer,gst_tailer,k)];
-
-	grids[Index(i,gst_header,k)];
-	grids[Index(i,gst_header,k)];
-	grids[Index(i,gst_header,k)];
-	grids[Index(i,gst_header,k)];
-
-
 };
 
 __global__ void kernelInteractNodes
