@@ -18,6 +18,7 @@
 #include "FrameworkDynamic.h"
 
 using std::vector;
+using std::string;
 
 namespace sge
 {
@@ -64,7 +65,7 @@ namespace sge
 		size_t m_node_size, m_volm_size;
 
 		/* title bar */
-		std::string m_sz_title;
+		string m_sz_title;
 
 		/* etc. */
 		int increase_times, decrease_times;

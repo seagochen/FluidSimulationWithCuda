@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fluidsim", "fluidsim\fluidsim.vcxproj", "{A2E2ED4E-D77D-4CCD-B62A-11FF84812774}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tester", "tester\tester.vcxproj", "{2BE25589-D409-409C-BE32-66AC4AE9660E}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fluidsim_large", "fluidsim_large\fluidsim_large.vcxproj", "{88EE4A6E-2AFC-47DF-A049-444B8E013174}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AMRNODES", "AMRNODES\AMRNODES.vcxproj", "{02523B14-6503-411F-A888-45A4F8B74A37}"
@@ -25,12 +23,6 @@ Global
 		{A2E2ED4E-D77D-4CCD-B62A-11FF84812774}.Release|Win32.Build.0 = Release|Win32
 		{A2E2ED4E-D77D-4CCD-B62A-11FF84812774}.Release|x64.ActiveCfg = Release|x64
 		{A2E2ED4E-D77D-4CCD-B62A-11FF84812774}.Release|x64.Build.0 = Release|x64
-		{2BE25589-D409-409C-BE32-66AC4AE9660E}.Debug|Win32.ActiveCfg = Debug|Win32
-		{2BE25589-D409-409C-BE32-66AC4AE9660E}.Debug|Win32.Build.0 = Debug|Win32
-		{2BE25589-D409-409C-BE32-66AC4AE9660E}.Debug|x64.ActiveCfg = Debug|Win32
-		{2BE25589-D409-409C-BE32-66AC4AE9660E}.Release|Win32.ActiveCfg = Release|Win32
-		{2BE25589-D409-409C-BE32-66AC4AE9660E}.Release|Win32.Build.0 = Release|Win32
-		{2BE25589-D409-409C-BE32-66AC4AE9660E}.Release|x64.ActiveCfg = Release|Win32
 		{88EE4A6E-2AFC-47DF-A049-444B8E013174}.Debug|Win32.ActiveCfg = Debug|Win32
 		{88EE4A6E-2AFC-47DF-A049-444B8E013174}.Debug|Win32.Build.0 = Debug|Win32
 		{88EE4A6E-2AFC-47DF-A049-444B8E013174}.Debug|x64.ActiveCfg = Debug|x64
