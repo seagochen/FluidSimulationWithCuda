@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tester", "tester\tester.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fluidsim_large", "fluidsim_large\fluidsim_large.vcxproj", "{88EE4A6E-2AFC-47DF-A049-444B8E013174}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AMRNODES", "AMRNODES\AMRNODES.vcxproj", "{02523B14-6503-411F-A888-45A4F8B74A37}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -47,6 +49,14 @@ Global
 		{88EE4A6E-2AFC-47DF-A049-444B8E013174}.Release|Win32.Build.0 = Release|Win32
 		{88EE4A6E-2AFC-47DF-A049-444B8E013174}.Release|x64.ActiveCfg = Release|x64
 		{88EE4A6E-2AFC-47DF-A049-444B8E013174}.Release|x64.Build.0 = Release|x64
+		{02523B14-6503-411F-A888-45A4F8B74A37}.Debug|Win32.ActiveCfg = Debug|Win32
+		{02523B14-6503-411F-A888-45A4F8B74A37}.Debug|Win32.Build.0 = Debug|Win32
+		{02523B14-6503-411F-A888-45A4F8B74A37}.Debug|x64.ActiveCfg = Debug|x64
+		{02523B14-6503-411F-A888-45A4F8B74A37}.Debug|x64.Build.0 = Debug|x64
+		{02523B14-6503-411F-A888-45A4F8B74A37}.Release|Win32.ActiveCfg = Release|Win32
+		{02523B14-6503-411F-A888-45A4F8B74A37}.Release|Win32.Build.0 = Release|Win32
+		{02523B14-6503-411F-A888-45A4F8B74A37}.Release|x64.ActiveCfg = Release|x64
+		{02523B14-6503-411F-A888-45A4F8B74A37}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
