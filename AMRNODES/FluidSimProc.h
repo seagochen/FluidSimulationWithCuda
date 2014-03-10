@@ -27,7 +27,7 @@ namespace sge
 		struct SimNode
 		{
 			SGBOOLEAN updated;
-			SGINT3 nodeIX;
+			int x, y, z;
 			SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 		};
 
@@ -35,19 +35,17 @@ namespace sge
 		/* temporary buffers for fluid simulation */
 		vector <double*> dev_buffers;
 
-		/* nodes for gpu and host */
-		vector <double*> dev_density,    host_density;
-		vector <double*> dev_velocity_u, host_velocity_u;
-		vector <double*> dev_velocity_v, host_velocity_v;
-		vector <double*> dev_velocity_w, host_velocity_w;
-		vector <double*> dev_obstacle,   host_obstacle;
+		/* nodes of host */
+		vector <double*> host_density;
+		vector <double*> host_velocity_u;
+		vector <double*> host_velocity_v;
+		vector <double*> host_velocity_w;
 
-		/* local nodes */
-		vector <double*> node_density;
-		vector <double*> node_velocity_u;
-		vector <double*> node_velocity_v;
-		vector <double*> node_velocity_w;
-		vector <double*> node_obstacle;
+		/* nodes of gpu, the first node 0 is root node for AMR scheme */
+		vector <double*> dev_density;
+		vector <double*> dev_velocity_u;
+		vector <double*> dev_velocity_v;
+		vector <double*> dev_velocity_w;
 
 		/* topology of nodes on host and device */
 		vector <SimNode*> gpu_node, host_node;
@@ -58,9 +56,6 @@ namespace sge
 		/* temporary buffers for some purpose */
 		double *dev_dtpbuf, *host_dtpbuf;
 		int    *dev_ntpbuf, *host_ntpbuf;
-
-		/* cursor */
-		SGINT3 m_cursor;
 
 		/* CUDA */
 		dim3 gridDim, blockDim;
