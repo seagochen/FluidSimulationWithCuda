@@ -64,36 +64,8 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	m_sz_title = "Excalibur OTL 2.10.00, large-scale. ------------ FPS: %d ";
 };
 
-void FluidSimProc::CreateTopology( void )
+void FluidSimProc::CreateHostTopology( void )
 {
-	for ( int k = 0; k < GNODES_X; k++ )
-	{
-		for ( int j = 0; j < GNODES_X; j++ )
-		{
-			for ( int i = 0; i < GNODES_X; i++ )
-			{
-				/* left */
-				if ( i >= 1 )
-					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrLeft  = gpu_node[cudaIndex3D( i-1, j, k, GNODES_X )];
-				/* right */
-				if ( i <= GNODES_X - 2 )
-					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrRight = gpu_node[cudaIndex3D( i+1, j, k, GNODES_X )];
-				/* down */
-				if ( j >= 1 )
-					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrDown  = gpu_node[cudaIndex3D( i, j-1, k, GNODES_X )];
-				/* up */
-				if ( j <= GNODES_X - 2 )
-					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrUp    = gpu_node[cudaIndex3D( i, j+1, k, GNODES_X )];
-				/* back */
-				if ( k >= 1 )
-					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrBack  = gpu_node[cudaIndex3D( i, j, k-1, GNODES_X )];
-				/* front */
-				if ( k <= GNODES_X - 2 )
-					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrFront = gpu_node[cudaIndex3D( i, j, k+1, GNODES_X )];
-			}
-		}
-	}
-
 	for ( int k = 0; k < HNODES_X; k++ )
 	{
 		for ( int j = 0; j < HNODES_X; j++ )
@@ -125,6 +97,43 @@ void FluidSimProc::CreateTopology( void )
 			}
 		}
 	}
+};
+
+void FluidSimProc::CreateDeviceTopology( void )
+{
+	for ( int k = 0; k < GNODES_X; k++ )
+	{
+		for ( int j = 0; j < GNODES_X; j++ )
+		{
+			for ( int i = 0; i < GNODES_X; i++ )
+			{
+				/* left */
+				if ( i >= 1 )
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrLeft  = gpu_node[cudaIndex3D( i-1, j, k, GNODES_X )];
+				/* right */
+				if ( i <= GNODES_X - 2 )
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrRight = gpu_node[cudaIndex3D( i+1, j, k, GNODES_X )];
+				/* down */
+				if ( j >= 1 )
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrDown  = gpu_node[cudaIndex3D( i, j-1, k, GNODES_X )];
+				/* up */
+				if ( j <= GNODES_X - 2 )
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrUp    = gpu_node[cudaIndex3D( i, j+1, k, GNODES_X )];
+				/* back */
+				if ( k >= 1 )
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrBack  = gpu_node[cudaIndex3D( i, j, k-1, GNODES_X )];
+				/* front */
+				if ( k <= GNODES_X - 2 )
+					gpu_node[cudaIndex3D( i, j, k, GNODES_X )]->ptrFront = gpu_node[cudaIndex3D( i, j, k+1, GNODES_X )];
+			}
+		}
+	}
+};
+
+void FluidSimProc::CreateTopology( void )
+{
+	CreateHostTopology();
+	CreateDeviceTopology();
 };
 
 void FluidSimProc::PrintMSG( void )
@@ -732,31 +741,72 @@ void FluidSimProc::DensitySolver( void )
 	}
 };
 
-void FluidSimProc::ZeroBuffers( void )
+void FluidSimProc::ZeroDeviceBuffers( void )
 {
 	cudaDeviceDim3D();
 
-	/* zero GPU buffer */
-	for ( int i = 0; i < dev_buffers_num; i++ )
-		kernelZeroGrids  __device_func__ ( dev_buffers[i] );
+	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X + 1; i++ )
+	{
+		kernelZeroGrids __device_func__ ( node_density[i] );
+		kernelZeroGrids __device_func__ ( node_velocity_u[i] );
+		kernelZeroGrids __device_func__ ( node_velocity_v[i] );
+		kernelZeroGrids __device_func__ ( node_velocity_w[i] );
+	}
+};
 
-	/* zero host buffer */
-	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X; i++ )
+void FluidSimProc::ZeroHostBuffers( void )
+{
+	cudaDeviceDim3D();
+
+	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
 	{
 		kernelZeroGrids __device_func__ ( dev_density[i] );
 		kernelZeroGrids __device_func__ ( dev_velocity_u[i] );
 		kernelZeroGrids __device_func__ ( dev_velocity_v[i] );
 		kernelZeroGrids __device_func__ ( dev_velocity_w[i] );
-
-		if ( helper.GetCUDALastError( "device failed: kernelZeroGrids", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
 	}
+};
 
+void FluidSimProc::ZeroTempBuffers( void )
+{
+	cudaDeviceDim1D();
+
+	kernelZeroTemporaryBuffers __device_func__ ( dev_ntpbuf );
+	kernelZeroTemporaryBuffers __device_func__ ( dev_dtpbuf );
+	
+	/* zero GPU buffer */
+	for ( int i = 0; i < dev_buffers_num; i++ )
+		kernelZeroGrids  __device_func__ ( dev_buffers[i] );
+};
+
+void FluidSimProc::ZeroVolumeBuffers( void )
+{
 	/* zero visual buffer */
 	kernelZeroVolumetric __device_func__ ( dev_visual );
+};
+
+void FluidSimProc::ZeroBuffers( void )
+{
+	ZeroTempBuffers();
+	ZeroDeviceBuffers();
+	ZeroHostBuffers();
+	ZeroVolumeBuffers();
+	
+	if ( helper.GetCUDALastError( "host function failed: ZeroBuffers", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+
+	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
+	{
+		cudaMemcpy( host_density[i], dev_density[i], m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_u[i], dev_velocity_u[i], m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_v[i], dev_velocity_v[i], m_node_size, cudaMemcpyDeviceToHost );
+		cudaMemcpy( host_velocity_w[i], dev_velocity_w[i], m_node_size, cudaMemcpyDeviceToHost );
+	}
+	cudaMemcpy( host_ntpbuf, dev_ntpbuf, sizeof(int)*TPBUFFER_X, cudaMemcpyDeviceToHost );
+	cudaMemcpy( host_dtpbuf, dev_dtpbuf, sizeof(double)*TPBUFFER_X, cudaMemcpyDeviceToHost );
 	cudaMemcpy( host_visual, dev_visual, m_volm_size, cudaMemcpyDeviceToHost );
 
 	if ( helper.GetCUDALastError( "host function failed: ZeroBuffers", __FILE__, __LINE__ ) )
@@ -791,18 +841,8 @@ void FluidSimProc::Interaction( int i, int j, int k )
 		( velw_C, velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, left, right, up, down, front, back );
 };
 
-void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
+void FluidSimProc::RefreshFPS( FLUIDSPARAM *fluid )
 {
-	/* waiting for all kernels end */
-	if ( cudaThreadSynchronize() not_eq cudaSuccess )
-	{
-		printf( "cudaThreadSynchronize failed\n" );
-		FreeResource();
-		exit( 1 );
-	}
-
-	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ ) host_node[i]->updated = false;
-
 	/* counting FPS */
 	fluid->fps.dwFrames ++;
 	fluid->fps.dwCurrentTime = GetTickCount();
@@ -815,6 +855,17 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 		fluid->fps.dwFrames = 0;
 		fluid->fps.dwLastUpdateTime = fluid->fps.dwCurrentTime;
 	}
+};
+
+void FluidSimProc::RefreshVolume( FLUIDSPARAM *fluid )
+{
+	/* waiting for all kernels end */
+	if ( cudaThreadSynchronize() not_eq cudaSuccess )
+	{
+		printf( "cudaThreadSynchronize failed\n" );
+		FreeResource();
+		exit( 1 );
+	}
 
 	/* updating image */
 	if ( cudaMemcpy( host_visual, dev_visual, m_volm_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
@@ -823,7 +874,21 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 		FreeResource();
 		exit( 1 );
 	}
+
 	fluid->volume.ptrData = host_visual;
+};
+
+void FluidSimProc::RefreshHostNodes( FLUIDSPARAM *fluid )
+{
+	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
+		host_node[i]->updated = false;
+};
+
+void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
+{
+	RefreshFPS( fluid );
+	RefreshVolume( fluid );
+	RefreshHostNodes( fluid );
 };
 
 void FluidSimProc::SolveNavierStokers( void )

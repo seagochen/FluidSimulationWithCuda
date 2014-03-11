@@ -103,35 +103,31 @@ namespace sge
 		void IO_DownloadBuffers( void );
 
 	private:
-		/* IO, host to device */
-		void IO_ReadBuffers( void );
+		void IO_ReadBuffers( void ); // IO, host to device
+		void IO_WriteBuffers( void ); // IO, device to host
+		void LoadNode( int i, int j, int k );  // loading gpu nodes for fluid simulation
+		void SaveNode( int i, int j, int k ); // saving the result of fluid simulation
+		void SolveNavierStokers( void ); // solving the Navier-Stokers equations
+		void Interaction( int i, int j, int k ); // flood buffer for multiple nodes
+		void InitParams( FLUIDSPARAM *fluid ); // initialize FPS and etc.
+		void InitBoundary( void ); 	// initialize boundary condition
 
-		/* IO, device to host */
-		void IO_WriteBuffers( void );
-
-		/* loading gpu nodes for fluid simulation */
-		void LoadNode( int i, int j, int k );
-
-		/* saving the result of fluid simulation */
-		void SaveNode( int i, int j, int k );
-
-		/* solving the Navier-Stokers equations */
-		void SolveNavierStokers( void );
-
-		/* flood buffer for multiple nodes */
-		void Interaction( int i, int j, int k );
-
-		/* initialize FPS and etc. */
-		void InitParams( FLUIDSPARAM *fluid );
-			
-		/* retrieve the density back and load into volumetric data for rendering */
-		void RefreshStatus( FLUIDSPARAM *fluid );
-		
-		/* create simulation nodes' topological structure */
+	private:
 		void CreateTopology( void );
+		void CreateHostTopology( void );
+		void CreateDeviceTopology( void );
 
-		/* initialize boundary condition */
-		void InitBoundary( void );
+	private:
+		void ZeroHostBuffers( void );
+		void ZeroDeviceBuffers( void );
+		void ZeroTempBuffers( void );
+		void ZeroVolumeBuffers( void );
+
+	private:
+		void RefreshStatus( FLUIDSPARAM *fluid );
+		void RefreshFPS( FLUIDSPARAM *fluid );
+		void RefreshVolume( FLUIDSPARAM *fluid );
+		void RefreshHostNodes( FLUIDSPARAM *fluid );
 
 	private:
 		bool AllocateResource( void );
