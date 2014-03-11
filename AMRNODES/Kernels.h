@@ -370,6 +370,7 @@ __global__ void kernelZeroTemporaryBuffers( int *bufs )
 	bufs[i] = 0;
 };
 
+//TODO 使用AMR方法后，该函数将被标记为obsoleted
 __device__ void atomicFloodData( uchar *data, cint offseti, cint offsetj, cint offsetk )
 {
 	GetIndex3D();
@@ -422,6 +423,7 @@ __device__ void atomicFloodData( uchar *data, cint offseti, cint offsetj, cint o
 	data[cudaIndex3D(gti,gtj,gtk,VOLUME_X)] = ( data[cudaIndex3D(sti,gtj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,stj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,gtj,stk,VOLUME_X)] ) / 3;
 };
 
+//TODO AMR方法后，该函数需要重新设计，因为数据维度是62
 __global__ void kernelPickData( uchar *data, cdouble *bufs, cint offseti, cint offsetj, cint offsetk )
 {
 	GetIndex3D();
@@ -448,6 +450,7 @@ __global__ void kernelCopyGrids( double *src, cdouble *dst )
 	src[Index(i,j,k)] = dst[Index(i,j,k)];
 };
 
+//TODO 使用AMR方法后，该函数将被标记为obsoleted
 __global__ void kernelInteractNodes
 	( double *center, double *left, double *right, double *up, double *down, double *front, double *back,
 	cint uL, cint uR, cint uU, cint uD, cint uF, cint uB )

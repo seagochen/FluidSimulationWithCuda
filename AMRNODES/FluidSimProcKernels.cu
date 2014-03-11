@@ -408,12 +408,83 @@ void FluidSimProc::DeviceToHost( void )
 	}
 };
 
-void FluidSimProc::LoadBullet( int i, int j, int k )
+void FluidSimProc::ClearBullet( void )
 {
 	cudaDeviceDim3D();
-	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, GNODES_X )];
+	
+	kernelZeroGrids __device_func__ ( velu_L );
+	kernelZeroGrids __device_func__ ( velv_L );
+	kernelZeroGrids __device_func__ ( velw_L );
+	kernelZeroGrids __device_func__ ( dens_L );
+
+	if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+
+	kernelZeroGrids __device_func__ ( velu_R );
+	kernelZeroGrids __device_func__ ( velv_R );
+	kernelZeroGrids __device_func__ ( velw_R );
+	kernelZeroGrids __device_func__ ( dens_R );
+
+	if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+
+	kernelZeroGrids __device_func__ ( velu_U );
+	kernelZeroGrids __device_func__ ( velv_U );
+	kernelZeroGrids __device_func__ ( velw_U );
+	kernelZeroGrids __device_func__ ( dens_U );
+
+	if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+
+	kernelZeroGrids __device_func__ ( velu_D );
+	kernelZeroGrids __device_func__ ( velv_D );
+	kernelZeroGrids __device_func__ ( velw_D );
+	kernelZeroGrids __device_func__ ( dens_D );
+
+	if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+
+	kernelZeroGrids __device_func__ ( velu_F );
+	kernelZeroGrids __device_func__ ( velv_F );
+	kernelZeroGrids __device_func__ ( velw_F );
+	kernelZeroGrids __device_func__ ( dens_F );
+
+	if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+
+	kernelZeroGrids __device_func__ ( velu_B );
+	kernelZeroGrids __device_func__ ( velv_B );
+	kernelZeroGrids __device_func__ ( velw_B );
+	kernelZeroGrids __device_func__ ( dens_B );
+
+	if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+};
+
+void FluidSimProc::LoadBullet( int i, int j, int k )
+{
+	ClearBullet();
 
 	/* upload center node to GPU device */
+	cudaDeviceDim3D();
 	kernelCopyGrids __device_func__ ( dev_u, node_velocity_u[cudaIndex3D( i, j, k, GNODES_X )] );
 	kernelCopyGrids __device_func__ ( dev_v, node_velocity_v[cudaIndex3D( i, j, k, GNODES_X )] );
 	kernelCopyGrids __device_func__ ( dev_w, node_velocity_w[cudaIndex3D( i, j, k, GNODES_X )] );
@@ -426,6 +497,8 @@ void FluidSimProc::LoadBullet( int i, int j, int k )
 		exit( 1 );
 	}
 
+	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, GNODES_X )];
+
 	/* upload neighbouring buffers to GPU device */
 	if ( ptr->ptrLeft not_eq nullptr )
 	{
@@ -433,25 +506,6 @@ void FluidSimProc::LoadBullet( int i, int j, int k )
 		kernelCopyGrids __device_func__( velv_L, node_velocity_v[cudaIndex3D( i-1, j, k, GNODES_X )] );
 		kernelCopyGrids __device_func__( velw_L, node_velocity_w[cudaIndex3D( i-1, j, k, GNODES_X )] );
 		kernelCopyGrids __device_func__( dens_L,    node_density[cudaIndex3D( i-1, j, k, GNODES_X )] );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
-	}
-	else
-	{
-		kernelZeroGrids __device_func__ ( velu_L );
-		kernelZeroGrids __device_func__ ( velv_L );
-		kernelZeroGrids __device_func__ ( velw_L );
-		kernelZeroGrids __device_func__ ( dens_L );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
 	}
 
 	if ( ptr->ptrRight not_eq nullptr )
@@ -460,26 +514,8 @@ void FluidSimProc::LoadBullet( int i, int j, int k )
 		kernelCopyGrids __device_func__( velv_R, node_velocity_v[cudaIndex3D( i+1, j, k, GNODES_X )] );
 		kernelCopyGrids __device_func__( velw_R, node_velocity_w[cudaIndex3D( i+1, j, k, GNODES_X )] );
 		kernelCopyGrids __device_func__( dens_R,    node_density[cudaIndex3D( i+1, j, k, GNODES_X )] );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
 	}
-	else
-	{
-		kernelZeroGrids __device_func__ ( velu_R );
-		kernelZeroGrids __device_func__ ( velv_R );
-		kernelZeroGrids __device_func__ ( velw_R );
-		kernelZeroGrids __device_func__ ( dens_R );
 
-		if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
-	}
 
 	if ( ptr->ptrUp not_eq nullptr )
 	{
@@ -487,26 +523,8 @@ void FluidSimProc::LoadBullet( int i, int j, int k )
 		kernelCopyGrids __device_func__( velv_U, node_velocity_v[cudaIndex3D( i, j+1, k, GNODES_X )] );
 		kernelCopyGrids __device_func__( velw_U, node_velocity_w[cudaIndex3D( i, j+1, k, GNODES_X )] );
 		kernelCopyGrids __device_func__( dens_U,    node_density[cudaIndex3D( i, j+1, k, GNODES_X )] );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
 	}
-	else
-	{
-		kernelZeroGrids __device_func__ ( velu_U );
-		kernelZeroGrids __device_func__ ( velv_U );
-		kernelZeroGrids __device_func__ ( velw_U );
-		kernelZeroGrids __device_func__ ( dens_U );
 
-		if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
-	}
 
 	if ( ptr->ptrDown not_eq nullptr )
 	{
@@ -514,25 +532,6 @@ void FluidSimProc::LoadBullet( int i, int j, int k )
 		kernelCopyGrids __device_func__( velv_D, node_velocity_v[cudaIndex3D( i, j-1, k, GNODES_X )] );
 		kernelCopyGrids __device_func__( velw_D, node_velocity_w[cudaIndex3D( i, j-1, k, GNODES_X )] );
 		kernelCopyGrids __device_func__( dens_D,    node_density[cudaIndex3D( i, j-1, k, GNODES_X )] );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
-	}
-	else
-	{
-		kernelZeroGrids __device_func__ ( velu_D );
-		kernelZeroGrids __device_func__ ( velv_D );
-		kernelZeroGrids __device_func__ ( velw_D );
-		kernelZeroGrids __device_func__ ( dens_D );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
 	}
 
 	if ( ptr->ptrFront not_eq nullptr )
@@ -541,25 +540,6 @@ void FluidSimProc::LoadBullet( int i, int j, int k )
 		kernelCopyGrids __device_func__( velv_F, node_velocity_v[cudaIndex3D( i, j, k+1, GNODES_X )] );
 		kernelCopyGrids __device_func__( velw_F, node_velocity_w[cudaIndex3D( i, j, k+1, GNODES_X )] );
 		kernelCopyGrids __device_func__( dens_F,    node_density[cudaIndex3D( i, j, k+1, GNODES_X )] );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
-	}
-	else
-	{
-		kernelZeroGrids __device_func__ ( velu_F );
-		kernelZeroGrids __device_func__ ( velv_F );
-		kernelZeroGrids __device_func__ ( velw_F );
-		kernelZeroGrids __device_func__ ( dens_F );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
 	}
 
 	if ( ptr->ptrBack not_eq nullptr )
@@ -568,52 +548,25 @@ void FluidSimProc::LoadBullet( int i, int j, int k )
 		kernelCopyGrids __device_func__( velv_B, node_velocity_v[cudaIndex3D( i, j, k-1, GNODES_X )] );
 		kernelCopyGrids __device_func__( velw_B, node_velocity_w[cudaIndex3D( i, j, k-1, GNODES_X )] );
 		kernelCopyGrids __device_func__( dens_B,    node_density[cudaIndex3D( i, j, k-1, GNODES_X )] );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
 	}
-	else
-	{
-		kernelZeroGrids __device_func__ ( velu_B );
-		kernelZeroGrids __device_func__ ( velv_B );
-		kernelZeroGrids __device_func__ ( velw_B );
-		kernelZeroGrids __device_func__ ( dens_B );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelZeroGrids failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
-	}
-};
-
-void FluidSimProc::ExitBullet( int i, int j, int k )
-{
-	cudaDeviceDim3D();
-	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, GNODES_X )];
-
-	/* draw data back */
-	kernelCopyGrids __device_func__( node_velocity_u[cudaIndex3D(i,j,k,GNODES_X)], velu_C );
-	kernelCopyGrids __device_func__( node_velocity_v[cudaIndex3D(i,j,k,GNODES_X)], velv_C );
-	kernelCopyGrids __device_func__( node_velocity_w[cudaIndex3D(i,j,k,GNODES_X)], velw_C );
-	kernelCopyGrids __device_func__(    node_density[cudaIndex3D(i,j,k,GNODES_X)], dens_C );
 
 	if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
 	{
 		FreeResource();
 		exit( 1 );
 	}
+};
 
-	/* draw volumetric data back */
-	i += m_cursor.x;
-	j += m_cursor.y;
-	k += m_cursor.z;
-	kernelPickData __device_func__( dev_visual, dev_den, i * GRIDS_X, j * GRIDS_X, k * GRIDS_X );
+void FluidSimProc::ExitBullet( int i, int j, int k )
+{
+	/* draw data back */
+	cudaDeviceDim3D();
+	kernelCopyGrids __device_func__( node_velocity_u[cudaIndex3D(i,j,k,GNODES_X)], velu_C );
+	kernelCopyGrids __device_func__( node_velocity_v[cudaIndex3D(i,j,k,GNODES_X)], velv_C );
+	kernelCopyGrids __device_func__( node_velocity_w[cudaIndex3D(i,j,k,GNODES_X)], velw_C );
+	kernelCopyGrids __device_func__(    node_density[cudaIndex3D(i,j,k,GNODES_X)], dens_C );
 
-	if ( helper.GetCUDALastError( "device kernel: kernelPickData failed", __FILE__, __LINE__ ) )
+	if ( helper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
 	{
 		FreeResource();
 		exit( 1 );
@@ -647,6 +600,7 @@ void FluidSimProc::AddSource( void )
 	}
 };
 
+//TODO 采用AMR方法后，该函数将清空，为以后开发做准备
 void FluidSimProc::InitBoundary( void )
 {
 	cudaDeviceDim3D();
@@ -779,6 +733,8 @@ void FluidSimProc::ZeroTempBuffers( void )
 		kernelZeroGrids  __device_func__ ( dev_buffers[i] );
 };
 
+//TODO 由于新方法中，volumetric data数据维数不再是（64）的倍数，而是（62）的倍数。
+//因此对于volumetric数据的清零，将另外写一个Kernel函数
 void FluidSimProc::ZeroVolumeBuffers( void )
 {
 	/* zero visual buffer */
@@ -816,6 +772,8 @@ void FluidSimProc::ZeroBuffers( void )
 	}
 };
 
+//TODO 该方法原为各节点之间交换数据时使用，但使用AMR方法后，将采用全新的数据交换方法，所有当其他函数
+//大体上完成后，该方法将被删除
 void FluidSimProc::Interaction( int i, int j, int k )
 {
 	SimNode *ptr = gpu_node[cudaIndex3D(i,j,k,GNODES_X)];
@@ -857,6 +815,20 @@ void FluidSimProc::RefreshFPS( FLUIDSPARAM *fluid )
 	}
 };
 
+void FluidSimProc::RefreshHostNodes( FLUIDSPARAM *fluid )
+{
+	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
+		host_node[i]->updated = false;
+};
+
+void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
+{
+	RefreshFPS( fluid );
+	RefreshVolume( fluid );
+	RefreshHostNodes( fluid );
+};
+
+//TODO 全局数据生成完毕后，要依据host节点的数据，生成最后的3D volume data
 void FluidSimProc::RefreshVolume( FLUIDSPARAM *fluid )
 {
 	/* waiting for all kernels end */
@@ -878,91 +850,11 @@ void FluidSimProc::RefreshVolume( FLUIDSPARAM *fluid )
 	fluid->volume.ptrData = host_visual;
 };
 
-void FluidSimProc::RefreshHostNodes( FLUIDSPARAM *fluid )
-{
-	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
-		host_node[i]->updated = false;
-};
-
-void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
-{
-	RefreshFPS( fluid );
-	RefreshVolume( fluid );
-	RefreshHostNodes( fluid );
-};
-
-void FluidSimProc::SolveNavierStokers( void )
-{
-	/* updating */
-	for ( int i = 0; i < GNODES_X; i++ )
-	{
-		for ( int j = 0; j < GNODES_X; j++ )
-		{
-			for ( int k = 0; k < GNODES_X; k++ )
-			{
-				if ( !gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated )
-				{
-					LoadBullet(i,j,k);					
-					Interaction(i,j,k);									
-					AddSource();
-					VelocitySolver( DELTATIME );
-					DensitySolver( DELTATIME );
-					ExitBullet(i,j,k);
-					gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated = true;
-				}
-			}
-		}
-	}
-};
-
-void FluidSimProc::SolveLeafGrids( void )
-{
-	for ( int k = 0; k < CURSOR_X; k++ )
-	{
-		for ( int j = 0; j < CURSOR_X; j++ )
-		{
-			for ( int i = 0; i < CURSOR_X; i++ )
-			{
-				SetCursor( i, j, k );				
-				ReadBuffers();
-				SolveNavierStokers();
-				WriteBuffers();
-			}
-		}
-	}
-};
-
-void FluidSimProc::SolveRootGrids( void )
-{
-	cudaDeviceDim3D();
-
-	kernelCopyGrids __device_func__ ( dev_den, node_density[GLOBAL] );
-	kernelCopyGrids __device_func__ ( dev_u, node_velocity_u[GLOBAL] );
-	kernelCopyGrids __device_func__ ( dev_v, node_velocity_v[GLOBAL] );
-	kernelCopyGrids __device_func__ ( dev_w, node_velocity_w[GLOBAL] );
-
-	AddSource();
-	VelocitySolver( DELTATIME );
-	DensitySolver( DELTATIME );
-};
-
 void FluidSimProc::SetCursor( int i, int j, int k )
 {
 	m_cursor.x = i;
 	m_cursor.y = j;
 	m_cursor.z = k;
-};
-
-void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
-{
-	if ( !fluid->run ) return;
-
-	SolveRootGrids();
-
-	SolveLeafGrids();
-
-	/* finally, generate volumetric image */
-	RefreshStatus( fluid );
 };
 
 void FluidSimProc::ReadBuffers( void )
@@ -1014,27 +906,29 @@ void FluidSimProc::WriteBuffers( void )
 	}
 };
 
-void FluidSimProc::Jacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor )
+void FluidSimProc::Jacobi
+	( double *out, cdouble *in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor )
 {
 	cudaDeviceDim3D();
 	for ( int k=0; k<20; k++)
 	{
-		kernelJacobi<<<gridDim,blockDim>>>(grid_out, grid_in, diffusion, divisor);
+		kernelJacobi<<<gridDim,blockDim>>>( out, in, diffusion, divisor );
 	}
-	kernelObstacle<<<gridDim,blockDim>>>( grid_out, obstacle, field );
+	kernelObstacle<<<gridDim,blockDim>>>( out, obstacle, field );
 };
 
-void FluidSimProc::Advection( double *out, cdouble *in, cdouble delta, cdouble *obstacle, cint field, cdouble *u, cdouble *v, cdouble *w )
+void FluidSimProc::Advection
+	( double *out, cdouble *in, cdouble delta, cdouble *obstacle, cint field, cdouble *u, cdouble *v, cdouble *w )
 {
 	cudaDeviceDim3D();
 	kernelGridAdvection<<<gridDim,blockDim>>>( out, in, delta, u, v, w );
 	kernelObstacle<<<gridDim,blockDim>>>( out, obstacle, field );
 };
 
-void FluidSimProc::Diffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field )
+void FluidSimProc::Diffusion( double *out, cdouble *in, cdouble diffusion, cdouble *obstacle, cint field )
 {
 	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
-	Jacobi ( grid_out, grid_in, obstacle, field, rate, 1+6*rate );
+	Jacobi ( out, in, obstacle, field, rate, 1+6*rate );
 };
 
 void FluidSimProc::Projection( void )
@@ -1054,4 +948,84 @@ void FluidSimProc::Projection( void )
 	kernelObstacle<<<gridDim,blockDim>>>( dev_u, dev_obs, MACRO_VELOCITY_U );
 	kernelObstacle<<<gridDim,blockDim>>>( dev_v, dev_obs, MACRO_VELOCITY_V );
 	kernelObstacle<<<gridDim,blockDim>>>( dev_w, dev_obs, MACRO_VELOCITY_W );
+};
+
+//TODO 当SolveLeafGrids函数完成后，该方法将删除掉
+void FluidSimProc::SolveNavierStokers( void )
+{
+	/* updating */
+	for ( int i = 0; i < GNODES_X; i++ )
+	{
+		for ( int j = 0; j < GNODES_X; j++ )
+		{
+			for ( int k = 0; k < GNODES_X; k++ )
+			{
+				if ( !gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated )
+				{
+					LoadBullet(i,j,k);					
+					Interaction(i,j,k);									
+					AddSource();
+					VelocitySolver( DELTATIME );
+					DensitySolver( DELTATIME );
+					ExitBullet(i,j,k);
+					gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated = true;
+				}
+			}
+		}
+	}
+};
+
+//TODO 对全局节点的数据采集
+void FluidSimProc::InterRootGrids( void )
+{
+};
+
+//TODO 对子节点的数据采集
+void FluidSimProc::InterLeafGrids( void )
+{
+};
+
+void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
+{
+	if ( !fluid->run ) return;
+
+	SolveRootGrids();
+
+	SolveLeafGrids();
+	
+	RefreshStatus( fluid );
+};
+
+//TODO 当全局节点完成一次计算后，需要与邻近的节点交换ghost cell的数据，之后进行一次delta_time / 2的计算
+// 当所有子节点计算完毕后，需要进行一次数据采集，并将更新的数据写回root节点，为下一次计算做准备
+void FluidSimProc::SolveLeafGrids( void )
+{
+	for ( int k = 0; k < CURSOR_X; k++ )
+	{
+		for ( int j = 0; j < CURSOR_X; j++ )
+		{
+			for ( int i = 0; i < CURSOR_X; i++ )
+			{
+				SetCursor( i, j, k );				
+				ReadBuffers();
+				SolveNavierStokers();
+				WriteBuffers();
+			}
+		}
+	}
+};
+
+//TODO 对全局节点先进性一次delta time的计算，然后将全局的数据依次采集到各个独立的节点中
+void FluidSimProc::SolveRootGrids( void )
+{
+	cudaDeviceDim3D();
+
+	kernelCopyGrids __device_func__ ( dev_den, node_density[GLOBAL] );
+	kernelCopyGrids __device_func__ ( dev_u, node_velocity_u[GLOBAL] );
+	kernelCopyGrids __device_func__ ( dev_v, node_velocity_v[GLOBAL] );
+	kernelCopyGrids __device_func__ ( dev_w, node_velocity_w[GLOBAL] );
+
+	AddSource();
+	VelocitySolver( DELTATIME );
+	DensitySolver( DELTATIME );
 };

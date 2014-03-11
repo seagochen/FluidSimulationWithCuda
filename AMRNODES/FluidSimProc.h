@@ -89,14 +89,15 @@ namespace sge
 	private:
 		void ReadBuffers( void );  // load host copy to device
 		void WriteBuffers( void ); // save device to host copy
+		void ClearBullet( void );
 		void LoadBullet( int i, int j, int k );
 		void ExitBullet( int i, int j, int k );
 
 	private:
 		void SolveRootGrids( void );
 		void SolveLeafGrids( void );
-		void InterpolationRoot( void );
-		void InterpolationLeaf( void );
+		void InterRootGrids( void );
+		void InterLeafGrids( void );
 		void Interaction( int i, int j, int k );
 		void SolveNavierStokers( void );
 		void SetCursor( int i, int j, int k );				

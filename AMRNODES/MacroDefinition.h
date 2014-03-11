@@ -21,10 +21,6 @@ typedef std::string*  sstr;
 /*********************************************************************************************************/
 /*********************************************************************************************************/
 
-/* parameters for volume rendering */
-#define STEPSIZE             0.001f
-#define VOLUME_X                128
-
 /* parameters for fluid simulation */
 #define DELTATIME              0.5f
 #define DIFFUSION              0.1f
@@ -32,6 +28,10 @@ typedef std::string*  sstr;
 #define DENSITY               12.5f
 #define VELOCITY              15.7f
 #define GRIDS_X                  64
+
+/* parameters for volume rendering */
+#define STEPSIZE             0.001f
+#define VOLUME_X                128
 
 /* hierarchy of simulation nodes */
 #define CURSOR_X                 1
