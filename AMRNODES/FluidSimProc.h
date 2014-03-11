@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 07, 2014
+* <Last Time>     Mar 11, 2014
 * <File Name>     FluidSimProc.h
 */
 
@@ -18,7 +18,6 @@
 #include "FrameworkDynamic.h"
 
 using std::vector;
-using std::string;
 
 namespace sge
 {
@@ -28,7 +27,7 @@ namespace sge
 		struct SimNode
 		{
 			SGBOOLEAN updated;
-			int x, y, z;
+			int3 nodeIX;
 			SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 		};
 
@@ -36,17 +35,19 @@ namespace sge
 		/* temporary buffers for fluid simulation */
 		vector <double*> dev_buffers;
 
-		/* nodes of host */
-		vector <double*> host_density;
-		vector <double*> host_velocity_u;
-		vector <double*> host_velocity_v;
-		vector <double*> host_velocity_w;
+		/* nodes for gpu and host */
+		vector <double*> dev_density,    host_density;
+		vector <double*> dev_velocity_u, host_velocity_u;
+		vector <double*> dev_velocity_v, host_velocity_v;
+		vector <double*> dev_velocity_w, host_velocity_w;
+		vector <double*> dev_obstacle,   host_obstacle;
 
-		/* nodes of gpu, the first node 0 is root node for AMR scheme */
-		vector <double*> dev_density;
-		vector <double*> dev_velocity_u;
-		vector <double*> dev_velocity_v;
-		vector <double*> dev_velocity_w;
+		/* local nodes */
+		vector <double*> node_density;
+		vector <double*> node_velocity_u;
+		vector <double*> node_velocity_v;
+		vector <double*> node_velocity_w;
+		vector <double*> node_obstacle;
 
 		/* topology of nodes on host and device */
 		vector <SimNode*> gpu_node, host_node;
@@ -58,6 +59,9 @@ namespace sge
 		double *dev_dtpbuf, *host_dtpbuf;
 		int    *dev_ntpbuf, *host_ntpbuf;
 
+		/* cursor */
+		int3 m_cursor;
+
 		/* CUDA */
 		dim3 gridDim, blockDim;
 
@@ -65,7 +69,7 @@ namespace sge
 		size_t m_node_size, m_volm_size;
 
 		/* title bar */
-		string m_sz_title;
+		std::string m_sz_title;
 
 		/* etc. */
 		int increase_times, decrease_times;
@@ -98,6 +102,14 @@ namespace sge
 		void IO_DownloadBuffers( void );
 
 	private:
+		void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, cdouble *obs );
+
+		void hostDiffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field );
+
+		void hostAdvection( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble *u_in, cdouble *v_in, cdouble *w_in );
+
+		void hostJacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor );
+
 		/* IO, host to device */
 		void IO_ReadBuffers( void );
 

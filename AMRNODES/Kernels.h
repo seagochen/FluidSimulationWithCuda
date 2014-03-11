@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Feb 23, 2014
-* <Last Time>     Mar 04, 2014
+* <Last Time>     Mar 11, 2014
 * <File Name>     Kernels.h
 */
 
@@ -289,7 +289,7 @@ __global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, 
 	if ( obs[ Index(i,j,k) ] eqt MACRO_BOUNDARY_SOURCE )
 	{
 		/* add source to grids */
-		density[Index(i,j,k)] = SOURCE_DENSITY;
+		density[Index(i,j,k)] = DENSITY;
 
 #if !TESTING_MODE_SWITCH
 	cint half = GRIDS_X / 2;
@@ -297,16 +297,16 @@ __global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, 
 
 		/* add velocity to grids */
 		if ( i < half )
-			vel_u[Index(i,j,k)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
+			vel_u[Index(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
 		elif( i >= half )
-			vel_u[Index(i,j,k)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
+			vel_u[Index(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
 
-		vel_v[Index(i,j,k)] = SOURCE_VELOCITY;
+		vel_v[Index(i,j,k)] = VELOCITY;
 
 		if ( k < half )
-			vel_w[Index(i,j,k)] = -SOURCE_VELOCITY * DELTATIME * DELTATIME;
+			vel_w[Index(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
 		elif ( k >= half )
-			vel_w[Index(i,j,k)] =  SOURCE_VELOCITY * DELTATIME * DELTATIME;
+			vel_w[Index(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
 #else
 
 	/* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
@@ -327,54 +327,6 @@ __global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, 
 #endif
 	}
 	EndSimArea();
-};
-
-void hostJacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor )
-{
-	dim3 gridDim, blockDim;
-	cudaDeviceDim3D();
-	for ( int k=0; k<20; k++)
-	{
-		kernelJacobi<<<gridDim,blockDim>>>(grid_out, grid_in, diffusion, divisor);
-	}
-	kernelObstacle<<<gridDim,blockDim>>>( grid_out, obstacle, field );
-};
-
-void hostAdvection
-	( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, 
-	cdouble *u_in, cdouble *v_in, cdouble *w_in )
-{
-	dim3 gridDim, blockDim;
-	cudaDeviceDim3D();
-	kernelGridAdvection<<<gridDim,blockDim>>>( grid_out, grid_in, u_in, v_in, w_in );
-	kernelObstacle<<<gridDim,blockDim>>>( grid_out, obstacle, field );
-};
-
-void hostDiffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field )
-{
-//	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
-	double rate = diffusion;
-	hostJacobi ( grid_out, grid_in, obstacle, field, rate, 1+6*rate );
-};
-
-void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, cdouble *obs )
-{
-	dim3 gridDim, blockDim;
-	cudaDeviceDim3D();
-
-	// the velocity gradient
-	kernelGradient<<<gridDim,blockDim>>>( div, p, vel_u, vel_v, vel_w );
-	kernelObstacle<<<gridDim,blockDim>>>( div, obs, MACRO_SIMPLE );
-	kernelObstacle<<<gridDim,blockDim>>>( p, obs, MACRO_SIMPLE );
-
-	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
-	hostJacobi(p, div, obs, MACRO_SIMPLE, 1.f, 6.f);
-
-	// now subtract this gradient from our current velocity field
-	kernelSubtract<<<gridDim,blockDim>>>( vel_u, vel_v, vel_w, p );
-	kernelObstacle<<<gridDim,blockDim>>>( vel_u, obs, MACRO_VELOCITY_U );
-	kernelObstacle<<<gridDim,blockDim>>>( vel_v, obs, MACRO_VELOCITY_V );
-	kernelObstacle<<<gridDim,blockDim>>>( vel_w, obs, MACRO_VELOCITY_W );
 };
 
 __global__ void kernelZeroGrids( double *grid )

@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 23, 2014
-* <Last Time>     Mar 10, 2014
+* <Last Time>     Mar 11, 2014
 * <File Name>     MacroDefiniton.h
 */
 
@@ -22,27 +22,30 @@ typedef std::string*  ptrStr;
 /*********************************************************************************************************/
 
 /* parameters for volume rendering */
-#define STEPSIZE            0.001f
-#define VOLUME_x               128
+#define STEPSIZE             0.001f
+#define VOLUME_X                128
 
 /* parameters for fluid simulation */
-#define DELTATIME            0.25f
-#define DIFFUSION             0.1f
-#define VISOCITY              0.1f
-#define DENSITY                 40
-#define VELOCITY                35
-#define GRID_X                  64
+#define DELTATIME              0.5f
+#define DIFFUSION              0.1f
+#define VISOCITY               0.0f
+#define DENSITY               12.5f
+#define VELOCITY              15.7f
+#define GRIDS_X                  64
 
 /* hierarchy of simulation nodes */
 #define NODES_X                  2
+#define CURSOR_X                 1
+#define GNODES_X                 2
+#define HNODES_X                 2
 
 /* CUDA device's configuration info */
 #define THREADS_X             1024
 #define TILE_X                  16
 
 /* screen resolution */
-#define WINDOWS_X              600
-#define CANVAS_X               600
+#define WINDOWS_X              480
+#define CANVAS_X               480
 
 /* etc */
 #define TPBUFFER_X            1024
@@ -68,7 +71,7 @@ typedef std::string*  ptrStr;
 #define MACRO_FRONT               5
 #define MACRO_BACK                6
 
-/* simple */
+/* True and False */
 #define MACRO_FALSE               0
 #define MACRO_TRUE                1
 
@@ -82,12 +85,12 @@ typedef std::string*  ptrStr;
 
 #define cudaIndex2D(i,j,elements_x) ((j)*(elements_x)+(i))
 #define cudaIndex3D(i,j,k,elements_x) ((k)*elements_x*elements_x+(j)*elements_x+(i))
-#define Index(i,j,k) cudaIndex3D(i,j,k,GRID_X)
+#define Index(i,j,k) cudaIndex3D(i,j,k,GRIDS_X)
 
-#define gst_header               0  /* (ghost, halo) the header cell of grid */
-#define sim_header               1  /* (actually) the second cell of grid */
-#define gst_tailer              63  /* (ghost, halo) the last cell of grid */
-#define sim_tailer              62  /* (actually) the second last cell of grid */
+#define gst_header                0  /* (ghost, halo) the header cell of grid */
+#define sim_header                1  /* (actually) the second cell of grid */
+#define gst_tailer               63  /* (ghost, halo) the last cell of grid */
+#define sim_tailer               62  /* (actually) the second last cell of grid */
 
 #define BeginSimArea() \
 	if ( i >= sim_header and i <= sim_tailer ) \
@@ -141,6 +144,10 @@ typedef std::string*  ptrStr;
 #define velw_F               dev_buffers[ 33 ]
 #define velw_B               dev_buffers[ 34 ]
 
+/*********************************************************************************************************/
+/*********************************************************************************************************/
+/*********************************************************************************************************/
+
 #define cudaTrans2DTo3D(i,j,k,elements_x) \
 	k = cudaIndex2D(i,j,(elements_x)) / ((elements_x)*(elements_x)); \
 	i = i % (elements_x); \
@@ -155,14 +162,14 @@ typedef std::string*  ptrStr;
 #define cudaDeviceDim2D() \
 	blockDim.x = TILE_X; \
 	blockDim.y = TILE_X; \
-	gridDim.x  = GRID_X / TILE_X; \
-	gridDim.y  = GRID_X / TILE_X; \
+	gridDim.x  = GRIDS_X / TILE_X; \
+	gridDim.y  = GRIDS_X / TILE_X; \
 
 #define cudaDeviceDim3D() \
-	blockDim.x = (GRID_X / TILE_X); \
+	blockDim.x = (GRIDS_X / TILE_X); \
 	blockDim.y = (THREADS_X / TILE_X); \
-	gridDim.x  = (GRID_X / blockDim.x); \
-	gridDim.y  = (GRID_X * GRID_X * GRID_X) / (blockDim.x * blockDim.y * (GRID_X / blockDim.x)); \
+	gridDim.x  = (GRIDS_X / blockDim.x); \
+	gridDim.y  = (GRIDS_X * GRIDS_X * GRIDS_X) / (blockDim.x * blockDim.y * (GRIDS_X / blockDim.x)); \
 
 #define __device_func__ <<<gridDim,blockDim>>>
 
@@ -177,6 +184,6 @@ typedef std::string*  ptrStr;
 	int i = blockIdx.x * blockDim.x + threadIdx.x; \
 	int j = blockIdx.y * blockDim.y + threadIdx.y; \
 	int k = 0; \
-	cudaTrans2DTo3D ( i, j, k, GRID_X ); \
+	cudaTrans2DTo3D ( i, j, k, GRIDS_X ); \
 
 #endif
