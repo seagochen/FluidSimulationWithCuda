@@ -25,6 +25,7 @@ namespace sge
 	class FluidSimProc
 	{
 	private:
+
 		struct SimNode
 		{
 			SGBOOLEAN updated;
@@ -33,6 +34,7 @@ namespace sge
 		};
 
 	private:
+
 		/* temporary buffers for fluid simulation */
 		vector <double*> dev_buffers;
 
@@ -84,33 +86,30 @@ namespace sge
 		/* fluid simulation processing function */
 		void FluidSimSolver( FLUIDSPARAM *fluid );
 
-		/* when program existed, release resource */
-		void FreeResource( void );
-
-		/* zero the buffers for fluid simulation */
-		void ZeroBuffers( void );
-
-		/* title bar */
-		ptrStr GetTitleBar( void );
-
-		/* print runtime message */
-		void PrintMSG( void );
-
-		/* upload buffers */
-		void IO_UploadBuffers( void );
-
-		/* download buffers */
-		void IO_DownloadBuffers( void );
+	private:
+		void ReadBuffers( void );  // load host copy to device
+		void WriteBuffers( void ); // save device to host copy
+		void LoadBullet( int i, int j, int k );
+		void ExitBullet( int i, int j, int k );
 
 	private:
-		void IO_ReadBuffers( void ); // IO, host to device
-		void IO_WriteBuffers( void ); // IO, device to host
-		void LoadNode( int i, int j, int k );  // loading gpu nodes for fluid simulation
-		void SaveNode( int i, int j, int k ); // saving the result of fluid simulation
-		void SolveNavierStokers( void ); // solving the Navier-Stokers equations
-		void Interaction( int i, int j, int k ); // flood buffer for multiple nodes
-		void InitParams( FLUIDSPARAM *fluid ); // initialize FPS and etc.
-		void InitBoundary( void ); 	// initialize boundary condition
+		void SolveRootGrids( void );
+		void SolveLeafGrids( void );
+		void InterpolationRoot( void );
+		void InterpolationLeaf( void );
+		void Interaction( int i, int j, int k );
+		void SolveNavierStokers( void );
+		void SetCursor( int i, int j, int k );				
+
+	public:
+		void FreeResource( void );
+		void ZeroBuffers( void );
+		sstr GetTitleBar( void );
+		void PrintMSG( void );
+		void HostToDevice( void );
+		void DeviceToHost( void );
+		void InitParams( FLUIDSPARAM *fluid );
+		void InitBoundary( void );
 
 	private:
 		void CreateTopology( void );
@@ -143,13 +142,13 @@ namespace sge
 		void FreeVolumeBuffers( void );
 
 	private:
-		void DensitySolver( void );
 		void AddSource( void );
-		void VelocitySolver( void );
+		void DensitySolver( cdouble delta );
+		void VelocitySolver( cdouble delta );
 		void Projection( void );
-		void Diffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field );
-		void Advection( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble *u_in, cdouble *v_in, cdouble *w_in );
-		void Jacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor );
+		void Diffusion( double *out, cdouble *in, cdouble diffusion, cdouble *obstacle, cint field );
+		void Advection( double *out, cdouble *in, cdouble delta, cdouble *obstacle, cint field, cdouble *u, cdouble *v, cdouble *w );
+		void Jacobi( double *out, cdouble *in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor );
 	};
 };
 

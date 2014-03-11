@@ -15,7 +15,7 @@
 typedef double const  cdouble;
 typedef int const     cint;
 typedef unsigned char uchar;
-typedef std::string*  ptrStr;
+typedef std::string*  sstr;
 
 /*********************************************************************************************************/
 /*********************************************************************************************************/
@@ -37,7 +37,7 @@ typedef std::string*  ptrStr;
 #define CURSOR_X                 1
 #define GNODES_X                 2
 #define HNODES_X                 2
-#define GLOBAL_S                 8
+#define GLOBAL                   8
 
 /* CUDA device's configuration info */
 #define THREADS_X             1024
@@ -59,8 +59,8 @@ typedef std::string*  ptrStr;
 
 /* macro definition of boundary condition */
 #define MACRO_BOUNDARY_BLANK      0
-#define MACRO_BOUNDARY_SOURCE     1
 #define MACRO_BOUNDARY_OBSTACLE 100
+#define MACRO_BOUNDARY_SOURCE  -100
 
 /* macro definition of node's position */
 #define MACRO_CENTER              0

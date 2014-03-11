@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 04, 2014
+* <Last Time>     Mar 11, 2014
 * <File Name>     FluidSimProcKernels.cu
 */
 
@@ -35,13 +35,13 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	InitBoundary();
 
 	/* upload host to device */
-	IO_UploadBuffers();
+	HostToDevice();
 
 	/* finally, print message */
 	printf( "fluid simulation ready...\n" );
 };
 
-ptrStr FluidSimProc::GetTitleBar( void )
+sstr FluidSimProc::GetTitleBar( void )
 {
 	return &m_sz_title; 
 };
@@ -61,7 +61,7 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 
 	m_cursor.x = m_cursor.y = m_cursor.z = 0;
 
-	m_sz_title = "Excalibur OTL 2.10.00, large-scale. ------------ FPS: %d ";
+	m_sz_title = "Excalibur OTL 3.00.00, AMR multi-nodes. ------------ FPS: %d ";
 };
 
 void FluidSimProc::CreateHostTopology( void )
@@ -385,7 +385,7 @@ void FluidSimProc::FreeResource ( void )
 	FreeVolumeBuffers();
 };
 
-void FluidSimProc::IO_UploadBuffers( void )
+void FluidSimProc::HostToDevice( void )
 {
 	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
 	{
@@ -397,7 +397,7 @@ void FluidSimProc::IO_UploadBuffers( void )
 	}
 };
 
-void FluidSimProc::IO_DownloadBuffers( void )
+void FluidSimProc::DeviceToHost( void )
 {
 	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
 	{
@@ -408,7 +408,7 @@ void FluidSimProc::IO_DownloadBuffers( void )
 	}
 };
 
-void FluidSimProc::LoadNode( int i, int j, int k )
+void FluidSimProc::LoadBullet( int i, int j, int k )
 {
 	cudaDeviceDim3D();
 	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, GNODES_X )];
@@ -590,7 +590,7 @@ void FluidSimProc::LoadNode( int i, int j, int k )
 	}
 };
 
-void FluidSimProc::SaveNode( int i, int j, int k )
+void FluidSimProc::ExitBullet( int i, int j, int k )
 {
 	cudaDeviceDim3D();
 	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, GNODES_X )];
@@ -683,7 +683,7 @@ void FluidSimProc::InitBoundary( void )
 #endif
 };
 
-void FluidSimProc::VelocitySolver( void )
+void FluidSimProc::VelocitySolver( cdouble delta )
 {
 	// diffuse the velocity field (per axis):
 	Diffusion( dev_u0, dev_u, VISOCITY, dev_obs, MACRO_VELOCITY_U );
@@ -710,9 +710,9 @@ void FluidSimProc::VelocitySolver( void )
 	}
 	
 	// advect the velocity field (per axis):
-	Advection( dev_u0, dev_u, dev_obs, MACRO_VELOCITY_U, dev_u, dev_v, dev_w );
-	Advection( dev_v0, dev_v, dev_obs, MACRO_VELOCITY_V, dev_u, dev_v, dev_w );
-	Advection( dev_w0, dev_w, dev_obs, MACRO_VELOCITY_W, dev_u, dev_v, dev_w );
+	Advection( dev_u0, dev_u, delta, dev_obs, MACRO_VELOCITY_U, dev_u, dev_v, dev_w );
+	Advection( dev_v0, dev_v, delta, dev_obs, MACRO_VELOCITY_V, dev_u, dev_v, dev_w );
+	Advection( dev_w0, dev_w, delta, dev_obs, MACRO_VELOCITY_W, dev_u, dev_v, dev_w );
 
 	if ( helper.GetCUDALastError( "host function failed: hostAdvection", __FILE__, __LINE__ ) )
 	{
@@ -728,11 +728,11 @@ void FluidSimProc::VelocitySolver( void )
 	Projection();
 };
 
-void FluidSimProc::DensitySolver( void )
+void FluidSimProc::DensitySolver( cdouble delta )
 {
 	Diffusion( dev_den0, dev_den, DIFFUSION, dev_obs, MACRO_DENSITY );
 	std::swap( dev_den0, dev_den );
-	Advection ( dev_den, dev_den0, dev_obs, MACRO_DENSITY, dev_u, dev_v, dev_w );
+	Advection ( dev_den, dev_den0, delta, dev_obs, MACRO_DENSITY, dev_u, dev_v, dev_w );
 
 	if ( helper.GetCUDALastError( "host function failed: DensitySolver", __FILE__, __LINE__ ) )
 	{
@@ -902,12 +902,12 @@ void FluidSimProc::SolveNavierStokers( void )
 			{
 				if ( !gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated )
 				{
-					LoadNode(i,j,k);					
-					Interaction(i,j,k);					
-					AddSource();					
-					VelocitySolver();
-					DensitySolver();					
-					SaveNode(i,j,k);
+					LoadBullet(i,j,k);					
+					Interaction(i,j,k);									
+					AddSource();
+					VelocitySolver( DELTATIME );
+					DensitySolver( DELTATIME );
+					ExitBullet(i,j,k);
 					gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated = true;
 				}
 			}
@@ -915,37 +915,57 @@ void FluidSimProc::SolveNavierStokers( void )
 	}
 };
 
-void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
+void FluidSimProc::SolveLeafGrids( void )
 {
-	if ( !fluid->run ) return;
-
 	for ( int k = 0; k < CURSOR_X; k++ )
 	{
 		for ( int j = 0; j < CURSOR_X; j++ )
 		{
 			for ( int i = 0; i < CURSOR_X; i++ )
 			{
-				m_cursor.x = i;
-				m_cursor.y = j;
-				m_cursor.z = k;
-				
-				/* read host nodes */
-				IO_ReadBuffers();
-				
-				/* solving NS equations */
+				SetCursor( i, j, k );				
+				ReadBuffers();
 				SolveNavierStokers();
-				
-				/* save updated nodes */
-				IO_WriteBuffers();
+				WriteBuffers();
 			}
 		}
 	}
+};
+
+void FluidSimProc::SolveRootGrids( void )
+{
+	cudaDeviceDim3D();
+
+	kernelCopyGrids __device_func__ ( dev_den, node_density[GLOBAL] );
+	kernelCopyGrids __device_func__ ( dev_u, node_velocity_u[GLOBAL] );
+	kernelCopyGrids __device_func__ ( dev_v, node_velocity_v[GLOBAL] );
+	kernelCopyGrids __device_func__ ( dev_w, node_velocity_w[GLOBAL] );
+
+	AddSource();
+	VelocitySolver( DELTATIME );
+	DensitySolver( DELTATIME );
+};
+
+void FluidSimProc::SetCursor( int i, int j, int k )
+{
+	m_cursor.x = i;
+	m_cursor.y = j;
+	m_cursor.z = k;
+};
+
+void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
+{
+	if ( !fluid->run ) return;
+
+	SolveRootGrids();
+
+	SolveLeafGrids();
 
 	/* finally, generate volumetric image */
 	RefreshStatus( fluid );
 };
 
-void FluidSimProc::IO_ReadBuffers( void )
+void FluidSimProc::ReadBuffers( void )
 {
 	int ni, nj, nk; ni = nj = nk = 0;
 
@@ -972,7 +992,7 @@ void FluidSimProc::IO_ReadBuffers( void )
 	}
 };
 
-void FluidSimProc::IO_WriteBuffers( void )
+void FluidSimProc::WriteBuffers( void )
 {
 	int ni, nj, nk; ni = nj = nk = 0;
 
@@ -1004,12 +1024,11 @@ void FluidSimProc::Jacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle
 	kernelObstacle<<<gridDim,blockDim>>>( grid_out, obstacle, field );
 };
 
-void FluidSimProc::Advection( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, 
-	cdouble *u_in, cdouble *v_in, cdouble *w_in )
+void FluidSimProc::Advection( double *out, cdouble *in, cdouble delta, cdouble *obstacle, cint field, cdouble *u, cdouble *v, cdouble *w )
 {
 	cudaDeviceDim3D();
-	kernelGridAdvection<<<gridDim,blockDim>>>( grid_out, grid_in, u_in, v_in, w_in );
-	kernelObstacle<<<gridDim,blockDim>>>( grid_out, obstacle, field );
+	kernelGridAdvection<<<gridDim,blockDim>>>( out, in, delta, u, v, w );
+	kernelObstacle<<<gridDim,blockDim>>>( out, obstacle, field );
 };
 
 void FluidSimProc::Diffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field )

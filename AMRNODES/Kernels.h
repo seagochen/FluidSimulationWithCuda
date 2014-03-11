@@ -211,14 +211,14 @@ __global__ void kernelJacobi( double *grid_out, cdouble *grid_in, cdouble diffus
 	EndSimArea();
 }
 
-__global__ void kernelGridAdvection( double *grid_out, cdouble *grid_in, cdouble *u_in, cdouble *v_in, cdouble *w_in )
+__global__ void kernelGridAdvection( double *grid_out, cdouble *grid_in, cdouble delta, cdouble *u_in, cdouble *v_in, cdouble *w_in )
 {
 	GetIndex3D();
 	BeginSimArea();
 
-	double u = i - u_in [ Index(i,j,k) ] * DELTATIME;
-	double v = j - v_in [ Index(i,j,k) ] * DELTATIME;
-	double w = k - w_in [ Index(i,j,k) ] * DELTATIME;
+	double u = i - u_in [ Index(i,j,k) ] * delta;
+	double v = j - v_in [ Index(i,j,k) ] * delta;
+	double w = k - w_in [ Index(i,j,k) ] * delta;
 	
 	grid_out [ Index(i,j,k) ] = atomicTrilinear ( grid_in, u, v, w );
 
