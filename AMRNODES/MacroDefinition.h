@@ -34,10 +34,10 @@ typedef std::string*  ptrStr;
 #define GRIDS_X                  64
 
 /* hierarchy of simulation nodes */
-#define NODES_X                  2
 #define CURSOR_X                 1
 #define GNODES_X                 2
 #define HNODES_X                 2
+#define GLOBAL_S                 8
 
 /* CUDA device's configuration info */
 #define THREADS_X             1024

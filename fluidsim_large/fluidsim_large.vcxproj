@@ -50,6 +50,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{88EE4A6E-2AFC-47DF-A049-444B8E013174}</ProjectGuid>
     <RootNamespace>fluidsim_large</RootNamespace>
+    <ProjectName>LGNODES</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

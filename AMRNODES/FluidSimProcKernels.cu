@@ -19,8 +19,11 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	/* initialize FPS */
 	InitParams( fluid );
 
+	/* choose which GPU to run on, change this on a multi-GPU system. */
+	if ( cudaSetDevice( 0 ) != cudaSuccess ) { printf( "cudaSetDevice failed!\n" ); }
+
 	/* allocate resources */
-	if ( !AllocateResource ( fluid ) ) { FreeResource (); exit (1); }
+	if ( !AllocateResource() ) { FreeResource (); exit (1); }
 
 	/* build order */
 	CreateTopology();
@@ -154,29 +157,9 @@ void FluidSimProc::PrintMSG( void )
 		<< "updated nodes :" << totoal << endl;
 };
 
-bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
+bool FluidSimProc::CreateHostNodes( void )
 {
-	/* choose which GPU to run on, change this on a multi-GPU system. */
-	if ( cudaSetDevice ( 0 ) != cudaSuccess ) return false; 
-
-	/* tempororay buffers reserved */
-	if ( helper.CreateDeviceBuffers( TPBUFFER_X*sizeof(double), 1, &dev_dtpbuf ) not_eq SG_RUNTIME_OK ) return false;
-	if ( helper.CreateDeviceBuffers( TPBUFFER_X*sizeof(int), 1, &dev_ntpbuf ) not_eq SG_RUNTIME_OK ) return false;
-	if ( helper.CreateHostBuffers( TPBUFFER_X*sizeof(double), 1, &host_dtpbuf ) not_eq SG_RUNTIME_OK ) return false;
-	if ( helper.CreateHostBuffers( TPBUFFER_X*sizeof(int), 1, &host_ntpbuf ) not_eq SG_RUNTIME_OK ) return false;
-
-	/* vector of node topology */
-	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X; i++ )
-	{		
-		SimNode *node  = (SimNode*)malloc(sizeof(SimNode));
-		node->ptrFront = node->ptrBack = nullptr;
-		node->ptrLeft  = node->ptrRight = nullptr;
-		node->ptrDown  = node->ptrUp = nullptr;
-		node->updated  = false;
-		gpu_node.push_back( node );
-	}
-
-	/* vector of node topology */
+	/* host nodes' topology */
 	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
 	{		
 		SimNode *node  = (SimNode*)malloc(sizeof(SimNode));
@@ -187,7 +170,7 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		host_node.push_back( node );
 	}
 
-	/* vector of fluid simulation buffers */
+	/* vector for host nodes */
 	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
 	{
 		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
@@ -205,7 +188,7 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		host_obstacle.push_back( ptrObs );
 	}
 
-	/* create GPU node for fluid simulation */
+	/* copy of host nodes */
 	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
 	{
 		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
@@ -223,6 +206,23 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		dev_obstacle.push_back( ptrObs );
 	}
 
+	return true;
+};
+
+bool FluidSimProc::CreateDeviceNodes( void )
+{
+	/* device nodes' topology */
+	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X; i++ )
+	{		
+		SimNode *node  = (SimNode*)malloc(sizeof(SimNode));
+		node->ptrFront = node->ptrBack = nullptr;
+		node->ptrLeft  = node->ptrRight = nullptr;
+		node->ptrDown  = node->ptrUp = nullptr;
+		node->updated  = false;
+		gpu_node.push_back( node );
+	}
+
+	/* vector for device nodes */
 	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X; i++ )
 	{
 		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
@@ -239,6 +239,30 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		node_velocity_w.push_back( ptrW );
 		node_obstacle.push_back( ptrObs );
 	}
+	
+	/* global node */
+	double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
+	if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrDens ) not_eq SG_RUNTIME_OK ) return false;
+	if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrObs ) not_eq SG_RUNTIME_OK ) return false;
+	if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrU ) not_eq SG_RUNTIME_OK ) return false;
+	if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrV ) not_eq SG_RUNTIME_OK ) return false;
+	if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrW ) not_eq SG_RUNTIME_OK ) return false;
+	node_density.push_back( ptrDens );
+	node_velocity_u.push_back( ptrU );
+	node_velocity_v.push_back( ptrV );
+	node_velocity_w.push_back( ptrW );
+	node_obstacle.push_back( ptrObs );
+
+	return true;
+};
+
+bool FluidSimProc::CreateTempBuffers( void )
+{
+	/* tempororay buffers reserved */
+	if ( helper.CreateDeviceBuffers( TPBUFFER_X*sizeof(double), 1, &dev_dtpbuf ) not_eq SG_RUNTIME_OK ) return false;
+	if ( helper.CreateDeviceBuffers( TPBUFFER_X*sizeof(int), 1, &dev_ntpbuf ) not_eq SG_RUNTIME_OK ) return false;
+	if ( helper.CreateHostBuffers( TPBUFFER_X*sizeof(double), 1, &host_dtpbuf ) not_eq SG_RUNTIME_OK ) return false;
+	if ( helper.CreateHostBuffers( TPBUFFER_X*sizeof(int), 1, &host_ntpbuf ) not_eq SG_RUNTIME_OK ) return false;
 
 	/* allocate memory on GPU devices */
 	for ( int i = 0; i < dev_buffers_num; i++ )
@@ -249,27 +273,57 @@ bool FluidSimProc::AllocateResource ( FLUIDSPARAM *fluid )
 		dev_buffers.push_back(ptr);
 	}
 
+	return true;
+};
+
+bool FluidSimProc::CreateVolumeBuffers( void )
+{
 	/* allocate visual buffers */
 	if ( helper.CreateDeviceBuffers( m_volm_size, 1, &dev_visual ) not_eq SG_RUNTIME_OK ) return false;
 	if ( helper.CreateHostBuffers( m_volm_size, 1, &host_visual ) not_eq SG_RUNTIME_OK )  return false;
 
-	/* check the CUDA device if something occured */
-	if ( helper.GetCUDALastError( "memory allocation failed, check the code", __FILE__, __LINE__ ) )
+	return true;
+};
+
+bool FluidSimProc::AllocateResource ( void )
+{
+	/* allocating resource */
+	if ( !CreateHostNodes() ) 
 	{
-		FreeResource();
-		exit( 1 );
+		printf( "create host nodes failed!\n" );
+		return false;
 	}
+
+	if ( !CreateDeviceNodes() )
+	{
+		printf( "create device nodes failed!\n" );
+		return false;
+	}
+
+	if ( !CreateTempBuffers() )
+	{
+		printf( "create temporary buffers failed!\n" );
+		return false;
+	}
+
+	if ( !CreateVolumeBuffers() )
+	{
+		printf( "create volumetric buffers failed!\n" );
+		return false;
+	}
+	
+	/* check the CUDA device if something occured */
+	if ( helper.GetCUDALastError( "memory allocation failed, check the code",
+		__FILE__, __LINE__ ) ) return false;
 	
 	/* finally */
 	return true;
-}  
+};
 
-void FluidSimProc::FreeResource ( void )
+void FluidSimProc::FreeHostNodes( void )
 {
-	/* free node resource */
 	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
 	{
-		/* release host resource */
 		helper.FreeHostBuffers( 1, &host_density[i] );
 		helper.FreeHostBuffers( 1, &host_velocity_u[i] );
 		helper.FreeHostBuffers( 1, &host_velocity_v[i] );
@@ -279,28 +333,48 @@ void FluidSimProc::FreeResource ( void )
 
 	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
 	{
-		/* release device resource */
-		helper.FreeDeviceBuffers( 1, &host_density[i] );
-		helper.FreeDeviceBuffers( 1, &host_velocity_u[i] );
-		helper.FreeDeviceBuffers( 1, &host_velocity_v[i] );
-		helper.FreeDeviceBuffers( 1, &host_velocity_w[i] );
-		helper.FreeDeviceBuffers( 1, &host_obstacle[i] );
+		helper.FreeDeviceBuffers( 1, &dev_density[i] );
+		helper.FreeDeviceBuffers( 1, &dev_velocity_u[i] );
+		helper.FreeDeviceBuffers( 1, &dev_velocity_v[i] );
+		helper.FreeDeviceBuffers( 1, &dev_velocity_w[i] );
+		helper.FreeDeviceBuffers( 1, &dev_obstacle[i] );
 	}
+};
 
-	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X; i++ )
+void FluidSimProc::FreeDeviceNodes( void )
+{
+	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X + 1; i++ )
 	{
-		/* release device resource */
 		helper.FreeDeviceBuffers( 1, &node_obstacle[i] );
 		helper.FreeDeviceBuffers( 1, &node_density[i] );
 		helper.FreeDeviceBuffers( 1, &node_velocity_u[i] );
 		helper.FreeDeviceBuffers( 1, &node_velocity_v[i] );
 		helper.FreeDeviceBuffers( 1, &node_velocity_w[i] );	
 	}
+};
 
-	/* free device resource */
+void FluidSimProc::FreeTempBuffers( void )
+{
 	for ( int i = 0; i < dev_buffers_num; i++ ) 
 		helper.FreeDeviceBuffers( 1, &dev_buffers[i] );
-}
+
+	helper.FreeDeviceBuffers( 2, &dev_dtpbuf, &dev_ntpbuf );
+	helper.FreeHostBuffers( 2, &host_dtpbuf, &host_ntpbuf );
+};
+
+void FluidSimProc::FreeVolumeBuffers( void )
+{
+	helper.FreeDeviceBuffers( 1, &dev_visual );
+	helper.FreeHostBuffers( 1, &host_visual );
+};
+
+void FluidSimProc::FreeResource ( void )
+{
+	FreeHostNodes();
+	FreeDeviceNodes();
+	FreeTempBuffers();
+	FreeVolumeBuffers();
+};
 
 void FluidSimProc::IO_UploadBuffers( void )
 {
@@ -603,9 +677,9 @@ void FluidSimProc::InitBoundary( void )
 void FluidSimProc::VelocitySolver( void )
 {
 	// diffuse the velocity field (per axis):
-	hostDiffusion( dev_u0, dev_u, VISOCITY, dev_obs, MACRO_VELOCITY_U );
-	hostDiffusion( dev_v0, dev_v, VISOCITY, dev_obs, MACRO_VELOCITY_V );
-	hostDiffusion( dev_w0, dev_w, VISOCITY, dev_obs, MACRO_VELOCITY_W );
+	Diffusion( dev_u0, dev_u, VISOCITY, dev_obs, MACRO_VELOCITY_U );
+	Diffusion( dev_v0, dev_v, VISOCITY, dev_obs, MACRO_VELOCITY_V );
+	Diffusion( dev_w0, dev_w, VISOCITY, dev_obs, MACRO_VELOCITY_W );
 	
 	if ( helper.GetCUDALastError( "host function failed: hostDiffusion", __FILE__, __LINE__ ) )
 	{
@@ -618,7 +692,7 @@ void FluidSimProc::VelocitySolver( void )
 	std::swap( dev_w0, dev_w );
 
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	hostProject( dev_u, dev_v, dev_w, dev_div, dev_p, dev_obs );
+	Projection();
 
 	if ( helper.GetCUDALastError( "host function failed: hostProject", __FILE__, __LINE__ ) )
 	{
@@ -627,9 +701,9 @@ void FluidSimProc::VelocitySolver( void )
 	}
 	
 	// advect the velocity field (per axis):
-	hostAdvection( dev_u0, dev_u, dev_obs, MACRO_VELOCITY_U, dev_u, dev_v, dev_w );
-	hostAdvection( dev_v0, dev_v, dev_obs, MACRO_VELOCITY_V, dev_u, dev_v, dev_w );
-	hostAdvection( dev_w0, dev_w, dev_obs, MACRO_VELOCITY_W, dev_u, dev_v, dev_w );
+	Advection( dev_u0, dev_u, dev_obs, MACRO_VELOCITY_U, dev_u, dev_v, dev_w );
+	Advection( dev_v0, dev_v, dev_obs, MACRO_VELOCITY_V, dev_u, dev_v, dev_w );
+	Advection( dev_w0, dev_w, dev_obs, MACRO_VELOCITY_W, dev_u, dev_v, dev_w );
 
 	if ( helper.GetCUDALastError( "host function failed: hostAdvection", __FILE__, __LINE__ ) )
 	{
@@ -642,14 +716,14 @@ void FluidSimProc::VelocitySolver( void )
 	std::swap( dev_w0, dev_w );
 	
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	hostProject( dev_u, dev_v, dev_w, dev_div, dev_p, dev_obs );
+	Projection();
 };
 
 void FluidSimProc::DensitySolver( void )
 {
-	hostDiffusion( dev_den0, dev_den, DIFFUSION, dev_obs, MACRO_DENSITY );
+	Diffusion( dev_den0, dev_den, DIFFUSION, dev_obs, MACRO_DENSITY );
 	std::swap( dev_den0, dev_den );
-	hostAdvection ( dev_den, dev_den0, dev_obs, MACRO_DENSITY, dev_u, dev_v, dev_w );
+	Advection ( dev_den, dev_den0, dev_obs, MACRO_DENSITY, dev_u, dev_v, dev_w );
 
 	if ( helper.GetCUDALastError( "host function failed: DensitySolver", __FILE__, __LINE__ ) )
 	{
@@ -855,7 +929,7 @@ void FluidSimProc::IO_WriteBuffers( void )
 	}
 };
 
-void FluidSimProc::hostJacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor )
+void FluidSimProc::Jacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor )
 {
 	cudaDeviceDim3D();
 	for ( int k=0; k<20; k++)
@@ -865,8 +939,7 @@ void FluidSimProc::hostJacobi( double *grid_out, cdouble *grid_in, cdouble *obst
 	kernelObstacle<<<gridDim,blockDim>>>( grid_out, obstacle, field );
 };
 
-void FluidSimProc::hostAdvection
-	( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, 
+void FluidSimProc::Advection( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, 
 	cdouble *u_in, cdouble *v_in, cdouble *w_in )
 {
 	cudaDeviceDim3D();
@@ -874,28 +947,27 @@ void FluidSimProc::hostAdvection
 	kernelObstacle<<<gridDim,blockDim>>>( grid_out, obstacle, field );
 };
 
-void FluidSimProc::hostDiffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field )
+void FluidSimProc::Diffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field )
 {
-//	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
-	double rate = diffusion;
-	hostJacobi ( grid_out, grid_in, obstacle, field, rate, 1+6*rate );
+	double rate = diffusion * GRIDS_X * GRIDS_X * GRIDS_X;
+	Jacobi ( grid_out, grid_in, obstacle, field, rate, 1+6*rate );
 };
 
-void FluidSimProc::hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, cdouble *obs )
+void FluidSimProc::Projection( void )
 {
 	cudaDeviceDim3D();
 
 	// the velocity gradient
-	kernelGradient<<<gridDim,blockDim>>>( div, p, vel_u, vel_v, vel_w );
-	kernelObstacle<<<gridDim,blockDim>>>( div, obs, MACRO_SIMPLE );
-	kernelObstacle<<<gridDim,blockDim>>>( p, obs, MACRO_SIMPLE );
+	kernelGradient<<<gridDim,blockDim>>>( dev_div, dev_p, dev_u, dev_v, dev_w );
+	kernelObstacle<<<gridDim,blockDim>>>( dev_div, dev_obs, MACRO_SIMPLE );
+	kernelObstacle<<<gridDim,blockDim>>>( dev_p, dev_obs, MACRO_SIMPLE );
 
 	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
-	hostJacobi(p, div, obs, MACRO_SIMPLE, 1.f, 6.f);
+	Jacobi(dev_p, dev_div, dev_obs, MACRO_SIMPLE, 1.f, 6.f);
 
 	// now subtract this gradient from our current velocity field
-	kernelSubtract<<<gridDim,blockDim>>>( vel_u, vel_v, vel_w, p );
-	kernelObstacle<<<gridDim,blockDim>>>( vel_u, obs, MACRO_VELOCITY_U );
-	kernelObstacle<<<gridDim,blockDim>>>( vel_v, obs, MACRO_VELOCITY_V );
-	kernelObstacle<<<gridDim,blockDim>>>( vel_w, obs, MACRO_VELOCITY_W );
+	kernelSubtract<<<gridDim,blockDim>>>( dev_u, dev_v, dev_w, dev_p );
+	kernelObstacle<<<gridDim,blockDim>>>( dev_u, dev_obs, MACRO_VELOCITY_U );
+	kernelObstacle<<<gridDim,blockDim>>>( dev_v, dev_obs, MACRO_VELOCITY_V );
+	kernelObstacle<<<gridDim,blockDim>>>( dev_w, dev_obs, MACRO_VELOCITY_W );
 };

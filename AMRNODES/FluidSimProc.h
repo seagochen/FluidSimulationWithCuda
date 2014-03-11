@@ -18,6 +18,7 @@
 #include "FrameworkDynamic.h"
 
 using std::vector;
+using std::string;
 
 namespace sge
 {
@@ -42,7 +43,7 @@ namespace sge
 		vector <double*> dev_velocity_w, host_velocity_w;
 		vector <double*> dev_obstacle,   host_obstacle;
 
-		/* local nodes */
+		/* local nodes, the last node is the global */
 		vector <double*> node_density;
 		vector <double*> node_velocity_u;
 		vector <double*> node_velocity_v;
@@ -69,7 +70,7 @@ namespace sge
 		size_t m_node_size, m_volm_size;
 
 		/* title bar */
-		std::string m_sz_title;
+		string m_sz_title;
 
 		/* etc. */
 		int increase_times, decrease_times;
@@ -102,14 +103,6 @@ namespace sge
 		void IO_DownloadBuffers( void );
 
 	private:
-		void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, cdouble *obs );
-
-		void hostDiffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field );
-
-		void hostAdvection( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble *u_in, cdouble *v_in, cdouble *w_in );
-
-		void hostJacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor );
-
 		/* IO, host to device */
 		void IO_ReadBuffers( void );
 
@@ -137,20 +130,30 @@ namespace sge
 		/* create simulation nodes' topological structure */
 		void CreateTopology( void );
 
-		/* allocate resource */
-		bool AllocateResource( FLUIDSPARAM *fluid );
-
-		/* solving density */
-		void DensitySolver( void );
-
-		/* add source */
-		void AddSource( void );
-
 		/* initialize boundary condition */
 		void InitBoundary( void );
 
-		/* solving velocity */
+	private:
+		bool AllocateResource( void );
+		bool CreateHostNodes( void );
+		bool CreateDeviceNodes( void );
+		bool CreateTempBuffers( void );
+		bool CreateVolumeBuffers( void );
+
+	private:
+		void FreeHostNodes( void );
+		void FreeDeviceNodes( void );
+		void FreeTempBuffers( void );
+		void FreeVolumeBuffers( void );
+
+	private:
+		void DensitySolver( void );
+		void AddSource( void );
 		void VelocitySolver( void );
+		void Projection( void );
+		void Diffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field );
+		void Advection( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble *u_in, cdouble *v_in, cdouble *w_in );
+		void Jacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor );
 	};
 };
 
