@@ -30,7 +30,8 @@ namespace sge
 		struct SimNode
 		{
 			SGBOOLEAN updated;
-			int3 nodeIX;
+			SGBOOLEAN active;
+			int x, y, z;
 			SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 		};
 #pragma endregion
@@ -54,7 +55,7 @@ namespace sge
 		vector <double*> node_velocity_w;
 		vector <double*> node_obstacle;
 
-		double *gd_density, gd_velocity_u, gd_velocity_v, gd_velocity_w, gd_obstacle;
+		double *gd_density, *gd_velocity_u, *gd_velocity_v, *gd_velocity_w, *gd_obstacle;
 
 		/* topology of nodes on host and device */
 		vector <SimNode*> gpu_node, host_node;
@@ -68,7 +69,7 @@ namespace sge
 
 		/* cursor */
 		int3 m_cursor;
-
+		
 		/* CUDA */
 		dim3 gridDim, blockDim;
 
@@ -80,6 +81,7 @@ namespace sge
 
 		/* etc. */
 		int increase_times, decrease_times;
+		SimNode *ptr;
 
 	private:
 		FunctionHelper helper;
@@ -90,13 +92,19 @@ namespace sge
 		FluidSimProc( FLUIDSPARAM *fluid );
 
 	public:
-		void FluidSimSolver( FLUIDSPARAM *fluid );
 		void ZeroBuffers( void );
 		sstr GetTitleBar( void );
 		void PrintMSG( void );
 		void HostToDevice( void );
 		void DeviceToHost( void );
 		void FreeResource( void );
+
+	private:
+		void zeroDeivceRes( void );
+		void zeroHostRes( void );
+		void zeroVisualBuffers( void );
+		void zeroShareBuffers( void );
+		void zeroTempoBuffers( void );
 
 	private:
 		void freeHostRes( void );
@@ -124,21 +132,34 @@ namespace sge
 	private:
 		void InitParams( FLUIDSPARAM *fluid );
 		void CreateTopology( void );
-		void RefreshStatus( FLUIDSPARAM *fluid );		
+		void RefreshStatus( FLUIDSPARAM *fluid );
+
+	public:
+		void FluidSimSolver( FLUIDSPARAM *fluid );
+		void SolveRootNode( void );
+		void SolveLeafNode( void );
+
+	private:
+		void copyRootNode( void );
+		void interDataFromRoot( void );
+		void subLeaf( void );
+
+	private:
+		void SolveNavierStokesEquation( cdouble timestep, bool add );
 
 	private:
 		void AddSource( void );
-		void DensitySolver( void );
-		void VelocitySolver( void );
+		void DensitySolver( cdouble timestep );
+		void VelocitySolver( cdouble timestep );
 		void InitBoundary( void );
 		void ReadBuffers( void );
 		void WriteBuffers( void );
-		void SolveNavierStokers( void );
+		
 		void Interaction( int i, int j, int k );
-		void hostJacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor );
-		void hostAdvection( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble *u_in, cdouble *v_in, cdouble *w_in );
-		void hostDiffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field );
-		void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, cdouble *obs );
+		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
+		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
+		void Diffusion( double *out, cdouble *in, cdouble diff );
+		void Projection( double *u, double *v, double *w, double *div, double *p );
 	};
 };
 

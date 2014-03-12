@@ -251,7 +251,6 @@ __global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, cdo
 	BeginSimArea();
 
 	// gradient calculated by neighbors
-
 	vel_u [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i+1, j, k) ] - p [ Index(i-1, j, k) ] );
 	vel_v [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j+1, k) ] - p [ Index(i, j-1, k) ] );
 	vel_w [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j, k+1) ] - p [ Index(i, j, k-1) ] );
@@ -267,33 +266,24 @@ __global__ void kernelSetBoundary( double *grids )
 	
 	cint half = GRIDS_X / 2;
 
-#if !TESTING_MODE_SWITCH
 	
 	if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
 		grids[ Index(i,j,k) ] = MACRO_BOUNDARY_SOURCE;
-#else
-	if ( i >= half-2 and i < half+2 and
-		j >= half-2 and j < half+2 and
-		k >= half-2 and k < half+2 )
-		grids[Index(i,j,k)] = MACRO_BOUNDARY_SOURCE;
-#endif
 
 	EndSimArea();
 };
 
-__global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w, double *obs )
+__global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w )
 {
 	GetIndex3D();
 	BeginSimArea();
+	
+	cint half = GRIDS_X / 2;
 
-	if ( obs[ Index(i,j,k) ] eqt MACRO_BOUNDARY_SOURCE )
+	if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
 	{
 		/* add source to grids */
 		density[Index(i,j,k)] = DENSITY;
-
-#if !TESTING_MODE_SWITCH
-	cint half = GRIDS_X / 2;
-
 
 		/* add velocity to grids */
 		if ( i < half )
@@ -307,24 +297,6 @@ __global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, 
 			vel_w[Index(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
 		elif ( k >= half )
 			vel_w[Index(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
-#else
-
-	/* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
-#if TESTING_MODE==0
-		vel_v[Index(i,j,k)] =  SOURCE_VELOCITY;
-#elif TESTING_MODE==1
-		vel_v[Index(i,j,k)] = -SOURCE_VELOCITY;
-#elif TESTING_MODE==2
-		vel_u[Index(i,j,k)] = -SOURCE_VELOCITY;
-#elif TESTING_MODE==3
-		vel_u[Index(i,j,k)] =  SOURCE_VELOCITY;
-#elif TESTING_MODE==4
-		vel_w[Index(i,j,k)] =  SOURCE_VELOCITY;
-#elif TESTING_MODE==5
-		vel_w[Index(i,j,k)] = -SOURCE_VELOCITY;
-#endif
-
-#endif
 	}
 	EndSimArea();
 };
@@ -356,18 +328,81 @@ __global__ void kernelZeroVolumetric( sge::SGUCHAR *visual )
 	}
 };
 
-__global__ void kernelZeroTemporaryBuffers( double *bufs )
+__global__ void kernelZeroShareBuffers( double *bufs )
 {
 	GetIndex1D();
 
 	bufs[i] = 0.f;
 };
 
-__global__ void kernelZeroTemporaryBuffers( int *bufs )
+__global__ void kernelZeroShareBuffers( int *bufs )
 {
 	GetIndex1D();
 
 	bufs[i] = 0;
+};
+
+__global__ void kernelPickData( uchar *data, cdouble *bufs, cint offseti, cint offsetj, cint offsetk )
+{
+	GetIndex3D();
+
+	int di = offseti + i;
+	int dj = offsetj + j;
+	int dk = offsetk + k;
+
+	/* zero data first */
+	data[cudaIndex3D(di,dj,dk,VOLUME_X)] = 0;
+
+	/* append data to volume data */
+	int temp = atomicRound( bufs[ Index(i, j, k) ] );
+	if ( temp > 0 and temp < 250 )
+		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (uchar) temp;
+};
+
+__global__ void kernelCopyGrids( double *dst, cdouble *src )
+{
+	GetIndex3D();
+
+	dst[Index(i,j,k)] = src[Index(i,j,k)];
+};
+
+__global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
+{
+	GetIndex3D();
+
+	double x = ( pi * GRIDS_X + i ) * rate;
+	double y = ( pj * GRIDS_X + j ) * rate;
+	double z = ( pk * GRIDS_X + k ) * rate;
+
+	dst[Index(i,j,k)] = atomicTrilinear( src, x, y, z );
+};
+
+#pragma region obsoleted cuda kernels
+
+//TODO 使用AMR方法后，该函数将被标记为obsoleted
+__global__ void kernelInteractNodes
+	( double *center, double *left, double *right, double *up, double *down, double *front, double *back,
+	cint uL, cint uR, cint uU, cint uD, cint uF, cint uB )
+{
+	GetIndex3D();
+
+	if ( uL eqt MACRO_TRUE )
+		center[Index(sim_header,j,k)] = left[Index(sim_tailer,j,k)];
+
+	if ( uR eqt MACRO_TRUE )
+		center[Index(sim_tailer,j,k)] = right[Index(sim_header,j,k)];
+
+	if ( uU eqt MACRO_TRUE )
+		center[Index(i,sim_tailer,k)] = up[Index(i,sim_header,k)];
+
+	if ( uD eqt MACRO_TRUE )
+        center[Index(i,sim_header,k)] = down[Index(i,sim_tailer,k)];
+
+	if ( uF eqt MACRO_TRUE )
+		center[Index(i,j,sim_tailer)] = front[Index(i,j,sim_header)];
+
+	if ( uB eqt MACRO_TRUE )
+		center[Index(i,j,sim_header)] = back[Index(i,j,sim_tailer)];
 };
 
 //TODO 使用AMR方法后，该函数将被标记为obsoleted
@@ -423,57 +458,6 @@ __device__ void atomicFloodData( uchar *data, cint offseti, cint offsetj, cint o
 	data[cudaIndex3D(gti,gtj,gtk,VOLUME_X)] = ( data[cudaIndex3D(sti,gtj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,stj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,gtj,stk,VOLUME_X)] ) / 3;
 };
 
-//TODO AMR方法后，该函数需要重新设计，因为数据维度是62
-__global__ void kernelPickData( uchar *data, cdouble *bufs, cint offseti, cint offsetj, cint offsetk )
-{
-	GetIndex3D();
-
-	int di = offseti + i;
-	int dj = offsetj + j;
-	int dk = offsetk + k;
-
-	/* zero data first */
-	data[cudaIndex3D(di,dj,dk,VOLUME_X)] = 0;
-
-	/* append data to volume data */
-	int temp = atomicRound( bufs[ Index(i, j, k) ] );
-	if ( temp > 0 and temp < 250 )
-		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (uchar) temp;
-
-	atomicFloodData( data, offseti, offsetj, offsetk );
-};
-
-__global__ void kernelCopyGrids( double *src, cdouble *dst )
-{
-	GetIndex3D();
-
-	src[Index(i,j,k)] = dst[Index(i,j,k)];
-};
-
-//TODO 使用AMR方法后，该函数将被标记为obsoleted
-__global__ void kernelInteractNodes
-	( double *center, double *left, double *right, double *up, double *down, double *front, double *back,
-	cint uL, cint uR, cint uU, cint uD, cint uF, cint uB )
-{
-	GetIndex3D();
-
-	if ( uL eqt MACRO_TRUE )
-		center[Index(sim_header,j,k)] = left[Index(sim_tailer,j,k)];
-
-	if ( uR eqt MACRO_TRUE )
-		center[Index(sim_tailer,j,k)] = right[Index(sim_header,j,k)];
-
-	if ( uU eqt MACRO_TRUE )
-		center[Index(i,sim_tailer,k)] = up[Index(i,sim_header,k)];
-
-	if ( uD eqt MACRO_TRUE )
-        center[Index(i,sim_header,k)] = down[Index(i,sim_tailer,k)];
-
-	if ( uF eqt MACRO_TRUE )
-		center[Index(i,j,sim_tailer)] = front[Index(i,j,sim_header)];
-
-	if ( uB eqt MACRO_TRUE )
-		center[Index(i,j,sim_header)] = back[Index(i,j,sim_tailer)];
-};
+#pragma endregion
 
 #endif
