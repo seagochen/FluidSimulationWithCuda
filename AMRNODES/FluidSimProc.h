@@ -24,6 +24,8 @@ namespace sge
 {
 	class FluidSimProc
 	{
+
+#pragma region inner structures
 	private:
 		struct SimNode
 		{
@@ -31,7 +33,9 @@ namespace sge
 			int3 nodeIX;
 			SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 		};
+#pragma endregion
 
+#pragma region private variables
 	private:
 		/* temporary buffers for fluid simulation */
 		vector <double*> dev_buffers;
@@ -49,6 +53,8 @@ namespace sge
 		vector <double*> node_velocity_v;
 		vector <double*> node_velocity_w;
 		vector <double*> node_obstacle;
+
+		double *gd_density, gd_velocity_u, gd_velocity_v, gd_velocity_w, gd_obstacle;
 
 		/* topology of nodes on host and device */
 		vector <SimNode*> gpu_node, host_node;
@@ -70,7 +76,7 @@ namespace sge
 		size_t m_node_size, m_volm_size;
 
 		/* title bar */
-		std::string m_sz_title;
+		string m_sz_title;
 
 		/* etc. */
 		int increase_times, decrease_times;
@@ -78,80 +84,61 @@ namespace sge
 	private:
 		FunctionHelper helper;
 
+#pragma endregion
+
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
 
-		/* fluid simulation processing function */
+	public:
 		void FluidSimSolver( FLUIDSPARAM *fluid );
-
-		/* when program existed, release resource */
+		void ZeroBuffers( void );
+		sstr GetTitleBar( void );
+		void PrintMSG( void );
+		void HostToDevice( void );
+		void DeviceToHost( void );
 		void FreeResource( void );
 
-		/* zero the buffers for fluid simulation */
-		void ZeroBuffers( void );
-
-		/* title bar */
-		sstr GetTitleBar( void );
-
-		/* print runtime message */
-		void PrintMSG( void );
-
-		/* upload buffers */
-		void IO_UploadBuffers( void );
-
-		/* download buffers */
-		void IO_DownloadBuffers( void );
+	private:
+		void freeHostRes( void );
+		void freeDeviceRes( void );
+		void freeShareBuffers( void );
+		void freeVisualBuffers( void );
+		
+	private:
+		bool AllocateResource( void );
+		bool allocHostRes( void );
+		bool allocDeviceRes( void );
+		bool allocShareBuffers( void );
+		bool allocVisualBuffers( void );
+		void allocTopologyNodes( void );
 
 	private:
-		/* IO, host to device */
-		void IO_ReadBuffers( void );
+		void LoadBullet( int i, int j, int k );
+		void ExitBullet( int i, int j, int k );
+		void clearBullet( void );
+		void pickNodeToBullet( int i, int j, int k );
+		void pickNeighborsToBullet( int i, int j, int k );
+		void pickBulletToNode( int i, int j, int k );
+		void pickImgFromNode( int i, int j, int k );
 
-		/* IO, device to host */
-		void IO_WriteBuffers( void );
-
-		/* loading gpu nodes for fluid simulation */
-		void LoadNode( int i, int j, int k );
-
-		/* saving the result of fluid simulation */
-		void SaveNode( int i, int j, int k );
-
-		/* solving the Navier-Stokers equations */
-		void SolveNavierStokers( void );
-
-		/* flood buffer for multiple nodes */
-		void Interaction( int i, int j, int k );
-
-		/* initialize FPS and etc. */
+	private:
 		void InitParams( FLUIDSPARAM *fluid );
-			
-		/* retrieve the density back and load into volumetric data for rendering */
-		void RefreshStatus( FLUIDSPARAM *fluid );
-		
-		/* create simulation nodes' topological structure */
 		void CreateTopology( void );
+		void RefreshStatus( FLUIDSPARAM *fluid );		
 
-		/* allocate resource */
-		bool AllocateResource( FLUIDSPARAM *fluid );
-
-		/* solving density */
-		void DensitySolver( void );
-
-		/* add source */
+	private:
 		void AddSource( void );
-
-		/* initialize boundary condition */
-		void InitBoundary( void );
-
-		/* solving velocity */
+		void DensitySolver( void );
 		void VelocitySolver( void );
-
-		private:
-			void hostJacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor );
-			void hostAdvection
-	( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, 
-	cdouble *u_in, cdouble *v_in, cdouble *w_in );
-			void hostDiffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field );
-			void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, cdouble *obs );
+		void InitBoundary( void );
+		void ReadBuffers( void );
+		void WriteBuffers( void );
+		void SolveNavierStokers( void );
+		void Interaction( int i, int j, int k );
+		void hostJacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor );
+		void hostAdvection( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble *u_in, cdouble *v_in, cdouble *w_in );
+		void hostDiffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field );
+		void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, cdouble *obs );
 	};
 };
 
