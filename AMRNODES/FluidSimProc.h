@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 11, 2014
+* <Last Time>     Mar 07, 2014
 * <File Name>     FluidSimProc.h
 */
 
@@ -25,7 +25,6 @@ namespace sge
 	class FluidSimProc
 	{
 	private:
-
 		struct SimNode
 		{
 			SGBOOLEAN updated;
@@ -34,7 +33,6 @@ namespace sge
 		};
 
 	private:
-
 		/* temporary buffers for fluid simulation */
 		vector <double*> dev_buffers;
 
@@ -45,7 +43,7 @@ namespace sge
 		vector <double*> dev_velocity_w, host_velocity_w;
 		vector <double*> dev_obstacle,   host_obstacle;
 
-		/* local nodes, the last node is the global */
+		/* local nodes */
 		vector <double*> node_density;
 		vector <double*> node_velocity_u;
 		vector <double*> node_velocity_v;
@@ -72,7 +70,7 @@ namespace sge
 		size_t m_node_size, m_volm_size;
 
 		/* title bar */
-		string m_sz_title;
+		std::string m_sz_title;
 
 		/* etc. */
 		int increase_times, decrease_times;
@@ -86,70 +84,74 @@ namespace sge
 		/* fluid simulation processing function */
 		void FluidSimSolver( FLUIDSPARAM *fluid );
 
-	private:
-		void ReadBuffers( void );  // load host copy to device
-		void WriteBuffers( void ); // save device to host copy
-		void ClearBullet( void );
-		void LoadBullet( int i, int j, int k );
-		void ExitBullet( int i, int j, int k );
-
-	private:
-		void SolveRootGrids( void );
-		void SolveLeafGrids( void );
-		void InterRootGrids( void );
-		void InterLeafGrids( void );
-		void Interaction( int i, int j, int k );
-		void SolveNavierStokers( void );
-		void SetCursor( int i, int j, int k );				
-
-	public:
+		/* when program existed, release resource */
 		void FreeResource( void );
+
+		/* zero the buffers for fluid simulation */
 		void ZeroBuffers( void );
+
+		/* title bar */
 		sstr GetTitleBar( void );
+
+		/* print runtime message */
 		void PrintMSG( void );
-		void HostToDevice( void );
-		void DeviceToHost( void );
+
+		/* upload buffers */
+		void IO_UploadBuffers( void );
+
+		/* download buffers */
+		void IO_DownloadBuffers( void );
+
+	private:
+		/* IO, host to device */
+		void IO_ReadBuffers( void );
+
+		/* IO, device to host */
+		void IO_WriteBuffers( void );
+
+		/* loading gpu nodes for fluid simulation */
+		void LoadNode( int i, int j, int k );
+
+		/* saving the result of fluid simulation */
+		void SaveNode( int i, int j, int k );
+
+		/* solving the Navier-Stokers equations */
+		void SolveNavierStokers( void );
+
+		/* flood buffer for multiple nodes */
+		void Interaction( int i, int j, int k );
+
+		/* initialize FPS and etc. */
 		void InitParams( FLUIDSPARAM *fluid );
+			
+		/* retrieve the density back and load into volumetric data for rendering */
+		void RefreshStatus( FLUIDSPARAM *fluid );
+		
+		/* create simulation nodes' topological structure */
+		void CreateTopology( void );
+
+		/* allocate resource */
+		bool AllocateResource( FLUIDSPARAM *fluid );
+
+		/* solving density */
+		void DensitySolver( void );
+
+		/* add source */
+		void AddSource( void );
+
+		/* initialize boundary condition */
 		void InitBoundary( void );
 
-	private:
-		void CreateTopology( void );
-		void CreateHostTopology( void );
-		void CreateDeviceTopology( void );
+		/* solving velocity */
+		void VelocitySolver( void );
 
-	private:
-		void ZeroHostBuffers( void );
-		void ZeroDeviceBuffers( void );
-		void ZeroTempBuffers( void );
-		void ZeroVolumeBuffers( void );
-
-	private:
-		void RefreshStatus( FLUIDSPARAM *fluid );
-		void RefreshFPS( FLUIDSPARAM *fluid );
-		void RefreshVolume( FLUIDSPARAM *fluid );
-		void RefreshHostNodes( FLUIDSPARAM *fluid );
-
-	private:
-		bool AllocateResource( void );
-		bool CreateHostNodes( void );
-		bool CreateDeviceNodes( void );
-		bool CreateTempBuffers( void );
-		bool CreateVolumeBuffers( void );
-
-	private:
-		void FreeHostNodes( void );
-		void FreeDeviceNodes( void );
-		void FreeTempBuffers( void );
-		void FreeVolumeBuffers( void );
-
-	private:
-		void AddSource( void );
-		void DensitySolver( cdouble delta );
-		void VelocitySolver( cdouble delta );
-		void Projection( void );
-		void Diffusion( double *out, cdouble *in, cdouble diffusion, cdouble *obstacle, cint field );
-		void Advection( double *out, cdouble *in, cdouble delta, cdouble *obstacle, cint field, cdouble *u, cdouble *v, cdouble *w );
-		void Jacobi( double *out, cdouble *in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor );
+		private:
+			void hostJacobi( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, cdouble diffusion, cdouble divisor );
+			void hostAdvection
+	( double *grid_out, cdouble *grid_in, cdouble *obstacle, cint field, 
+	cdouble *u_in, cdouble *v_in, cdouble *w_in );
+			void hostDiffusion( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble *obstacle, cint field );
+			void hostProject( double *vel_u, double *vel_v, double *vel_w, double *div, double *p, cdouble *obs );
 	};
 };
 

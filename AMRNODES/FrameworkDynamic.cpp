@@ -608,11 +608,11 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 			break;
 
 		case SG_KEY_U:
-			m_simproc->HostToDevice();
+//			m_simproc->HostToDevice();
 			break;
 
 		case SG_KEY_D:
-			m_simproc->DeviceToHost();
+//			m_simproc->DeviceToHost();
 			break;
 
 		case SG_KEY_P:

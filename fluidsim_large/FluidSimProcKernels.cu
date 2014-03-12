@@ -327,7 +327,7 @@ void FluidSimProc::IO_DownloadBuffers( void )
 
 void FluidSimProc::LoadNode( int i, int j, int k )
 {
-	cudaDeviceDim3D();
+	helper.DeviceDim3D( &blockDim, &gridDim, 1024, 32, 64, 64, 64 );( &blockDim, &gridDim, 1024, 32, 64, 64, 64 );
 	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, GNODES_X )];
 
 	/* upload center node to GPU device */
@@ -509,7 +509,7 @@ void FluidSimProc::LoadNode( int i, int j, int k )
 
 void FluidSimProc::SaveNode( int i, int j, int k )
 {
-	cudaDeviceDim3D();
+	helper.DeviceDim3D( &blockDim, &gridDim, 1024, 32, 64, 64, 64 );
 	SimNode *ptr = gpu_node[cudaIndex3D( i, j, k, GNODES_X )];
 
 	/* draw data back */
@@ -541,7 +541,7 @@ void FluidSimProc::AddSource( void )
 {
 	if ( decrease_times eqt 0 )
 	{
-		cudaDeviceDim3D();
+		helper.DeviceDim3D( &blockDim, &gridDim, 1024, 32, 64, 64, 64 );
 		kernelAddSource __device_func__ ( dev_den, dev_u, dev_v, dev_w, dev_obs );
 
 		if ( helper.GetCUDALastError( "device kernel: kernelPickData failed", __FILE__, __LINE__ ) )
@@ -566,7 +566,7 @@ void FluidSimProc::AddSource( void )
 
 void FluidSimProc::InitBoundary( void )
 {
-	cudaDeviceDim3D();
+	helper.DeviceDim3D( &blockDim, &gridDim, 1024, 32, 64, 64, 64 );
 
 	/* zero boundary buffers */
 	kernelZeroGrids __device_func__ ( dev_obs );
@@ -660,7 +660,7 @@ void FluidSimProc::DensitySolver( void )
 
 void FluidSimProc::ZeroBuffers( void )
 {
-	cudaDeviceDim3D();
+	helper.DeviceDim3D( &blockDim, &gridDim, 1024, 32, 64, 64, 64 );
 
 	/* zero GPU buffer */
 	for ( int i = 0; i < dev_buffers_num; i++ )
@@ -706,7 +706,7 @@ void FluidSimProc::Interaction( int i, int j, int k )
 	if ( ptr->ptrFront not_eq nullptr )	front = ( (ptr->ptrFront->updated)? MACRO_TRUE : MACRO_FALSE );
 	if ( ptr->ptrBack  not_eq nullptr ) back  = ( (ptr->ptrBack->updated) ? MACRO_TRUE : MACRO_FALSE );
 
-	cudaDeviceDim3D();
+	helper.DeviceDim3D( &blockDim, &gridDim, 1024, 32, 64, 64, 64 );
 	kernelInteractNodes __device_func__
 		( dens_C, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B, left, right, up, down, front, back );
 	kernelInteractNodes __device_func__
@@ -810,7 +810,7 @@ void FluidSimProc::IO_ReadBuffers( void )
 {
 	int ni, nj, nk; ni = nj = nk = 0;
 
-	cudaDeviceDim3D();
+	helper.DeviceDim3D( &blockDim, &gridDim, 1024, 32, 64, 64, 64 );
 
 	for ( int k = 0; k < GNODES_X; k++ ) for ( int j = 0; j < GNODES_X; j++ ) for ( int i = 0; i < GNODES_X; i++ )
 	{

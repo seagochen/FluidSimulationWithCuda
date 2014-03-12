@@ -30,13 +30,12 @@ typedef std::string*  ptrStr;
 #define SOURCE_VELOCITY         15    // 为计算网格中添加的velocity的量
 
 #define GRIDS_X                 64    // 计算网格在单维度上所拥有的数量
-#define CURSOR_X                 2    // cursor的最大尺度
 #define GNODES_X                 2    // GPU上使用的计算节点
-#define HNODES_X                 3    // HOST上使用的计算节点
+#define HNODES_X                 2    // HOST上使用的计算节点
 #define CURSOR_X        HNODES_X-1    // define the max offset of cursor
 #define VOLUME_X  GRIDS_X*HNODES_X    // 三维体数据在单维度上的长度
 #define THREADS_X             1024    // 定义CUDA的线程数量
-#define TILE_X                  16    // 将16x16的GPU-threads捆绑打包为一个block
+#define TILE_X                  32    // 将16x16的GPU-threads捆绑打包为一个block
 #define WINDOWS_X              600    // Windows application's size
 #define CANVAS_X               600    // canvas's size
 #define TPBUFFER_X            1024    // 为了可移植性而创建的临时数据缓存，用于替代shared memories
@@ -145,10 +144,10 @@ typedef std::string*  ptrStr;
 	gridDim.y  = GRIDS_X / TILE_X; \
 
 #define cudaDeviceDim3D() \
-	blockDim.x = (GRIDS_X / TILE_X); \
-	blockDim.y = (THREADS_X / TILE_X); \
+	blockDim.x = (TILE_X); \
+	blockDim.y = (TILE_X); \
 	gridDim.x  = (GRIDS_X / blockDim.x); \
-	gridDim.y  = (GRIDS_X * GRIDS_X * GRIDS_X) / (blockDim.x * blockDim.y * (GRIDS_X / blockDim.x)); \
+	gridDim.y  = (GRIDS_X * GRIDS_X * GRIDS_X) / (blockDim.x * blockDim.y * gridDim.x); \
 
 #define __device_func__ <<<gridDim,blockDim>>>
 
