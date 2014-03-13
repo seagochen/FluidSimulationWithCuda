@@ -16,6 +16,62 @@
 #include "MacroDefinition.h"
 #include "FluidSimProc.h"
 
+
+#pragma region basic kernel functions
+
+__global__ void kernelZeroGrids( double *grid )
+{
+	GetIndex3D();
+	grid [ Index(i,j,k) ] = 0.f;
+};
+
+__global__ void kernelZeroVolumetric( uchar *visual )
+{
+	GetIndex3D();
+
+	for ( int ii = 0; ii < HNODES_X; ii++ )
+	{
+		for ( int jj = 0; jj < HNODES_X; jj++ )
+		{
+			for ( int kk = 0; kk < HNODES_X; kk++ )
+			{
+				int di = ii * GRIDS_X + i;
+				int dj = jj * GRIDS_X + j;
+				int dk = kk * GRIDS_X + k;
+				
+				/* zero data */
+				visual[ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
+			}
+		}
+	}
+};
+
+__global__ void kernelZeroShareBuffers( double *bufs )
+{
+	GetIndex1D();
+
+	bufs[i] = 0.f;
+};
+
+__global__ void kernelZeroShareBuffers( int *bufs )
+{
+	GetIndex1D();
+
+	bufs[i] = 0;
+}; 
+
+__global__ void kernelCopyGrids( double *src, cdouble *dst )
+{
+	GetIndex3D();
+
+	src[Index(i,j,k)] = dst[Index(i,j,k)];
+};
+
+#pragma endregion
+
+
+#pragma region basic atomic functions
+
 __device__  double atomicGetValue( cdouble *grid, cint x, cint y, cint z )
 {
 	if ( x < gst_header ) return 0.f;
@@ -59,6 +115,11 @@ __device__  double atomicTrilinear( cdouble *grid, cdouble x, cdouble y, cdouble
 
 	return c;
 };
+
+#pragma endregion
+
+
+#pragma region obstacle and boundary condtion
 
 __device__ void atomicDensityObs( double *grids, cdouble *obstacle )
 {
@@ -180,6 +241,11 @@ __global__ void kernelObstacle( double *grids, cdouble *obstacle, cint field )
 	}
 };
 
+#pragma endregion
+
+
+#pragma region kernels for sovling Navier-Stokes Equations
+
 __global__ void kernelJacobi( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble divisor )
 {
 	GetIndex3D();
@@ -249,45 +315,6 @@ __global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, cdo
 	EndSimArea();
 };
 
-__global__ void kernelSetBoundary( double *grids )
-{
-	GetIndex3D();
-
-	BeginSimArea();
-	
-	cint half = GRIDS_X / 2;
-
-#if !TESTING_MODE_SWITCH
-	
-	if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
-		grids[ Index(i,j,k) ] = MACRO_BOUNDARY_SOURCE;
-#else
-	if ( i >= half-2 and i < half+2 and
-		j >= half-2 and j < half+2 and
-		k >= half-2 and k < half+2 )
-		grids[Index(i,j,k)] = MACRO_BOUNDARY_SOURCE;
-#endif
-
-	EndSimArea();
-};
-
-__global__ void kernelPickData( uchar *c, cdouble *bufs, int ofi, int ofj, int ofk, cint grids )
-{
-	GetIndex3D();
-
-	ofi = ofi * grids + i;
-	ofj = ofj * grids + j;
-	ofk = ofk * grids + k;
-
-	/* zero c first */
-	c[cudaIndex3D(ofi,ofj,ofk,VOLUME_X)] = 0;
-
-	/* append c to volume c */
-	int temp = atomicRound( bufs[ Index(i, j, k) ] );
-	if ( temp > 0 and temp < 250 )
-		c [ cudaIndex3D(ofi,ofj,ofk,VOLUME_X) ] = (uchar) temp;
-};
-
 __global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w )
 {
 	GetIndex3D();
@@ -316,123 +343,26 @@ __global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, 
 	EndSimArea();
 };
 
-__global__ void kernelZeroGrids( double *grid )
-{
-	GetIndex3D();
-	grid [ Index(i,j,k) ] = 0.f;
-};
+#pragma endregion
 
-__global__ void kernelZeroVolumetric( sge::SGUCHAR *visual )
-{
-	GetIndex3D();
 
-	for ( int ii = 0; ii < HNODES_X; ii++ )
-	{
-		for ( int jj = 0; jj < HNODES_X; jj++ )
-		{
-			for ( int kk = 0; kk < HNODES_X; kk++ )
-			{
-				int di = ii * GRIDS_X + i;
-				int dj = jj * GRIDS_X + j;
-				int dk = kk * GRIDS_X + k;
-				
-				/* zero data */
-				visual[ cudaIndex3D(di, dj, dk, VOLUME_X) ] = 0;
-			}
-		}
-	}
-};
+#pragma region interpolation kernels
 
-__global__ void kernelZeroTemporaryBuffers( double *bufs )
-{
-	GetIndex1D();
-
-	bufs[i] = 0.f;
-};
-
-__global__ void kernelZeroTemporaryBuffers( int *bufs )
-{
-	GetIndex1D();
-
-	bufs[i] = 0;
-};
-
-__device__ void atomicFloodData( uchar *data, cint offseti, cint offsetj, cint offsetk )
+__global__ void kernelPickData( uchar *c, cdouble *bufs, int ofi, int ofj, int ofk, cint grids )
 {
 	GetIndex3D();
 
-	int di = offseti + i;
-	int dj = offsetj + j;
-	int dk = offsetk + k;
+	ofi = ofi * grids + i;
+	ofj = ofj * grids + j;
+	ofk = ofk * grids + k;
 
-	int ghi = offseti + gst_header;
-	int gti = offseti + gst_tailer;
-	int ghj = offsetj + gst_header;
-	int gtj = offsetj + gst_tailer;
-	int ghk = offsetk + gst_header;
-	int gtk = offsetk + gst_tailer;
+	/* zero c first */
+	c[cudaIndex3D(ofi,ofj,ofk,VOLUME_X)] = 0;
 
-	int shi = offseti + sim_header;
-	int sti = offseti + sim_tailer;
-	int shj = offsetj + sim_header;
-	int stj = offsetj + sim_tailer;
-	int shk = offsetk + sim_header;
-	int stk = offsetk + sim_tailer;
-
-	data[cudaIndex3D(ghi,dj,dk,VOLUME_X)] = data[cudaIndex3D(shi,dj,dk,VOLUME_X)];
-	data[cudaIndex3D(gti,dj,dk,VOLUME_X)] = data[cudaIndex3D(sti,dj,dk,VOLUME_X)];
-	data[cudaIndex3D(di,ghj,dk,VOLUME_X)] = data[cudaIndex3D(di,shj,dk,VOLUME_X)];
-	data[cudaIndex3D(di,gtj,dk,VOLUME_X)] = data[cudaIndex3D(di,stj,dk,VOLUME_X)];
-	data[cudaIndex3D(di,dj,ghk,VOLUME_X)] = data[cudaIndex3D(di,dj,shk,VOLUME_X)];
-	data[cudaIndex3D(di,dj,gtk,VOLUME_X)] = data[cudaIndex3D(di,dj,stk,VOLUME_X)];
-
-	data[cudaIndex3D(ghi,ghj,dk,VOLUME_X)] = ( data[cudaIndex3D(shi,ghj,dk,VOLUME_X)] + data[cudaIndex3D(ghi,shj,dk,VOLUME_X)] ) / 2;
-	data[cudaIndex3D(ghi,gtj,dk,VOLUME_X)] = ( data[cudaIndex3D(shi,gtj,dk,VOLUME_X)] + data[cudaIndex3D(ghi,stj,dk,VOLUME_X)] ) / 2;
-	data[cudaIndex3D(gti,ghj,dk,VOLUME_X)] = ( data[cudaIndex3D(sti,ghj,dk,VOLUME_X)] + data[cudaIndex3D(gti,shj,dk,VOLUME_X)] ) / 2;
-	data[cudaIndex3D(gti,gtj,dk,VOLUME_X)] = ( data[cudaIndex3D(sti,gtj,dk,VOLUME_X)] + data[cudaIndex3D(gti,stj,dk,VOLUME_X)] ) / 2;
-	data[cudaIndex3D(ghi,dj,ghk,VOLUME_X)] = ( data[cudaIndex3D(shi,dj,ghk,VOLUME_X)] + data[cudaIndex3D(ghi,dj,shk,VOLUME_X)] ) / 2;
-	data[cudaIndex3D(ghi,dj,gtk,VOLUME_X)] = ( data[cudaIndex3D(shi,dj,gtk,VOLUME_X)] + data[cudaIndex3D(ghi,dj,stk,VOLUME_X)] ) / 2;
-	data[cudaIndex3D(gti,dj,ghk,VOLUME_X)] = ( data[cudaIndex3D(sti,dj,ghk,VOLUME_X)] + data[cudaIndex3D(gti,dj,shk,VOLUME_X)] ) / 2;
-	data[cudaIndex3D(gti,dj,gtk,VOLUME_X)] = ( data[cudaIndex3D(sti,dj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,dj,stk,VOLUME_X)] ) / 2;
-	data[cudaIndex3D(di,ghj,ghk,VOLUME_X)] = ( data[cudaIndex3D(di,shj,ghk,VOLUME_X)] + data[cudaIndex3D(di,ghj,shk,VOLUME_X)] ) / 2;
-	data[cudaIndex3D(di,ghj,gtk,VOLUME_X)] = ( data[cudaIndex3D(di,shj,gtk,VOLUME_X)] + data[cudaIndex3D(di,ghj,stk,VOLUME_X)] ) / 2;
-	data[cudaIndex3D(di,gtj,ghk,VOLUME_X)] = ( data[cudaIndex3D(di,stj,ghk,VOLUME_X)] + data[cudaIndex3D(di,gtj,shk,VOLUME_X)] ) / 2;
-	data[cudaIndex3D(di,gtj,gtk,VOLUME_X)] = ( data[cudaIndex3D(di,stj,gtk,VOLUME_X)] + data[cudaIndex3D(di,gtj,stk,VOLUME_X)] ) / 2;
-
-	data[cudaIndex3D(ghi,ghj,ghk,VOLUME_X)] = ( data[cudaIndex3D(shi,ghj,ghk,VOLUME_X)] + data[cudaIndex3D(ghi,shj,ghk,VOLUME_X)] + data[cudaIndex3D(ghi,ghj,shk,VOLUME_X)] ) / 3;
-	data[cudaIndex3D(ghi,ghj,gtk,VOLUME_X)] = ( data[cudaIndex3D(shi,ghj,gtk,VOLUME_X)] + data[cudaIndex3D(ghi,shj,gtk,VOLUME_X)] + data[cudaIndex3D(ghi,ghj,stk,VOLUME_X)] ) / 3;
-	data[cudaIndex3D(ghi,gtj,ghk,VOLUME_X)] = ( data[cudaIndex3D(shi,gtj,ghk,VOLUME_X)] + data[cudaIndex3D(ghi,stj,ghk,VOLUME_X)] + data[cudaIndex3D(ghi,gtj,shk,VOLUME_X)] ) / 3;
-	data[cudaIndex3D(ghi,gtj,gtk,VOLUME_X)] = ( data[cudaIndex3D(shi,gtj,gtk,VOLUME_X)] + data[cudaIndex3D(ghi,stj,gtk,VOLUME_X)] + data[cudaIndex3D(ghi,gtj,stk,VOLUME_X)] ) / 3;
-	data[cudaIndex3D(gti,ghj,ghk,VOLUME_X)] = ( data[cudaIndex3D(sti,ghj,ghk,VOLUME_X)] + data[cudaIndex3D(gti,shj,ghk,VOLUME_X)] + data[cudaIndex3D(gti,ghj,shk,VOLUME_X)] ) / 3;
-	data[cudaIndex3D(gti,ghj,gtk,VOLUME_X)] = ( data[cudaIndex3D(sti,ghj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,shj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,ghj,stk,VOLUME_X)] ) / 3;
-	data[cudaIndex3D(gti,gtj,ghk,VOLUME_X)] = ( data[cudaIndex3D(sti,gtj,ghk,VOLUME_X)] + data[cudaIndex3D(gti,stj,ghk,VOLUME_X)] + data[cudaIndex3D(gti,gtj,shk,VOLUME_X)] ) / 3;
-	data[cudaIndex3D(gti,gtj,gtk,VOLUME_X)] = ( data[cudaIndex3D(sti,gtj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,stj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,gtj,stk,VOLUME_X)] ) / 3;
-};
-
-__global__ void kernelPickData( uchar *data, cdouble *bufs, cint offseti, cint offsetj, cint offsetk )
-{
-	GetIndex3D();
-
-	int di = offseti + i;
-	int dj = offsetj + j;
-	int dk = offsetk + k;
-
-	/* zero data first */
-	data[cudaIndex3D(di,dj,dk,VOLUME_X)] = 0;
-
-	/* append data to volume data */
+	/* append c to volume c */
 	int temp = atomicRound( bufs[ Index(i, j, k) ] );
 	if ( temp > 0 and temp < 250 )
-		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (uchar) temp;
-
-	atomicFloodData( data, offseti, offsetj, offsetk );
-};
-
-__global__ void kernelCopyGrids( double *src, cdouble *dst )
-{
-	GetIndex3D();
-
-	src[Index(i,j,k)] = dst[Index(i,j,k)];
+		c [ cudaIndex3D(ofi,ofj,ofk,VOLUME_X) ] = (uchar) temp;
 };
 
 __global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
@@ -457,6 +387,63 @@ __global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint p
 	dst[Index(x,y,z)] = src[Index(i,j,k)];
 };
 
+#pragma endregion
+
+
+#pragma region halo handlers
+
+__global__ void kernelClearHalo( double *grids )
+{
+	GetIndex3D();
+
+	grids[Index(gst_header,j,k)] = 0.f;
+	grids[Index(gst_tailer,j,k)] = 0.f;
+	grids[Index(i,gst_header,k)] = 0.f;
+	grids[Index(i,gst_tailer,k)] = 0.f;
+	grids[Index(i,j,gst_header)] = 0.f;
+	grids[Index(i,j,gst_tailer)] = 0.f;
+};
+
+__global__ void kernelHandleHalo
+	( double *center, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back )
+{
+	GetIndex3D();
+
+	center[Index(gst_header,j,k)] = left[Index(gst_tailer,j,k)];
+	center[Index(gst_tailer,j,k)] = right[Index(gst_header,j,k)];
+	center[Index(i,gst_tailer,k)] = up[Index(i,gst_header,k)];
+    center[Index(i,gst_header,k)] = down[Index(i,gst_tailer,k)];
+	center[Index(i,j,gst_tailer)] = front[Index(i,j,gst_header)];
+	center[Index(i,j,gst_header)] = back[Index(i,j,gst_tailer)];
+
+/*	c[cudaIndex3D(gst_header,gst_header,k,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_header,k,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_header,k,VOLUME_X)] ) / 2.f;
+	c[cudaIndex3D(gst_header,gst_tailer,k,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_tailer,k,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_tailer,k,VOLUME_X)] ) / 2.f;
+	c[cudaIndex3D(gst_tailer,gst_header,k,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_header,k,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_header,k,VOLUME_X)] ) / 2.f;
+	c[cudaIndex3D(gst_tailer,gst_tailer,k,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_tailer,k,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_tailer,k,VOLUME_X)] ) / 2.f;
+	c[cudaIndex3D(gst_header,j,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_header,j,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_header,j,sim_header,VOLUME_X)] ) / 2.f;
+	c[cudaIndex3D(gst_header,j,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_header,j,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_header,j,sim_tailer,VOLUME_X)] ) / 2.f;
+	c[cudaIndex3D(gst_tailer,j,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,j,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_tailer,j,sim_header,VOLUME_X)] ) / 2.f;
+	c[cudaIndex3D(gst_tailer,j,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,j,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_tailer,j,sim_tailer,VOLUME_X)] ) / 2.f;
+	c[cudaIndex3D(i,gst_header,gst_header,VOLUME_X)] = ( c[cudaIndex3D(i,sim_header,gst_header,VOLUME_X)] + c[cudaIndex3D(i,gst_header,sim_header,VOLUME_X)] ) / 2.f;
+	c[cudaIndex3D(i,gst_header,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(i,sim_header,gst_tailer,VOLUME_X)] + c[cudaIndex3D(i,gst_header,sim_tailer,VOLUME_X)] ) / 2.f;
+	c[cudaIndex3D(i,gst_tailer,gst_header,VOLUME_X)] = ( c[cudaIndex3D(i,sim_tailer,gst_header,VOLUME_X)] + c[cudaIndex3D(i,gst_tailer,sim_header,VOLUME_X)] ) / 2.f;
+	c[cudaIndex3D(i,gst_tailer,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(i,sim_tailer,gst_tailer,VOLUME_X)] + c[cudaIndex3D(i,gst_tailer,sim_tailer,VOLUME_X)] ) / 2.f;
+
+	c[cudaIndex3D(gst_header,gst_header,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_header,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_header,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_header,gst_header,sim_header,VOLUME_X)] ) / 3.f;
+	c[cudaIndex3D(gst_header,gst_header,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_header,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_header,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_header,gst_header,sim_tailer,VOLUME_X)] ) / 3.f;
+	c[cudaIndex3D(gst_header,gst_tailer,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_tailer,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_tailer,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_header,gst_tailer,sim_header,VOLUME_X)] ) / 3.f;
+	c[cudaIndex3D(gst_header,gst_tailer,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_tailer,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_tailer,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_header,gst_tailer,sim_tailer,VOLUME_X)] ) / 3.f;
+	c[cudaIndex3D(gst_tailer,gst_header,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_header,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_header,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_tailer,gst_header,sim_header,VOLUME_X)] ) / 3.f;
+	c[cudaIndex3D(gst_tailer,gst_header,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_header,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_header,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_tailer,gst_header,sim_tailer,VOLUME_X)] ) / 3.f;
+	c[cudaIndex3D(gst_tailer,gst_tailer,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_tailer,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_tailer,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_tailer,gst_tailer,sim_header,VOLUME_X)] ) / 3.f;
+	c[cudaIndex3D(gst_tailer,gst_tailer,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_tailer,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_tailer,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_tailer,gst_tailer,sim_tailer,VOLUME_X)] ) / 3.f;
+*/
+};
+
+#pragma endregion
+
+
+#pragma region etc.
 
 __global__ void kernelSumDensity( double *share, cdouble *src, cint no )
 {
@@ -465,17 +452,6 @@ __global__ void kernelSumDensity( double *share, cdouble *src, cint no )
 	share[no] += src[Index(i,j,k)];
 };
 
-__global__ void kernelZeroShareBuffers( double *bufs )
-{
-	GetIndex1D();
+#pragma endregion
 
-	bufs[i] = 0.f;
-};
-
-__global__ void kernelZeroShareBuffers( int *bufs )
-{
-	GetIndex1D();
-
-	bufs[i] = 0;
-}; 
 #endif

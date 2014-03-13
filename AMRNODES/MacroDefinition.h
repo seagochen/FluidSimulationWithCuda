@@ -22,22 +22,21 @@ typedef std::string*  sstr;
 /*********************************************************************************************************/
 
 /* parameters for fluid simulation */
-#define DELTATIME              0.25f
+#define DELTATIME              0.5f
 #define DIFFUSION              0.1f
 #define VISOCITY               0.0f
 #define DENSITY               12.5f
 #define VELOCITY              15.7f
 #define GRIDS_X                  64
 
-/* parameters for volume rendering */
-#define STEPSIZE             0.001f
-#define VOLUME_X                128
-
 /* hierarchy of simulation nodes */
 #define CURSOR_X                 1
 #define GNODES_X                 2
 #define HNODES_X                 2
-#define GLOBAL                   8
+
+/* parameters for volume rendering */
+#define STEPSIZE             0.001f
+#define VOLUME_X   GRIDS_X*HNODES_X
 
 /* CUDA device's configuration info */
 #define THREADS_X             1024

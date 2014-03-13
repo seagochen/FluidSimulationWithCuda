@@ -6,6 +6,7 @@
 * <File Name>     FluidSimProcKernels.cu
 */
 
+#include <time.h>
 #include <iostream>
 #include <utility>
 #include "MacroDefinition.h"
@@ -381,6 +382,16 @@ void FluidSimProc::zeroTempoBuffers( void )
 		kernelZeroGrids  __device_func__ ( dev_buffers[i] );
 };
 
+void FluidSimProc::zeroGlobalNode( void )
+{
+	 helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
+
+	kernelZeroGrids __device_func__ ( gd_density );
+	kernelZeroGrids __device_func__ ( gd_velocity_u );
+	kernelZeroGrids __device_func__ ( gd_velocity_v );
+	kernelZeroGrids __device_func__ ( gd_velocity_w );
+};
+
 void FluidSimProc::zeroDeivceRes( void )
 {
 	 helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
@@ -392,11 +403,6 @@ void FluidSimProc::zeroDeivceRes( void )
 		kernelZeroGrids __device_func__ ( node_velocity_v[i] );
 		kernelZeroGrids __device_func__ ( node_velocity_w[i] );
 	}
-
-	kernelZeroGrids __device_func__ ( gd_density );
-	kernelZeroGrids __device_func__ ( gd_velocity_u );
-	kernelZeroGrids __device_func__ ( gd_velocity_v );
-	kernelZeroGrids __device_func__ ( gd_velocity_w );
 };
 
 void FluidSimProc::zeroHostRes( void )
@@ -430,6 +436,7 @@ void FluidSimProc::ZeroBuffers( void )
 	zeroHostRes();
 	zeroVisualBuffers();
 	zeroShareBuffers();
+	zeroGlobalNode();
 	
 	if ( helper.GetCUDALastError( "host function failed: ZeroBuffers", __FILE__, __LINE__ ) )
 	{
@@ -656,42 +663,155 @@ void FluidSimProc::InitBoundary( void )
 	// TODO more boundary condition
 };
 
-////////////////// OK //////////////////
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( !fluid->run ) return;
-
+	
+	zeroShareBuffers();
+	zeroHostRes();
 	SolveRootNode();
-	SolveLeafNode();
+//	SolveLeafNode();
 	RefreshStatus( fluid );
 };
 
 void FluidSimProc::SolveRootNode( void )
 {
 	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
+	zeroTempoBuffers();
 
 	kernelCopyGrids __device_func__ ( dev_den, gd_density );
 	kernelCopyGrids __device_func__ ( dev_u, gd_velocity_u );
 	kernelCopyGrids __device_func__ ( dev_v, gd_velocity_v );
 	kernelCopyGrids __device_func__ ( dev_w, gd_velocity_w );
-	kernelCopyGrids __device_func__ ( dev_obs, gd_obstacle );
 
 	SolveNavierStokesEquation( DELTATIME, true );
 
-	kernelCopyGrids __device_func__ ( gd_density, dev_den );
-	kernelCopyGrids __device_func__ ( gd_velocity_u, dev_u );
-	kernelCopyGrids __device_func__ ( gd_velocity_v, dev_v );
-	kernelCopyGrids __device_func__ ( gd_velocity_w, dev_w );
+	double rate = 1.f/(double)HNODES_X;
 		
 	for ( int k = 0; k < HNODES_X; k++ ) for ( int j = 0; j < HNODES_X; j++ ) for ( int i = 0; i < HNODES_X; i++ )
 	{
 		ptr = host_node[cudaIndex3D(i,j,k,HNODES_X)];
 
-		kernelInterRootGrids __device_func__ ( dev_density[cudaIndex3D(i,j,k,HNODES_X)], gd_density, ptr->x, ptr->y, ptr->z, 0.5 );
-		kernelInterRootGrids __device_func__ ( dev_velocity_u[cudaIndex3D(i,j,k,HNODES_X)], gd_velocity_u, ptr->x, ptr->y, ptr->z, 0.5 );
-		kernelInterRootGrids __device_func__ ( dev_velocity_v[cudaIndex3D(i,j,k,HNODES_X)], gd_velocity_v, ptr->x, ptr->y, ptr->z, 0.5 );
-		kernelInterRootGrids __device_func__ ( dev_velocity_w[cudaIndex3D(i,j,k,HNODES_X)], gd_velocity_w, ptr->x, ptr->y, ptr->z, 0.5 );
+		kernelInterRootGrids __device_func__ ( dev_density[cudaIndex3D(i,j,k,HNODES_X)], dev_den, i, j, k, rate );
+		kernelInterRootGrids __device_func__ ( dev_velocity_u[cudaIndex3D(i,j,k,HNODES_X)], dev_u, i, j, k, rate );
+		kernelInterRootGrids __device_func__ ( dev_velocity_v[cudaIndex3D(i,j,k,HNODES_X)], dev_v, i, j, k, rate );
+		kernelInterRootGrids __device_func__ ( dev_velocity_w[cudaIndex3D(i,j,k,HNODES_X)], dev_w, i, j, k, rate );
 	}
+
+	/* error is here ! */
+//	for ( int k = 0; k < HNODES_X; k++ ) for ( int j = 0; j < HNODES_X; j++ ) for ( int i = 0; i < HNODES_X; i++ )
+//	{
+//		kernelCopyGrids __device_func__ ( dev_den, dev_density[cudaIndex3D(i,j,k,HNODES_X)] );
+//		kernelCopyGrids __device_func__ ( dev_u, dev_velocity_u[cudaIndex3D(i,j,k,HNODES_X)] );
+//		kernelCopyGrids __device_func__ ( dev_v, dev_velocity_v[cudaIndex3D(i,j,k,HNODES_X)] );
+//		kernelCopyGrids __device_func__ ( dev_w, dev_velocity_w[cudaIndex3D(i,j,k,HNODES_X)] );
+//
+//		kernelClearHalo __device_func__ ( dev_den );
+//		kernelClearHalo __device_func__ ( dev_u );
+//		kernelClearHalo __device_func__ ( dev_v );
+//		kernelClearHalo __device_func__ ( dev_w );
+//		
+//		SolveNavierStokesEquation( DELTATIME/2.f, false );
+//
+//		kernelCopyGrids __device_func__ ( dev_density[cudaIndex3D(i,j,k,HNODES_X)], dev_den );
+//		kernelCopyGrids __device_func__ ( dev_velocity_u[cudaIndex3D(i,j,k,HNODES_X)], dev_u );
+//		kernelCopyGrids __device_func__ ( dev_velocity_v[cudaIndex3D(i,j,k,HNODES_X)], dev_v );
+//		kernelCopyGrids __device_func__ ( dev_velocity_w[cudaIndex3D(i,j,k,HNODES_X)], dev_w );
+//	}
+
+	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
+	{
+		ptr = host_node[i];
+		kernelInterLeafGrids __device_func__ ( gd_density, dev_density[i], ptr->x, ptr->y, ptr->z, rate );
+		kernelInterLeafGrids __device_func__ ( gd_velocity_u, dev_velocity_u[i], ptr->x, ptr->y, ptr->z, rate );
+		kernelInterLeafGrids __device_func__ ( gd_velocity_v, dev_velocity_v[i], ptr->x, ptr->y, ptr->z, rate );
+		kernelInterLeafGrids __device_func__ ( gd_velocity_w, dev_velocity_w[i], ptr->x, ptr->y, ptr->z, rate );
+	}
+
+	for ( int k = 0; k < HNODES_X; k++ ) for ( int j = 0; j < HNODES_X; j++ ) for ( int i = 0; i < HNODES_X; i++ )
+	{
+		kernelPickData __device_func__ ( dev_visual, dev_density[cudaIndex3D(i,j,k,HNODES_X)], i, j, k, GRIDS_X );
+	}
+};
+
+void FluidSimProc::SolveLeafNode( void )
+{
+	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
+	zeroTempoBuffers();
+
+#if HNODES_X >= 3
+
+	/* sum density */
+	for ( int k = 0; k < HNODES_X; k++ ) for ( int j = 0; j < HNODES_X; j++ ) for ( int i = 0; i < HNODES_X; i++ )
+	{
+		kernelSumDensity __device_func__ ( dev_dtpbuf, dev_density[cudaIndex3D(i,j,k,HNODES_X)], cudaIndex3D(i,j,k,HNODES_X) );
+	}
+	cudaMemcpy( host_dtpbuf, dev_dtpbuf, sizeof(double)*TPBUFFER_X, cudaMemcpyDeviceToHost );
+
+	/* ignore the node with density lower than 1 */
+	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
+	{
+		if ( 1.f > host_dtpbuf[i] )
+			host_node[i]->active = false;
+		else
+			host_node[i]->active = true;
+	}
+
+#endif
+
+	/* move cursor */
+	for ( int ck = 0; ck < CURSOR_X; ck ++ ) for ( int cj = 0; cj < CURSOR_X; cj++ ) for ( int ci = 0; ci < CURSOR_X; ci++ )
+	{
+		/* update cursor */
+		m_cursor.x = ci;
+		m_cursor.y = cj;
+		m_cursor.z = ck;
+
+		ReadBuffers();
+		
+		/* solve independent gpu nodes one by one */
+		for ( int k = 0; k < GNODES_X; k++ ) for ( int j = 0; j < GNODES_X; j++ ) for ( int i = 0; i < GNODES_X; i++ )
+		{
+#if HNODES_X >= 3
+			if ( !gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated
+				and gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->active )
+#else
+			if ( !gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated )
+#endif
+			{
+					LoadBullet(i,j,k);
+
+					kernelHandleHalo __device_func__ ( dev_den, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B );
+					kernelHandleHalo __device_func__ ( dev_u,   velu_L, velu_R, velu_U, velu_D, velu_F, velu_B );
+					kernelHandleHalo __device_func__ ( dev_v,   velv_L, velv_R, velv_U, velv_D, velv_F, velv_B );
+					kernelHandleHalo __device_func__ ( dev_w,   velw_L, velw_R, velw_U, velw_D, velw_F, velw_B );
+
+					SolveNavierStokesEquation( DELTATIME/2.f, false );
+
+					ExitBullet(i,j,k);
+
+					gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated = true;
+			}
+		}
+
+		WriteBuffers();
+	}
+
+	double rate = 1.f/(double)HNODES_X;
+
+	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
+	{
+		ptr = host_node[i];
+		kernelInterLeafGrids __device_func__ ( gd_density, dev_density[i], ptr->x, ptr->y, ptr->z, rate );
+		kernelInterLeafGrids __device_func__ ( gd_velocity_u, dev_velocity_u[i], ptr->x, ptr->y, ptr->z, rate );
+		kernelInterLeafGrids __device_func__ ( gd_velocity_v, dev_velocity_v[i], ptr->x, ptr->y, ptr->z, rate );
+		kernelInterLeafGrids __device_func__ ( gd_velocity_w, dev_velocity_w[i], ptr->x, ptr->y, ptr->z, rate );
+	}
+
+	kernelClearHalo __device_func__ ( gd_density );
+	kernelClearHalo __device_func__ ( gd_velocity_u );
+	kernelClearHalo __device_func__ ( gd_velocity_v );
+	kernelClearHalo __device_func__ ( gd_velocity_w );
 };
 
 void FluidSimProc::AddSource( void )
@@ -822,75 +942,6 @@ void FluidSimProc::Projection( double *u, double *v, double *w, double *div, dou
 
 	// now subtract this gradient from our current velocity field
 	kernelSubtract<<<gridDim,blockDim>>>( u, v, w, p );
-};
-
-////////////////// OK //////////////////
-
-void FluidSimProc::SolveLeafNode( void )
-{
-	/* sum density first */
-	zeroShareBuffers();
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
-	
-	for ( int k = 0; k < HNODES_X; k++ ) for ( int j = 0; j < HNODES_X; j++ ) for ( int i = 0; i < HNODES_X; i++ )
-	{
-		kernelSumDensity __device_func__ ( dev_dtpbuf, dev_density[cudaIndex3D(i,j,k,HNODES_X)], cudaIndex3D(i,j,k,HNODES_X) );
-	}
-	cudaMemcpy( host_dtpbuf, dev_dtpbuf, sizeof(double)*TPBUFFER_X, cudaMemcpyDeviceToHost );
-
-	/* ignore the node with density lower than 1 */
-	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
-	{
-		if ( 1.f > host_dtpbuf[i] )
-			host_node[i]->active = false;
-		else
-			host_node[i]->active = true;
-	}
-
-	/* move cursor */
-	for ( int ck = 0; ck < CURSOR_X; ck ++ ) for ( int cj = 0; cj < CURSOR_X; cj++ ) for ( int ci = 0; ci < CURSOR_X; ci++ )
-	{
-		/* update cursor */
-		m_cursor.x = ci;
-		m_cursor.y = cj;
-		m_cursor.z = ck;
-
-		ReadBuffers();
-		
-		/* solve independent gpu nodes one by one */
-		for ( int k = 0; k < GNODES_X; k++ ) for ( int j = 0; j < GNODES_X; j++ ) for ( int i = 0; i < GNODES_X; i++ )
-		{
-			if ( !gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated and
-				gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->active )
-			{
-					LoadBullet(i,j,k);
-
-//					kernelHandleHalo __device_func__ ( dev_den, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B );
-//					kernelHandleHalo __device_func__ ( dev_u,   velu_L, velu_R, velu_U, velu_D, velu_F, velu_B );
-//					kernelHandleHalo __device_func__ ( dev_v,   velv_L, velv_R, velv_U, velv_D, velv_F, velv_B );
-//					kernelHandleHalo __device_func__ ( dev_w,   velw_L, velw_R, velw_U, velw_D, velw_F, velw_B );
-
-					SolveNavierStokesEquation( DELTATIME / 2.f, true );
-
-					ExitBullet(i,j,k);
-					gpu_node[cudaIndex3D(i,j,k,GNODES_X)]->updated = true;
-			}
-		}
-	}
-
-	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
-	{
-		ptr = host_node[i];
-		kernelInterLeafGrids __device_func__ ( gd_density, dev_density[i], ptr->x, ptr->y, ptr->z, 0.5 );
-		kernelInterLeafGrids __device_func__ ( gd_velocity_u, dev_velocity_u[i], ptr->x, ptr->y, ptr->z, 0.5 );
-		kernelInterLeafGrids __device_func__ ( gd_velocity_v, dev_velocity_v[i], ptr->x, ptr->y, ptr->z, 0.5 );
-		kernelInterLeafGrids __device_func__ ( gd_velocity_w, dev_velocity_w[i], ptr->x, ptr->y, ptr->z, 0.5 );
-	}
-
-//	kernelClearHalo __device_func__ ( gd_density );
-//	kernelClearHalo __device_func__ ( gd_velocity_u );
-//	kernelClearHalo __device_func__ ( gd_velocity_v );
-//	kernelClearHalo __device_func__ ( gd_velocity_w );
 };
 
 void FluidSimProc::ReadBuffers( void )

@@ -105,6 +105,7 @@ namespace sge
 		void zeroVisualBuffers( void );
 		void zeroShareBuffers( void );
 		void zeroTempoBuffers( void );
+		void zeroGlobalNode( void );
 
 	private:
 		void freeHostRes( void );

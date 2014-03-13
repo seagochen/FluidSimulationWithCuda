@@ -13,18 +13,18 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 
-inline __host__ __device__ int atomicRand( int *seed )
+inline __host__ __device__ int atomicRand( int seed )
 {
-	*seed = (69069 * *seed + 1);
-	return *seed;
+	seed = (69069 * seed + 1);
+	return seed;
 };
 
-inline __host__ __device__ double atomicRandom( int *seed ) 
+inline __host__ __device__ double atomicRandom( int seed ) 
 {
 	return ( atomicRand( seed ) & 0xffff ) / (double)0x10000;
 };
 
-inline __host__ __device__  double atomicCrandom( int *seed )
+inline __host__ __device__  double atomicCrandom( int seed )
 {
 	return 2.0 * ( atomicRandom( seed ) - 0.5 );
 };
