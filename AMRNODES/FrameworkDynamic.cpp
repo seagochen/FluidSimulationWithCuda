@@ -537,15 +537,7 @@ void Framework_v1_0::onCreate()
 	m_fluid.textures.hFramebuffer = Create2DFrameBuffer ( &m_fluid );
 
 	/* 打印操作信息 */
-	cout << "ok, fluid simulation with multiple nodes will start soon!" << endl
-	     << "*********************************************************" << endl
-		 << "**************** operation to confirm *******************" << endl
-		 << "mouse wheel ------------ to rotate the observation matrix" << endl
-		 << "keyboard: Q ------------ to quit the program" << endl
-		 << "keyboard: Esc ---------- to quit the program" << endl
-		 << "keyboard: S ------------ to retrieve the data from GPU" << endl
-		 << "keyboard: C ------------ to clear the data of stage" << endl
-		 << "keyboard: P ------------ to print the information of node" << endl;
+	m_simproc->PrintMSG();
 };
 
 void Framework_v1_0::CountFPS()
@@ -612,20 +604,23 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 		{
 		case SG_KEY_Q:
 		case SG_KEY_ESCAPE:
-			m_simproc->DownloadNodes();
 			onDestroy();
 			break;
 
-		case SG_KEY_S:
-			m_simproc->DownloadNodes();
+		case SG_KEY_U:
+			m_simproc->HostToDevice();
+			break;
+
+		case SG_KEY_D:
+			m_simproc->DeviceToHost();
+			break;
+
+		case SG_KEY_P:
+			m_simproc->PrintMSG();
 			break;
 	
 		case SG_KEY_C:
 			m_simproc->ZeroBuffers();
-			break;
-		
-		case SG_KEY_P:
-			m_simproc->PrintMSG();
 			break;
 
 		default:

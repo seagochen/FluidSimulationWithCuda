@@ -21,22 +21,14 @@
   <ItemGroup>
     <ClInclude Include="CUDACustomeMath.h" />
     <ClInclude Include="FluidSimProc.h" />
-    <ClInclude Include="Kernels.h" />
     <ClInclude Include="FrameworkDynamic.h" />
     <ClInclude Include="FunctionHelper.h" />
+    <ClInclude Include="Kernels.h" />
     <ClInclude Include="MacroDefinition.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProcKernels.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="FrameworkDynamic.cpp" />
-    <ClCompile Include="FunctionHelper.cpp" />
-    <ClCompile Include="MainDynamic.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="fluidsim_nodes.rc" />
+    <ResourceCompile Include="AMRNODES.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icons\main.ico" />
@@ -47,9 +39,17 @@
     <None Include="shader\raycasting.frag" />
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FrameworkDynamic.cpp" />
+    <ClCompile Include="FunctionHelper.cpp" />
+    <ClCompile Include="MainDynamic.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="FluidSimProcKernels.cu" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{3041F2AA-DDAF-43FE-928A-0B5F10F4623E}</ProjectGuid>
-    <RootNamespace>fluidsim_nodes</RootNamespace>
+    <ProjectGuid>{02523B14-6503-411F-A888-45A4F8B74A37}</ProjectGuid>
+    <RootNamespace>AMRNODES</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -97,13 +97,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

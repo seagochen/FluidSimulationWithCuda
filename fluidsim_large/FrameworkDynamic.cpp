@@ -606,6 +606,18 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 		case SG_KEY_ESCAPE:
 			onDestroy();
 			break;
+
+		case SG_KEY_U:
+			m_simproc->IO_UploadBuffers();
+			break;
+
+		case SG_KEY_D:
+			m_simproc->IO_DownloadBuffers();
+			break;
+
+		case SG_KEY_P:
+			m_simproc->PrintMSG();
+			break;
 	
 		case SG_KEY_C:
 			m_simproc->ZeroBuffers();
