@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Feb 23, 2014
-* <Last Time>     Mar 11, 2014
+* <Last Time>     Mar 04, 2014
 * <File Name>     Kernels.h
 */
 
@@ -28,30 +28,20 @@ __device__  double atomicGetValue( cdouble *grid, cint x, cint y, cint z )
 	return grid[ Index(x,y,z) ];
 };
 
-__device__  void atomicVertices
-	( double *c000, double *c001, double *c011, double *c010, double *c100, double *c101, double *c111,
-	double *c110, cdouble *grid, cdouble x, cdouble y, cdouble z )
+__device__  double atomicTrilinear( cdouble *grid, cdouble x, cdouble y, cdouble z )
 {
 	int i = (int)x;
 	int j = (int)y;
 	int k = (int)z;
 
-	*c000 = atomicGetValue ( grid, i, j, k );
-	*c001 = atomicGetValue ( grid, i, j+1, k );
-	*c011 = atomicGetValue ( grid, i, j+1, k+1 );
-	*c010 = atomicGetValue ( grid, i, j, k+1 );
-	*c100 = atomicGetValue ( grid, i+1, j, k );
-	*c101 = atomicGetValue ( grid, i+1, j+1, k );
-	*c111 = atomicGetValue ( grid, i+1, j+1, k+1 );
-	*c110 = atomicGetValue ( grid, i+1, j, k+1 );
-}
-
-__device__  double atomicTrilinear( cdouble *grid, cdouble x, cdouble y, cdouble z )
-{
-	double v000, v001, v010, v011, v100, v101, v110, v111;
-	atomicVertices ( &v000, &v001, &v011, &v010,
-		&v100, &v101, &v111, &v110,
-		grid, x, y, z );
+	double v000 = atomicGetValue ( grid, i, j, k );
+	double v001 = atomicGetValue ( grid, i, j+1, k );
+	double v011 = atomicGetValue ( grid, i, j+1, k+1 );
+	double v010 = atomicGetValue ( grid, i, j, k+1 );
+	double v100 = atomicGetValue ( grid, i+1, j, k );
+	double v101 = atomicGetValue ( grid, i+1, j+1, k );
+	double v111 = atomicGetValue ( grid, i+1, j+1, k+1 );
+	double v110 = atomicGetValue ( grid, i+1, j, k+1 );
 
 	double dx = x - (int)(x);
 	double dy = y - (int)(y);
@@ -211,14 +201,14 @@ __global__ void kernelJacobi( double *grid_out, cdouble *grid_in, cdouble diffus
 	EndSimArea();
 }
 
-__global__ void kernelGridAdvection( double *grid_out, cdouble *grid_in, cdouble delta, cdouble *u_in, cdouble *v_in, cdouble *w_in )
+__global__ void kernelGridAdvection( double *grid_out, cdouble *grid_in, cdouble deltatime, cdouble *u_in, cdouble *v_in, cdouble *w_in )
 {
 	GetIndex3D();
 	BeginSimArea();
 
-	double u = i - u_in [ Index(i,j,k) ] * delta;
-	double v = j - v_in [ Index(i,j,k) ] * delta;
-	double w = k - w_in [ Index(i,j,k) ] * delta;
+	double u = i - u_in [ Index(i,j,k) ] * deltatime;
+	double v = j - v_in [ Index(i,j,k) ] * deltatime;
+	double w = k - w_in [ Index(i,j,k) ] * deltatime;
 	
 	grid_out [ Index(i,j,k) ] = atomicTrilinear ( grid_in, u, v, w );
 
@@ -251,6 +241,7 @@ __global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, cdo
 	BeginSimArea();
 
 	// gradient calculated by neighbors
+
 	vel_u [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i+1, j, k) ] - p [ Index(i-1, j, k) ] );
 	vel_v [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j+1, k) ] - p [ Index(i, j-1, k) ] );
 	vel_w [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j, k+1) ] - p [ Index(i, j, k-1) ] );
@@ -266,11 +257,35 @@ __global__ void kernelSetBoundary( double *grids )
 	
 	cint half = GRIDS_X / 2;
 
+#if !TESTING_MODE_SWITCH
 	
 	if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
 		grids[ Index(i,j,k) ] = MACRO_BOUNDARY_SOURCE;
+#else
+	if ( i >= half-2 and i < half+2 and
+		j >= half-2 and j < half+2 and
+		k >= half-2 and k < half+2 )
+		grids[Index(i,j,k)] = MACRO_BOUNDARY_SOURCE;
+#endif
 
 	EndSimArea();
+};
+
+__global__ void kernelPickData( uchar *c, cdouble *bufs, int ofi, int ofj, int ofk, cint grids )
+{
+	GetIndex3D();
+
+	ofi = ofi * grids + i;
+	ofj = ofj * grids + j;
+	ofk = ofk * grids + k;
+
+	/* zero c first */
+	c[cudaIndex3D(ofi,ofj,ofk,VOLUME_X)] = 0;
+
+	/* append c to volume c */
+	int temp = atomicRound( bufs[ Index(i, j, k) ] );
+	if ( temp > 0 and temp < 250 )
+		c [ cudaIndex3D(ofi,ofj,ofk,VOLUME_X) ] = (uchar) temp;
 };
 
 __global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w )
@@ -328,84 +343,20 @@ __global__ void kernelZeroVolumetric( sge::SGUCHAR *visual )
 	}
 };
 
-__global__ void kernelZeroShareBuffers( double *bufs )
+__global__ void kernelZeroTemporaryBuffers( double *bufs )
 {
 	GetIndex1D();
 
 	bufs[i] = 0.f;
 };
 
-__global__ void kernelZeroShareBuffers( int *bufs )
+__global__ void kernelZeroTemporaryBuffers( int *bufs )
 {
 	GetIndex1D();
 
 	bufs[i] = 0;
 };
 
-__global__ void kernelPickData( uchar *data, cdouble *bufs, cint offseti, cint offsetj, cint offsetk )
-{
-	GetIndex3D();
-
-	int di = offseti + i;
-	int dj = offsetj + j;
-	int dk = offsetk + k;
-
-	/* zero data first */
-	data[cudaIndex3D(di,dj,dk,VOLUME_X)] = 0;
-
-	/* append data to volume data */
-	int temp = atomicRound( bufs[ Index(i, j, k) ] );
-	if ( temp > 0 and temp < 250 )
-		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (uchar) temp;
-};
-
-__global__ void kernelCopyGrids( double *dst, cdouble *src )
-{
-	GetIndex3D();
-
-	dst[Index(i,j,k)] = src[Index(i,j,k)];
-};
-
-__global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
-{
-	GetIndex3D();
-
-	double x = ( pi * GRIDS_X + i ) * rate;
-	double y = ( pj * GRIDS_X + j ) * rate;
-	double z = ( pk * GRIDS_X + k ) * rate;
-
-	dst[Index(i,j,k)] = atomicTrilinear( src, x, y, z );
-};
-
-#pragma region obsoleted cuda kernels
-
-//TODO 使用AMR方法后，该函数将被标记为obsoleted
-__global__ void kernelInteractNodes
-	( double *center, double *left, double *right, double *up, double *down, double *front, double *back,
-	cint uL, cint uR, cint uU, cint uD, cint uF, cint uB )
-{
-	GetIndex3D();
-
-	if ( uL eqt MACRO_TRUE )
-		center[Index(sim_header,j,k)] = left[Index(sim_tailer,j,k)];
-
-	if ( uR eqt MACRO_TRUE )
-		center[Index(sim_tailer,j,k)] = right[Index(sim_header,j,k)];
-
-	if ( uU eqt MACRO_TRUE )
-		center[Index(i,sim_tailer,k)] = up[Index(i,sim_header,k)];
-
-	if ( uD eqt MACRO_TRUE )
-        center[Index(i,sim_header,k)] = down[Index(i,sim_tailer,k)];
-
-	if ( uF eqt MACRO_TRUE )
-		center[Index(i,j,sim_tailer)] = front[Index(i,j,sim_header)];
-
-	if ( uB eqt MACRO_TRUE )
-		center[Index(i,j,sim_header)] = back[Index(i,j,sim_tailer)];
-};
-
-//TODO 使用AMR方法后，该函数将被标记为obsoleted
 __device__ void atomicFloodData( uchar *data, cint offseti, cint offsetj, cint offsetk )
 {
 	GetIndex3D();
@@ -458,6 +409,73 @@ __device__ void atomicFloodData( uchar *data, cint offseti, cint offsetj, cint o
 	data[cudaIndex3D(gti,gtj,gtk,VOLUME_X)] = ( data[cudaIndex3D(sti,gtj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,stj,gtk,VOLUME_X)] + data[cudaIndex3D(gti,gtj,stk,VOLUME_X)] ) / 3;
 };
 
-#pragma endregion
+__global__ void kernelPickData( uchar *data, cdouble *bufs, cint offseti, cint offsetj, cint offsetk )
+{
+	GetIndex3D();
 
+	int di = offseti + i;
+	int dj = offsetj + j;
+	int dk = offsetk + k;
+
+	/* zero data first */
+	data[cudaIndex3D(di,dj,dk,VOLUME_X)] = 0;
+
+	/* append data to volume data */
+	int temp = atomicRound( bufs[ Index(i, j, k) ] );
+	if ( temp > 0 and temp < 250 )
+		data [ cudaIndex3D(di, dj, dk, VOLUME_X) ] = (uchar) temp;
+
+	atomicFloodData( data, offseti, offsetj, offsetk );
+};
+
+__global__ void kernelCopyGrids( double *src, cdouble *dst )
+{
+	GetIndex3D();
+
+	src[Index(i,j,k)] = dst[Index(i,j,k)];
+};
+
+__global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
+{
+	GetIndex3D();
+
+	double x = ( pi * GRIDS_X + i ) * rate;
+	double y = ( pj * GRIDS_X + j ) * rate;
+	double z = ( pk * GRIDS_X + k ) * rate;
+
+	dst[Index(i,j,k)] = atomicTrilinear( src, x, y, z );
+};
+
+__global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
+{
+	GetIndex3D();
+
+	int x = atomicRound( ( pi * GRIDS_X + i ) * rate );
+	int y = atomicRound( ( pj * GRIDS_X + j ) * rate );
+	int z = atomicRound( ( pk * GRIDS_X + k ) * rate );
+
+	dst[Index(x,y,z)] = src[Index(i,j,k)];
+};
+
+
+__global__ void kernelSumDensity( double *share, cdouble *src, cint no )
+{
+	GetIndex3D();
+
+	share[no] += src[Index(i,j,k)];
+};
+
+__global__ void kernelZeroShareBuffers( double *bufs )
+{
+	GetIndex1D();
+
+	bufs[i] = 0.f;
+};
+
+__global__ void kernelZeroShareBuffers( int *bufs )
+{
+	GetIndex1D();
+
+	bufs[i] = 0;
+}; 
 #endif

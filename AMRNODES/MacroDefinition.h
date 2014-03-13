@@ -22,7 +22,7 @@ typedef std::string*  sstr;
 /*********************************************************************************************************/
 
 /* parameters for fluid simulation */
-#define DELTATIME              0.5f
+#define DELTATIME              0.25f
 #define DIFFUSION              0.1f
 #define VISOCITY               0.0f
 #define DENSITY               12.5f
