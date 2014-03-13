@@ -394,6 +394,11 @@ void FluidSimProc::zeroDeivceRes( void )
 		kernelZeroGrids __device_func__ ( node_velocity_v[i] );
 		kernelZeroGrids __device_func__ ( node_velocity_w[i] );
 	}
+
+	kernelZeroGrids __device_func__ ( gd_density );
+	kernelZeroGrids __device_func__ ( gd_velocity_u );
+	kernelZeroGrids __device_func__ ( gd_velocity_v );
+	kernelZeroGrids __device_func__ ( gd_velocity_w );
 };
 
 void FluidSimProc::zeroHostRes( void )
@@ -638,8 +643,8 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( !fluid->run ) return;
 
-//	SolveRootNode();
-	SolveLeafNode();
+	SolveRootNode();
+//	SolveLeafNode();
 	RefreshStatus( fluid );
 };
 
@@ -815,10 +820,24 @@ void FluidSimProc::interDataFromRoot( void )
 
 void FluidSimProc::SolveRootNode( void )
 {
-	zeroTempoBuffers();
+	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
+
 	copyRootNode();
+
 	SolveNavierStokesEquation( DELTATIME, true );
-	interDataFromRoot();
+
+	kernelCopyGrids __device_func__ ( gd_density, dev_den );
+	kernelCopyGrids __device_func__ ( gd_velocity_u, dev_u );
+	kernelCopyGrids __device_func__ ( gd_velocity_v, dev_v );
+	kernelCopyGrids __device_func__ ( gd_velocity_w, dev_w );
+		
+	for ( int k = 0; k < HNODES_X; k++ ) for ( int j = 0; j < HNODES_X; j++ ) for ( int i = 0; i < HNODES_X; i++ )
+	{
+		ptr = host_node[i];
+		
+		kernelInterRootGrids __device_func__ ( dev_density[cudaIndex3D(i,j,k,HNODES_X)], gd_density, ptr->x, ptr->y, ptr->z, 0.5 );
+		kernelPickData __device_func__ ( dev_visual, dev_density[cudaIndex3D(i,j,k,HNODES_X)], ptr->x * GRIDS_X, ptr->y * GRIDS_X, ptr->z * GRIDS_X );
+	}
 };
 
 void FluidSimProc::SolveLeafNode( void )

@@ -146,16 +146,17 @@ namespace sge
 
 	private:
 		void SolveNavierStokesEquation( cdouble timestep, bool add );
+		void DensitySolver( cdouble timestep );
+		void VelocitySolver( cdouble timestep );
 
 	private:
 		void AddSource( void );
-		void DensitySolver( cdouble timestep );
-		void VelocitySolver( cdouble timestep );
 		void InitBoundary( void );
 		void ReadBuffers( void );
-		void WriteBuffers( void );
-		
+		void WriteBuffers( void );		
 		void Interaction( int i, int j, int k );
+
+	private:
 		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
 		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
 		void Diffusion( double *out, cdouble *in, cdouble diff );
