@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fluidsim", "fluidsim\fluidsim.vcxproj", "{A2E2ED4E-D77D-4CCD-B62A-11FF84812774}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fluidsim_large", "fluidsim_large\fluidsim_large.vcxproj", "{88EE4A6E-2AFC-47DF-A049-444B8E013174}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LGNODES", "fluidsim_large\fluidsim_large.vcxproj", "{88EE4A6E-2AFC-47DF-A049-444B8E013174}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AMRNODES", "AMRNODES\AMRNODES.vcxproj", "{02523B14-6503-411F-A888-45A4F8B74A37}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Xcalibur_v3", "Xcalibur_v3\Xcalibur_v3.vcxproj", "{D17050E7-5B3C-4A42-8454-F778CC99CFB1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,14 @@ Global
 		{02523B14-6503-411F-A888-45A4F8B74A37}.Release|Win32.Build.0 = Release|Win32
 		{02523B14-6503-411F-A888-45A4F8B74A37}.Release|x64.ActiveCfg = Release|x64
 		{02523B14-6503-411F-A888-45A4F8B74A37}.Release|x64.Build.0 = Release|x64
+		{D17050E7-5B3C-4A42-8454-F778CC99CFB1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D17050E7-5B3C-4A42-8454-F778CC99CFB1}.Debug|Win32.Build.0 = Debug|Win32
+		{D17050E7-5B3C-4A42-8454-F778CC99CFB1}.Debug|x64.ActiveCfg = Debug|x64
+		{D17050E7-5B3C-4A42-8454-F778CC99CFB1}.Debug|x64.Build.0 = Debug|x64
+		{D17050E7-5B3C-4A42-8454-F778CC99CFB1}.Release|Win32.ActiveCfg = Release|Win32
+		{D17050E7-5B3C-4A42-8454-F778CC99CFB1}.Release|Win32.Build.0 = Release|Win32
+		{D17050E7-5B3C-4A42-8454-F778CC99CFB1}.Release|x64.ActiveCfg = Release|x64
+		{D17050E7-5B3C-4A42-8454-F778CC99CFB1}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
