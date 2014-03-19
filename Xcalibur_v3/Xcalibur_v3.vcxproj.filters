@@ -10,19 +10,22 @@
     <Filter Include="Resource Files">
       <UniqueIdentifier>{07ac75bf-e4d5-48d3-bb7b-076aa36dfcfa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Shader Files">
+      <UniqueIdentifier>{f05c74c9-8a95-4d43-bd22-3e73de41e521}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\etc">
+      <UniqueIdentifier>{e50eea80-4c74-4cd4-9679-0e25b2656303}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Image Include="icons\main.ico">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\etc</Filter>
     </Image>
     <Image Include="icons\seagosoft.png">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\etc</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
     <ClInclude Include="CUDACustomeMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -41,11 +44,9 @@
     <ClInclude Include="Kernels.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Xcalibur_v3.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
+    <ClInclude Include="resource.h">
+      <Filter>Resource Files\etc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameworkDynamic.cpp">
@@ -62,5 +63,24 @@
     <CudaCompile Include="FluidSimProcKernels.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\backface.frag">
+      <Filter>Resource Files\Shader Files</Filter>
+    </None>
+    <None Include="shader\backface.vert">
+      <Filter>Resource Files\Shader Files</Filter>
+    </None>
+    <None Include="shader\raycasting.frag">
+      <Filter>Resource Files\Shader Files</Filter>
+    </None>
+    <None Include="shader\raycasting.vert">
+      <Filter>Resource Files\Shader Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Xcalibur_v3.rc">
+      <Filter>Resource Files\etc</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Oct 16, 2013
-* <Last Time>     Mar 05, 2014
+* <Last Time>     Mar 19, 2014
 * <File Name>     FrameworkDynamic.cpp
 */
 
@@ -99,7 +99,7 @@ void Framework_v1_0::CreateShaderProg ( FLUIDSPARAM *fluid )
 GLubyte* Framework_v1_0::DefaultTransFunc ()
 {
 	/* Hardcode the transfer function */
-	GLubyte *tff = (GLubyte *) calloc ( TPBUFFER_X, sizeof(GLubyte) );
+	GLubyte *tff = (GLubyte *) calloc ( 4 * 256, sizeof(GLubyte) );
 	for ( int i = 0; i < 256; i++ )
 	{
 		if ( i > 0 )
@@ -413,12 +413,6 @@ void Framework_v1_0::SetVolumeInfoUinforms ( FLUIDSPARAM *fluid )
     }    
 };
 
-
-/**
-***************************** 以上成员函数为进行GLSL渲染所必须初始步骤 ***************************************
-***********************************************************************************************************
-**************** 以下成员函数包含模型的初始化，及运行。关于流体模拟的计算过程则被封装在其他类中 *****************
-*/
 #pragma endregion
 
 #include <stdarg.h>
@@ -453,11 +447,11 @@ SGVOID Framework_v1_0::SetDefaultParam( SGVOID )
 	m_fluid.ray.fStepsize     = STEPSIZE;
 	m_fluid.ray.nAngle        = 0;
 	m_fluid.ray.uCanvasWidth  = CANVAS_X;
-	m_fluid.ray.uCanvasHeight = CANVAS_X;
+	m_fluid.ray.uCanvasHeight = CANVAS_Y;
 
 	m_fluid.volume.uWidth     = VOLUME_X;
-	m_fluid.volume.uHeight    = VOLUME_X;
-	m_fluid.volume.uDepth     = VOLUME_X;
+	m_fluid.volume.uHeight    = VOLUME_Y;
+	m_fluid.volume.uDepth     = VOLUME_Z;
 
 	m_fluid.shader.szCanvasVert = ".\\shader\\backface.vert";
 	m_fluid.shader.szCanvasFrag = ".\\shader\\backface.frag";
@@ -513,21 +507,6 @@ void Framework_v1_0::onCreate()
 		exit (1);
 	}
 
-	/* create sub-thread function */
-	m_fluid.thread.hThread = CreateThread ( 
-            NULL,                          // default security attributes
-            0,                             // use default stack size  
-            FluidSimulationProc,           // thread function name
-            NULL,                          // argument to thread function 
-            0,                             // use default creation flags 
-			&m_fluid.thread.dwThreadId);   // returns the thread identifier
-
-	if ( m_fluid.thread.hThread == NULL )
-	 {
-		 cout << "create sub-thread failed" << endl;
-		 exit (1);
-	 }
-
 	/* initialize the shader program and textures */
 	CreateShaderProg ( &m_fluid );
 	m_fluid.textures.hTexture1D   = Create1DTransFunc ( DefaultTransFunc () );
@@ -535,6 +514,21 @@ void Framework_v1_0::onCreate()
 	m_fluid.textures.hTexture3D   = Create3DVolumetric ();
 	m_fluid.ray.hCluster          = CreateVerticesBufferObj ();
 	m_fluid.textures.hFramebuffer = Create2DFrameBuffer ( &m_fluid );
+
+	/* create sub-thread function */
+	m_fluid.thread.hThread = CreateThread ( 
+            NULL,                          // default security attributes
+            0,                             // use default stack size  
+            FluidSimulationProc,           // thread function name
+            NULL,                          // argument to thread function 
+            0,                             // use default creation flags 
+			&m_fluid.thread.dwThreadId );  // returns the thread identifier
+
+	if ( m_fluid.thread.hThread == NULL )
+	{
+		cout << "create sub-thread failed" << endl;
+		exit (1);
+	}
 
 	/* 打印操作信息 */
 	m_simproc->PrintMSG();

@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 23, 2014
-* <Last Time>     Mar 12, 2014
+* <Last Time>     Mar 19, 2014
 * <File Name>     MacroDefiniton.h
 */
 
@@ -17,37 +17,56 @@ typedef int const     cint;
 typedef unsigned char uchar;
 typedef std::string*  sstr;
 
-/*********************************************************************************************************/
-/*********************************************************************************************************/
-/*********************************************************************************************************/
-
 /* parameters for fluid simulation */
 #define DELTATIME              0.5f
 #define DIFFUSION              0.1f
 #define VISOCITY               0.0f
 #define DENSITY               12.5f
 #define VELOCITY              15.7f
+
 #define GRIDS_X                  64
+#define GRIDS_Y                  64
+#define GRIDS_Z                  64
+
+#define BULLET_X                 66
+#define BULLET_Y                 66
+#define BULLET_Z                 66
 
 /* hierarchy of simulation nodes */
 #define CURSOR_X                 1
+#define CURSOR_Y                 1
+#define CURSOR_Z                 1
+
 #define GNODES_X                 2
+#define GNODES_Y                 2
+#define GNODES_Z                 2
+
 #define HNODES_X                 2
+#define HNODES_Y                 2
+#define HNODES_Z                 2
 
 /* parameters for volume rendering */
 #define STEPSIZE             0.001f
-#define VOLUME_X   GRIDS_X*HNODES_X
+
+#define VOLUME_X               128
+#define VOLUME_Y               128
+#define VOLUME_Z               128
 
 /* CUDA device's configuration info */
-#define THREADS_X             1024
-#define TILE_X                  16
+#define THREADS_S             1024
+
+#define TILE_X                  32
+#define TILE_Y                  32
 
 /* screen resolution */
 #define WINDOWS_X              480
+#define WINDOWS_Y              480
+
 #define CANVAS_X               480
+#define CANVAS_Y               480
 
 /* etc */
-#define TPBUFFER_X            1024
+#define TPBUFFER_S            1024
 
 /* macro definition of grid types */
 #define MACRO_DENSITY            0

@@ -42,6 +42,12 @@
     <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\backface.frag" />
+    <None Include="shader\backface.vert" />
+    <None Include="shader\raycasting.frag" />
+    <None Include="shader\raycasting.vert" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D17050E7-5B3C-4A42-8454-F778CC99CFB1}</ProjectGuid>
     <RootNamespace>Xcalibur_v3</RootNamespace>
