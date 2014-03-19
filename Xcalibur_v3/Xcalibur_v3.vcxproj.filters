@@ -26,9 +26,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CUDACustomeMath.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FluidSimProc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -61,6 +58,9 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="FluidSimProcKernels.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Kernel.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>

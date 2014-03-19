@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CUDACustomeMath.h" />
     <ClInclude Include="FluidSimProc.h" />
     <ClInclude Include="FrameworkDynamic.h" />
     <ClInclude Include="FunctionHelper.h" />
@@ -36,6 +35,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="FluidSimProcKernels.cu" />
+    <CudaCompile Include="Kernel.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameworkDynamic.cpp" />
