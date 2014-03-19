@@ -17,6 +17,8 @@
 using namespace sge;
 
 #define Index(i,j,k,ts) (k)*(ts)*(ts)+(j)*(ts)+i
+#define __device_func__ <<<gridDim, blockDim>>>
+
 
 FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 {

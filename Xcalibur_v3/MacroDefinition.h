@@ -97,10 +97,6 @@ typedef std::string*  sstr;
 #define TESTING_MODE_SWITCH       0 /* switch: close(0) open(1) */
 #define TESTING_MODE              0 /* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
 
-/*********************************************************************************************************/
-/*********************************************************************************************************/
-/*********************************************************************************************************/
-
 #define dev_buffers_num                   35
 #define dev_den              dev_buffers[ 0 ]
 #define dev_den0             dev_buffers[ 1 ]
@@ -146,44 +142,9 @@ typedef std::string*  sstr;
 #define velw_F               dev_buffers[ 33 ]
 #define velw_B               dev_buffers[ 34 ]
 
-/*********************************************************************************************************/
-/*********************************************************************************************************/
-/*********************************************************************************************************/
-
-//#define cudaIndex2D(i,j,elements_x) ((j)*(elements_x)+(i))
-//#define cudaIndex3D(i,j,k,elements_x) ((k)*elements_x*elements_x+(j)*elements_x+(i))
-//#define Index(i,j,k) cudaIndex3D(i,j,k,GRIDS_X)
-//
-//#define cudaTrans2DTo3D(i,j,k,elements_x) \
-//	k = cudaIndex2D(i,j,(elements_x)) / ((elements_x)*(elements_x)); \
-//	i = i % (elements_x); \
-//	j = j % (elements_x); \
-//
-//#define GetIndex1D() \
-//	int i = blockIdx.x * blockDim.x + threadIdx.x; \
-//
-//#define GetIndex2D() \
-//	int i = blockIdx.x * blockDim.x + threadIdx.x; \
-//	int j = blockIdx.y * blockDim.y + threadIdx.y; \
-//
-//#define GetIndex3D()  \
-//	int i = blockIdx.x * blockDim.x + threadIdx.x; \
-//	int j = blockIdx.y * blockDim.y + threadIdx.y; \
-//	int k = 0; \
-//	cudaTrans2DTo3D( i, j, k, GRIDS_X ); \
-
 #define gst_header                0  /* (ghost, halo) the header cell of grid */
 #define sim_header                1  /* (actually) the second cell of grid */
 #define gst_tailer               63  /* (ghost, halo) the last cell of grid */
 #define sim_tailer               62  /* (actually) the second last cell of grid */
-
-//#define BeginSimArea() \
-//	if ( i >= sim_header and i <= sim_tailer ) \
-//	if ( j >= sim_header and j <= sim_tailer ) \
-//	if ( k >= sim_header and k <= sim_tailer ) {
-//
-//#define EndSimArea() }
-
-#define __device_func__ <<<gridDim, blockDim>>>
 
 #endif
