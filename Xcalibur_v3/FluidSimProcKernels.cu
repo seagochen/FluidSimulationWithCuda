@@ -381,7 +381,9 @@ void FluidSimProc::FreeResource ( void )
 
 void FluidSimProc::zeroTempoBuffers( void )
 {
-	 helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	 helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
 
 	for ( int i = 0; i < dev_buffers_num; i++ )
 	{
@@ -391,7 +393,9 @@ void FluidSimProc::zeroTempoBuffers( void )
 
 void FluidSimProc::zeroGlobalNode( void )
 {
-	 helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	 helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
 
 	 kernelZeroBuffers __device_func__ ( gd_density, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	 kernelZeroBuffers __device_func__ ( gd_velocity_u, GRIDS_X, GRIDS_Y, GRIDS_Z );
@@ -401,7 +405,9 @@ void FluidSimProc::zeroGlobalNode( void )
 
 void FluidSimProc::zeroDeivceRes( void )
 {
-	 helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	 helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
 
 	for ( int i = 0; i < GNODES_X * GNODES_Y * GNODES_Z; i++ )
 	{	
@@ -426,14 +432,16 @@ void FluidSimProc::zeroHostRes( void )
 
 void FluidSimProc::zeroVisualBuffers( void )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, VOLUME_X, VOLUME_Y, VOLUME_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, VOLUME_X, VOLUME_Y, VOLUME_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_X, VOLUME_X, VOLUME_Y, VOLUME_Z );
 
 	kernelZeroBuffers __device_func__ ( dev_visual, VOLUME_X, VOLUME_Y, VOLUME_Z );
 };
 
 void FluidSimProc::zeroShareBuffers( void )
 {
-	helper.DeviceDim1D( &blockDim, &gridDim, THREADS_S, TPBUFFER_S );
+//	helper.DeviceDim1D( &blockDim, &gridDim, THREADS_S, TPBUFFER_S );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TPBUFFER_S );
 
 	kernelZeroBuffers __device_func__ ( dev_ntpbuf, TPBUFFER_S );
 	kernelZeroBuffers __device_func__ ( dev_dtpbuf, TPBUFFER_S );
@@ -480,7 +488,8 @@ void FluidSimProc::DeviceToHost( void )
 
 void FluidSimProc::clearBullet( void )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	for ( int i = 11; i < dev_buffers_num; i++ )
 	{
@@ -496,7 +505,8 @@ void FluidSimProc::clearBullet( void )
 
 void FluidSimProc::pickNodeToBullet( int i, int j, int k )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	/* upload center node to GPU device */
 	kernelCopyBuffers __device_func__ ( dev_u, node_velocity_u[Index( i, j, k, GNODES_X )], GRIDS_X, GRIDS_Y, GRIDS_Z );
@@ -514,7 +524,8 @@ void FluidSimProc::pickNodeToBullet( int i, int j, int k )
 
 void FluidSimProc::pickNeighborsToBullet( int i, int j, int k )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	/* upload neighbouring buffers to GPU device */
 	ptr = gpu_node[Index( i, j, k, GNODES_X )];
@@ -584,7 +595,8 @@ void FluidSimProc::LoadBullet( int i, int j, int k )
 
 void FluidSimProc::pickBulletToNode( int i, int j, int k )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	kernelCopyBuffers __device_func__ ( node_velocity_u[Index(i,j,k,GNODES_X)], velu_C, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	kernelCopyBuffers __device_func__ ( node_velocity_v[Index(i,j,k,GNODES_X)], velv_C, GRIDS_X, GRIDS_Y, GRIDS_Z );
@@ -600,7 +612,8 @@ void FluidSimProc::pickBulletToNode( int i, int j, int k )
 
 void FluidSimProc::pickImgFromNode( int i, int j, int k )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	i += m_cursor.x;
 	j += m_cursor.y;
@@ -657,7 +670,8 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 
 void FluidSimProc::InitBoundary( void )
 {
-	 helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	 helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	/* zero boundary buffers */
 	 kernelZeroBuffers __device_func__ ( dev_obs, GRIDS_X, GRIDS_Y, GRIDS_Z );
@@ -691,7 +705,9 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 
 void FluidSimProc::SolveRootNode( void )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
 	zeroTempoBuffers();
 
 	kernelCopyBuffers __device_func__ ( dev_den, gd_density, GRIDS_X, GRIDS_Y, GRIDS_Z );
@@ -751,7 +767,9 @@ void FluidSimProc::SolveRootNode( void )
 
 void FluidSimProc::SolveLeafNode( void )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
 	zeroTempoBuffers();
 
 #if HNODES_X >= 3
@@ -831,7 +849,8 @@ void FluidSimProc::SolveLeafNode( void )
 
 void FluidSimProc::AddSource( void )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );	
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	if ( decrease_times eqt 0 )
 	{
@@ -924,7 +943,9 @@ void FluidSimProc::DensitySolver( cdouble timestep )
 
 void FluidSimProc::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
 
 	for ( int k=0; k<20; k++)
 	{
@@ -934,7 +955,9 @@ void FluidSimProc::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divis
 
 void FluidSimProc::Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
 
 	kernelGridAdvection<<<gridDim,blockDim>>>( out, in, timestep, u, v, w );
 };
@@ -947,7 +970,9 @@ void FluidSimProc::Diffusion( double *out, cdouble *in, cdouble diff )
 
 void FluidSimProc::Projection( double *u, double *v, double *w, double *div, double *p )
 {
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
 
 	// the velocity gradient
 	kernelGradient<<<gridDim,blockDim>>>( div, p, u, v, w );
@@ -963,7 +988,9 @@ void FluidSimProc::ReadBuffers( void )
 {
 	int ni, nj, nk;
 	ni = nj = nk = 0;
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
 
 	for ( int k = 0; k < GNODES_X; k++ ) for ( int j = 0; j < GNODES_X; j++ ) for ( int i = 0; i < GNODES_X; i++ )
 	{
@@ -992,7 +1019,9 @@ void FluidSimProc::WriteBuffers( void )
 {
 	int ni, nj, nk; ni = nj = nk = 0;
 
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	helper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
 
 	for ( int k = 0; k < GNODES_X; k++ ) for ( int j = 0; j < GNODES_X; j++ ) for ( int i = 0; i < GNODES_X; i++ )
 	{

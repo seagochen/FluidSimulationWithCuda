@@ -11,6 +11,58 @@
 
 using namespace sge;
 
+SGVOID FunctionHelper::DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thread, SGINT tile )
+{
+	if ( tile <= thread )
+	{
+		blockDim->x = tile;
+		blockDim->y = gridDim->x = gridDim->y = 1;
+	}
+	else
+	{
+		blockDim->x = thread;
+		blockDim->y = 1;
+		gridDim->x = tile / thread;
+		gridDim->y = 1;
+	}
+};
+
+SGVOID FunctionHelper::DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thread, SGINT tilex, SGINT tiley, SGINT gridx, SGINT gridy )
+{
+	if ( gridx * gridy <= thread )
+	{
+		blockDim->x = gridx;
+		blockDim->y = gridy;
+		gridDim->x = 1;
+		gridDim->y = 1;
+	}
+	else
+	{
+		blockDim->x = tilex;
+		blockDim->y = tiley;
+		gridDim->x = gridx / tilex;
+		gridDim->y = gridy / tiley;
+	}
+};
+
+SGVOID FunctionHelper::DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thread, SGINT tilex, SGINT tiley, SGINT gridx, SGINT gridy, SGINT gridz )
+{
+	if ( gridx * gridy <= thread )
+	{
+		blockDim->x = gridx;
+		blockDim->y = gridy;
+		gridDim->x = 1;
+		gridDim->y = gridz;
+	}
+	else
+	{
+		blockDim->x = tilex;
+		blockDim->y = tiley;
+		gridDim->x  = gridx / tilex;
+		gridDim->y  = gridx * gridy * gridz / ( tilex * tiley * gridDim->x );
+	}
+};
+
 SGVOID FunctionHelper::DeviceDim1D( dim3 *blockDim, dim3 *gridDim, SGINT thread, SGINT gridx )
 {
 	if ( gridx <= thread )

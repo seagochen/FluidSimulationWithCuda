@@ -34,7 +34,9 @@
     <Image Include="icons\seagosoft.png" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProcKernels.cu" />
+    <CudaCompile Include="FluidSimProcKernels.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
     <CudaCompile Include="Kernel.cu" />
   </ItemGroup>
   <ItemGroup>
