@@ -28,6 +28,8 @@ typedef std::string*  sstr;
 #define GRIDS_Y                  64
 #define GRIDS_Z                  64
 
+#define BULLET_S                 40
+
 #define BULLET_X                 66
 #define BULLET_Y                 66
 #define BULLET_Z                 66
@@ -37,13 +39,9 @@ typedef std::string*  sstr;
 #define CURSOR_Y                 1
 #define CURSOR_Z                 1
 
-#define GNODES_X                 2
-#define GNODES_Y                 2
-#define GNODES_Z                 2
-
-#define HNODES_X                 2
-#define HNODES_Y                 2
-#define HNODES_Z                 2
+#define NODES_X                  2
+#define NODES_Y                  2
+#define NODES_Z                  2
 
 /* parameters for volume rendering */
 #define STEPSIZE             0.001f
@@ -96,51 +94,6 @@ typedef std::string*  sstr;
 /* switch */
 #define TESTING_MODE_SWITCH       0 /* switch: close(0) open(1) */
 #define TESTING_MODE              0 /* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
-
-#define dev_buffers_num                   35
-#define dev_den              dev_buffers[ 0 ]
-#define dev_den0             dev_buffers[ 1 ]
-#define dev_u                dev_buffers[ 2 ]
-#define dev_u0               dev_buffers[ 3 ]
-#define dev_v                dev_buffers[ 4 ]
-#define dev_v0               dev_buffers[ 5 ]
-#define dev_w                dev_buffers[ 6 ]
-#define dev_w0               dev_buffers[ 7 ]
-#define dev_div              dev_buffers[ 8 ]
-#define dev_p                dev_buffers[ 9 ]
-#define dev_obs              dev_buffers[ 10 ]
-
-#define dens_C               dev_buffers[ 0 ]
-#define dens_L               dev_buffers[ 11 ]
-#define dens_R               dev_buffers[ 12 ]
-#define dens_U               dev_buffers[ 13 ]
-#define dens_D               dev_buffers[ 14 ]
-#define dens_F               dev_buffers[ 15 ]
-#define dens_B               dev_buffers[ 16 ]
-
-#define velu_C               dev_buffers[ 2 ]
-#define velu_L               dev_buffers[ 17 ] 
-#define velu_R               dev_buffers[ 18 ]
-#define velu_U               dev_buffers[ 19 ]
-#define velu_D               dev_buffers[ 20 ]
-#define velu_F               dev_buffers[ 21 ]
-#define velu_B               dev_buffers[ 22 ]
-
-#define velv_C               dev_buffers[ 4 ]
-#define velv_L               dev_buffers[ 23 ]
-#define velv_R               dev_buffers[ 24 ]
-#define velv_U               dev_buffers[ 25 ]
-#define velv_D               dev_buffers[ 26 ]
-#define velv_F               dev_buffers[ 27 ]
-#define velv_B               dev_buffers[ 28 ]
-
-#define velw_C               dev_buffers[ 6 ]
-#define velw_L               dev_buffers[ 29 ]
-#define velw_R               dev_buffers[ 30 ]
-#define velw_U               dev_buffers[ 31 ]
-#define velw_D               dev_buffers[ 32 ]
-#define velw_F               dev_buffers[ 33 ]
-#define velw_B               dev_buffers[ 34 ]
 
 #define gst_header                0  /* (ghost, halo) the header cell of grid */
 #define sim_header                1  /* (actually) the second cell of grid */

@@ -25,6 +25,7 @@
     <ClInclude Include="Kernels.h" />
     <ClInclude Include="MacroDefinition.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="SimulationParam.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Xcalibur_v3.rc" />
@@ -34,7 +35,7 @@
     <Image Include="icons\seagosoft.png" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProcKernels.cu">
+    <CudaCompile Include="FluidSimProc.cu">
       <FileType>Document</FileType>
     </CudaCompile>
     <CudaCompile Include="Kernel.cu" />

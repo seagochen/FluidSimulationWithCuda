@@ -376,12 +376,17 @@ inline __device__ bool atomicIsNotHalo( cint i, cint j, cint k, cint tx, cint ty
 	return true;
 };
 
-__device__ void atomicDensityObs( double *grids, cdouble *obstacle )
+
+
+
+
+
+__device__ void atomicDensityObs( double *grids, cdouble *obstacle, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
-	if ( atomicIsNotHalo( i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z ) )
+	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
 	{
 		/* 当前格点有障碍物，且密度大于0 */
 		if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE and grids[Index(i,j,k)] > 0.f )
@@ -411,12 +416,12 @@ __device__ void atomicDensityObs( double *grids, cdouble *obstacle )
 	}
 };
 
-__device__ void atomicVelocityObs_U( double *grids, cdouble *obstacle )
+__device__ void atomicVelocityObs_U( double *grids, cdouble *obstacle, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
-	if ( atomicIsNotHalo( i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z ) )
+	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
 	{
 		if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
 		{
@@ -435,12 +440,12 @@ __device__ void atomicVelocityObs_U( double *grids, cdouble *obstacle )
 	}
 };
 
-__device__ void atomicVelocityObs_V( double *grids, cdouble *obstacle )
+__device__ void atomicVelocityObs_V( double *grids, cdouble *obstacle, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
-	if ( atomicIsNotHalo( i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z ) )
+	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
 	{
 		if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
 		{
@@ -459,12 +464,12 @@ __device__ void atomicVelocityObs_V( double *grids, cdouble *obstacle )
 	}
 };
 
-__device__ void atomicVelocityObs_W( double *grids, cdouble *obstacle )
+__device__ void atomicVelocityObs_W( double *grids, cdouble *obstacle, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
-	if ( atomicIsNotHalo( i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z ) )
+	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
 	{
 		if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
 		{
@@ -483,24 +488,24 @@ __device__ void atomicVelocityObs_W( double *grids, cdouble *obstacle )
 	}
 };
 
-__global__ void kernelObstacle( double *grids, cdouble *obstacle, cint field )
+__global__ void kernelObstacle( double *grids, cdouble *obstacle, cint field, cint tx, cint ty, cint tz )
 {
 	switch( field )
 	{
 	case MACRO_DENSITY:
-		atomicDensityObs( grids, obstacle );
+		atomicDensityObs( grids, obstacle, tx, ty, tz );
 		break;
 
 	case MACRO_VELOCITY_U:
-		atomicVelocityObs_U( grids, obstacle );
+		atomicVelocityObs_U( grids, obstacle, tx, ty, tz );
 		break;
 
 	case MACRO_VELOCITY_V:
-		atomicVelocityObs_V( grids, obstacle );
+		atomicVelocityObs_V( grids, obstacle, tx, ty, tz );
 		break;
 
 	case MACRO_VELOCITY_W:
-		atomicVelocityObs_W( grids, obstacle );
+		atomicVelocityObs_W( grids, obstacle, tx, ty, tz );
 		break;
 
 	default:
@@ -508,22 +513,20 @@ __global__ void kernelObstacle( double *grids, cdouble *obstacle, cint field )
 	}
 };
 
-
-__global__ void kernelSumDensity( double *share, cdouble *src, cint no )
+__global__ void kernelSumDensity( double *share, cdouble *src, cint no, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 	share[no] += src[Index(i,j,k)];
 };
 
-
-
-__global__ void kernelJacobi( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble divisor )
+__global__ void kernelJacobi( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble divisor,
+							cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
-	if ( atomicIsNotHalo( i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z ) )
+	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
 	{
 		double div = 0.f;
 		if ( divisor <= 0.f ) div = 1.f;
@@ -540,27 +543,29 @@ __global__ void kernelJacobi( double *grid_out, cdouble *grid_in, cdouble diffus
 	}
 }
 
-__global__ void kernelGridAdvection( double *grid_out, cdouble *grid_in, cdouble deltatime, cdouble *u_in, cdouble *v_in, cdouble *w_in )
+__global__ void kernelGridAdvection
+	( double *grid_out, cdouble *grid_in, cdouble deltatime, cdouble *u_in, cdouble *v_in, cdouble *w_in, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
-	if ( atomicIsNotHalo( i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z ) )
+	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
 	{
 		double u = i - u_in [ Index(i,j,k) ] * deltatime;
 		double v = j - v_in [ Index(i,j,k) ] * deltatime;
 		double w = k - w_in [ Index(i,j,k) ] * deltatime;
 	
-		grid_out [ Index(i,j,k) ] = atomicTrilinear ( grid_in, u, v, w, GRIDS_X, GRIDS_Y, GRIDS_Z );
+		grid_out [ Index(i,j,k) ] = atomicTrilinear ( grid_in, u, v, w, tx, ty, tz );
 	}
 };
 
-__global__ void kernelGradient( double *div, double *p, cdouble *vel_u, cdouble *vel_v, cdouble *vel_w )
+__global__ void kernelGradient
+	( double *div, double *p, cdouble *vel_u, cdouble *vel_v, cdouble *vel_w, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
-	if ( atomicIsNotHalo( i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z ) )
+	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
 	{	
 		cdouble h = 1.f / GRIDS_X;
 
@@ -575,12 +580,13 @@ __global__ void kernelGradient( double *div, double *p, cdouble *vel_u, cdouble 
 	}
 };
 
-__global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, cdouble *p )
+__global__ void kernelSubtract
+	( double *vel_u, double *vel_v, double *vel_w, cdouble *p, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
-	if ( atomicIsNotHalo( i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z ) )
+	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
 	{
 		// gradient calculated by neighbors
 
@@ -590,12 +596,13 @@ __global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, cdo
 	}
 };
 
-__global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w )
+__global__ void kernelAddSource
+	( double *density, double *vel_u, double *vel_v, double *vel_w, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
-	if ( atomicIsNotHalo( i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z ) )
+	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
 	{
 		cint half = GRIDS_X / 2;
 
@@ -620,14 +627,15 @@ __global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, 
 	}
 };
 
-__global__ void kernelPickData( uchar *c, cdouble *bufs, int ofi, int ofj, int ofk, cint grids )
+__global__ void kernelPickData
+	( uchar *c, cdouble *bufs, int ofi, int ofj, int ofk, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
-	ofi = ofi * grids + i;
-	ofj = ofj * grids + j;
-	ofk = ofk * grids + k;
+	ofi = ofi * tx + i;
+	ofj = ofj * ty + j;
+	ofk = ofk * tz + k;
 
 	/* zero c first */
 	c[ ix(ofi,ofj,ofk,VOLUME_X,VOLUME_Y,VOLUME_Z) ] = 0;
@@ -638,22 +646,24 @@ __global__ void kernelPickData( uchar *c, cdouble *bufs, int ofi, int ofj, int o
 		c [ ix(ofi,ofj,ofk,VOLUME_X,VOLUME_Y,VOLUME_Z) ] = (uchar) temp;
 };
 
-__global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
+__global__ void kernelInterRootGrids
+	( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
 	double x = ( pi * GRIDS_X + i ) * rate;
 	double y = ( pj * GRIDS_X + j ) * rate;
 	double z = ( pk * GRIDS_X + k ) * rate;
 
-	dst[Index(i,j,k)] = atomicTrilinear( src, x, y, z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	dst[Index(i,j,k)] = atomicTrilinear( src, x, y, z, tx, ty, tz );
 };
 
-__global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
+__global__ void kernelInterLeafGrids
+	( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
 	int x = _round( ( pi * GRIDS_X + i ) * rate );
 	int y = _round( ( pj * GRIDS_X + j ) * rate );
@@ -662,10 +672,10 @@ __global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint p
 	dst[Index(x,y,z)] = src[Index(i,j,k)];
 };
 
-__global__ void kernelClearHalo( double *grids )
+__global__ void kernelClearHalo( double *grids, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
 	grids[Index(gst_header,j,k)] = 0.f;
 	grids[Index(gst_tailer,j,k)] = 0.f;
@@ -676,10 +686,11 @@ __global__ void kernelClearHalo( double *grids )
 };
 
 __global__ void kernelHandleHalo
-	( double *center, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back )
+	( double *center, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back,
+	cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	_thread( &i, &j, &k, tx, ty, tz );
 
 	center[Index(gst_header,j,k)] = left[Index(gst_tailer,j,k)];
 	center[Index(gst_tailer,j,k)] = right[Index(gst_header,j,k)];

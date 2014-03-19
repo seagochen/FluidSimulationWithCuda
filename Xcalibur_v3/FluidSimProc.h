@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 07, 2014
+* <Last Time>     Mar 19, 2014
 * <File Name>     FluidSimProc.h
 */
 
@@ -22,78 +22,64 @@ using std::string;
 
 namespace sge
 {
+	struct SimNode
+	{
+		bool updated;
+		bool active;
+		int x, y, z;
+		SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+	};
+
 	class FluidSimProc
 	{
-
-#pragma region inner structures
-	private:
-		struct SimNode
-		{
-			SGBOOLEAN updated;
-			SGBOOLEAN active;
-			int x, y, z;
-			SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
-		};
-#pragma endregion
-
-#pragma region private variables
 	private:
 		/* temporary buffers for fluid simulation */
-		vector <double*> dev_buffers;
+		vector <double*> m_vectGPUBuffers;
 
 		/* nodes for gpu and host */
-		vector <double*> dev_density,    host_density;
-		vector <double*> dev_velocity_u, host_velocity_u;
-		vector <double*> dev_velocity_v, host_velocity_v;
-		vector <double*> dev_velocity_w, host_velocity_w;
-		vector <double*> dev_obstacle,   host_obstacle;
-
-		/* local nodes */
-		vector <double*> node_density;
-		vector <double*> node_velocity_u;
-		vector <double*> node_velocity_v;
-		vector <double*> node_velocity_w;
-		vector <double*> node_obstacle;
-
-		double *gd_density, *gd_velocity_u, *gd_velocity_v, *gd_velocity_w, *gd_obstacle;
+		vector <double*> m_vectGPUDens, m_vectHostDens;
+		vector <double*> m_vectGPUVelU, m_vectHostVelU;
+		vector <double*> m_vectGPUVelV, m_vectHostVelV;
+		vector <double*> m_vectGPUVelW, m_vectHostVelW;
+		vector <int*> m_vectGPUObst, m_vectHostObst;
 
 		/* topology of nodes on host and device */
-		vector <SimNode*> gpu_node, host_node;
+		vector <SimNode*> m_vectLink;
 
-		/* visualization */
-		SGUCHAR *dev_visual, *host_visual;
+		/* visualization buffers */
+		uchar *m_ptrGPUVisual, *m_ptrHostVisual;
 
 		/* temporary buffers for some purpose */
-		double *dev_dtpbuf, *host_dtpbuf;
-		int    *dev_ntpbuf, *host_ntpbuf;
-
-		/* cursor */
-		int3 m_cursor;
-		
-		/* CUDA */
-		dim3 gridDim, blockDim;
+		double *m_ptrGPUShare, *m_ptrHostShare;
 
 		/* node and volumetric size */
-		size_t m_node_size, m_volm_size;
-
-		/* title bar */
-		string m_sz_title;
+		size_t m_nNodeSize, m_nVolumSize, m_nBulletSize;
+		size_t m_nNodeNum, m_nBulletNum;
 
 		/* etc. */
-		int increase_times, decrease_times;
-		SimNode *ptr;
+		int m_nDensIncrease, m_nDensDecrease;
+		
+		FunctionHelper m_scHelper;
+		SimNode *m_ptrSimNode;
+		string m_szTitle;	
 
-	private:
-		FunctionHelper helper;
-
-#pragma endregion
+		dim3 gridDim, blockDim;
 
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
 
 	public:
+		void AllocateResource( void );
+
+	private:
+		bool CreateCompNodesResource( void );
+		bool CreateBulletResource( void );
+		bool CreateResource( void );
+
+
+	public:
 		void ZeroBuffers( void );
-		sstr GetTitleBar( void );
+		sstr GetTitleBar( void ) { return &m_szTitle; };
 		void PrintMSG( void );
 		void HostToDevice( void );
 		void DeviceToHost( void );
@@ -112,14 +98,6 @@ namespace sge
 		void freeDeviceRes( void );
 		void freeShareBuffers( void );
 		void freeVisualBuffers( void );
-		
-	private:
-		bool AllocateResource( void );
-		bool allocHostRes( void );
-		bool allocDeviceRes( void );
-		bool allocShareBuffers( void );
-		bool allocVisualBuffers( void );
-		void allocTopologyNodes( void );
 
 	private:
 		void LoadBullet( int i, int j, int k );
