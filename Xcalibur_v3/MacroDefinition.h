@@ -34,11 +34,7 @@ typedef std::string*  sstr;
 #define BULLET_Y                 66
 #define BULLET_Z                 66
 
-/* hierarchy of simulation nodes */
-#define CURSOR_X                 1
-#define CURSOR_Y                 1
-#define CURSOR_Z                 1
-
+/* dimension of simulation nodes */
 #define NODES_X                  2
 #define NODES_Y                  2
 #define NODES_Z                  2

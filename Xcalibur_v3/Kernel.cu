@@ -10,6 +10,14 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 
+/************************************************************************************
+** The following functions are basic, which can be used by GPU device and local    **
+** host.                                                                           **
+** If a function (kernel) is general type, the prefix of that function will be     **
+** marked as for example, _rand(...).                                              **
+*************************************************************************************/
+
+
 inline __host__ __device__ int _rand( int seed )
 {
 	seed = (69069 * seed + 1);
@@ -88,6 +96,11 @@ inline __host__ __device__ double _fabs(double value)
 };
 
 
+/************************************************************************************
+** Define some basic logical operator, and some new data type below.               **
+** The following kernels are used for getting thread id and transforming the id to **
+** array's index.                                                                  **
+*************************************************************************************/
 
 
 #define and    &&
@@ -119,7 +132,8 @@ inline __device__ void _thread( int *i, int *j )
 	*j = blockIdx.y * blockDim.y + threadIdx.y;
 };
 
-inline __device__ void _thread( int *i, int *j, int *k, cint tilex, cint tiley, cint tilez )
+inline __device__ void _thread
+	( int *i, int *j, int *k, cint tilex, cint tiley, cint tilez )
 {
 	_thread( i, j );
 	
@@ -146,7 +160,8 @@ inline __device__ __host__ int ix( cint i, cint j, cint tilex, cint tiley )
 	return x + y * tilex;
 };
 
-inline __host__ __device__ int ix( cint i, cint j, cint k, cint tilex, cint tiley, cint tilez )
+inline __host__ __device__ int ix
+	( cint i, cint j, cint k, cint tilex, cint tiley, cint tilez )
 {
 	if ( i < 0 or i >= tilex ) return -1;
 	if ( j < 0 or j >= tiley ) return -1;
@@ -155,7 +170,18 @@ inline __host__ __device__ int ix( cint i, cint j, cint k, cint tilex, cint tile
 	return i + j * tilex + k * tilex * tiley;
 };
 
-__global__ void kernelLoadBullet( int *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
+
+
+/************************************************************************************
+** To upgrade node size to bullet for fluid simulation computation, and degrade    **
+** the size of bullet to retrieve data back.                                       **
+** Something else, basic buffer operation kernels, such as zero, and copy the data **
+** are also defined below in this block.                                           **
+*************************************************************************************/
+
+
+__global__ void kernelLoadBullet
+	( int *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
 {
 	int i, j, k;
 	
@@ -168,7 +194,8 @@ __global__ void kernelLoadBullet( int *dst, cint *src, cint dstx, cint dsty, cin
 	else dst[ixd] = src[ixs];
 };
 
-__global__ void kernelLoadBullet( double *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
+__global__ void kernelLoadBullet
+	( double *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
 {
 	int i, j, k;
 	
@@ -181,7 +208,8 @@ __global__ void kernelLoadBullet( double *dst, cint *src, cint dstx, cint dsty, 
 	else dst[ixd] = src[ixs];
 };
 
-__global__ void kernelExitBullet( int *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
+__global__ void kernelExitBullet
+	( int *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
 {
 	int i, j, k;	
 	_thread( &i, &j, &k, dstx, dsty, dstz );
@@ -193,7 +221,8 @@ __global__ void kernelExitBullet( int *dst, cint *src, cint dstx, cint dsty, cin
 	else dst[ixd] = src[ixs];
 };
 
-__global__ void kernelExitBullet( double *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
+__global__ void kernelExitBullet
+	( double *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
 {
 	int i, j, k;	
 	_thread( &i, &j, &k, dstx, dsty, dstz );
@@ -205,7 +234,8 @@ __global__ void kernelExitBullet( double *dst, cint *src, cint dstx, cint dsty, 
 	else dst[ixd] = src[ixs];
 };
 
-__global__ void kernelZeroBuffers( int *bullet, cint tilex, cint tiley, cint tilez )
+__global__ void kernelZeroBuffers
+	( int *bullet, cint tilex, cint tiley, cint tilez )
 {
 	int i, j, k;
 	_thread( &i, &j, &k, tilex, tiley, tilez );
@@ -215,7 +245,8 @@ __global__ void kernelZeroBuffers( int *bullet, cint tilex, cint tiley, cint til
 	else bullet[ind] = 0;
 };
 
-__global__ void kernelZeroBuffers( double *bullet, cint tilex, cint tiley, cint tilez )
+__global__ void kernelZeroBuffers
+	( double *bullet, cint tilex, cint tiley, cint tilez )
 {
 	int i, j, k;
 	_thread( &i, &j, &k, tilex, tiley, tilez );
@@ -225,7 +256,8 @@ __global__ void kernelZeroBuffers( double *bullet, cint tilex, cint tiley, cint 
 	else bullet[ind] = 0.f;
 };
 
-__global__ void kernelZeroBuffers( uchar *bullet, cint tilex, cint tiley, cint tilez )
+__global__ void kernelZeroBuffers
+	( uchar *bullet, cint tilex, cint tiley, cint tilez )
 {
 	int i, j, k;
 	_thread( &i, &j, &k, tilex, tiley, tilez );
@@ -235,7 +267,8 @@ __global__ void kernelZeroBuffers( uchar *bullet, cint tilex, cint tiley, cint t
 	else bullet[ind] = 0;
 };
 
-__global__ void kernelZeroBuffers( int *buf, cint tiles )
+__global__ void kernelZeroBuffers
+	( int *buf, cint tiles )
 {
 	int x;
 	_thread( &x );
@@ -244,7 +277,8 @@ __global__ void kernelZeroBuffers( int *buf, cint tiles )
 	else buf[ind] = 0;
 };
 
-__global__ void kernelZeroBuffers( double *buf, cint tiles )
+__global__ void kernelZeroBuffers
+	( double *buf, cint tiles )
 {
 	int x;
 	_thread( &x );
@@ -253,7 +287,8 @@ __global__ void kernelZeroBuffers( double *buf, cint tiles )
 	else buf[ind] = 0.f;
 };
 
-__global__ void kernelZeroBuffers( uchar *buf, cint tiles )
+__global__ void kernelZeroBuffers
+	( uchar *buf, cint tiles )
 {
 	int x;
 	_thread( &x );
@@ -262,7 +297,8 @@ __global__ void kernelZeroBuffers( uchar *buf, cint tiles )
 	else buf[ind] = 0;
 };
 
-__global__ void kernelCopyBuffers( int *dst, cint *src, cint tiles )
+__global__ void kernelCopyBuffers
+	( int *dst, cint *src, cint tiles )
 {
 	int x;
 	_thread( &x );
@@ -271,7 +307,8 @@ __global__ void kernelCopyBuffers( int *dst, cint *src, cint tiles )
 	else dst[ind] = src[ind];
 };
 
-__global__ void kernelCopyBuffers( double *dst, cint *src, cint tiles )
+__global__ void kernelCopyBuffers
+	( double *dst, cint *src, cint tiles )
 {
 	int x;
 	_thread( &x );
@@ -280,7 +317,8 @@ __global__ void kernelCopyBuffers( double *dst, cint *src, cint tiles )
 	else dst[ind] = src[ind];
 };
 
-__global__ void kernelCopyBuffers( uchar *dst, cint *src, cint tiles )
+__global__ void kernelCopyBuffers
+	( uchar *dst, cint *src, cint tiles )
 {
 	int x;
 	_thread( &x );
@@ -289,7 +327,8 @@ __global__ void kernelCopyBuffers( uchar *dst, cint *src, cint tiles )
 	else dst[ind] = src[ind];
 };
 
-__global__ void kernelCopyBuffers( int *dst, cint *src, cint tilex, cint tiley, cint tilez )
+__global__ void kernelCopyBuffers
+	( int *dst, cint *src, cint tilex, cint tiley, cint tilez )
 {
 	int i, j, k;
 	_thread( &i, &j, &k, tilex, tiley, tilez );
@@ -299,7 +338,8 @@ __global__ void kernelCopyBuffers( int *dst, cint *src, cint tilex, cint tiley, 
 	else dst[ind] = src[ind];
 };
 
-__global__ void kernelCopyBuffers( double *dst, cdouble *src, cint tilex, cint tiley, cint tilez )
+__global__ void kernelCopyBuffers
+	( double *dst, cdouble *src, cint tilex, cint tiley, cint tilez )
 {
 	int i, j, k;
 	_thread( &i, &j, &k, tilex, tiley, tilez );
@@ -309,7 +349,8 @@ __global__ void kernelCopyBuffers( double *dst, cdouble *src, cint tilex, cint t
 	else dst[ind] = src[ind];
 };
 
-__global__ void kernelCopyBuffers( uchar *dst, uchar *src, cint tilex, cint tiley, cint tilez )
+__global__ void kernelCopyBuffers
+	( uchar *dst, uchar *src, cint tilex, cint tiley, cint tilez )
 {
 	int i, j, k;
 	_thread( &i, &j, &k, tilex, tiley, tilez );
@@ -318,13 +359,20 @@ __global__ void kernelCopyBuffers( uchar *dst, uchar *src, cint tilex, cint tile
 	if ( ind < 0 ) return;
 	else dst[ind] = src[ind];
 };
+
+
+
+/************************************************************************************
+** Picking the value from a grid with given position, trilinear interpolation and  **
+** wether the index of element is in halo, those kernels are defined during this   **
+** block.                                                                          **
+*************************************************************************************/
 
 
 #include "MacroDefinition.h"
 
-#define Index(i,j,k) ix(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)
-
-__device__ double atomicGetValue( cdouble *grid, cint x, cint y, cint z, cint tx, cint ty, cint tz )
+__device__ double atomicGetValue
+	( cdouble *grid, cint x, cint y, cint z, cint tx, cint ty, cint tz )
 {
 	if ( x < 0 or x >= tx ) return 0.f;
 	if ( y < 0 or y >= ty ) return 0.f;
@@ -335,7 +383,8 @@ __device__ double atomicGetValue( cdouble *grid, cint x, cint y, cint z, cint tx
 	else return grid[ind];
 };
 
-__device__ double atomicTrilinear( cdouble *grid, cdouble x, cdouble y, cdouble z, cint tx, cint ty, cint tz )
+__device__ double atomicTrilinear
+	( cdouble *grid, cdouble x, cdouble y, cdouble z, cint tx, cint ty, cint tz )
 {
 	int i = (int)x;
 	int j = (int)y;
@@ -367,7 +416,8 @@ __device__ double atomicTrilinear( cdouble *grid, cdouble x, cdouble y, cdouble 
 	return c;
 };
 
-inline __device__ bool atomicIsNotHalo( cint i, cint j, cint k, cint tx, cint ty, cint tz )
+inline __device__ bool atomicIXNotHalo
+	( cint i, cint j, cint k, cint tx, cint ty, cint tz )
 {
 	if ( i eqt 0 or i eqt tx - 1 ) return false;
 	if ( j eqt 0 or j eqt ty - 1 ) return false;
@@ -377,348 +427,230 @@ inline __device__ bool atomicIsNotHalo( cint i, cint j, cint k, cint tx, cint ty
 };
 
 
+/************************************************************************************
+** The following is auxiliary kernels only.                                        **
+*************************************************************************************/
 
 
-
-
-__device__ void atomicDensityObs( double *grids, cdouble *obstacle, cint tx, cint ty, cint tz )
+__global__ void kernelSumDensity
+	( double *share, cdouble *src, cint no, cint tx, cint ty, cint tz )
 {
 	int i, j, k;
 	_thread( &i, &j, &k, tx, ty, tz );
-
-	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
-	{
-		/* 当前格点有障碍物，且密度大于0 */
-		if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE and grids[Index(i,j,k)] > 0.f )
-		{
-			int cells  = 0;
-			double val = 0; 
-
-			if ( obstacle[Index(i-1,j,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
-			if ( obstacle[Index(i+1,j,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
-			if ( obstacle[Index(i,j-1,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
-			if ( obstacle[Index(i,j+1,k)] eqt MACRO_BOUNDARY_BLANK ) cells++;
-			if ( obstacle[Index(i,j,k-1)] eqt MACRO_BOUNDARY_BLANK ) cells++;
-			if ( obstacle[Index(i,j,k+1)] eqt MACRO_BOUNDARY_BLANK ) cells++;
-
-			if ( cells > 0 ) val = grids[Index(i,j,k)] / cells;
-			else val = 0.f;
-
-			if ( obstacle[Index(i-1,j,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i-1,j,k)] += val;
-			if ( obstacle[Index(i+1,j,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i+1,j,k)] += val;
-			if ( obstacle[Index(i,j-1,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j-1,k)] += val;
-			if ( obstacle[Index(i,j+1,k)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j+1,k)] += val;
-			if ( obstacle[Index(i,j,k-1)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j,k-1)] += val;
-			if ( obstacle[Index(i,j,k+1)] eqt MACRO_BOUNDARY_BLANK ) grids[Index(i,j,k+1)] += val;
-
-			grids[Index(i,j,k)] = 0.f;
-		}
-	}
+	share[no] += src[ix(i,j,k,tx,ty,tz)];
 };
 
-__device__ void atomicVelocityObs_U( double *grids, cdouble *obstacle, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
 
-	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
-	{
-		if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
-		{
-			if ( grids[Index(i,j,k)] > 0.f )
-			{
-				if ( obstacle[Index(i-1,j,k)] eqt MACRO_BOUNDARY_BLANK )
-					grids[Index(i-1,j,k)] = grids[Index(i-1,j,k)] -  grids[Index(i,j,k)];
-			}
-			else
-			{
-				if ( obstacle[Index(i+1,j,k)] eqt MACRO_BOUNDARY_BLANK )
-					grids[Index(i+1,j,k)] = grids[Index(i+1,j,k)] -  grids[Index(i,j,k)];
-			}
-			grids[Index(i,j,k)] = 0.f;
-		}
-	}
-};
 
-__device__ void atomicVelocityObs_V( double *grids, cdouble *obstacle, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
+/************************************************************************************
+** Basic kernels for solving Navier-Stokes equation.                               **
+*************************************************************************************/
 
-	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
-	{
-		if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
-		{
-			if ( grids[Index(i,j,k)] > 0.f )
-			{
-				if ( obstacle[Index(i,j-1,k)] eqt MACRO_BOUNDARY_BLANK )
-					grids[Index(i,j-1,k)] = grids[Index(i,j-1,k)] - grids[Index(i,j,k)];
-			}
-			else
-			{
-				if ( obstacle[Index(i,j+1,k)] eqt MACRO_BOUNDARY_BLANK )
-					grids[Index(i,j+1,k)] = grids[Index(i,j+1,k)] - grids[Index(i,j,k)];
-			}
-			grids[Index(i,j,k)] = 0.f;
-		}
-	}
-};
 
-__device__ void atomicVelocityObs_W( double *grids, cdouble *obstacle, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
+#define IX(i,j,k) ix(i,j,k,tx,ty,tz)
 
-	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
-	{
-		if ( obstacle[Index(i,j,k)] eqt MACRO_BOUNDARY_OBSTACLE )
-		{
-			if ( grids[Index(i,j,k)] > 0.f )
-			{
-				if ( obstacle[Index(i,j,k-1)] eqt MACRO_BOUNDARY_BLANK )
-					grids[Index(i,j,k-1)] = grids[Index(i,j,k-1)] - grids[Index(i,j,k)];
-			}
-			else
-			{
-				if ( obstacle[Index(i,j,k+1)] eqt MACRO_BOUNDARY_BLANK )
-					grids[Index(i,j,k+1)] = grids[Index(i,j,k+1)] - grids[Index(i,j,k)];
-			}
-			grids[Index(i,j,k)] = 0.f;
-		}
-	}
-};
-
-__global__ void kernelObstacle( double *grids, cdouble *obstacle, cint field, cint tx, cint ty, cint tz )
-{
-	switch( field )
-	{
-	case MACRO_DENSITY:
-		atomicDensityObs( grids, obstacle, tx, ty, tz );
-		break;
-
-	case MACRO_VELOCITY_U:
-		atomicVelocityObs_U( grids, obstacle, tx, ty, tz );
-		break;
-
-	case MACRO_VELOCITY_V:
-		atomicVelocityObs_V( grids, obstacle, tx, ty, tz );
-		break;
-
-	case MACRO_VELOCITY_W:
-		atomicVelocityObs_W( grids, obstacle, tx, ty, tz );
-		break;
-
-	default:
-		break;
-	}
-};
-
-__global__ void kernelSumDensity( double *share, cdouble *src, cint no, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
-	share[no] += src[Index(i,j,k)];
-};
-
-__global__ void kernelJacobi( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble divisor,
-							cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
-
-	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
-	{
-		double div = 0.f;
-		if ( divisor <= 0.f ) div = 1.f;
-		else div = divisor;
-
-		grid_out [ Index(i,j,k) ] = 
-			( grid_in [ Index(i,j,k) ] + diffusion * 
-				(
-					grid_out [ Index(i-1, j, k) ] + grid_out [ Index(i+1, j, k) ] +
-					grid_out [ Index(i, j-1, k) ] + grid_out [ Index(i, j+1, k) ] +
-					grid_out [ Index(i, j, k-1) ] + grid_out [ Index(i, j, k+1) ]
-				) 
-			) / div;
-	}
-}
-
-__global__ void kernelGridAdvection
-	( double *grid_out, cdouble *grid_in, cdouble deltatime, cdouble *u_in, cdouble *v_in, cdouble *w_in, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
-
-	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
-	{
-		double u = i - u_in [ Index(i,j,k) ] * deltatime;
-		double v = j - v_in [ Index(i,j,k) ] * deltatime;
-		double w = k - w_in [ Index(i,j,k) ] * deltatime;
-	
-		grid_out [ Index(i,j,k) ] = atomicTrilinear ( grid_in, u, v, w, tx, ty, tz );
-	}
-};
-
-__global__ void kernelGradient
-	( double *div, double *p, cdouble *vel_u, cdouble *vel_v, cdouble *vel_w, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
-
-	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
-	{	
-		cdouble h = 1.f / GRIDS_X;
-
-		// previous instantaneous magnitude of velocity gradient = (sum of velocity gradients per axis)/2N:
-		div [ Index(i,j,k) ] = -0.5f * h * (
-				vel_u [ Index(i+1, j, k) ] - vel_u [ Index(i-1, j, k) ] + // gradient of u
-				vel_v [ Index(i, j+1, k) ] - vel_v [ Index(i, j-1, k) ] + // gradient of v
-				vel_w [ Index(i, j, k+1) ] - vel_w [ Index(i, j, k-1) ]   // gradient of w
-			);
-		// zero out the present velocity gradient
-		p [ Index(i,j,k) ] = 0.f;
-	}
-};
-
-__global__ void kernelSubtract
-	( double *vel_u, double *vel_v, double *vel_w, cdouble *p, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
-
-	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
-	{
-		// gradient calculated by neighbors
-
-		vel_u [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i+1, j, k) ] - p [ Index(i-1, j, k) ] );
-		vel_v [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j+1, k) ] - p [ Index(i, j-1, k) ] );
-		vel_w [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j, k+1) ] - p [ Index(i, j, k-1) ] );
-	}
-};
-
-__global__ void kernelAddSource
-	( double *density, double *vel_u, double *vel_v, double *vel_w, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
-
-	if ( atomicIsNotHalo( i, j, k, tx, ty, tz ) )
-	{
-		cint half = GRIDS_X / 2;
-
-		if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
-		{
-			/* add source to grids */
-			density[Index(i,j,k)] = DENSITY;
-
-			/* add velocity to grids */
-			if ( i < half )
-				vel_u[Index(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
-			elif( i >= half )
-				vel_u[Index(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
-
-			vel_v[Index(i,j,k)] = VELOCITY;
-
-			if ( k < half )
-				vel_w[Index(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
-			elif ( k >= half )
-				vel_w[Index(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
-		}
-	}
-};
-
-__global__ void kernelPickData
-	( uchar *c, cdouble *bufs, int ofi, int ofj, int ofk, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
-
-	ofi = ofi * tx + i;
-	ofj = ofj * ty + j;
-	ofk = ofk * tz + k;
-
-	/* zero c first */
-	c[ ix(ofi,ofj,ofk,VOLUME_X,VOLUME_Y,VOLUME_Z) ] = 0;
-
-	/* append c to volume c */
-	int temp = _round( bufs[ Index(i, j, k) ] );
-	if ( temp > 0 and temp < 250 )
-		c [ ix(ofi,ofj,ofk,VOLUME_X,VOLUME_Y,VOLUME_Z) ] = (uchar) temp;
-};
-
-__global__ void kernelInterRootGrids
-	( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
-
-	double x = ( pi * GRIDS_X + i ) * rate;
-	double y = ( pj * GRIDS_X + j ) * rate;
-	double z = ( pk * GRIDS_X + k ) * rate;
-
-	dst[Index(i,j,k)] = atomicTrilinear( src, x, y, z, tx, ty, tz );
-};
-
-__global__ void kernelInterLeafGrids
-	( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
-
-	int x = _round( ( pi * GRIDS_X + i ) * rate );
-	int y = _round( ( pj * GRIDS_X + j ) * rate );
-	int z = _round( ( pk * GRIDS_X + k ) * rate );
-
-	dst[Index(x,y,z)] = src[Index(i,j,k)];
-};
-
-__global__ void kernelClearHalo( double *grids, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
-
-	grids[Index(gst_header,j,k)] = 0.f;
-	grids[Index(gst_tailer,j,k)] = 0.f;
-	grids[Index(i,gst_header,k)] = 0.f;
-	grids[Index(i,gst_tailer,k)] = 0.f;
-	grids[Index(i,j,gst_header)] = 0.f;
-	grids[Index(i,j,gst_tailer)] = 0.f;
-};
-
-__global__ void kernelHandleHalo
-	( double *center, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back,
+__global__ void kernelJacobi
+	( double *out, cdouble *in, cdouble diffusion, cdouble divisor,
 	cint tx, cint ty, cint tz )
 {
 	int i, j, k;
 	_thread( &i, &j, &k, tx, ty, tz );
 
-	center[Index(gst_header,j,k)] = left[Index(gst_tailer,j,k)];
-	center[Index(gst_tailer,j,k)] = right[Index(gst_header,j,k)];
-	center[Index(i,gst_tailer,k)] = up[Index(i,gst_header,k)];
-    center[Index(i,gst_header,k)] = down[Index(i,gst_tailer,k)];
-	center[Index(i,j,gst_tailer)] = front[Index(i,j,gst_header)];
-	center[Index(i,j,gst_header)] = back[Index(i,j,gst_tailer)];
+	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
+	{
+		double dix = ( divisor > 0 ) ? divisor : 1.f;
 
-/*	c[cudaIndex3D(gst_header,gst_header,k,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_header,k,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_header,k,VOLUME_X)] ) / 2.f;
-	c[cudaIndex3D(gst_header,gst_tailer,k,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_tailer,k,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_tailer,k,VOLUME_X)] ) / 2.f;
-	c[cudaIndex3D(gst_tailer,gst_header,k,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_header,k,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_header,k,VOLUME_X)] ) / 2.f;
-	c[cudaIndex3D(gst_tailer,gst_tailer,k,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_tailer,k,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_tailer,k,VOLUME_X)] ) / 2.f;
-	c[cudaIndex3D(gst_header,j,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_header,j,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_header,j,sim_header,VOLUME_X)] ) / 2.f;
-	c[cudaIndex3D(gst_header,j,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_header,j,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_header,j,sim_tailer,VOLUME_X)] ) / 2.f;
-	c[cudaIndex3D(gst_tailer,j,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,j,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_tailer,j,sim_header,VOLUME_X)] ) / 2.f;
-	c[cudaIndex3D(gst_tailer,j,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,j,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_tailer,j,sim_tailer,VOLUME_X)] ) / 2.f;
-	c[cudaIndex3D(i,gst_header,gst_header,VOLUME_X)] = ( c[cudaIndex3D(i,sim_header,gst_header,VOLUME_X)] + c[cudaIndex3D(i,gst_header,sim_header,VOLUME_X)] ) / 2.f;
-	c[cudaIndex3D(i,gst_header,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(i,sim_header,gst_tailer,VOLUME_X)] + c[cudaIndex3D(i,gst_header,sim_tailer,VOLUME_X)] ) / 2.f;
-	c[cudaIndex3D(i,gst_tailer,gst_header,VOLUME_X)] = ( c[cudaIndex3D(i,sim_tailer,gst_header,VOLUME_X)] + c[cudaIndex3D(i,gst_tailer,sim_header,VOLUME_X)] ) / 2.f;
-	c[cudaIndex3D(i,gst_tailer,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(i,sim_tailer,gst_tailer,VOLUME_X)] + c[cudaIndex3D(i,gst_tailer,sim_tailer,VOLUME_X)] ) / 2.f;
-
-	c[cudaIndex3D(gst_header,gst_header,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_header,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_header,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_header,gst_header,sim_header,VOLUME_X)] ) / 3.f;
-	c[cudaIndex3D(gst_header,gst_header,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_header,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_header,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_header,gst_header,sim_tailer,VOLUME_X)] ) / 3.f;
-	c[cudaIndex3D(gst_header,gst_tailer,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_tailer,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_tailer,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_header,gst_tailer,sim_header,VOLUME_X)] ) / 3.f;
-	c[cudaIndex3D(gst_header,gst_tailer,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_header,gst_tailer,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_header,sim_tailer,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_header,gst_tailer,sim_tailer,VOLUME_X)] ) / 3.f;
-	c[cudaIndex3D(gst_tailer,gst_header,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_header,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_header,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_tailer,gst_header,sim_header,VOLUME_X)] ) / 3.f;
-	c[cudaIndex3D(gst_tailer,gst_header,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_header,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_header,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_tailer,gst_header,sim_tailer,VOLUME_X)] ) / 3.f;
-	c[cudaIndex3D(gst_tailer,gst_tailer,gst_header,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_tailer,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_tailer,gst_header,VOLUME_X)] + c[cudaIndex3D(gst_tailer,gst_tailer,sim_header,VOLUME_X)] ) / 3.f;
-	c[cudaIndex3D(gst_tailer,gst_tailer,gst_tailer,VOLUME_X)] = ( c[cudaIndex3D(sim_tailer,gst_tailer,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_tailer,sim_tailer,gst_tailer,VOLUME_X)] + c[cudaIndex3D(gst_tailer,gst_tailer,sim_tailer,VOLUME_X)] ) / 3.f;
-*/
+		out[ IX(i,j,k) ] = ( in[ IX(i,j,k) ] + diffusion * (
+			out[ IX(i-1,j,k) ] + out[ IX(i+1,j,k) ] +
+			out[ IX(i,j-1,k) ] + out[ IX(i,j+1,k) ] +
+			out[ IX(i,j,k-1) ] + out[ IX(i,j,k+1) ]
+			) ) / dix;
+	}
 };
+
+__global__ void kernelAdvection
+	( double *out, cdouble *in, cdouble delta,
+	cdouble *u, cdouble *v, cdouble *w,
+	cint tx, cint ty, cint tz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tx, ty, tz );
+
+	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
+	{
+		double velu = i - u[ IX(i,j,k) ] * delta;
+		double velv = j - v[ IX(i,j,k) ] * delta;
+		double velw = k - w[ IX(i,j,k) ] * delta;
+
+		out[ IX(i,j,k) ] = atomicTrilinear( in, velu, velv, velw, tx, ty, tz );
+	}
+};
+
+__global__ void kernelGradient( double *div, double *prs,
+							   cdouble *u, cdouble *v, cdouble *w,
+							   cint tx, cint ty, cint tz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tx, ty, tz );
+
+	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
+	{
+		cdouble hx = 1.f / (double)tx;
+		cdouble hy = 1.f / (double)ty;
+		cdouble hz = 1.f / (double)tz;
+
+		div[ IX(i,j,k) ] = -0.5f * (
+			hx * ( u[ IX(i+1,j,k) ] - u[ IX(i-1,j,k) ] ) +
+			hy * ( v[ IX(i,j+1,k) ] - v[ IX(i,j-1,k) ] ) +
+			hz * ( w[ IX(i,j,k+1) ] - w[ IX(i,j,k-1) ] ) );
+
+		prs[ IX(i,j,k) ] = 0.f;
+	}
+};
+
+__global__ void kernelSubtract( double *u, double *v, double *w, double *prs, 
+							  cint tx, cint ty, cint tz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tx, ty, tz );
+
+	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
+	{
+		u[ IX(i,j,k) ] -= 0.5f * tx * ( prs[ IX(i+1,j,k) ] - prs[ IX(i-1,j,k) ] );
+		v[ IX(i,j,k) ] -= 0.5f * ty * ( prs[ IX(i,j+1,k) ] - prs[ IX(i,j-1,k) ] );
+		w[ IX(i,j,k) ] -= 0.5f * tz * ( prs[ IX(i,j,k+1) ] - prs[ IX(i,j,k-1) ] );
+	}
+};
+
+
+/************************************************************************************
+** Adding density and velocity source for fluid simulation                         **
+*************************************************************************************/
+
+__global__ void kernelAddSource
+	( double *den, double *u, double *v, double *w, 
+	cdouble *obst, cdouble rho, cdouble vel, cdouble delta, cint time,
+	cint tx, cint ty, cint tz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tx, ty, tz );
+
+	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
+	{
+		if ( obst[ IX(i,j,k) ] < 0 )
+		{
+			double rate = -obst[ IX(i,j,k) ];
+
+			/* add rho to density field */
+			den[ IX(i,j,k) ] = rate * rho * delta;
+
+			/* add velocity to velocity field */
+			v[ IX(i,j,k) ] = rate * vel * delta;
+
+			double randno = _random( _rand(time) );
+			if ( randno < 0.25f and randno >= 0.f )
+			{
+				u[ IX(i,j,k) ] = -rate * vel * delta * delta;
+				w[ IX(i,j,k) ] = -rate * vel * delta * delta;
+			}
+			elif ( randno >= 0.25f and randno < 0.5f )
+			{
+				u[ IX(i,j,k) ] = -rate * vel * delta * delta;
+				w[ IX(i,j,k) ] =  rate * vel * delta * delta;				
+			}
+			elif ( randno >= 0.5f and randno < 0.75f )
+			{
+				u[ IX(i,j,k) ] =  rate * vel * delta * delta;
+				w[ IX(i,j,k) ] = -rate * vel * delta * delta;
+			}
+			else
+			{
+				u[ IX(i,j,k) ] = rate * vel * delta * delta;
+				w[ IX(i,j,k) ] = rate * vel * delta * delta;
+			}
+		}
+	}
+};
+
+
+/************************************************************************************
+** Data transform & root to leaf, leaf to root                                     **
+*************************************************************************************/
+
+__global__ void kernelDensToVolume( uchar *volume, cdouble *rho,
+								   cdouble scale, int offi, int offj, int offk,
+								   cint tx, cint ty, cint tz, cint vx, cint vy, cint vz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tx, ty, tz );
+
+	offi = offi * tx + i;
+	offj = offj * ty + j;
+	offk = offk * tz + k;
+
+	offi = ( _round( offi * scale ) > 0 ) ? _round( offi * scale ) : 0;
+	offj = ( _round( offj * scale ) > 0 ) ? _round( offj * scale ) : 0;
+	offk = ( _round( offk * scale ) > 0 ) ? _round( offk * scale ) : 0;
+
+	offi = offi % vx;
+	offj = offj % vy;
+	offk = offk % vz;
+
+	volume[ ix(offi, offj, offk, vx, vy, vz) ] = ( _round(IX(i,j,k)) <= 250 ) ? (uchar)_round(IX(i,j,k)) : 0;
+};
+
+
+__global__ void kernelDataFromRoot( double *dst, cdouble *src, 
+								   cdouble offx, cdouble offy, cdouble offz, cdouble scale,
+								   cint tx, cint ty, cint tz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tx, ty, tz );
+
+	double x = ( offx * tx + i ) * scale;
+	double y = ( offy * ty + j ) * scale;
+	double z = ( offz * tz + k ) * scale;
+
+	dst[ IX(i,j,k) ] = atomicTrilinear( src, x, y, z, tx, ty, tz );
+};
+
+
+__global__ void kernelDataFromLeaf( double *dst, cdouble *src, 
+								   cdouble offx, cdouble offy, cdouble offz, cdouble scale,
+								   cint tx, cint ty, cint tz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tx, ty, tz );
+
+	int x = _round( ( offx * tx + i ) * scale );
+	int y = _round( ( offy * ty + j ) * scale );
+	int z = _round( ( offz * tz + k ) * scale );
+
+	dst[ IX(x,y,z) ] = src[ IX(i,j,k) ];
+};
+
+#undef IX(i,j,k)
+
+#define IXt(i,j,k) ix(i,j,k,tx,ty,tz)
+#define IXb(i,j,k) ix(i,j,k,bx,by,bz)
+
+__global__ void kernelHandleHalo( double *bullet, 
+								 cdouble *left,  cdouble *right,
+								 cdouble *up,    cdouble *down,
+								 cdouble *front, cdouble *back,
+								 cint tx, cint ty, cint tz, cint bx, cint by, cint bz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tx, ty, tz );
+
+	bullet[ IXb( 0,    j+1, k+1 ) ] = left [ IXt( tx-1, j, k ) ];
+	bullet[ IXb( bx-1, j+1, k+1 ) ] = right[ IXt( 0,    j, k ) ];
+	bullet[ IXb( i+1, by-1, k+1 ) ] = up   [ IXt( i, 0,    k ) ];
+	bullet[ IXb( i+1,    0, k+1 ) ] = down [ IXt( i, ty-1, k ) ];
+	bullet[ IXb( i+1, j+1,  0   ) ] = back [ IXt( i, j, tz-1 ) ];
+	bullet[ IXb( i+1, j+1, bz-1 ) ] = front[ IXt( i, j,    0 ) ];
+
+};
+
+#undef IXt(i,j,k)
+#undef IXb(i,j,k)

@@ -294,6 +294,48 @@ void FluidSimProc::ReleaseVisualBuffers( void )
 	cout << "visual buffers released" << endl;
 };
 
+void FluidSimProc::SaveCurFluidSimStatus( void )
+{
+	cout << "saving current fluid simulation status" << endl;
+
+	for ( int i = 0; i < m_nNodeNum; i++ )
+	{
+		cudaMemcpy( m_vectHostDens[i], m_vectNewDens[i], sizeof(double) * m_nNodeSize, cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelU[i], m_vectNewVelU[i], sizeof(double) * m_nNodeSize, cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelV[i], m_vectNewVelV[i], sizeof(double) * m_nNodeSize, cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelW[i], m_vectNewVelW[i], sizeof(double) * m_nNodeSize, cudaMemcpyDeviceToHost );
+	}
+
+	if ( m_scHelper.GetCUDALastError("call member function SaveCurFluidSimStatus failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+
+	cout << "current fluid simulation status saved" << endl;
+};
+
+void FluidSimProc::LoadPreFluidSimStatus( void )
+{
+	cout << "load previous fluid simulation status" << endl;
+
+	for ( int i = 0; i < m_nNodeNum; i++ )
+	{
+		cudaMemcpy( m_vectGPUDens[i], m_vectHostDens[i], sizeof(double) * m_nNodeSize, cudaMemcpyHostToDevice );
+		cudaMemcpy( m_vectGPUVelU[i], m_vectHostVelU[i], sizeof(double) * m_nNodeSize, cudaMemcpyHostToDevice );
+		cudaMemcpy( m_vectGPUVelV[i], m_vectHostVelV[i], sizeof(double) * m_nNodeSize, cudaMemcpyHostToDevice );
+		cudaMemcpy( m_vectGPUVelW[i], m_vectHostVelW[i], sizeof(double) * m_nNodeSize, cudaMemcpyHostToDevice );
+	}
+
+	if ( m_scHelper.GetCUDALastError("call member function LoadPreFluidSimStatus failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+
+	cout << "previous fluid simulation status loaded" << endl;
+};
+
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( not fluid->run ) return;

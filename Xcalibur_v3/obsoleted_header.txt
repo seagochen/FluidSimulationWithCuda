@@ -1,0 +1,1 @@
+extern __global__ void kernelObstacle( double *grids, cdouble *obstacle, cint field, cint tx, cint ty, cint tz );

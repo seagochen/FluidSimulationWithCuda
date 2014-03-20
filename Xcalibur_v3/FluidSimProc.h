@@ -95,6 +95,10 @@ namespace sge
 		void ReleaseDeviceBuffers( void );
 		void ReleaseVisualBuffers( void );
 
+	public:
+		void SaveCurFluidSimStatus( void );
+		void LoadPreFluidSimStatus( void );
+
 
 	/****************************************************************************************/
 		
