@@ -2,14 +2,19 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Mar 12, 2014
+* <Last Time>     Mar 20, 2014
 * <File Name>     FunctionHelper.cpp
 */
 
 #include "MacroDefinition.h"
 #include "FunctionHelper.h"
+#include <iostream>
 
 using namespace sge;
+
+using std::cout;
+using std::endl;
+
 
 SGVOID FunctionHelper::DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thread, SGINT tile )
 {
@@ -108,12 +113,10 @@ SGVOID FunctionHelper::DeviceDim3D( dim3 *blockDim, dim3 *gridDim, SGINT thread,
 SGBOOLEAN FunctionHelper::GetCUDALastError( const char* msg, const char *file, const int line )
 {
 	cudaError_t __err = cudaGetLastError();
-	if ( __err != cudaSuccess) 
-	{ 
-		printf ( "<<< file: %s, line %d >>> \n", file, line );
-		printf ( "*error: %s \n", cudaGetErrorString( __err ) );
-		printf ( "%s \n", msg );
 	
+	if ( __err != cudaSuccess)
+	{
+		printf( "%s -------- %s @ line: %d, file: %s \n", cudaGetErrorString( __err ), msg, line, file );	
 		return true;
 	}
 

@@ -17,437 +17,104 @@
 
 using namespace sge;
 
-#define Index(i,j,k,ts) (k)*(ts)*(ts)+(j)*(ts)+i
 #define __device_func__ <<<gridDim, blockDim>>>
 
-using std::cout;
-using std::endl;
 
-FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
+void FluidSimProc::ClearCompNodes( void )
 {
-	/* choose which GPU to run on, change this on a multi-GPU system. */
-	if ( cudaSetDevice ( 0 ) != cudaSuccess )
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+	for ( int i = 0; i < m_nNodeNum; i++ )
 	{
-		printf( "cudaSetDevice failed!\n" );
+		kernelZeroBuffers __device_func__ ( m_vectGPUDens[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
+		kernelZeroBuffers __device_func__ ( m_vectGPUVelU[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
+		kernelZeroBuffers __device_func__ ( m_vectGPUVelV[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
+		kernelZeroBuffers __device_func__ ( m_vectGPUVelW[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
+		kernelZeroBuffers __device_func__ ( m_vectGPUObst[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+		kernelZeroBuffers __device_func__ ( m_vectNewDens[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
+		kernelZeroBuffers __device_func__ ( m_vectNewVelU[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
+		kernelZeroBuffers __device_func__ ( m_vectNewVelV[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
+		kernelZeroBuffers __device_func__ ( m_vectNewVelW[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
+	}
+
+	if ( m_scHelper.GetCUDALastError( "call member function ClearCompNodes failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
 		exit(1);
 	}
 
-	/* initialize FPS */
-	InitParams( fluid );
-
-	/* allocate resources */
-	AllocateResource();
-
-	/* build order */
-	CreateTopology();
-	
-	/* clear buffer */
-	ZeroBuffers();
-
-	/* set boundary */
-	InitBoundary();
-
-	/* upload host to device */
-	HostToDevice();
-
-	/* finally, print message */
-	printf( "fluid simulation ready...\n" );
-};
-
-void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
-{
-	fluid->fps.dwCurrentTime = 0;
-	fluid->fps.dwElapsedTime = 0;
-	fluid->fps.dwFrames = 0;
-	fluid->fps.dwLastUpdateTime = 0;
-	fluid->fps.uFPS = 0;
-
-	m_nNodeSize = GRIDS_X * GRIDS_Y * GRIDS_Z;
-	m_nVolumSize = VOLUME_X * VOLUME_Y * VOLUME_Z;
-	m_nBulletSize = BULLET_X * BULLET_Y * BULLET_Z;
-
-	m_nNodeNum = NODES_X * NODES_Y * NODES_Z;
-	m_nBulletNum = BULLET_S;
-
-	m_nDensIncrease = m_nDensDecrease = 0;
-	m_ptrSimNode = nullptr;
-	m_szTitle = "Xcalibur OTL 3.10.00 ------------ FPS: %d ";
-};
-
-void FluidSimProc::AllocateResource( void )
-{
-	if ( not CreateCompNodesResource() ) { FreeResource(); exit(1); }
-	if ( not CreateBulletResource() ) { FreeResource(); exit(1); }
-	if ( not CreateResource() ) { FreeResource(); exit(1); }
-	
-	if ( m_scHelper.GetCUDALastError( "memory allocation failed, check the code", __FILE__, __LINE__ ) )
-	{ FreeResource(); exit(1); }
-
-	cout << "resource created" <<endl;
-};
-
-bool FluidSimProc::CreateCompNodesResource( void )
-{
 	for ( int i = 0; i < m_nNodeNum; i++ )
 	{
-		double *ptrDens, *ptrU, *ptrV, *ptrW;
-		int *ptrObs;
-
-		if ( m_scHelper.CreateHostBuffers( m_nNodeSize * sizeof(double), 1, &ptrDens )
-			not_eq SG_RUNTIME_OK ) return false;
-		if ( m_scHelper.CreateHostBuffers( m_nNodeSize * sizeof(double), 1, &ptrU ) 
-			not_eq SG_RUNTIME_OK ) return false;
-		if ( m_scHelper.CreateHostBuffers( m_nNodeSize * sizeof(double), 1, &ptrV )
-			not_eq SG_RUNTIME_OK ) return false;
-		if ( m_scHelper.CreateHostBuffers( m_nNodeSize * sizeof(double), 1, &ptrW )
-			not_eq SG_RUNTIME_OK ) return false;
-		if ( m_scHelper.CreateHostBuffers( m_nNodeSize * sizeof(int), 1, &ptrObs ) 
-			not_eq SG_RUNTIME_OK ) return false;
-
-		m_vectHostDens.push_back( ptrDens );
-		m_vectHostVelU.push_back( ptrU );
-		m_vectHostVelV.push_back( ptrV );
-		m_vectHostVelW.push_back( ptrW );
-		m_vectHostObst.push_back( ptrObs );
+		cudaMemcpy( m_vectHostDens[i], m_vectNewDens[i], sizeof(double) * m_nNodeSize, cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelU[i], m_vectNewVelU[i], sizeof(double) * m_nNodeSize, cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelV[i], m_vectNewVelV[i], sizeof(double) * m_nNodeSize, cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelW[i], m_vectNewVelW[i], sizeof(double) * m_nNodeSize, cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostObst[i], m_vectGPUObst[i], sizeof(double) * m_nNodeSize, cudaMemcpyDeviceToHost );
 	}
 
-	for ( int i = 0; i < m_nNodeNum; i++ )
-	{
-		double *ptrDens, *ptrU, *ptrV, *ptrW;
-		int *ptrObs;
-
-		if ( m_scHelper.CreateDeviceBuffers( m_nNodeSize * sizeof(double), 1, &ptrDens )
-			not_eq SG_RUNTIME_OK ) return false;
-		if ( m_scHelper.CreateDeviceBuffers( m_nNodeSize * sizeof(double), 1, &ptrU ) 
-			not_eq SG_RUNTIME_OK ) return false;
-		if ( m_scHelper.CreateDeviceBuffers( m_nNodeSize * sizeof(double), 1, &ptrV )
-			not_eq SG_RUNTIME_OK ) return false;
-		if ( m_scHelper.CreateDeviceBuffers( m_nNodeSize * sizeof(double), 1, &ptrW )
-			not_eq SG_RUNTIME_OK ) return false;
-		if ( m_scHelper.CreateDeviceBuffers( m_nNodeSize * sizeof(int), 1, &ptrObs ) 
-			not_eq SG_RUNTIME_OK ) return false;
-
-		m_vectGPUDens.push_back( ptrDens );
-		m_vectGPUVelU.push_back( ptrU );
-		m_vectGPUVelV.push_back( ptrV );
-		m_vectGPUVelW.push_back( ptrW );
-		m_vectGPUObst.push_back( ptrObs );
-	}
-
-	return true;
-};
-
-bool FluidSimProc::CreateBulletResource( void )
-{
-	for ( int i = 0; i < m_nBulletNum; i++ )
-	{
-		double *ptr;
-
-		if ( m_scHelper.CreateDeviceBuffers( m_nBulletSize * sizeof(double), 1, &ptr )
-			not_eq SG_RUNTIME_OK )
-			return false;
-
-		m_vectGPUBuffers.push_back(ptr);
-	}
-
-	return true;
-};
-
-bool FluidSimProc::CreateResource( void )
-{
-	for ( int i = 0; i < m_nNodeNum; i++ )
-	{
-		SimNode *node  = (SimNode*)malloc(sizeof(SimNode));
-		node->ptrFront = node->ptrBack = nullptr;
-		node->ptrLeft  = node->ptrRight = nullptr;
-		node->ptrDown  = node->ptrUp = nullptr;
-		node->updated  = false;
-		node->active   = false;
-
-		m_vectLink.push_back( node );
-	}
-	
-	if ( m_scHelper.CreateDeviceBuffers( m_nVolumSize * sizeof(uchar), 1, &m_ptrGPUVisual ) not_eq SG_RUNTIME_OK ) return false;
-	if ( m_scHelper.CreateHostBuffers( m_nVolumSize * sizeof(uchar), 1, &m_ptrHostVisual ) not_eq SG_RUNTIME_OK ) return false;
-
-	if ( m_scHelper.CreateDeviceBuffers( TPBUFFER_S * sizeof(double), 1, &m_ptrGPUShare ) not_eq SG_RUNTIME_OK ) return false;
-	if ( m_scHelper.CreateHostBuffers( TPBUFFER_S * sizeof(double), 1, &m_ptrHostShare ) not_eq SG_RUNTIME_OK ) return false;
-
-	return true;
-};
-
-
-
-
-void FluidSimProc::CreateTopology( void )
-{
-	for ( int k = 0; k < GNODES_X; k++ )
-	{
-		for ( int j = 0; j < GNODES_X; j++ )
-		{
-			for ( int i = 0; i < GNODES_X; i++ )
-			{
-				/* left */
-				if ( i >= 1 )
-					gpu_node[Index( i, j, k, GNODES_X )]->ptrLeft  = gpu_node[Index( i-1, j, k, GNODES_X )];
-				/* right */
-				if ( i <= GNODES_X - 2 )
-					gpu_node[Index( i, j, k, GNODES_X )]->ptrRight = gpu_node[Index( i+1, j, k, GNODES_X )];
-				/* down */
-				if ( j >= 1 )
-					gpu_node[Index( i, j, k, GNODES_X )]->ptrDown  = gpu_node[Index( i, j-1, k, GNODES_X )];
-				/* up */
-				if ( j <= GNODES_X - 2 )
-					gpu_node[Index( i, j, k, GNODES_X )]->ptrUp    = gpu_node[Index( i, j+1, k, GNODES_X )];
-				/* back */
-				if ( k >= 1 )
-					gpu_node[Index( i, j, k, GNODES_X )]->ptrBack  = gpu_node[Index( i, j, k-1, GNODES_X )];
-				/* front */
-				if ( k <= GNODES_X - 2 )
-					gpu_node[Index( i, j, k, GNODES_X )]->ptrFront = gpu_node[Index( i, j, k+1, GNODES_X )];
-			}
-		}
-	}
-
-	for ( int k = 0; k < HNODES_X; k++ )
-	{
-		for ( int j = 0; j < HNODES_X; j++ )
-		{
-			for ( int i = 0; i < HNODES_X; i++ )
-			{
-				/* left */
-				if ( i >= 1 )
-					host_node[Index( i, j, k, HNODES_X )]->ptrLeft  = host_node[Index( i-1, j, k, HNODES_X )];
-				/* right */
-				if ( i <= HNODES_X - 2 )
-					host_node[Index( i, j, k, HNODES_X )]->ptrRight = host_node[Index( i+1, j, k, HNODES_X )];
-				/* down */
-				if ( j >= 1 )
-					host_node[Index( i, j, k, HNODES_X )]->ptrDown  = host_node[Index( i, j-1, k, HNODES_X )];
-				/* up */
-				if ( j <= HNODES_X - 2 )
-					host_node[Index( i, j, k, HNODES_X )]->ptrUp    = host_node[Index( i, j+1, k, HNODES_X )];
-				/* back */
-				if ( k >= 1 )
-					host_node[Index( i, j, k, HNODES_X )]->ptrBack  = host_node[Index( i, j, k-1, HNODES_X )];
-				/* front */
-				if ( k <= HNODES_X - 2 )
-					host_node[Index( i, j, k, HNODES_X )]->ptrFront = host_node[Index( i, j, k+1, HNODES_X )];
-
-				host_node[Index( i, j, k, HNODES_X )]->x = i;
-				host_node[Index( i, j, k, HNODES_X )]->y = j;
-				host_node[Index( i, j, k, HNODES_X )]->z = k;
-			}
-		}
-	}
-};
-
-void FluidSimProc::PrintMSG( void )
-{
-	using namespace std;
-
-	int totoal = 0;
-	for ( int i = 0; i < HNODES_X * HNODES_Y * HNODES_Z; i++ )	if ( host_node[i]->updated ) totoal++;
-
-	cout 
-		<< "**************** operation to confirm *******************" << endl
-		<< "mouse wheel ------------ to rotate the observation matrix" << endl
-		<< "keyboard: Q ------------ to quit the program" << endl
-		<< "keyboard: Esc ---------- to quit the program" << endl
-		<< "keyboard: C ------------ to clear the data of stage" << endl
-		<< "keyboard: P ------------ to print message " << endl
-		<< "keyboard: U ------------ to restore to previous" << endl
-		<< "keyboard: D ------------ to keep current status in mem" << endl
-		<< "**************** fluid simulation info ******************" << endl
-		<< "no. of nodes for fluid simulation: " << gpu_node.size() << endl
-		<< "no. of nodes for keeping the state of density : " << dev_density.size() << endl
-		<< "no. of nodes for keeping the state of vel u : " << dev_velocity_u.size() << endl
-		<< "no. of nodes for keeping the state of vel v : " << dev_velocity_v.size() << endl
-		<< "no. of nodes for keeping the state of vel w : " << dev_velocity_w.size() << endl
-		<< "no. of nodes for keeping pre state of density : " << host_density.size() << endl
-		<< "no. of nodes for keeping pre state of vel u : " << host_velocity_u.size() << endl
-		<< "no. of nodes for keeping pre state of vel v : " << host_velocity_v.size() << endl
-		<< "no. of nodes for keeping pre state of vel w : " << host_velocity_w.size() << endl
-		<< "grid dim per node : 64 x 64 x 64" << endl
-		<< "updated nodes :" << totoal << endl;
-};
-
-
-
-
-bool FluidSimProc::AllocateResource( void )
-{
-	if ( !allocHostRes() )
-	{
-		printf( "allocate resource for host nodes failed!\n" );
-		return false;
-	}
-
-	if ( !allocDeviceRes() ) 
-	{
-		printf( "allocate resource for device nodes failed\n" );
-		return false;
-	}
-
-	if ( !allocShareBuffers() )
-	{
-		printf( "allocate resource for sharing memories failed!\n" );
-		return false;
-	}
-
-	if ( !allocVisualBuffers() )
-	{
-		printf( "allocate resource for visual buffers failed!\n" );
-		return false;
-	}
-	
-	allocTopologyNodes();
-
-	if ( m_scHelper.GetCUDALastError( "memory allocation failed, check the code", __FILE__, __LINE__ ) )
-		return false;
-	
-	return true;
-}
-
-void FluidSimProc::freeHostRes( void )
-{
-	/* free node resource */
-	for ( int i = 0; i < HNODES_X * HNODES_Y * HNODES_Z; i++ )
-	{
-		/* release host resource */
-		m_scHelper.FreeHostBuffers( 1, &host_density[i] );
-		m_scHelper.FreeHostBuffers( 1, &host_velocity_u[i] );
-		m_scHelper.FreeHostBuffers( 1, &host_velocity_v[i] );
-		m_scHelper.FreeHostBuffers( 1, &host_velocity_w[i] );
-		m_scHelper.FreeHostBuffers( 1, &host_obstacle[i] );
-
-		m_scHelper.FreeDeviceBuffers( 1, &dev_density[i] );
-		m_scHelper.FreeDeviceBuffers( 1, &dev_velocity_u[i] );
-		m_scHelper.FreeDeviceBuffers( 1, &dev_velocity_v[i] );
-		m_scHelper.FreeDeviceBuffers( 1, &dev_velocity_w[i] );
-		m_scHelper.FreeDeviceBuffers( 1, &dev_obstacle[i] );
-	}
-};
-
-void FluidSimProc::freeDeviceRes( void )
-{
-	for ( int i = 0; i < GNODES_X * GNODES_Y * GNODES_Z; i++ )
-	{
-		/* release device resource */
-		m_scHelper.FreeDeviceBuffers( 1, &node_obstacle[i] );
-		m_scHelper.FreeDeviceBuffers( 1, &node_density[i] );
-		m_scHelper.FreeDeviceBuffers( 1, &node_velocity_u[i] );
-		m_scHelper.FreeDeviceBuffers( 1, &node_velocity_v[i] );
-		m_scHelper.FreeDeviceBuffers( 1, &node_velocity_w[i] );	
-	}
-
-	m_scHelper.FreeDeviceBuffers( 5, &gd_density, &gd_velocity_u, &gd_velocity_v, &gd_velocity_w, &gd_obstacle );
-};
-
-void FluidSimProc::freeShareBuffers( void )
-{
-	for ( int i = 0; i < dev_buffers_num; i++ ) 
-		m_scHelper.FreeDeviceBuffers( 1, &dev_buffers[i] );
-};
-
-void FluidSimProc::freeVisualBuffers( void )
-{
-	m_scHelper.FreeDeviceBuffers( 1, &dev_visual );
-	m_scHelper.FreeHostBuffers( 1, &host_visual );
-};
-
-void FluidSimProc::FreeResource ( void )
-{
-	freeHostRes();
-	freeDeviceRes();	
-	freeShareBuffers();
-	freeVisualBuffers();
-}
-
-void FluidSimProc::zeroTempoBuffers( void )
-{
-//	 m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
-
-
-	for ( int i = 0; i < dev_buffers_num; i++ )
-	{
-		kernelZeroBuffers __device_func__ ( dev_buffers[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
-	}
-};
-
-void FluidSimProc::zeroGlobalNode( void )
-{
-//	 m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
-
-
-	 kernelZeroBuffers __device_func__ ( gd_density, GRIDS_X, GRIDS_Y, GRIDS_Z );
-	 kernelZeroBuffers __device_func__ ( gd_velocity_u, GRIDS_X, GRIDS_Y, GRIDS_Z );
-	 kernelZeroBuffers __device_func__ ( gd_velocity_v, GRIDS_X, GRIDS_Y, GRIDS_Z );
-	 kernelZeroBuffers __device_func__ ( gd_velocity_w, GRIDS_X, GRIDS_Y, GRIDS_Z );
-};
-
-void FluidSimProc::zeroDeivceRes( void )
-{
-//	 m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
-
-
-	for ( int i = 0; i < GNODES_X * GNODES_Y * GNODES_Z; i++ )
-	{	
-		kernelZeroBuffers __device_func__ ( node_density[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelZeroBuffers __device_func__ ( node_velocity_u[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelZeroBuffers __device_func__ ( node_velocity_v[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelZeroBuffers __device_func__ ( node_velocity_w[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
-	
-	}
-};
-
-void FluidSimProc::zeroHostRes( void )
-{
-	for ( int i = 0; i < HNODES_X * HNODES_Y * HNODES_Z; i++ )
-	{
-		kernelZeroBuffers __device_func__ ( dev_density[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelZeroBuffers __device_func__ ( dev_velocity_u[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelZeroBuffers __device_func__ ( dev_velocity_v[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelZeroBuffers __device_func__ ( dev_velocity_w[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
-	}
-};
-
-void FluidSimProc::zeroVisualBuffers( void )
-{
-//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, VOLUME_X, VOLUME_Y, VOLUME_Z );
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_X, VOLUME_X, VOLUME_Y, VOLUME_Z );
-
-	kernelZeroBuffers __device_func__ ( dev_visual, VOLUME_X, VOLUME_Y, VOLUME_Z );
-};
-
-void FluidSimProc::zeroShareBuffers( void )
-{
-//	m_scHelper.DeviceDim1D( &blockDim, &gridDim, THREADS_S, TPBUFFER_S );
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TPBUFFER_S );
-
-	kernelZeroBuffers __device_func__ ( dev_ntpbuf, TPBUFFER_S );
-	kernelZeroBuffers __device_func__ ( dev_dtpbuf, TPBUFFER_S );
-};
-
-void FluidSimProc::ZeroBuffers( void )
-{
-	zeroTempoBuffers();
-	zeroDeivceRes();
-	zeroHostRes();
-	zeroVisualBuffers();
-	zeroShareBuffers();
-	zeroGlobalNode();
-	
-	if ( m_scHelper.GetCUDALastError( "host function failed: ZeroBuffers", __FILE__, __LINE__ ) )
+	if ( m_scHelper.GetCUDALastError( "call member function ClearCompNodes failed", __FILE__, __LINE__ ) )
 	{
 		FreeResource();
-		exit( 1 );
+		exit(1);
 	}
 };
 
+void FluidSimProc::ClearDeviceBuffers( void )
+{
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 22, 22, BULLET_X, BULLET_Y, BULLET_Z );
+
+	for ( int i = 0; i < m_vectGPUBuffers.size(); i++ )
+	{
+		kernelZeroBuffers __device_func__ ( m_vectGPUBuffers[i], BULLET_X, BULLET_Y, BULLET_Z );
+	}
+
+	if ( m_scHelper.GetCUDALastError( "call member function ClearDeviceBuffers failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TPBUFFER_S );
+
+	kernelZeroBuffers __device_func__ ( m_ptrGPUShare, TPBUFFER_S );
+
+	if ( m_scHelper.GetCUDALastError( "call member function ClearDeviceBuffers failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+
+	cudaMemcpy( m_ptrHostShare, m_ptrGPUShare, sizeof(double) * TPBUFFER_S, cudaMemcpyDeviceToHost );
+
+	if ( m_scHelper.GetCUDALastError( "call member function ClearDeviceBuffers failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+};
+
+void FluidSimProc::ClearVisualBuffers( void )
+{
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, VOLUME_X, VOLUME_Y, VOLUME_Z );
+
+	kernelZeroBuffers __device_func__ ( m_ptrGPUVisual, VOLUME_X, VOLUME_Y, VOLUME_Z );
+	cudaMemcpy( m_ptrHostVisual, m_ptrGPUVisual, sizeof(uchar) * m_nVolumSize, cudaMemcpyDeviceToHost );
+
+	if ( m_scHelper.GetCUDALastError( "call member function ClearVisualBuffers failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+};
+
+
+
+
+/*******************************************************************************************/
+
+
+#if 0
 void FluidSimProc::HostToDevice( void )
 {
 	for ( int i = 0; i < HNODES_X * HNODES_Y * HNODES_Z; i++ )
@@ -473,7 +140,7 @@ void FluidSimProc::DeviceToHost( void )
 
 void FluidSimProc::clearBullet( void )
 {
-//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	for ( int i = 11; i < dev_buffers_num; i++ )
@@ -490,7 +157,7 @@ void FluidSimProc::clearBullet( void )
 
 void FluidSimProc::pickNodeToBullet( int i, int j, int k )
 {
-//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	/* upload center node to GPU device */
@@ -509,7 +176,7 @@ void FluidSimProc::pickNodeToBullet( int i, int j, int k )
 
 void FluidSimProc::pickNeighborsToBullet( int i, int j, int k )
 {
-//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	/* upload neighbouring buffers to GPU device */
@@ -580,14 +247,14 @@ void FluidSimProc::LoadBullet( int i, int j, int k )
 
 void FluidSimProc::pickBulletToNode( int i, int j, int k )
 {
-//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	kernelCopyBuffers __device_func__ ( node_velocity_u[Index(i,j,k,GNODES_X)], velu_C, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	kernelCopyBuffers __device_func__ ( node_velocity_v[Index(i,j,k,GNODES_X)], velv_C, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	kernelCopyBuffers __device_func__ ( node_velocity_w[Index(i,j,k,GNODES_X)], velw_C, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	kernelCopyBuffers __device_func__ ( node_density[Index(i,j,k,GNODES_X)],    dens_C, GRIDS_X, GRIDS_Y, GRIDS_Z );
-	
+
 	if ( m_scHelper.GetCUDALastError( "device kernel: kernelCopyGrids failed", __FILE__, __LINE__ ) )
 	{
 		FreeResource();
@@ -597,7 +264,7 @@ void FluidSimProc::pickBulletToNode( int i, int j, int k )
 
 void FluidSimProc::pickImgFromNode( int i, int j, int k )
 {
-//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	i += m_cursor.x;
@@ -653,44 +320,20 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 	fluid->volume.ptrData = host_visual;
 };
 
-void FluidSimProc::InitBoundary( void )
-{
-//	 m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
-
-	/* zero boundary buffers */
-	 kernelZeroBuffers __device_func__ ( dev_obs, GRIDS_X, GRIDS_Y, GRIDS_Z );
-
-	for ( int i = 0; i < host_obstacle.size(); i++ )
-	{
-		if ( cudaMemcpy( host_obstacle[i], dev_obs, m_node_size, cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
-		{
-			m_scHelper.GetCUDALastError( "cudaMemcpy failed", __FILE__, __LINE__ );
-			FreeResource();
-			exit( 1 );
-		}
-	}
-
-	//kernelCopyGrids __device_func__ ( gd_obstacle, dev_obs );
-	kernelCopyBuffers __device_func__ ( gd_obstacle, dev_obs, GRIDS_X, GRIDS_Y, GRIDS_Z );
-
-	// TODO more boundary condition
-};
-
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( !fluid->run ) return;
-	
+
 	zeroShareBuffers();
 	zeroHostRes();
 	SolveRootNode();
-//	SolveLeafNode();
+	//	SolveLeafNode();
 	RefreshStatus( fluid );
 };
 
 void FluidSimProc::SolveRootNode( void )
 {
-//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	zeroTempoBuffers();
@@ -703,7 +346,7 @@ void FluidSimProc::SolveRootNode( void )
 	SolveNavierStokesEquation( DELTATIME, true );
 
 	double rate = 1.f/(double)HNODES_X;
-		
+
 	for ( int k = 0; k < HNODES_X; k++ ) for ( int j = 0; j < HNODES_X; j++ ) for ( int i = 0; i < HNODES_X; i++ )
 	{
 		ptr = host_node[Index(i,j,k,HNODES_X)];
@@ -715,25 +358,25 @@ void FluidSimProc::SolveRootNode( void )
 	}
 
 	/* error is here ! */
-//	for ( int k = 0; k < HNODES_X; k++ ) for ( int j = 0; j < HNODES_X; j++ ) for ( int i = 0; i < HNODES_X; i++ )
-//	{
-//		kernelCopyGrids __device_func__ ( dev_den, dev_density[Index(i,j,k,HNODES_X)] );
-//		kernelCopyGrids __device_func__ ( dev_u, dev_velocity_u[Index(i,j,k,HNODES_X)] );
-//		kernelCopyGrids __device_func__ ( dev_v, dev_velocity_v[Index(i,j,k,HNODES_X)] );
-//		kernelCopyGrids __device_func__ ( dev_w, dev_velocity_w[Index(i,j,k,HNODES_X)] );
-//
-//		kernelClearHalo __device_func__ ( dev_den );
-//		kernelClearHalo __device_func__ ( dev_u );
-//		kernelClearHalo __device_func__ ( dev_v );
-//		kernelClearHalo __device_func__ ( dev_w );
-//		
-//		SolveNavierStokesEquation( DELTATIME/2.f, false );
-//
-//		kernelCopyGrids __device_func__ ( dev_density[Index(i,j,k,HNODES_X)], dev_den );
-//		kernelCopyGrids __device_func__ ( dev_velocity_u[Index(i,j,k,HNODES_X)], dev_u );
-//		kernelCopyGrids __device_func__ ( dev_velocity_v[Index(i,j,k,HNODES_X)], dev_v );
-//		kernelCopyGrids __device_func__ ( dev_velocity_w[Index(i,j,k,HNODES_X)], dev_w );
-//	}
+	//	for ( int k = 0; k < HNODES_X; k++ ) for ( int j = 0; j < HNODES_X; j++ ) for ( int i = 0; i < HNODES_X; i++ )
+	//	{
+	//		kernelCopyGrids __device_func__ ( dev_den, dev_density[Index(i,j,k,HNODES_X)] );
+	//		kernelCopyGrids __device_func__ ( dev_u, dev_velocity_u[Index(i,j,k,HNODES_X)] );
+	//		kernelCopyGrids __device_func__ ( dev_v, dev_velocity_v[Index(i,j,k,HNODES_X)] );
+	//		kernelCopyGrids __device_func__ ( dev_w, dev_velocity_w[Index(i,j,k,HNODES_X)] );
+	//
+	//		kernelClearHalo __device_func__ ( dev_den );
+	//		kernelClearHalo __device_func__ ( dev_u );
+	//		kernelClearHalo __device_func__ ( dev_v );
+	//		kernelClearHalo __device_func__ ( dev_w );
+	//		
+	//		SolveNavierStokesEquation( DELTATIME/2.f, false );
+	//
+	//		kernelCopyGrids __device_func__ ( dev_density[Index(i,j,k,HNODES_X)], dev_den );
+	//		kernelCopyGrids __device_func__ ( dev_velocity_u[Index(i,j,k,HNODES_X)], dev_u );
+	//		kernelCopyGrids __device_func__ ( dev_velocity_v[Index(i,j,k,HNODES_X)], dev_v );
+	//		kernelCopyGrids __device_func__ ( dev_velocity_w[Index(i,j,k,HNODES_X)], dev_w );
+	//	}
 
 	for ( int i = 0; i < HNODES_X * HNODES_Y * HNODES_Z; i++ )
 	{
@@ -752,7 +395,7 @@ void FluidSimProc::SolveRootNode( void )
 
 void FluidSimProc::SolveLeafNode( void )
 {
-//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	zeroTempoBuffers();
@@ -786,7 +429,7 @@ void FluidSimProc::SolveLeafNode( void )
 		m_cursor.z = ck;
 
 		ReadBuffers();
-		
+
 		/* solve independent gpu nodes one by one */
 		for ( int k = 0; k < GNODES_X; k++ ) for ( int j = 0; j < GNODES_X; j++ ) for ( int i = 0; i < GNODES_X; i++ )
 		{
@@ -797,18 +440,18 @@ void FluidSimProc::SolveLeafNode( void )
 			if ( !gpu_node[Index(i,j,k,GNODES_X)]->updated )
 #endif
 			{
-					LoadBullet(i,j,k);
+				LoadBullet(i,j,k);
 
-					kernelHandleHalo __device_func__ ( dev_den, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B, GRIDS_X, GRIDS_Y, GRIDS_Z );
-					kernelHandleHalo __device_func__ ( dev_u,   velu_L, velu_R, velu_U, velu_D, velu_F, velu_B, GRIDS_X, GRIDS_Y, GRIDS_Z );
-					kernelHandleHalo __device_func__ ( dev_v,   velv_L, velv_R, velv_U, velv_D, velv_F, velv_B, GRIDS_X, GRIDS_Y, GRIDS_Z );
-					kernelHandleHalo __device_func__ ( dev_w,   velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, GRIDS_X, GRIDS_Y, GRIDS_Z );
+				kernelHandleHalo __device_func__ ( dev_den, dens_L, dens_R, dens_U, dens_D, dens_F, dens_B, GRIDS_X, GRIDS_Y, GRIDS_Z );
+				kernelHandleHalo __device_func__ ( dev_u,   velu_L, velu_R, velu_U, velu_D, velu_F, velu_B, GRIDS_X, GRIDS_Y, GRIDS_Z );
+				kernelHandleHalo __device_func__ ( dev_v,   velv_L, velv_R, velv_U, velv_D, velv_F, velv_B, GRIDS_X, GRIDS_Y, GRIDS_Z );
+				kernelHandleHalo __device_func__ ( dev_w,   velw_L, velw_R, velw_U, velw_D, velw_F, velw_B, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
-					SolveNavierStokesEquation( DELTATIME/2.f, false );
+				SolveNavierStokesEquation( DELTATIME/2.f, false );
 
-					ExitBullet(i,j,k);
+				ExitBullet(i,j,k);
 
-					gpu_node[Index(i,j,k,GNODES_X)]->updated = true;
+				gpu_node[Index(i,j,k,GNODES_X)]->updated = true;
 			}
 		}
 
@@ -834,7 +477,7 @@ void FluidSimProc::SolveLeafNode( void )
 
 void FluidSimProc::AddSource( void )
 {
-//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	if ( decrease_times eqt 0 )
@@ -874,7 +517,7 @@ void FluidSimProc::VelocitySolver( cdouble timestep )
 	Diffusion( dev_u0, dev_u, VISOCITY );
 	Diffusion( dev_v0, dev_v, VISOCITY );
 	Diffusion( dev_w0, dev_w, VISOCITY );
-	
+
 	if ( m_scHelper.GetCUDALastError( "host function failed: Diffusion", __FILE__, __LINE__ ) )
 	{
 		FreeResource();
@@ -893,7 +536,7 @@ void FluidSimProc::VelocitySolver( cdouble timestep )
 		FreeResource();
 		exit( 1 );
 	}
-	
+
 	// advect the velocity field (per axis):
 	Advection( dev_u0, dev_u, timestep, dev_u, dev_v, dev_w );
 	Advection( dev_v0, dev_v, timestep, dev_u, dev_v, dev_w );
@@ -908,7 +551,7 @@ void FluidSimProc::VelocitySolver( cdouble timestep )
 	std::swap( dev_u0, dev_u );
 	std::swap( dev_v0, dev_v );
 	std::swap( dev_w0, dev_w );
-	
+
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
 	Projection( dev_u, dev_v, dev_w, dev_div, dev_p );
 };
@@ -997,7 +640,7 @@ void FluidSimProc::WriteBuffers( void )
 {
 	int ni, nj, nk; ni = nj = nk = 0;
 
-//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	//	m_scHelper.DeviceDim3D( &blockDim, &gridDim, THREADS_S, TILE_X, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 
@@ -1016,4 +659,5 @@ void FluidSimProc::WriteBuffers( void )
 		kernelCopyBuffers __device_func__ ( dev_velocity_v[Index(ni,nj,nk,HNODES_X)], node_velocity_v[Index(i,j,k,GNODES_X)], GRIDS_X, GRIDS_Y, GRIDS_Z );
 		kernelCopyBuffers __device_func__ ( dev_velocity_w[Index(ni,nj,nk,HNODES_X)], node_velocity_w[Index(i,j,k,GNODES_X)], GRIDS_X, GRIDS_Y, GRIDS_Z );
 	}
-};
+};  
+#endif // 0

@@ -37,11 +37,11 @@ namespace sge
 		vector <double*> m_vectGPUBuffers;
 
 		/* nodes for gpu and host */
-		vector <double*> m_vectGPUDens, m_vectHostDens;
-		vector <double*> m_vectGPUVelU, m_vectHostVelU;
-		vector <double*> m_vectGPUVelV, m_vectHostVelV;
-		vector <double*> m_vectGPUVelW, m_vectHostVelW;
-		vector <int*> m_vectGPUObst, m_vectHostObst;
+		vector <double*> m_vectGPUDens, m_vectHostDens, m_vectNewDens;
+		vector <double*> m_vectGPUVelU, m_vectHostVelU, m_vectNewVelU;
+		vector <double*> m_vectGPUVelV, m_vectHostVelV, m_vectNewVelV;
+		vector <double*> m_vectGPUVelW, m_vectHostVelW, m_vectNewVelW;
+		vector <double*> m_vectGPUObst, m_vectHostObst;
 
 		/* topology of nodes on host and device */
 		vector <SimNode*> m_vectLink;
@@ -68,68 +68,66 @@ namespace sge
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
 
-	public:
-		void AllocateResource( void );
-
 	private:
-		bool CreateCompNodesResource( void );
-		bool CreateBulletResource( void );
-		bool CreateResource( void );
-
+		int IX( cint i, cint j, cint k, cint ts ) { return k * ts * ts + j * ts + i; };
+		int IX( cint i, cint j, cint k, cint tx, cint ty, cint tz ) { return k * tx * ty + j * tx + i; };
 
 	public:
-		void ZeroBuffers( void );
-		sstr GetTitleBar( void ) { return &m_szTitle; };
-		void PrintMSG( void );
-		void HostToDevice( void );
-		void DeviceToHost( void );
-		void FreeResource( void );
-
-	private:
-		void zeroDeivceRes( void );
-		void zeroHostRes( void );
-		void zeroVisualBuffers( void );
-		void zeroShareBuffers( void );
-		void zeroTempoBuffers( void );
-		void zeroGlobalNode( void );
-
-	private:
-		void freeHostRes( void );
-		void freeDeviceRes( void );
-		void freeShareBuffers( void );
-		void freeVisualBuffers( void );
-
-	private:
-		void LoadBullet( int i, int j, int k );
-		void ExitBullet( int i, int j, int k );
-		void clearBullet( void );
-		void pickNodeToBullet( int i, int j, int k );
-		void pickNeighborsToBullet( int i, int j, int k );
-		void pickBulletToNode( int i, int j, int k );
-		void pickImgFromNode( int i, int j, int k );
-
-	private:
 		void InitParams( FLUIDSPARAM *fluid );
+		void AllocateResource( void );
 		void CreateTopology( void );
-		void RefreshStatus( FLUIDSPARAM *fluid );
-
-	public:
+		sstr GetTitleBar( void ) { return &m_szTitle; };
+		void ZeroBuffers( void );
+		void InitBoundary( void ); // TODO: ªπŒ¥ µœ÷
+		void FreeResource( void );
 		void FluidSimSolver( FLUIDSPARAM *fluid );
-		void SolveRootNode( void );
-		void SolveLeafNode( void );
 
 	private:
-		void SolveNavierStokesEquation( cdouble timestep, bool add );
-		void DensitySolver( cdouble timestep );
-		void VelocitySolver( cdouble timestep );
-		void AddSource( void );
-		void InitBoundary( void );
-		void ReadBuffers( void );
-		void WriteBuffers( void );
-		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
-		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
-		void Diffusion( double *out, cdouble *in, cdouble diff );
-		void Projection( double *u, double *v, double *w, double *div, double *p );
+		bool CreateCompNodes( void );
+		bool CreateDeviceBuffers( void );
+		bool CreateVisualBuffers( void );
+
+		void ClearCompNodes( void );
+		void ClearDeviceBuffers( void );
+		void ClearVisualBuffers( void );
+
+		void ReleaseCompNodes( void );
+		void ReleaseDeviceBuffers( void );
+		void ReleaseVisualBuffers( void );
+
+
+	/****************************************************************************************/
+		
+//	private:
+//		void LoadBullet( int i, int j, int k );
+//		void ExitBullet( int i, int j, int k );
+//		void clearBullet( void );
+//		void pickNodeToBullet( int i, int j, int k );
+//		void pickNeighborsToBullet( int i, int j, int k );
+//		void pickBulletToNode( int i, int j, int k );
+//		void pickImgFromNode( int i, int j, int k );
+//
+//	private:
+//		
+//		void RefreshStatus( FLUIDSPARAM *fluid );
+//
+//	public:
+//		
+//		void SolveRootNode( void );
+//		void SolveLeafNode( void );
+//
+//	private:
+//		void SolveNavierStokesEquation( cdouble timestep, bool add );
+//		void DensitySolver( cdouble timestep );
+//		void VelocitySolver( cdouble timestep );
+//		void AddSource( void );
+//		
+//		void ReadBuffers( void );
+//		void WriteBuffers( void );
+//		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
+//		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
+//		void Diffusion( double *out, cdouble *in, cdouble diff );
+//		void Projection( double *u, double *v, double *w, double *div, double *p );
 	};
 };
 

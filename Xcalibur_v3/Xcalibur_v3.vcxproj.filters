@@ -58,12 +58,15 @@
     <ClCompile Include="MainDynamic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FluidSimProc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProcKernels.cu">
+    <CudaCompile Include="Kernel.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
-    <CudaCompile Include="Kernel.cu">
+    <CudaCompile Include="FluidSimProc.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>

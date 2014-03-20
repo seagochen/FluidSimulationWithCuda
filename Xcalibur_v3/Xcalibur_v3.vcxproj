@@ -41,6 +41,7 @@
     <CudaCompile Include="Kernel.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FluidSimProc.cpp" />
     <ClCompile Include="FrameworkDynamic.cpp" />
     <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />

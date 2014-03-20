@@ -425,7 +425,6 @@ static SGMAINACTIVITY   *m_activity;
 static FLUIDSPARAM       m_fluid;
 static FluidSimProc     *m_simproc;
 
-/* 基本框架所默认的构造函数，需要传入SGGUI的地址，以及创建的窗口的长和宽 */
 Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height  )
 {
 	/* 设置参数 */
@@ -434,12 +433,11 @@ Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT 
 	/* prepare the fluid simulation stage */
 	m_activity = new SGMAINACTIVITY( width, height, false );
 	m_simproc  = new FluidSimProc( &m_fluid );
+
+	/* link ptr */
 	*activity = m_activity;
-	cout << "initial stage finished" << endl;
 };
 
-
-/* 设置模拟程序所需要的一切参数 */
 SGVOID Framework_v1_0::SetDefaultParam( SGVOID )
 {
 	m_fluid.run = true;
@@ -459,8 +457,6 @@ SGVOID Framework_v1_0::SetDefaultParam( SGVOID )
 	m_fluid.shader.szVolumFrag  = ".\\shader\\raycasting.frag";
 };
 
-
-/* 对字符串数据的格式化 */
 string Framework_v1_0::string_fmt( const std::string fmt_str, ... )
 {
 	/* reserve 2 times as much as the length of the fmt_str */
@@ -484,8 +480,6 @@ string Framework_v1_0::string_fmt( const std::string fmt_str, ... )
     return std::string ( formatted.get() );
 };
 
-
-/* 创建子线程，用于流体模拟 */
 DWORD WINAPI Framework_v1_0::FluidSimulationProc( LPVOID lpParam )
 {
 	/* 只要m_fluid.run为真，则一直保持流体模拟程序的运行 */
@@ -495,8 +489,6 @@ DWORD WINAPI Framework_v1_0::FluidSimulationProc( LPVOID lpParam )
 	return 0;
 };
 
-
-/* SGGUI运行后，所调度的第一个函数 */
 void Framework_v1_0::onCreate()
 {
 	/* initialize glew */
@@ -529,9 +521,6 @@ void Framework_v1_0::onCreate()
 		cout << "create sub-thread failed" << endl;
 		exit (1);
 	}
-
-	/* 打印操作信息 */
-	m_simproc->PrintMSG();
 };
 
 void Framework_v1_0::CountFPS()
@@ -573,10 +562,11 @@ void Framework_v1_0::onDisplay()
 
 void Framework_v1_0::onDestroy()
 {
-	/* 启动退出程序的命令后，先关闭子线程 */
 	m_fluid.run = false;
-	WaitForSingleObject( m_fluid.thread.hThread, INFINITE );
-	CloseHandle( m_fluid.thread.hThread );
+
+//	/* 启动退出程序的命令后，先关闭子线程 */
+//	WaitForSingleObject( m_fluid.thread.hThread, INFINITE );
+//	CloseHandle( m_fluid.thread.hThread );
 
 	/* 释放所有用于流体计算的资源 */
 	m_simproc->FreeResource();
@@ -601,18 +591,6 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 			onDestroy();
 			break;
 
-		case SG_KEY_U:
-			m_simproc->HostToDevice();
-			break;
-
-		case SG_KEY_D:
-			m_simproc->DeviceToHost();
-			break;
-
-		case SG_KEY_P:
-			m_simproc->PrintMSG();
-			break;
-	
 		case SG_KEY_C:
 			m_simproc->ZeroBuffers();
 			break;
@@ -622,7 +600,6 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 		}
 	}
 };
-
 
 void Framework_v1_0::onMouse( SGMOUSE mouse, unsigned x, unsigned y, int degree )
 {
