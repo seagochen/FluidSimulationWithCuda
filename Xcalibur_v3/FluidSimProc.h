@@ -30,6 +30,39 @@ namespace sge
 		SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 	};
 
+	class NavierStokesSolver
+	{
+	private:
+		dim3 gridDim, blockDim;
+
+		FunctionHelper m_scHelper;
+
+	public:
+//		void AddSource
+//			( double *ptrDevDens, double *ptrDevU, double *ptrDevV, double *ptrDevW, double *ptrDevObst,
+//			int *nInTime, int *nDeTime, cdouble deltatime );
+//
+//	void SolveVelocity( 
+//		double *ptrDevVelU, double *ptrDevVelU0,
+//		double *ptrDevVelV, double *ptrDevVelV0,
+//		double *ptrDevVelW, double *ptrDevVelW0,
+//		double *ptrDevDiv,  double *ptrDevPress, cdouble timestep );
+//	void SolveDensity(
+//		double *ptrDevDens, double *ptrDevDens0,
+//		cdouble *ptrDevVelU, cdouble *ptrDevVelV, cdouble *ptrDevVelW, cdouble timestep );
+//
+//	private:
+//		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
+//		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
+//		void Diffusion( double *out, cdouble *in, cdouble diff );
+//		void Projection( double *u, double *v, double *w, double *div, double *p ); 
+
+		void AddSource( double *ptrDevDens, double *ptrDevU, double *ptrDevV, double *ptrDevW,
+			cdouble *ptrDevObst, int *nInTime, int *nDeTime, cdouble deltatime );
+		void SolveVelocity( void );
+		void SolveDensity( void );
+	};
+
 	class FluidSimProc
 	{
 	private:
@@ -60,6 +93,8 @@ namespace sge
 		int m_nDensIncrease, m_nDensDecrease;
 		
 		FunctionHelper m_scHelper;
+		NavierStokesSolver m_scSolver;
+
 		SimNode *m_ptrSimNode;
 		string m_szTitle;	
 
@@ -78,7 +113,7 @@ namespace sge
 		void CreateTopology( void );
 		sstr GetTitleBar( void ) { return &m_szTitle; };
 		void ZeroBuffers( void );
-		void InitBoundary( void ); // TODO: ªπŒ¥ µœ÷
+		void InitBoundary( void );
 		void FreeResource( void );
 		void FluidSimSolver( FLUIDSPARAM *fluid );
 

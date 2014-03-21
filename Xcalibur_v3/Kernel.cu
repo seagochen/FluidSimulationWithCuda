@@ -520,15 +520,15 @@ __global__ void kernelAddSource
 	{
 		if ( obst[ IX(i,j,k) ] < 0 )
 		{
-			double rate = -obst[ IX(i,j,k) ];
+			double rate = -obst[ IX(i,j,k) ] / 100.f;
+			double randno = _random( _rand(time) );
 
 			/* add rho to density field */
-			den[ IX(i,j,k) ] = rate * rho * delta;
+			den[ IX(i,j,k) ] = rate * randno * rho * delta;
 
 			/* add velocity to velocity field */
 			v[ IX(i,j,k) ] = rate * vel * delta;
-
-			double randno = _random( _rand(time) );
+						
 			if ( randno < 0.25f and randno >= 0.f )
 			{
 				u[ IX(i,j,k) ] = -rate * vel * delta * delta;

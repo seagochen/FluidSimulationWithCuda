@@ -239,10 +239,33 @@ void FluidSimProc::ZeroBuffers( void )
 	cout << "buffers on both device and host cleared." << endl;
 };
 
-//TODO »¹Î´ÊµÏÖ
 void FluidSimProc::InitBoundary( void )
 {
-	
+	int const halfx = GRIDS_X / 2;
+	int const halfz = GRIDS_Z / 2;
+
+	for ( int k = 0; k < GRIDS_Z; k++ )
+	{
+		for ( int j = 0; j < GRIDS_Y; j++ )
+		{
+			for ( int i = 0; i < GRIDS_X; i++ )
+			{
+				if ( j < 2 and
+					i < halfx + 3 and i >= halfx - 3 and 
+					k < halfz + 3 and k >= halfz - 3 )
+				m_vectHostObst[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)] = MACRO_BOUNDARY_SOURCE;
+			}
+		}
+	}
+
+	cudaMemcpy( m_vectGPUObst[0], m_vectHostObst[0], sizeof(double) * m_nNodeSize, cudaMemcpyHostToDevice );
+
+	if ( m_scHelper.GetCUDALastError( "call member function InitBoundary failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+
 	cout << "boundary for fluid simulation is ok!" << endl;
 };
 
@@ -343,8 +366,39 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 	for ( int i = 0; i < m_nNodeNum; i++ )
 	{
 		PushCompNode( i );
+		
+		m_scSolver.AddSource( dev_den, dev_u, dev_v, dev_w, dev_obs, 
+			&m_nDensIncrease, &m_nDensDecrease, DELTATIME );
+
+//		m_scSolver.AddSource( dev_den, dev_u, dev_v, dev_w, &m_nDensIncrease, &m_nDensDecrease );
+//		m_scSolver.SolveVelocity( dev_u, dev_u0, dev_v, dev_v0, dev_w, dev_w0, dev_div, dev_p, DELTATIME );
+//		m_scSolver.SolveDensity( dev_den, dev_den0, dev_u, dev_v, dev_w, DELTATIME );
+
 		PopCompNode( i );
 	}
 
+	SaveCurFluidSimStatus();
+
+	double dens, velu, velv, velw;
+
+	dens = velu = velv = velw = 0.f;
+
+	for ( int j = 0; j < GRIDS_Y; j++ )
+	{
+		for ( int k = 0; k < GRIDS_Z; k++ )
+		{
+			for ( int i = 0; i < GRIDS_X; i++ )
+			{
+				dens += m_vectHostDens[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
+				velu += m_vectHostVelU[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
+				velv += m_vectHostVelV[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
+				velw += m_vectHostVelW[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
+			}
+		}
+	}
+
+	printf( "rho: %f u: %f v: %f w: %f \n", dens, velu, velv, velw  );
+
+	fluid->run = false;
 	fluid->volume.ptrData = m_ptrHostVisual;
 };

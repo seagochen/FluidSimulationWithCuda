@@ -19,6 +19,24 @@ using namespace sge;
 
 #define __device_func__ <<<gridDim, blockDim>>>
 
+/************************************************************************************
+** The following implement functions are member of class NavierStokesSolver        **
+*************************************************************************************/
+
+void NavierStokesSolver::AddSource( double *ptrDevDens, double *ptrDevU, double *ptrDevV, double *ptrDevW,
+			cdouble *ptrDevObst, int *nInTime, int *nDeTime, cdouble deltatime )
+{
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	
+	kernelAddSource __device_func__ ( ptrDevDens, ptrDevU, ptrDevV, ptrDevW, 
+		ptrDevObst, DENSITY, VELOCITY, deltatime, time(NULL), BULLET_X, BULLET_Y, BULLET_Z );  
+};
+
+
+/************************************************************************************
+** The following functions are member of class FluidSimProc                        **
+*************************************************************************************/
+
 
 void FluidSimProc::ClearCompNodes( void )
 {

@@ -27,6 +27,7 @@
     <ClInclude Include="Navier_Stokes_Kernels.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SimulationParam.h" />
+    <ClInclude Include="TestingModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Xcalibur_v3.rc" />
@@ -46,6 +47,9 @@
     <ClCompile Include="FrameworkDynamic.cpp" />
     <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
+    <Text Include="ns_backup.txt">
+      <FileType>Document</FileType>
+    </Text>
     <Text Include="backup.txt" />
     <Text Include="kernels.txt" />
     <Text Include="obsoleted_header.txt" />

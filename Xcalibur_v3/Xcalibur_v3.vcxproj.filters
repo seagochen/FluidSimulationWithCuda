@@ -56,6 +56,9 @@
     <ClInclude Include="Navier_Stokes_Kernels.h">
       <Filter>Header Files\Kernels</Filter>
     </ClInclude>
+    <ClInclude Include="TestingModule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameworkDynamic.cpp">
@@ -109,6 +112,9 @@
       <Filter>Source Files\TXT</Filter>
     </Text>
     <Text Include="kernels.txt">
+      <Filter>Source Files\TXT</Filter>
+    </Text>
+    <Text Include="ns_backup.txt">
       <Filter>Source Files\TXT</Filter>
     </Text>
   </ItemGroup>
