@@ -108,3 +108,35 @@ void FluidSimProc::ClearVisualBuffers( void )
 	}
 };
 
+void FluidSimProc::PushCompNode( int id )
+{
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+	kernelLoadBullet __device_func__ ( dev_den, m_vectGPUDens[id], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__ ( dev_u, m_vectGPUVelU[id], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__ ( dev_v, m_vectGPUVelV[id], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__ ( dev_w, m_vectGPUVelW[id], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__ ( dev_obs, m_vectGPUObst[id], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+	if ( m_scHelper.GetCUDALastError( "call member function PushCompNode failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+};
+
+void FluidSimProc::PopCompNode( int id )
+{
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+	kernelExitBullet __device_func__ ( m_vectNewDens[id], dev_den, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( m_vectNewVelU[id], dev_u, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( m_vectNewVelV[id], dev_v, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( m_vectNewVelW[id], dev_w, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+
+	if ( m_scHelper.GetCUDALastError( "call member function PopCompNode failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+};

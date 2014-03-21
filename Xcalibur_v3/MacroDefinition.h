@@ -83,17 +83,18 @@ typedef std::string*  sstr;
 #define MACRO_FRONT               5
 #define MACRO_BACK                6
 
-/* True and False */
-#define MACRO_FALSE               0
-#define MACRO_TRUE                1
-
-/* switch */
-#define TESTING_MODE_SWITCH       0 /* switch: close(0) open(1) */
-#define TESTING_MODE              0 /* velocity: default-up(0) down(1) left(2) right(3) front(4) back(5) */
-
-#define gst_header                0  /* (ghost, halo) the header cell of grid */
-#define sim_header                1  /* (actually) the second cell of grid */
-#define gst_tailer               63  /* (ghost, halo) the last cell of grid */
-#define sim_tailer               62  /* (actually) the second last cell of grid */
+#define and    &&
+#define and_eq &=
+#define bitand &
+#define bitor  |
+#define compl  ~
+#define not    !
+#define not_eq !=
+#define or     ||
+#define or_eq  |=
+#define xor    ^
+#define xor_eq ^=
+#define eqt    ==
+#define elif  else if
 
 #endif

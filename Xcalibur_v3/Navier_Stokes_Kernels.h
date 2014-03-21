@@ -12,10 +12,7 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
-
-typedef int const     cint;
-typedef unsigned char uchar;
-typedef double const  cdouble;
+#include "MacroDefinition.h"
 
 extern __global__ void kernelJacobi( double *out, cdouble *in, cdouble diffusion, cdouble divisor,
 									cint tx, cint ty, cint tz );

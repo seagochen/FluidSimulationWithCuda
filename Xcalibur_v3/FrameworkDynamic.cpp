@@ -531,6 +531,8 @@ void Framework_v1_0::CountFPS()
 
 void Framework_v1_0::onDisplay()
 {
+	if ( !m_fluid.run ) onDestroy();
+
 	/* do something before rendering */
 	glEnable ( GL_DEPTH_TEST );
 	
@@ -548,7 +550,6 @@ void Framework_v1_0::onDisplay()
 
 	/* do not bind the framebuffer now */
     glBindFramebuffer ( GL_FRAMEBUFFER, 0 );
-
 	glViewport ( 0, 0, m_fluid.ray.uCanvasWidth, m_fluid.ray.uCanvasHeight );
 	m_fluid.shader.ptrShader->LinkShaders 
 		( m_fluid.shader.hProgram, 2, m_fluid.shader.hRCVert, m_fluid.shader.hRCFrag );

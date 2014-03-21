@@ -102,24 +102,7 @@ inline __host__ __device__ double _fabs(double value)
 ** array's index.                                                                  **
 *************************************************************************************/
 
-
-#define and    &&
-#define and_eq &=
-#define bitand &
-#define bitor  |
-#define compl  ~
-#define not    !
-#define not_eq !=
-#define or     ||
-#define or_eq  |=
-#define xor    ^
-#define xor_eq ^=
-#define eqt    ==
-#define elif  else if
-
-typedef int const cint;
-typedef double const cdouble;
-typedef unsigned char uchar;
+#include "MacroDefinition.h"
 
 inline __device__ void _thread( int *i )
 {
@@ -195,7 +178,7 @@ __global__ void kernelLoadBullet
 };
 
 __global__ void kernelLoadBullet
-	( double *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
+	( double *dst, cdouble *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
 {
 	int i, j, k;
 	
@@ -222,7 +205,7 @@ __global__ void kernelExitBullet
 };
 
 __global__ void kernelExitBullet
-	( double *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
+	( double *dst, cdouble *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
 {
 	int i, j, k;	
 	_thread( &i, &j, &k, dstx, dsty, dstz );
@@ -368,9 +351,6 @@ __global__ void kernelCopyBuffers
 ** block.                                                                          **
 *************************************************************************************/
 
-
-#include "MacroDefinition.h"
-
 __device__ double atomicGetValue
 	( cdouble *grid, cint x, cint y, cint z, cint tx, cint ty, cint tz )
 {
@@ -448,13 +428,14 @@ __global__ void kernelSumDensity
 
 
 #define IX(i,j,k) ix(i,j,k,tx,ty,tz)
+#define thread() _thread(&i,&j,&k,GRIDS_X,GRIDS_Y,GRIDS_Z); i+=1;j+=1;k+=1;
 
 __global__ void kernelJacobi
 	( double *out, cdouble *in, cdouble diffusion, cdouble divisor,
 	cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
+	thread();
 
 	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
 	{
@@ -474,7 +455,7 @@ __global__ void kernelAdvection
 	cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
+	thread();
 
 	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
 	{
@@ -491,7 +472,7 @@ __global__ void kernelGradient( double *div, double *prs,
 							   cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
+	thread();
 
 	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
 	{
@@ -512,7 +493,7 @@ __global__ void kernelSubtract( double *u, double *v, double *w, double *prs,
 							  cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
+	thread();
 
 	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
 	{
@@ -533,7 +514,7 @@ __global__ void kernelAddSource
 	cint tx, cint ty, cint tz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
+	thread();
 
 	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
 	{
@@ -572,6 +553,7 @@ __global__ void kernelAddSource
 	}
 };
 
+#undef thread()
 
 /************************************************************************************
 ** Data transform & root to leaf, leaf to root                                     **
@@ -630,6 +612,8 @@ __global__ void kernelDataFromLeaf( double *dst, cdouble *src,
 };
 
 #undef IX(i,j,k)
+
+
 
 #define IXt(i,j,k) ix(i,j,k,tx,ty,tz)
 #define IXb(i,j,k) ix(i,j,k,bx,by,bz)

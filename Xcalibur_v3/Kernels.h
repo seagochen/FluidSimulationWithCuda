@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Feb 23, 2014
-* <Last Time>     Mar 19, 2014
+* <Last Time>     Mar 21, 2014
 * <File Name>     Kernels.h
 */
 
@@ -12,14 +12,19 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
+#include "MacroDefinition.h"
 
-typedef int const     cint;
-typedef unsigned char uchar;
-typedef double const  cdouble;
+extern __global__ void kernelLoadBullet
+	( int *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz );
 
-extern __global__ void kernelExitBullet( int *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz );
+extern __global__ void kernelLoadBullet
+	( double *dst, cdouble *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz );
 
-extern __global__ void kernelExitBullet( double *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz );
+extern __global__ void kernelExitBullet
+	( int *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz );
+
+extern __global__ void kernelExitBullet
+	( double *dst, cdouble *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz );
 
 extern __global__ void kernelZeroBuffers( int *bullet, cint tilex, cint tiley, cint tilez );
 

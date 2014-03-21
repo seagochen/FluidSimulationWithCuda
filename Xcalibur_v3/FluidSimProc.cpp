@@ -340,5 +340,11 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( not fluid->run ) return;
 
+	for ( int i = 0; i < m_nNodeNum; i++ )
+	{
+		PushCompNode( i );
+		PopCompNode( i );
+	}
+
 	fluid->volume.ptrData = m_ptrHostVisual;
 };

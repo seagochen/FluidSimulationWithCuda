@@ -99,39 +99,8 @@ namespace sge
 		void SaveCurFluidSimStatus( void );
 		void LoadPreFluidSimStatus( void );
 
-
-	/****************************************************************************************/
-		
-//	private:
-//		void LoadBullet( int i, int j, int k );
-//		void ExitBullet( int i, int j, int k );
-//		void clearBullet( void );
-//		void pickNodeToBullet( int i, int j, int k );
-//		void pickNeighborsToBullet( int i, int j, int k );
-//		void pickBulletToNode( int i, int j, int k );
-//		void pickImgFromNode( int i, int j, int k );
-//
-//	private:
-//		
-//		void RefreshStatus( FLUIDSPARAM *fluid );
-//
-//	public:
-//		
-//		void SolveRootNode( void );
-//		void SolveLeafNode( void );
-//
-//	private:
-//		void SolveNavierStokesEquation( cdouble timestep, bool add );
-//		void DensitySolver( cdouble timestep );
-//		void VelocitySolver( cdouble timestep );
-//		void AddSource( void );
-//		
-//		void ReadBuffers( void );
-//		void WriteBuffers( void );
-//		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
-//		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
-//		void Diffusion( double *out, cdouble *in, cdouble diff );
-//		void Projection( double *u, double *v, double *w, double *div, double *p );
+		void PushCompNode( int nodeid );
+		void PopCompNode( int nodeid );
 	};
 };
 
