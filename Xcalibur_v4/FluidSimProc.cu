@@ -143,6 +143,11 @@ void FluidSimProc::PopCompNode( int id )
 	}
 };
 
+
+
+/////////////////////////////// 
+// 待处理部分 //
+
 void FluidSimProc::GenVolumeImage( FLUIDSPARAM *fluid )
 {
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
