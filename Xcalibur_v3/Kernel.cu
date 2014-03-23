@@ -559,26 +559,23 @@ __global__ void kernelAddSource
 ** Data transform & root to leaf, leaf to root                                     **
 *************************************************************************************/
 
-__global__ void kernelDensToVolume( uchar *volume, cdouble *rho,
-								   cdouble scale, int offi, int offj, int offk,
+__global__ void kernelDensToVolume( uchar *volume, cdouble *rho, cint offi, cint offj, cint offk,
 								   cint tx, cint ty, cint tz, cint vx, cint vy, cint vz )
 {
 	int i, j, k;
 	_thread( &i, &j, &k, tx, ty, tz );
 
-	offi = offi * tx + i;
-	offj = offj * ty + j;
-	offk = offk * tz + k;
+	int ofi = offi * tx + i;
+	int ofj = offj * ty + j;
+	int ofk = offk * tz + k;
 
-	offi = ( _round( offi * scale ) > 0 ) ? _round( offi * scale ) : 0;
-	offj = ( _round( offj * scale ) > 0 ) ? _round( offj * scale ) : 0;
-	offk = ( _round( offk * scale ) > 0 ) ? _round( offk * scale ) : 0;
+	/* zero c first */
+	volume[ ix(ofi, ofj, ofk, vx, vy, vz) ] = 0;
 
-	offi = offi % vx;
-	offj = offj % vy;
-	offk = offk % vz;
-
-	volume[ ix(offi, offj, offk, vx, vy, vz) ] = ( _round(IX(i,j,k)) <= 250 ) ? (uchar)_round(IX(i,j,k)) : 0;
+	/* append c to volume c */
+	uchar temp = _round( rho[ ix(i, j, k, tx, ty, tz) ] );
+	if ( temp > 0 and temp < 250 )
+		volume [ ix(ofi, ofj, ofk, vx, vy, vz) ] = temp;
 };
 
 

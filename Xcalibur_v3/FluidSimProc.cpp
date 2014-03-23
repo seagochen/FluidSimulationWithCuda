@@ -250,8 +250,8 @@ void FluidSimProc::InitBoundary( void )
 		{
 			for ( int i = 0; i < GRIDS_X; i++ )
 			{
-				if ( j < 2 and
-					i < halfx + 3 and i >= halfx - 3 and 
+//				if ( j < 2 and
+				if ( i < halfx + 3 and i >= halfx - 3 and 
 					k < halfz + 3 and k >= halfz - 3 )
 				m_vectHostObst[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)] = MACRO_BOUNDARY_SOURCE;
 			}
@@ -359,6 +359,17 @@ void FluidSimProc::LoadPreFluidSimStatus( void )
 	cout << "previous fluid simulation status loaded" << endl;
 };
 
+void FluidSimProc::SwapComNodes( void )
+{
+	for ( int i = 0; i < m_nNodeNum; i++ )
+	{
+		std::swap( m_vectGPUDens[i], m_vectNewDens[i] );
+		std::swap( m_vectGPUVelU[i], m_vectNewVelU[i] );
+		std::swap( m_vectGPUVelV[i], m_vectNewVelV[i] );
+		std::swap( m_vectGPUVelW[i], m_vectNewVelW[i] );
+	}
+};
+
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( not fluid->run ) return;
@@ -377,28 +388,31 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 		PopCompNode( i );
 	}
 
-	SaveCurFluidSimStatus();
+	SwapComNodes();
+	GenVolumeImage( fluid );
 
-	double dens, velu, velv, velw;
+//	SaveCurFluidSimStatus();
+//
+//	double dens, velu, velv, velw;
+//
+//	dens = velu = velv = velw = 0.f;
+//
+//	for ( int j = 0; j < GRIDS_Y; j++ )
+//	{
+//		for ( int k = 0; k < GRIDS_Z; k++ )
+//		{
+//			for ( int i = 0; i < GRIDS_X; i++ )
+//			{
+//				dens += m_vectHostDens[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
+//				velu += m_vectHostVelU[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
+//				velv += m_vectHostVelV[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
+//				velw += m_vectHostVelW[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
+//			}
+//		}
+//	}
+//
+//	printf( "rho: %f u: %f v: %f w: %f \n", dens, velu, velv, velw  );
+//
+//	fluid->run = false;
 
-	dens = velu = velv = velw = 0.f;
-
-	for ( int j = 0; j < GRIDS_Y; j++ )
-	{
-		for ( int k = 0; k < GRIDS_Z; k++ )
-		{
-			for ( int i = 0; i < GRIDS_X; i++ )
-			{
-				dens += m_vectHostDens[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
-				velu += m_vectHostVelU[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
-				velv += m_vectHostVelV[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
-				velw += m_vectHostVelW[0][IX(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
-			}
-		}
-	}
-
-	printf( "rho: %f u: %f v: %f w: %f \n", dens, velu, velv, velw  );
-
-	fluid->run = false;
-	fluid->volume.ptrData = m_ptrHostVisual;
 };

@@ -32,8 +32,7 @@ extern __global__ void kernelAddSource( double *den, double *u, double *v, doubl
 									   cdouble *obst, cdouble rho, cdouble vel, cdouble delta, cint time,
 									   cint tx, cint ty, cint tz );
 
-extern __global__ void kernelDensToVolume( uchar *volume, cdouble *rho,
-								   cdouble scale, int offi, int offj, int offk,
+extern __global__ void kernelDensToVolume( uchar *volume, cdouble *rho, cint offi, cint offj, cint offk,
 								   cint tx, cint ty, cint tz, cint vx, cint vy, cint vz );
 
 extern __global__ void kernelDataFromRoot( double *dst, cdouble *src, 

@@ -2,6 +2,83 @@
 #include <device_launch_parameters.h>
 #include "MacroDefinition.h"
 
+inline __host__ __device__ int _rand( int seed )
+{
+	seed = (69069 * seed + 1);
+	return seed;
+};
+
+inline __host__ __device__ double _random( int seed ) 
+{
+	return ( _rand( seed ) & 0xffff ) / (double)0x10000;
+};
+
+inline __host__ __device__  double _crandom( int seed )
+{
+	return 2.0 * ( _random( seed ) - 0.5 );
+};
+
+inline __host__ __device__ double _invsqrt( double x ) 
+{
+	double xhalf = 0.5f*x;
+	int i = *(int*)&x;
+	i = 0x5f3759df - (i>>1);
+	x = *(double*)&i;
+	x = x*(1.5f - xhalf*x*x);
+	return x;
+};
+
+inline __host__ __device__ double _sqrt( double x )
+{
+	double xhalf = 0.5f*x;
+	int i = *(int*)&x;
+	i = 0x5f3759df - (i>>1);
+	x = *(double*)&i;
+	x = x*(1.5f - xhalf*x*x);
+	return 1/x;
+};
+
+inline __host__ __device__ int _round( double x)
+{
+     return (x >= 0) ? (int)(x + 0.5) : (int)(x - 0.5);
+};
+
+inline __host__ __device__ int _ceil( double x )
+{
+	int val = _round(x);
+	if (x > 0)
+	{
+		return (val >= (int)x) ? val : (int)x;
+	}
+	else
+	{
+		return ((int)x >= val) ? x : val;
+	}
+};
+
+inline __host__ __device__  int _floor(double x)
+{
+	int val = _round(x);
+	if (x > 0)
+	{
+		return (val < (int)x) ? val : x;
+	}
+	else
+	{
+		return ((int)x < val) ? x : val;
+	}
+};
+
+inline __host__ __device__ int _fabs(int value)
+{
+	return (value >= 0) ? value : -value;
+};
+
+inline __host__ __device__ double _fabs(double value)
+{
+	return (value >= 0.f) ? value : -value;
+};
+
 inline __device__ void _thread( int *i )
 {
 	*i = blockIdx.x * blockDim.x + threadIdx.x;
