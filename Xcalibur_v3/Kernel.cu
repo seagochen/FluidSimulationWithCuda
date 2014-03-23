@@ -427,17 +427,17 @@ __global__ void kernelSumDensity
 *************************************************************************************/
 
 
-#define IX(i,j,k) ix(i,j,k,tx,ty,tz)
+#define IX(i,j,k) ix(i,j,k,BULLET_X,BULLET_Y,BULLET_Z)
 #define thread() _thread(&i,&j,&k,GRIDS_X,GRIDS_Y,GRIDS_Z); i+=1;j+=1;k+=1;
+#define isbound(i,j,k) atomicIXNotHalo(i,j,k,BULLET_X,BULLET_Y,BULLET_Z)
 
 __global__ void kernelJacobi
-	( double *out, cdouble *in, cdouble diffusion, cdouble divisor,
-	cint tx, cint ty, cint tz )
+	( double *out, cdouble *in, cdouble diffusion, cdouble divisor )
 {
 	int i, j, k;
 	thread();
 
-	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
+	if ( isbound( i, j, k ) )
 	{
 		double dix = ( divisor > 0 ) ? divisor : 1.f;
 
@@ -451,55 +451,56 @@ __global__ void kernelJacobi
 
 __global__ void kernelAdvection
 	( double *out, cdouble *in, cdouble delta,
-	cdouble *u, cdouble *v, cdouble *w,
-	cint tx, cint ty, cint tz )
+	cdouble *u, cdouble *v, cdouble *w )
 {
 	int i, j, k;
 	thread();
 
-	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
+	if ( isbound( i, j, k ) )
 	{
 		double velu = i - u[ IX(i,j,k) ] * delta;
 		double velv = j - v[ IX(i,j,k) ] * delta;
 		double velw = k - w[ IX(i,j,k) ] * delta;
 
-		out[ IX(i,j,k) ] = atomicTrilinear( in, velu, velv, velw, tx, ty, tz );
+		out[ IX(i,j,k) ] = atomicTrilinear( in, velu, velv, velw, 
+			BULLET_X, BULLET_Y, BULLET_Z );
 	}
 };
 
 __global__ void kernelGradient( double *div, double *prs,
-							   cdouble *u, cdouble *v, cdouble *w,
-							   cint tx, cint ty, cint tz )
+							   cdouble *u, cdouble *v, cdouble *w )
 {
 	int i, j, k;
 	thread();
 
-	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
+	if ( isbound( i, j, k ) )
 	{
-		cdouble hx = 1.f / (double)tx;
-		cdouble hy = 1.f / (double)ty;
-		cdouble hz = 1.f / (double)tz;
+		cdouble hx = 1.f / (double)BULLET_X;
+		cdouble hy = 1.f / (double)BULLET_Y;
+		cdouble hz = 1.f / (double)BULLET_Z;
 
+		// previous instantaneous magnitude of velocity gradient 
+		//		= (sum of velocity gradients per axis)/2N:
 		div[ IX(i,j,k) ] = -0.5f * (
 			hx * ( u[ IX(i+1,j,k) ] - u[ IX(i-1,j,k) ] ) +
 			hy * ( v[ IX(i,j+1,k) ] - v[ IX(i,j-1,k) ] ) +
 			hz * ( w[ IX(i,j,k+1) ] - w[ IX(i,j,k-1) ] ) );
 
+		// zero out the present velocity gradient
 		prs[ IX(i,j,k) ] = 0.f;
 	}
 };
 
-__global__ void kernelSubtract( double *u, double *v, double *w, double *prs, 
-							  cint tx, cint ty, cint tz )
+__global__ void kernelSubtract( double *u, double *v, double *w, double *prs )
 {
 	int i, j, k;
 	thread();
 
-	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
+	if ( isbound( i, j, k ) )
 	{
-		u[ IX(i,j,k) ] -= 0.5f * tx * ( prs[ IX(i+1,j,k) ] - prs[ IX(i-1,j,k) ] );
-		v[ IX(i,j,k) ] -= 0.5f * ty * ( prs[ IX(i,j+1,k) ] - prs[ IX(i,j-1,k) ] );
-		w[ IX(i,j,k) ] -= 0.5f * tz * ( prs[ IX(i,j,k+1) ] - prs[ IX(i,j,k-1) ] );
+		u[ IX(i,j,k) ] -= 0.5f * BULLET_X * ( prs[ IX(i+1,j,k) ] - prs[ IX(i-1,j,k) ] );
+		v[ IX(i,j,k) ] -= 0.5f * BULLET_Y * ( prs[ IX(i,j+1,k) ] - prs[ IX(i,j-1,k) ] );
+		w[ IX(i,j,k) ] -= 0.5f * BULLET_Z * ( prs[ IX(i,j,k+1) ] - prs[ IX(i,j,k-1) ] );
 	}
 };
 
@@ -510,13 +511,12 @@ __global__ void kernelSubtract( double *u, double *v, double *w, double *prs,
 
 __global__ void kernelAddSource
 	( double *den, double *u, double *v, double *w, 
-	cdouble *obst, cdouble rho, cdouble vel, cdouble delta, cint time,
-	cint tx, cint ty, cint tz )
+	cdouble *obst, cdouble rho, cdouble vel, cdouble delta, cint time )
 {
 	int i, j, k;
 	thread();
 
-	if ( atomicIXNotHalo( i, j, k, tx, ty, tz ) )
+	if ( isbound( i, j, k ) )
 	{
 		if ( obst[ IX(i,j,k) ] < 0 )
 		{
@@ -553,7 +553,10 @@ __global__ void kernelAddSource
 	}
 };
 
+
+#undef isbound(i,j,k)
 #undef thread()
+
 
 /************************************************************************************
 ** Data transform & root to leaf, leaf to root                                     **
@@ -612,15 +615,15 @@ __global__ void kernelDataFromLeaf( double *dst, cdouble *src,
 
 
 
-#define IXt(i,j,k) ix(i,j,k,tx,ty,tz)
-#define IXb(i,j,k) ix(i,j,k,bx,by,bz)
-
 __global__ void kernelHandleHalo( double *bullet, 
 								 cdouble *left,  cdouble *right,
 								 cdouble *up,    cdouble *down,
 								 cdouble *front, cdouble *back,
 								 cint tx, cint ty, cint tz, cint bx, cint by, cint bz )
 {
+#define IXt(i,j,k) ix(i,j,k,tx,ty,tz)
+#define IXb(i,j,k) ix(i,j,k,bx,by,bz)
+
 	int i, j, k;
 	_thread( &i, &j, &k, tx, ty, tz );
 
@@ -631,7 +634,6 @@ __global__ void kernelHandleHalo( double *bullet,
 	bullet[ IXb( i+1, j+1,  0   ) ] = back [ IXt( i, j, tz-1 ) ];
 	bullet[ IXb( i+1, j+1, bz-1 ) ] = front[ IXt( i, j,    0 ) ];
 
-};
-
 #undef IXt(i,j,k)
 #undef IXb(i,j,k)
+};

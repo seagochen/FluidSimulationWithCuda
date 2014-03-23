@@ -38,16 +38,19 @@ namespace sge
 		FunctionHelper m_scHelper;
 
 	public:
-		void AddSource( double *ptrDevDens, double *ptrDevU, double *ptrDevV, double *ptrDevW,
+		void SolveSource( double *ptrDevDens, double *ptrDevU, double *ptrDevV, double *ptrDevW,
 			cdouble *ptrDevObst, int *nInTime, int *nDeTime, cdouble deltatime );
-		void SolveVelocity( void );
-		void SolveDensity( double *ptrDevDens, double *ptrDevDens0,
+		void SolveVelocity(  double *ptrDevU0, double *ptrDevV0, double *ptrDevW0,
+									   double *ptrDevU, double *ptrDevV, double *ptrDevW,
+									   double *ptrDiv,  double *ptrPres, cdouble timestep );
+		void SolveDensity( double *ptrDevDens0, double *ptrDevDens,
 			cdouble *ptrDevU, cdouble *ptrDevV, cdouble *ptrDevW, cdouble timestep );
 
 	private:
 		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
 		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
 		void Diffusion( double *out, cdouble *in, cdouble diff );
+		void Projection( double *u, double *v, double *w, double *div, double *p );
 	};
 
 	class FluidSimProc

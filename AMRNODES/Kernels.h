@@ -246,7 +246,8 @@ __global__ void kernelObstacle( double *grids, cdouble *obstacle, cint field )
 
 #pragma region kernels for sovling Navier-Stokes Equations
 
-__global__ void kernelJacobi( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble divisor )
+__global__ void kernelJacobi
+	( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble divisor )
 {
 	GetIndex3D();
 	BeginSimArea();
