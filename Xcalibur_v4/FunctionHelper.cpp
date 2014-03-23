@@ -2,71 +2,14 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Mar 20, 2014
+* <Last Time>     Mar 12, 2014
 * <File Name>     FunctionHelper.cpp
 */
 
 #include "MacroDefinition.h"
 #include "FunctionHelper.h"
-#include <iostream>
 
 using namespace sge;
-
-using std::cout;
-using std::endl;
-
-
-SGVOID FunctionHelper::DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thread, SGINT tile )
-{
-	if ( tile <= thread )
-	{
-		blockDim->x = tile;
-		blockDim->y = gridDim->x = gridDim->y = 1;
-	}
-	else
-	{
-		blockDim->x = thread;
-		blockDim->y = 1;
-		gridDim->x = tile / thread;
-		gridDim->y = 1;
-	}
-};
-
-SGVOID FunctionHelper::DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thread, SGINT tilex, SGINT tiley, SGINT gridx, SGINT gridy )
-{
-	if ( gridx * gridy <= thread )
-	{
-		blockDim->x = gridx;
-		blockDim->y = gridy;
-		gridDim->x = 1;
-		gridDim->y = 1;
-	}
-	else
-	{
-		blockDim->x = tilex;
-		blockDim->y = tiley;
-		gridDim->x = gridx / tilex;
-		gridDim->y = gridy / tiley;
-	}
-};
-
-SGVOID FunctionHelper::DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thread, SGINT tilex, SGINT tiley, SGINT gridx, SGINT gridy, SGINT gridz )
-{
-	if ( gridx * gridy <= thread )
-	{
-		blockDim->x = gridx;
-		blockDim->y = gridy;
-		gridDim->x = 1;
-		gridDim->y = gridz;
-	}
-	else
-	{
-		blockDim->x = tilex;
-		blockDim->y = tiley;
-		gridDim->x  = gridx / tilex;
-		gridDim->y  = gridx * gridy * gridz / ( tilex * tiley * gridDim->x );
-	}
-};
 
 SGVOID FunctionHelper::DeviceDim1D( dim3 *blockDim, dim3 *gridDim, SGINT thread, SGINT gridx )
 {
@@ -113,10 +56,12 @@ SGVOID FunctionHelper::DeviceDim3D( dim3 *blockDim, dim3 *gridDim, SGINT thread,
 SGBOOLEAN FunctionHelper::GetCUDALastError( const char* msg, const char *file, const int line )
 {
 	cudaError_t __err = cudaGetLastError();
+	if ( __err != cudaSuccess) 
+	{ 
+		printf ( "<<< file: %s, line %d >>> \n", file, line );
+		printf ( "*error: %s \n", cudaGetErrorString( __err ) );
+		printf ( "%s \n", msg );
 	
-	if ( __err != cudaSuccess)
-	{
-		printf( "%s -------- %s @ line: %d, file: %s \n", cudaGetErrorString( __err ), msg, line, file );	
 		return true;
 	}
 

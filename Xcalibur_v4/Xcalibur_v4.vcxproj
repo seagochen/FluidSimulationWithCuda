@@ -22,12 +22,10 @@
     <ClInclude Include="FluidSimProc.h" />
     <ClInclude Include="FrameworkDynamic.h" />
     <ClInclude Include="FunctionHelper.h" />
-    <ClInclude Include="Kernels.h" />
+    <ClInclude Include="Kernels_old.h" />
     <ClInclude Include="MacroDefinition.h" />
-    <ClInclude Include="Navier_Stokes_Kernels.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="SimulationParam.h" />
-    <ClInclude Include="TestingModule.h" />
+    <ClInclude Include="TestModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Xcalibur_v4.rc" />
@@ -36,14 +34,18 @@
     <Image Include="icons\main.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FluidSimProc.cpp" />
+    <None Include="shader\backface.frag" />
+    <None Include="shader\backface.vert" />
+    <None Include="shader\raycasting.frag" />
+    <None Include="shader\raycasting.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="FluidSimProcKernels.cu" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="FrameworkDynamic.cpp" />
     <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="FluidSimProc.cu" />
-    <CudaCompile Include="Kernel.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}</ProjectGuid>

@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Oct 16, 2013
-* <Last Time>     Mar 19, 2014
+* <Last Time>     Mar 05, 2014
 * <File Name>     FrameworkDynamic.cpp
 */
 
@@ -99,7 +99,7 @@ void Framework_v1_0::CreateShaderProg ( FLUIDSPARAM *fluid )
 GLubyte* Framework_v1_0::DefaultTransFunc ()
 {
 	/* Hardcode the transfer function */
-	GLubyte *tff = (GLubyte *) calloc ( 4 * 256, sizeof(GLubyte) );
+	GLubyte *tff = (GLubyte *) calloc ( TPBUFFER_X, sizeof(GLubyte) );
 	for ( int i = 0; i < 256; i++ )
 	{
 		if ( i > 0 )
@@ -413,6 +413,12 @@ void Framework_v1_0::SetVolumeInfoUinforms ( FLUIDSPARAM *fluid )
     }    
 };
 
+
+/**
+***************************** 以上成员函数为进行GLSL渲染所必须初始步骤 ***************************************
+***********************************************************************************************************
+**************** 以下成员函数包含模型的初始化，及运行。关于流体模拟的计算过程则被封装在其他类中 *****************
+*/
 #pragma endregion
 
 #include <stdarg.h>
@@ -425,6 +431,7 @@ static SGMAINACTIVITY   *m_activity;
 static FLUIDSPARAM       m_fluid;
 static FluidSimProc     *m_simproc;
 
+/* 基本框架所默认的构造函数，需要传入SGGUI的地址，以及创建的窗口的长和宽 */
 Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height  )
 {
 	/* 设置参数 */
@@ -433,11 +440,12 @@ Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT 
 	/* prepare the fluid simulation stage */
 	m_activity = new SGMAINACTIVITY( width, height, false );
 	m_simproc  = new FluidSimProc( &m_fluid );
-
-	/* link ptr */
 	*activity = m_activity;
+	cout << "initial stage finished" << endl;
 };
 
+
+/* 设置模拟程序所需要的一切参数 */
 SGVOID Framework_v1_0::SetDefaultParam( SGVOID )
 {
 	m_fluid.run = true;
@@ -445,11 +453,11 @@ SGVOID Framework_v1_0::SetDefaultParam( SGVOID )
 	m_fluid.ray.fStepsize     = STEPSIZE;
 	m_fluid.ray.nAngle        = 0;
 	m_fluid.ray.uCanvasWidth  = CANVAS_X;
-	m_fluid.ray.uCanvasHeight = CANVAS_Y;
+	m_fluid.ray.uCanvasHeight = CANVAS_X;
 
 	m_fluid.volume.uWidth     = VOLUME_X;
-	m_fluid.volume.uHeight    = VOLUME_Y;
-	m_fluid.volume.uDepth     = VOLUME_Z;
+	m_fluid.volume.uHeight    = VOLUME_X;
+	m_fluid.volume.uDepth     = VOLUME_X;
 
 	m_fluid.shader.szCanvasVert = ".\\shader\\backface.vert";
 	m_fluid.shader.szCanvasFrag = ".\\shader\\backface.frag";
@@ -457,6 +465,8 @@ SGVOID Framework_v1_0::SetDefaultParam( SGVOID )
 	m_fluid.shader.szVolumFrag  = ".\\shader\\raycasting.frag";
 };
 
+
+/* 对字符串数据的格式化 */
 string Framework_v1_0::string_fmt( const std::string fmt_str, ... )
 {
 	/* reserve 2 times as much as the length of the fmt_str */
@@ -480,6 +490,8 @@ string Framework_v1_0::string_fmt( const std::string fmt_str, ... )
     return std::string ( formatted.get() );
 };
 
+
+/* 创建子线程，用于流体模拟 */
 DWORD WINAPI Framework_v1_0::FluidSimulationProc( LPVOID lpParam )
 {
 	/* 只要m_fluid.run为真，则一直保持流体模拟程序的运行 */
@@ -489,6 +501,8 @@ DWORD WINAPI Framework_v1_0::FluidSimulationProc( LPVOID lpParam )
 	return 0;
 };
 
+
+/* SGGUI运行后，所调度的第一个函数 */
 void Framework_v1_0::onCreate()
 {
 	/* initialize glew */
@@ -499,6 +513,21 @@ void Framework_v1_0::onCreate()
 		exit (1);
 	}
 
+	/* create sub-thread function */
+	m_fluid.thread.hThread = CreateThread ( 
+            NULL,                          // default security attributes
+            0,                             // use default stack size  
+            FluidSimulationProc,           // thread function name
+            NULL,                          // argument to thread function 
+            0,                             // use default creation flags 
+			&m_fluid.thread.dwThreadId);   // returns the thread identifier
+
+	if ( m_fluid.thread.hThread == NULL )
+	 {
+		 cout << "create sub-thread failed" << endl;
+		 exit (1);
+	 }
+
 	/* initialize the shader program and textures */
 	CreateShaderProg ( &m_fluid );
 	m_fluid.textures.hTexture1D   = Create1DTransFunc ( DefaultTransFunc () );
@@ -507,20 +536,8 @@ void Framework_v1_0::onCreate()
 	m_fluid.ray.hCluster          = CreateVerticesBufferObj ();
 	m_fluid.textures.hFramebuffer = Create2DFrameBuffer ( &m_fluid );
 
-	/* create sub-thread function */
-	m_fluid.thread.hThread = CreateThread ( 
-            NULL,                          // default security attributes
-            0,                             // use default stack size  
-            FluidSimulationProc,           // thread function name
-            NULL,                          // argument to thread function 
-            0,                             // use default creation flags 
-			&m_fluid.thread.dwThreadId );  // returns the thread identifier
-
-	if ( m_fluid.thread.hThread == NULL )
-	{
-		cout << "create sub-thread failed" << endl;
-		exit (1);
-	}
+	/* 打印操作信息 */
+	m_simproc->PrintMSG();
 };
 
 void Framework_v1_0::CountFPS()
@@ -531,8 +548,6 @@ void Framework_v1_0::CountFPS()
 
 void Framework_v1_0::onDisplay()
 {
-	if ( !m_fluid.run ) onDestroy();
-
 	/* do something before rendering */
 	glEnable ( GL_DEPTH_TEST );
 	
@@ -550,6 +565,7 @@ void Framework_v1_0::onDisplay()
 
 	/* do not bind the framebuffer now */
     glBindFramebuffer ( GL_FRAMEBUFFER, 0 );
+
 	glViewport ( 0, 0, m_fluid.ray.uCanvasWidth, m_fluid.ray.uCanvasHeight );
 	m_fluid.shader.ptrShader->LinkShaders 
 		( m_fluid.shader.hProgram, 2, m_fluid.shader.hRCVert, m_fluid.shader.hRCFrag );
@@ -563,11 +579,10 @@ void Framework_v1_0::onDisplay()
 
 void Framework_v1_0::onDestroy()
 {
+	/* 启动退出程序的命令后，先关闭子线程 */
 	m_fluid.run = false;
-
-//	/* 启动退出程序的命令后，先关闭子线程 */
-//	WaitForSingleObject( m_fluid.thread.hThread, INFINITE );
-//	CloseHandle( m_fluid.thread.hThread );
+	WaitForSingleObject( m_fluid.thread.hThread, INFINITE );
+	CloseHandle( m_fluid.thread.hThread );
 
 	/* 释放所有用于流体计算的资源 */
 	m_simproc->FreeResource();
@@ -592,24 +607,20 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 			onDestroy();
 			break;
 
-		case SG_KEY_S:
-			m_simproc->SaveCurFluidSimStatus();
+		case SG_KEY_U:
+			m_simproc->HostToDevice();
 			break;
 
-		case SG_KEY_L:
-			m_simproc->LoadPreFluidSimStatus();
-			break;
-
-		case SG_KEY_C:
-			m_simproc->ZeroBuffers();
+		case SG_KEY_D:
+			m_simproc->DeviceToHost();
 			break;
 
 		case SG_KEY_P:
-			system("cls");
-			cout << "Use mouse to control rotation of observation" << endl 
-				<< "Use Key Q or ESC to quit system" << endl 
-				<< "Use Key S to save current fluid simulation status" << endl
-				<< "Use Key L to load previous fluid simulation status" << endl;
+			m_simproc->PrintMSG();
+			break;
+	
+		case SG_KEY_C:
+			m_simproc->ZeroBuffers();
 			break;
 
 		default:
@@ -617,6 +628,7 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 		}
 	}
 };
+
 
 void Framework_v1_0::onMouse( SGMOUSE mouse, unsigned x, unsigned y, int degree )
 {
