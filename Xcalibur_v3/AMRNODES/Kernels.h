@@ -17,8 +17,6 @@
 #include "FluidSimProc.h"
 
 
-#pragma region basic kernel functions
-
 __global__ void kernelZeroGrids( double *grid )
 {
 	GetIndex3D();
@@ -67,10 +65,6 @@ __global__ void kernelCopyGrids( double *src, cdouble *dst )
 	src[Index(i,j,k)] = dst[Index(i,j,k)];
 };
 
-#pragma endregion
-
-
-#pragma region basic atomic functions
 
 __device__  double atomicGetValue( cdouble *grid, cint x, cint y, cint z )
 {
@@ -116,10 +110,6 @@ __device__  double atomicTrilinear( cdouble *grid, cdouble x, cdouble y, cdouble
 	return c;
 };
 
-#pragma endregion
-
-
-#pragma region obstacle and boundary condtion
 
 __device__ void atomicDensityObs( double *grids, cdouble *obstacle )
 {
@@ -241,115 +231,35 @@ __global__ void kernelObstacle( double *grids, cdouble *obstacle, cint field )
 	}
 };
 
-#pragma endregion
-
-
-#pragma region kernels for sovling Navier-Stokes Equations
-
 #include "TestModule.h"
 
-//__global__ void kernelJacobi
-//	( double *grid_out, cdouble *grid_in, cdouble diffusion, cdouble divisor )
-//{
-//	GetIndex3D();
-//	BeginSimArea();
-//
-//	double div = 0.f;
-//	if ( divisor <= 0.f ) div = 1.f;
-//	else div = divisor;
-//
-//	grid_out [ Index(i,j,k) ] = 
-//		( grid_in [ Index(i,j,k) ] + diffusion * 
-//			(
-//				grid_out [ Index(i-1, j, k) ] + grid_out [ Index(i+1, j, k) ] +
-//				grid_out [ Index(i, j-1, k) ] + grid_out [ Index(i, j+1, k) ] +
-//				grid_out [ Index(i, j, k-1) ] + grid_out [ Index(i, j, k+1) ]
-//			) 
-//		) / div;
-//
-//	EndSimArea();
-//}
-//
-//__global__ void kernelGridAdvection( double *grid_out, cdouble *grid_in, cdouble deltatime, cdouble *u_in, cdouble *v_in, cdouble *w_in )
-//{
-//	GetIndex3D();
-//	BeginSimArea();
-//
-//	double u = i - u_in [ Index(i,j,k) ] * deltatime;
-//	double v = j - v_in [ Index(i,j,k) ] * deltatime;
-//	double w = k - w_in [ Index(i,j,k) ] * deltatime;
-//	
-//	grid_out [ Index(i,j,k) ] = atomicTrilinear ( grid_in, u, v, w );
-//
-//	EndSimArea();
-//};
-//
-//__global__ void kernelGradient( double *div, double *p, cdouble *vel_u, cdouble *vel_v, cdouble *vel_w )
+//__global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w )
 //{
 //	GetIndex3D();
 //	BeginSimArea();
 //	
-//	cdouble h = 1.f / GRIDS_X;
+//	cint half = GRIDS_X / 2;
 //
-//	// previous instantaneous magnitude of velocity gradient 
-//	//		= (sum of velocity gradients per axis)/2N:
-//	div [ Index(i,j,k) ] = -0.5f * h * (
-//			vel_u [ Index(i+1, j, k) ] - vel_u [ Index(i-1, j, k) ] + // gradient of u
-//			vel_v [ Index(i, j+1, k) ] - vel_v [ Index(i, j-1, k) ] + // gradient of v
-//			vel_w [ Index(i, j, k+1) ] - vel_w [ Index(i, j, k-1) ]   // gradient of w
-//		);
-//	// zero out the present velocity gradient
-//	p [ Index(i,j,k) ] = 0.f;
-//	
+//	if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
+//	{
+//		/* add source to grids */
+//		density[Index(i,j,k)] = DENSITY;
+//
+//		/* add velocity to grids */
+//		if ( i < half )
+//			vel_u[Index(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
+//		elif( i >= half )
+//			vel_u[Index(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
+//
+//		vel_v[Index(i,j,k)] = VELOCITY;
+//
+//		if ( k < half )
+//			vel_w[Index(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
+//		elif ( k >= half )
+//			vel_w[Index(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
+//	}
 //	EndSimArea();
 //};
-//
-//__global__ void kernelSubtract( double *vel_u, double *vel_v, double *vel_w, cdouble *p )
-//{
-//	GetIndex3D();
-//	BeginSimArea();
-//
-//	// gradient calculated by neighbors
-//
-//	vel_u [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i+1, j, k) ] - p [ Index(i-1, j, k) ] );
-//	vel_v [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j+1, k) ] - p [ Index(i, j-1, k) ] );
-//	vel_w [ Index(i, j, k) ] -= 0.5f * GRIDS_X * ( p [ Index(i, j, k+1) ] - p [ Index(i, j, k-1) ] );
-//
-//	EndSimArea();
-//};
-
-__global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w )
-{
-	GetIndex3D();
-	BeginSimArea();
-	
-	cint half = GRIDS_X / 2;
-
-	if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
-	{
-		/* add source to grids */
-		density[Index(i,j,k)] = DENSITY;
-
-		/* add velocity to grids */
-		if ( i < half )
-			vel_u[Index(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
-		elif( i >= half )
-			vel_u[Index(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
-
-		vel_v[Index(i,j,k)] = VELOCITY;
-
-		if ( k < half )
-			vel_w[Index(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
-		elif ( k >= half )
-			vel_w[Index(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
-	}
-	EndSimArea();
-};
-
-#pragma endregion
-
-
-#pragma region interpolation kernels
 
 __global__ void kernelPickData( uchar *c, cdouble *bufs, int ofi, int ofj, int ofk, cint grids )
 {
@@ -389,11 +299,6 @@ __global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint p
 
 	dst[Index(x,y,z)] = src[Index(i,j,k)];
 };
-
-#pragma endregion
-
-
-#pragma region halo handlers
 
 __global__ void kernelClearHalo( double *grids )
 {
@@ -443,10 +348,6 @@ __global__ void kernelHandleHalo
 */
 };
 
-#pragma endregion
-
-
-#pragma region etc.
 
 __global__ void kernelSumDensity( double *share, cdouble *src, cint no )
 {
@@ -454,7 +355,5 @@ __global__ void kernelSumDensity( double *share, cdouble *src, cint no )
 
 	share[no] += src[Index(i,j,k)];
 };
-
-#pragma endregion
 
 #endif

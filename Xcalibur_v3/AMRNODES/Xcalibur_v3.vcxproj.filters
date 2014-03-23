@@ -2,34 +2,32 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{20ab4c05-aff6-4c17-8a55-62c17fe988fd}</UniqueIdentifier>
+      <UniqueIdentifier>{afdcf691-41a0-4e00-9283-57607cf3f7ce}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{c1df6c3c-ae7c-4f55-b129-b9c6ff67ab11}</UniqueIdentifier>
+      <UniqueIdentifier>{2c071cad-2b33-4300-80be-0f72d0f3709b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource Files">
-      <UniqueIdentifier>{b9442bf1-743f-400e-9dc5-9ad285589a63}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files\Icon Files">
-      <UniqueIdentifier>{4c1a1092-0ed7-4783-9931-a767b515954b}</UniqueIdentifier>
+      <UniqueIdentifier>{07ac75bf-e4d5-48d3-bb7b-076aa36dfcfa}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource Files\Shader Files">
-      <UniqueIdentifier>{70659a9b-edd7-4140-8500-88691d125fef}</UniqueIdentifier>
+      <UniqueIdentifier>{f05c74c9-8a95-4d43-bd22-3e73de41e521}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="AMRNODES.rc">
-      <Filter>Resource Files\Icon Files</Filter>
-    </ResourceCompile>
+    <Filter Include="Resource Files\etc">
+      <UniqueIdentifier>{e50eea80-4c74-4cd4-9679-0e25b2656303}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Image Include="icons\main.ico">
-      <Filter>Resource Files\Icon Files</Filter>
+      <Filter>Resource Files\etc</Filter>
+    </Image>
+    <Image Include="icons\seagosoft.png">
+      <Filter>Resource Files\etc</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
-      <Filter>Resource Files\Icon Files</Filter>
+      <Filter>Resource Files\etc</Filter>
     </ClInclude>
     <ClInclude Include="CUDACustomeMath.h">
       <Filter>Header Files</Filter>
@@ -43,10 +41,10 @@
     <ClInclude Include="FunctionHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MacroDefinition.h">
+    <ClInclude Include="Kernels.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Kernels.h">
+    <ClInclude Include="MacroDefinition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TestModule.h">
@@ -68,6 +66,16 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="Xcalibur_v3.rc">
+      <Filter>Resource Files\etc</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="FluidSimProcKernels.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="FrameworkDynamic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -77,10 +85,5 @@
     <ClCompile Include="MainDynamic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="FluidSimProcKernels.cu">
-      <Filter>Source Files</Filter>
-    </CudaCompile>
   </ItemGroup>
 </Project>

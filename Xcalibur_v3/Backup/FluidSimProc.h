@@ -30,6 +30,29 @@ namespace sge
 		SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 	};
 
+	class NavierStokesSolver
+	{
+	private:
+		dim3 gridDim, blockDim;
+
+		FunctionHelper m_scHelper;
+
+	public:
+		void SolveSource( double *ptrDevDens, double *ptrDevU, double *ptrDevV, double *ptrDevW,
+			cdouble *ptrDevObst, int *nInTime, int *nDeTime, cdouble deltatime );
+		void SolveVelocity(  double *ptrDevU0, double *ptrDevV0, double *ptrDevW0,
+									   double *ptrDevU, double *ptrDevV, double *ptrDevW,
+									   double *ptrDiv,  double *ptrPres, cdouble timestep );
+		void SolveDensity( double *ptrDevDens0, double *ptrDevDens,
+			cdouble *ptrDevU, cdouble *ptrDevV, cdouble *ptrDevW, cdouble timestep );
+
+	private:
+		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
+		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
+		void Diffusion( double *out, cdouble *in, cdouble diff );
+		void Projection( double *u, double *v, double *w, double *div, double *p );
+	};
+
 	class FluidSimProc
 	{
 	private:
@@ -60,6 +83,7 @@ namespace sge
 		int m_nDensIncrease, m_nDensDecrease;
 		
 		FunctionHelper m_scHelper;
+		NavierStokesSolver m_scSolver;
 
 		SimNode *m_ptrSimNode;
 		string m_szTitle;	
@@ -104,15 +128,6 @@ namespace sge
 		void PopCompNode( int nodeid );
 		void SwapComNodes( void );
 		void GenVolumeImage( FLUIDSPARAM *fluid );
-
-	public:
-		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
-		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
-		void Diffusion( double *out, cdouble *in, cdouble diff );
-		void Projection( double *u, double *v, double *w, double *div, double *p );
-		void DensitySolver( cdouble timestep );
-		void VelocitySolver( cdouble timestep );
-		void SourceSolver( void );
 	};
 };
 

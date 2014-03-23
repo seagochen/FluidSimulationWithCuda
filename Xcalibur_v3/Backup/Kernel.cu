@@ -511,22 +511,45 @@ __global__ void kernelSubtract( double *u, double *v, double *w, double *prs )
 
 __global__ void kernelAddSource
 	( double *den, double *u, double *v, double *w, 
-	cdouble *obst, cdouble rho, cdouble vel, cdouble delta )
+	cdouble *obst, cdouble rho, cdouble vel, cdouble delta, cint time )
 {
 	int i, j, k;
 	thread();
 
 	if ( isbound( i, j, k ) )
 	{
-		if ( obst[ IX(i,j,k) ] < 0 )
+//		if ( obst[ IX(i,j,k) ] < 0 )
 		{
-			double rate = -obst[ IX(i,j,k) ] / 100.f;
+//			double rate = -obst[ IX(i,j,k) ] / 100.f;
+			double rate = 1.f;
+			double randno = _random( _rand(time) );
 
 			/* add rho to density field */
-			den[ IX(i,j,k) ] = rate * rho * delta;
+			den[ IX(i,j,k) ] = rate * randno * rho * delta;
 
 			/* add velocity to velocity field */
 			v[ IX(i,j,k) ] = rate * vel * delta;
+						
+			if ( randno < 0.25f and randno >= 0.f )
+			{
+				u[ IX(i,j,k) ] = -rate * vel * delta * delta;
+				w[ IX(i,j,k) ] = -rate * vel * delta * delta;
+			}
+			elif ( randno >= 0.25f and randno < 0.5f )
+			{
+				u[ IX(i,j,k) ] = -rate * vel * delta * delta;
+				w[ IX(i,j,k) ] =  rate * vel * delta * delta;				
+			}
+			elif ( randno >= 0.5f and randno < 0.75f )
+			{
+				u[ IX(i,j,k) ] =  rate * vel * delta * delta;
+				w[ IX(i,j,k) ] = -rate * vel * delta * delta;
+			}
+			else
+			{
+				u[ IX(i,j,k) ] = rate * vel * delta * delta;
+				w[ IX(i,j,k) ] = rate * vel * delta * delta;
+			}
 		}
 	}
 };

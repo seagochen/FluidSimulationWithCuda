@@ -29,7 +29,7 @@ extern __global__ void kernelSubtract
 
 extern __global__ void kernelAddSource
 	( double *den, double *u, double *v, double *w, 
-	cdouble *obst, cdouble rho, cdouble vel, cdouble delta );
+	cdouble *obst, cdouble rho, cdouble vel, cdouble delta, cint time );
 
 extern __global__ void kernelDensToVolume( uchar *volume, cdouble *rho, cint offi, cint offj, cint offk,
 								   cint tx, cint ty, cint tz, cint vx, cint vy, cint vz );

@@ -37,31 +37,19 @@
     <Image Include="icons\seagosoft.png" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProc.cu">
-      <FileType>Document</FileType>
-    </CudaCompile>
-    <CudaCompile Include="Kernel.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="FluidSimProc.cpp" />
-    <ClCompile Include="FrameworkDynamic.cpp" />
-    <ClCompile Include="FunctionHelper.cpp" />
-    <ClCompile Include="MainDynamic.cpp" />
-    <Text Include="ns_backup.txt">
-      <FileType>Document</FileType>
-    </Text>
-    <Text Include="backup.txt" />
-    <Text Include="kernels.txt" />
-    <Text Include="obsoleted_header.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="shader\backface.frag" />
     <None Include="shader\backface.vert" />
     <None Include="shader\raycasting.frag" />
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="obsoleted_kernels.txt" />
+    <CudaCompile Include="FluidSimProc.cu" />
+    <CudaCompile Include="Kernel.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FrameworkDynamic.cpp" />
+    <ClCompile Include="FunctionHelper.cpp" />
+    <ClCompile Include="MainDynamic.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D17050E7-5B3C-4A42-8454-F778CC99CFB1}</ProjectGuid>

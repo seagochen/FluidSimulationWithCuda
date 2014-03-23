@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AMRNODES", "AMRNODES\AMRNOD
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Xcalibur_v3", "Xcalibur_v3\Xcalibur_v3.vcxproj", "{D17050E7-5B3C-4A42-8454-F778CC99CFB1}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Xcalibur_v4", "Xcalibur_v4\Xcalibur_v4.vcxproj", "{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -49,6 +51,14 @@ Global
 		{D17050E7-5B3C-4A42-8454-F778CC99CFB1}.Release|Win32.Build.0 = Release|Win32
 		{D17050E7-5B3C-4A42-8454-F778CC99CFB1}.Release|x64.ActiveCfg = Release|x64
 		{D17050E7-5B3C-4A42-8454-F778CC99CFB1}.Release|x64.Build.0 = Release|x64
+		{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}.Debug|Win32.Build.0 = Debug|Win32
+		{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}.Debug|x64.ActiveCfg = Debug|x64
+		{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}.Debug|x64.Build.0 = Debug|x64
+		{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}.Release|Win32.ActiveCfg = Release|Win32
+		{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}.Release|Win32.Build.0 = Release|Win32
+		{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}.Release|x64.ActiveCfg = Release|x64
+		{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,11 +1,3 @@
-/**
-* <Author>        Orlando Chen
-* <Email>         seagochen@gmail.com
-* <First Time>    Dec 15, 2013
-* <Last Time>     Mar 23, 2014
-* <File Name>     NavierStokesSolver.cu
-*/
-
 #include <time.h>
 #include <iostream>
 #include <utility>
@@ -31,7 +23,7 @@ void NavierStokesSolver::SolveSource( double *ptrDevDens, double *ptrDevU, doubl
 	if ( *nDeTime eqt 0 )
 	{
 		kernelAddSource __device_func__ ( ptrDevDens, ptrDevU, ptrDevV, ptrDevW, 
-			ptrDevObst, DENSITY, VELOCITY, deltatime, time(NULL), BULLET_X, BULLET_Y, BULLET_Z );
+			ptrDevObst, DENSITY, VELOCITY, deltatime, time(NULL) );
 
 		*nInTime++;
 
@@ -47,6 +39,8 @@ void NavierStokesSolver::SolveSource( double *ptrDevDens, double *ptrDevU, doubl
 	}
 };
 
+
+#if 0
 void NavierStokesSolver::SolveDensity( double *ptrDevDens0, double *ptrDevDens,
 									   cdouble *ptrDevU, cdouble *ptrDevV, cdouble *ptrDevW,
 									   cdouble timestep )
@@ -90,7 +84,7 @@ void NavierStokesSolver::Advection( double *out, cdouble *in, cdouble timestep, 
 {
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
-	kernelAdvection __device_func__ ( out, in, timestep, u, v, w, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelAdvection __device_func__ ( out, in, timestep, u, v, w );
 };
 
 void NavierStokesSolver::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor )
@@ -98,7 +92,7 @@ void NavierStokesSolver::Jacobi( double *out, cdouble *in, cdouble diff, cdouble
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	
 	for ( int k = 0; k < 20; k++ )
-		kernelJacobi __device_func__ ( out, in, diff, divisor, BULLET_X, BULLET_Y, BULLET_Z );	
+		kernelJacobi __device_func__ ( out, in, diff, divisor );	
 };
 
 void NavierStokesSolver::Diffusion( double *out, cdouble *in, cdouble diff )
@@ -113,11 +107,111 @@ void NavierStokesSolver::Projection( double *u, double *v, double *w, double *di
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	// the velocity gradient
-	kernelGradient __device_func__ ( div, p, u, v, w, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelGradient __device_func__ ( div, p, u, v, w );
+	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
+	Jacobi(p, div, 1.f, 6.f);
+
+	// now subtract this gradient from our current velocity field
+	kernelSubtract __device_func__ ( u, v, w, p );
+};
+
+#endif
+
+void NavierStokesSolver::SolveVelocity(  double *ptrDevU0, double *ptrDevV0, double *ptrDevW0,
+									   double *ptrDevU, double *ptrDevV, double *ptrDevW,
+									   double *ptrDiv,  double *ptrPres, cdouble timestep )
+{
+	// diffuse the velocity field (per axis):
+	Diffusion( dev_u0, dev_u, VISOCITY );
+	Diffusion( dev_v0, dev_v, VISOCITY );
+	Diffusion( dev_w0, dev_w, VISOCITY );
+	
+	if ( helper.GetCUDALastError( "host function failed: Diffusion", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+
+	std::swap( dev_u0, dev_u );
+	std::swap( dev_v0, dev_v );
+	std::swap( dev_w0, dev_w );
+
+	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
+	Projection( dev_u, dev_v, dev_w, dev_div, dev_p );
+
+	if ( helper.GetCUDALastError( "host function failed: Projection", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+	
+	// advect the velocity field (per axis):
+	Advection( dev_u0, dev_u, timestep, dev_u, dev_v, dev_w );
+	Advection( dev_v0, dev_v, timestep, dev_u, dev_v, dev_w );
+	Advection( dev_w0, dev_w, timestep, dev_u, dev_v, dev_w );
+
+	if ( helper.GetCUDALastError( "host function failed: Advection", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+
+	std::swap( dev_u0, dev_u );
+	std::swap( dev_v0, dev_v );
+	std::swap( dev_w0, dev_w );
+	
+	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
+	Projection( dev_u, dev_v, dev_w, dev_div, dev_p );
+};
+
+void NavierStokesSolver::SolveDensity( double *ptrDevDens0, double *ptrDevDens,
+									   cdouble *ptrDevU, cdouble *ptrDevV, cdouble *ptrDevW,
+									   cdouble timestep )
+{
+	Diffusion( dev_den0, dev_den, DIFFUSION );
+	std::swap( dev_den0, dev_den );
+	Advection ( dev_den, dev_den0, timestep, dev_u, dev_v, dev_w );
+
+	if ( helper.GetCUDALastError( "host function failed: DensitySolver", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+};
+
+void NavierStokesSolver::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor )
+{
+	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
+
+	for ( int k=0; k<20; k++)
+	{
+		kernelJacobi<<<gridDim,blockDim>>>( out, in, diff, divisor);
+	}
+};
+
+void NavierStokesSolver::Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w )
+{
+	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
+
+	kernelGridAdvection<<<gridDim,blockDim>>>( out, in, timestep, u, v, w );
+};
+
+void NavierStokesSolver::Diffusion( double *out, cdouble *in, cdouble diff )
+{
+	double rate = diff * GRIDS_X * GRIDS_X * GRIDS_X;
+	Jacobi ( out, in, rate, 1+6*rate );
+};
+
+void FluidSimProc::Projection( double *u, double *v, double *w, double *div, double *p )
+{
+	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
+
+	// the velocity gradient
+	kernelGradient<<<gridDim,blockDim>>>( div, p, u, v, w );
 
 	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
 	Jacobi(p, div, 1.f, 6.f);
 
 	// now subtract this gradient from our current velocity field
-	kernelSubtract __device_func__ ( u, v, w, p, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelSubtract<<<gridDim,blockDim>>>( u, v, w, p );
 };
