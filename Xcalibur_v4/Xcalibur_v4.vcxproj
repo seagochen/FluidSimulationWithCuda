@@ -42,6 +42,7 @@
     <CudaCompile Include="FluidSimProcKernels.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
+    <CudaCompile Include="NavierStokesSolver.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameworkDynamic.cpp" />
@@ -50,7 +51,6 @@
     <CudaCompile Include="Kernels.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
-    <CudaCompile Include="NavierStokesSolver.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}</ProjectGuid>

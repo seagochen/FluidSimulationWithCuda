@@ -244,7 +244,7 @@ __global__ void kernelJacobi
 };
 
 
-__global__ void kernelGridAdvection
+__global__ void kernelAdvection
 	( double *out, cdouble *in, cdouble delta,
 	cdouble *u, cdouble *v, cdouble *w )
 {

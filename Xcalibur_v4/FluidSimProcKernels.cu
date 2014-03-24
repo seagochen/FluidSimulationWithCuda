@@ -20,6 +20,8 @@
 
 using namespace sge;
 
+
+
 FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 {
 	/* initialize FPS */
@@ -848,137 +850,6 @@ void FluidSimProc::SolveLeafNode( void )
 	kernelClearHalo __device_func__ ( gd_velocity_u );
 	kernelClearHalo __device_func__ ( gd_velocity_v );
 	kernelClearHalo __device_func__ ( gd_velocity_w );
-};
-
-void FluidSimProc::AddSource( void )
-{
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );	
-
-	if ( decrease_times eqt 0 )
-	{
-		kernelAddSource __device_func__ ( dev_den, dev_u, dev_v, dev_w );
-//		kernelAddSource __device_func__ ( dev_den, dev_u, dev_v, dev_w, dev_obs, DENSITY, VELOCITY, DELTATIME );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelPickData failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
-
-		increase_times++;
-
-		if ( increase_times eqt 200 )
-		{
-			decrease_times = increase_times;
-			increase_times = 0;
-		}
-	}
-	else
-	{
-		decrease_times--;
-	}
-};
-
-void FluidSimProc::SolveNavierStokesEquation( cdouble timestep, bool add )
-{
-	if ( add ) AddSource();
-	VelocitySolver( timestep );
-	DensitySolver( timestep );
-};
-
-void FluidSimProc::VelocitySolver( cdouble timestep )
-{
-	// diffuse the velocity field (per axis):
-	Diffusion( dev_u0, dev_u, VISOCITY );
-	Diffusion( dev_v0, dev_v, VISOCITY );
-	Diffusion( dev_w0, dev_w, VISOCITY );
-	
-	if ( helper.GetCUDALastError( "host function failed: Diffusion", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit( 1 );
-	}
-
-	std::swap( dev_u0, dev_u );
-	std::swap( dev_v0, dev_v );
-	std::swap( dev_w0, dev_w );
-
-	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	Projection( dev_u, dev_v, dev_w, dev_div, dev_p );
-
-	if ( helper.GetCUDALastError( "host function failed: Projection", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit( 1 );
-	}
-	
-	// advect the velocity field (per axis):
-	Advection( dev_u0, dev_u, timestep, dev_u, dev_v, dev_w );
-	Advection( dev_v0, dev_v, timestep, dev_u, dev_v, dev_w );
-	Advection( dev_w0, dev_w, timestep, dev_u, dev_v, dev_w );
-
-	if ( helper.GetCUDALastError( "host function failed: Advection", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit( 1 );
-	}
-
-	std::swap( dev_u0, dev_u );
-	std::swap( dev_v0, dev_v );
-	std::swap( dev_w0, dev_w );
-	
-	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	Projection( dev_u, dev_v, dev_w, dev_div, dev_p );
-};
-
-void FluidSimProc::DensitySolver( cdouble timestep )
-{
-	Diffusion( dev_den0, dev_den, DIFFUSION );
-	std::swap( dev_den0, dev_den );
-	Advection ( dev_den, dev_den0, timestep, dev_u, dev_v, dev_w );
-
-	if ( helper.GetCUDALastError( "host function failed: DensitySolver", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit( 1 );
-	}
-};
-
-void FluidSimProc::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor )
-{
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
-
-	for ( int k=0; k<20; k++)
-	{
-		kernelJacobi<<<gridDim,blockDim>>>( out, in, diff, divisor);
-	}
-};
-
-void FluidSimProc::Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w )
-{
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
-//	kernelAdvection __device_func__ ( out, in, timestep, u, v, w );
-	kernelGridAdvection<<<gridDim,blockDim>>>( out, in, timestep, u, v, w );
-};
-
-void FluidSimProc::Diffusion( double *out, cdouble *in, cdouble diff )
-{
-	double rate = diff * GRIDS_X * GRIDS_X * GRIDS_X;
-	Jacobi ( out, in, rate, 1+6*rate );
-};
-
-void FluidSimProc::Projection( double *u, double *v, double *w, double *div, double *p )
-{
-	helper.DeviceDim3D( &blockDim, &gridDim, THREADS_X, TILE_X, GRIDS_X, GRIDS_X, GRIDS_X );
-
-	// the velocity gradient
-	kernelGradient<<<gridDim,blockDim>>>( div, p, u, v, w );
-
-	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
-	Jacobi(p, div, 1.f, 6.f);
-
-	// now subtract this gradient from our current velocity field
-	kernelSubtract<<<gridDim,blockDim>>>( u, v, w, p );
 };
 
 void FluidSimProc::ReadBuffers( void )

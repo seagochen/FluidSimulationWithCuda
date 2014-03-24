@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 07, 2014
+* <Last Time>     Mar 24, 2014
 * <File Name>     FluidSimProc.h
 */
 
@@ -85,6 +85,7 @@ namespace sge
 
 	private:
 		FunctionHelper helper;
+		FunctionHelper m_scHelper;
 
 #pragma endregion
 
@@ -144,7 +145,7 @@ namespace sge
 		void SolveNavierStokesEquation( cdouble timestep, bool add );
 		void DensitySolver( cdouble timestep );
 		void VelocitySolver( cdouble timestep );
-		void AddSource( void );
+		void SourceSolver( void );
 		void InitBoundary( void );
 		void ReadBuffers( void );
 		void WriteBuffers( void );
@@ -154,5 +155,50 @@ namespace sge
 		void Projection( double *u, double *v, double *w, double *div, double *p );
 	};
 };
+
+#define dev_buffers_num                   35
+#define dev_den              dev_buffers[ 0 ]
+#define dev_den0             dev_buffers[ 1 ]
+#define dev_u                dev_buffers[ 2 ]
+#define dev_u0               dev_buffers[ 3 ]
+#define dev_v                dev_buffers[ 4 ]
+#define dev_v0               dev_buffers[ 5 ]
+#define dev_w                dev_buffers[ 6 ]
+#define dev_w0               dev_buffers[ 7 ]
+#define dev_div              dev_buffers[ 8 ]
+#define dev_p                dev_buffers[ 9 ]
+#define dev_obs              dev_buffers[ 10 ]
+
+#define dens_C               dev_buffers[ 0 ]
+#define dens_L               dev_buffers[ 11 ]
+#define dens_R               dev_buffers[ 12 ]
+#define dens_U               dev_buffers[ 13 ]
+#define dens_D               dev_buffers[ 14 ]
+#define dens_F               dev_buffers[ 15 ]
+#define dens_B               dev_buffers[ 16 ]
+
+#define velu_C               dev_buffers[ 2 ]
+#define velu_L               dev_buffers[ 17 ] 
+#define velu_R               dev_buffers[ 18 ]
+#define velu_U               dev_buffers[ 19 ]
+#define velu_D               dev_buffers[ 20 ]
+#define velu_F               dev_buffers[ 21 ]
+#define velu_B               dev_buffers[ 22 ]
+
+#define velv_C               dev_buffers[ 4 ]
+#define velv_L               dev_buffers[ 23 ]
+#define velv_R               dev_buffers[ 24 ]
+#define velv_U               dev_buffers[ 25 ]
+#define velv_D               dev_buffers[ 26 ]
+#define velv_F               dev_buffers[ 27 ]
+#define velv_B               dev_buffers[ 28 ]
+
+#define velw_C               dev_buffers[ 6 ]
+#define velw_L               dev_buffers[ 29 ]
+#define velw_R               dev_buffers[ 30 ]
+#define velw_U               dev_buffers[ 31 ]
+#define velw_D               dev_buffers[ 32 ]
+#define velw_F               dev_buffers[ 33 ]
+#define velw_B               dev_buffers[ 34 ]
 
 #endif

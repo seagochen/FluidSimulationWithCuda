@@ -19,7 +19,7 @@ extern __global__ void kernelJacobi
 	( double *out, cdouble *in, cdouble diffusion, cdouble divisor );
 
 
-extern __global__ void kernelGridAdvection
+extern __global__ void kernelAdvection
 	( double *out, cdouble *in, cdouble delta,
 	cdouble *u, cdouble *v, cdouble *w );
 

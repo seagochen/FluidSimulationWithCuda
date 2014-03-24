@@ -82,10 +82,10 @@
     <CudaCompile Include="FluidSimProcKernels.cu">
       <Filter>Source Files\Kernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="NavierStokesSolver.cu">
+    <CudaCompile Include="Kernels.cu">
       <Filter>Source Files\Kernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="Kernels.cu">
+    <CudaCompile Include="NavierStokesSolver.cu">
       <Filter>Source Files\Kernels</Filter>
     </CudaCompile>
   </ItemGroup>
