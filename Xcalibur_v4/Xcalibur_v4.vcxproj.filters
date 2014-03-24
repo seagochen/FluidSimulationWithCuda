@@ -39,10 +39,7 @@
     <ClInclude Include="FrameworkDynamic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Kernels_old.h">
-      <Filter>Header Files\Kernels</Filter>
-    </ClInclude>
-    <ClInclude Include="TestModule.h">
+    <ClInclude Include="Kernels.h">
       <Filter>Header Files\Kernels</Filter>
     </ClInclude>
   </ItemGroup>
@@ -83,6 +80,12 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="FluidSimProcKernels.cu">
+      <Filter>Source Files\Kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="NavierStokesSolver.cu">
+      <Filter>Source Files\Kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Kernels.cu">
       <Filter>Source Files\Kernels</Filter>
     </CudaCompile>
   </ItemGroup>

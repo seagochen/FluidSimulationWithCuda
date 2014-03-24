@@ -22,10 +22,9 @@
     <ClInclude Include="FluidSimProc.h" />
     <ClInclude Include="FrameworkDynamic.h" />
     <ClInclude Include="FunctionHelper.h" />
-    <ClInclude Include="Kernels_old.h" />
+    <ClInclude Include="Kernels.h" />
     <ClInclude Include="MacroDefinition.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="TestModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Xcalibur_v4.rc" />
@@ -40,12 +39,18 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProcKernels.cu" />
+    <CudaCompile Include="FluidSimProcKernels.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameworkDynamic.cpp" />
     <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
+    <CudaCompile Include="Kernels.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <CudaCompile Include="NavierStokesSolver.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}</ProjectGuid>

@@ -16,8 +16,7 @@
 #include "FluidSimProc.h"
 #include "MacroDefinition.h"
 #include "FrameworkDynamic.h"
-#include "Kernels_old.h"
-//#include "Kernels.h"
+#include "Kernels.h"
 
 using namespace sge;
 
