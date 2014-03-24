@@ -108,10 +108,10 @@ namespace sge
 		FluidSimProc( FLUIDSPARAM *fluid );
 
 	public:
+		/* clear device buffers */
 		void ClearBuffers( void );
 
-		void ZeroBuffers( void );
-
+		/* get the title of windows's bar */
 		sstr GetTitleBar( void ) { return &m_szTitle; };
 
 		void HostToDevice( void );
@@ -121,14 +121,6 @@ namespace sge
 		void FreeResource( void );
 
 		void AllocateResource( void );
-
-	private:
-		void zeroDeivceRes( void );
-		void zeroHostRes( void );
-		void zeroVisualBuffers( void );
-		void zeroShareBuffers( void );
-		void zeroTempoBuffers( void );
-		void zeroGlobalNode( void );
 
 	private:
 		void freeHostRes( void );
@@ -169,6 +161,10 @@ namespace sge
 		void Projection( double *u, double *v, double *w, double *div, double *p );
 	};
 };
+
+#define __device_func__ <<<gridDim,blockDim>>>
+#define DeviceParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z )
+#define _zero(vect) kernelZeroBuffers __device_func__ ( vect, GRIDS_X, GRIDS_Y, GRIDS_Z )
 
 #define dev_buffers_num                   35
 #define dev_den              dev_buffers[ 0 ]

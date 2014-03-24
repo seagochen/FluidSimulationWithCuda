@@ -613,7 +613,7 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 			break;
 	
 		case SG_KEY_C:
-			m_simproc->ZeroBuffers();
+			m_simproc->ClearBuffers();
 			break;
 
 		case SG_KEY_P:

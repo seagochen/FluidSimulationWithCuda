@@ -9,12 +9,6 @@
 #ifndef __macro_definition_h_
 #define __macro_definition_h_
 
-#include <device_launch_parameters.h>
-
-/*********************************************************************************************************/
-/*********************************************************************************************************/
-/*********************************************************************************************************/
-
 /* parameters for fluid simulation */
 #define DELTATIME              0.5f
 #define DIFFUSION              0.1f
@@ -175,18 +169,5 @@
 #define MACRO_FRONT               5
 #define MACRO_BACK                6
 
-#define and    &&
-#define and_eq &=
-#define bitand &
-#define bitor  |
-#define compl  ~
-#define not    !
-#define not_eq !=
-#define or     ||
-#define or_eq  |=
-#define xor    ^
-#define xor_eq ^=
-#define eqt    ==
-#define elif  else if
 
 #endif

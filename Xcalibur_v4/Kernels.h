@@ -28,14 +28,6 @@ extern __global__ void kernelGradient( double *div, double *prs,
 
 extern __global__ void kernelSubtract( double *u, double *v, double *w, double *prs );
 
-extern __global__ void kernelZeroGrids( double *grid );
-
-extern __global__ void kernelZeroVolumetric( uchar *visual );
-
-extern __global__ void kernelZeroShareBuffers( double *bufs );
-
-extern __global__ void kernelZeroShareBuffers( int *bufs );;
-
 extern __global__ void kernelCopyGrids( double *src, cdouble *dst );
 
 extern __global__ void kernelObstacle( double *grids, cdouble *obstacle, cint field );

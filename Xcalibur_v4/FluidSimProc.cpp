@@ -39,7 +39,8 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	
 	/* clear buffer */
 	//ClearBuffers();
-	ZeroBuffers();
+//	ZeroBuffers();
+	ClearBuffers();
 
 	/* set boundary */
 	InitBoundary();

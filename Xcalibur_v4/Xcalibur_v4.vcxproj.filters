@@ -94,5 +94,8 @@
     <CudaCompile Include="FluidSimProc.cu">
       <Filter>Source Files\Kernels</Filter>
     </CudaCompile>
+    <CudaCompile Include="BasicFunction.cu">
+      <Filter>Source Files\Kernels</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

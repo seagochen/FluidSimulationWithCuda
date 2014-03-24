@@ -489,52 +489,6 @@ __global__ void kernelSubtract( double *u, double *v, double *w, double *prs )
 	}
 };
 
-__global__ void kernelZeroGrids( double *grid )
-{
-	int i, j, k;
-	_thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
-
-	grid [ IX(i,j,k) ] = 0.f;
-};
-
-__global__ void kernelZeroVolumetric( uchar *visual )
-{
-	int i, j, k;
-	_thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
-
-	for ( int ii = 0; ii < HNODES_X; ii++ )
-	{
-		for ( int jj = 0; jj < HNODES_X; jj++ )
-		{
-			for ( int kk = 0; kk < HNODES_X; kk++ )
-			{
-				int di = ii * GRIDS_X + i;
-				int dj = jj * GRIDS_X + j;
-				int dk = kk * GRIDS_X + k;
-				
-				/* zero data */
-				visual[ ix(di, dj, dk, VOLUME_X,VOLUME_X,VOLUME_X) ] = 0;
-			}
-		}
-	}
-};
-
-__global__ void kernelZeroShareBuffers( double *bufs )
-{
-	int i;
-	_thread(&i);
-
-	bufs[i] = 0.f;
-};
-
-__global__ void kernelZeroShareBuffers( int *bufs )
-{
-	int i;
-	_thread(&i);
-
-	bufs[i] = 0;
-}; 
-
 __global__ void kernelCopyGrids( double *src, cdouble *dst )
 {
 	int i, j, k; 

@@ -15,9 +15,6 @@
 
 using namespace sge;
 
-#define __device_func__ <<<gridDim,blockDim>>>
-#define DeviceParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z )
-
 void FluidSimProc::SolveNavierStokesEquation( cdouble timestep, bool add )
 {
 	if ( add ) SourceSolver();
@@ -118,7 +115,7 @@ void FluidSimProc::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divis
 
 	for ( int k=0; k<20; k++)
 	{
-		kernelJacobi __device_func__ ( out, in, diff, divisor);
+		kernelJacobi __device_func__ ( out, in, diff, divisor );
 	}
 };
 
