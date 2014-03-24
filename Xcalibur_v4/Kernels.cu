@@ -1,40 +1,24 @@
 /**
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
-* <First Time>    Dec 15, 2013
-* <Last Time>     Mar 04, 2014
-* <File Name>     FluidSimProcKernels.cu
+* <First Time>    Jan 08, 2014
+* <Last Time>     Mar 24, 2014
+* <File Name>     Kernel.cu
 */
 
-#include <time.h>
-#include <iostream>
-#include <utility>
-#include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include "MacroDefinition.h"
-#include "FluidSimProc.h"
-#include "MacroDefinition.h"
-#include "FrameworkDynamic.h"
 #include "Kernels.h"
+#include "ISO646.h"
 
-#include <cuda_runtime_api.h>
-#include <device_launch_parameters.h>
-#include "MacroDefinition.h"
+/************************************************************************************
+** The following functions are basic, which can be used by GPU device and local    **
+** host.                                                                           **
+** If a function (kernel) is general type, the prefix of that function will be     **
+** marked as for example, _rand(...).                                              **
+*************************************************************************************/
 
-#define and    &&
-#define and_eq &=
-#define bitand &
-#define bitor  |
-#define compl  ~
-#define not    !
-#define not_eq !=
-#define or     ||
-#define or_eq  |=
-#define xor    ^
-#define xor_eq ^=
-#define eqt    ==
-#define elif  else if
 
 inline __host__ __device__ int _rand( int seed )
 {
@@ -113,6 +97,14 @@ inline __host__ __device__ double _fabs(double value)
 	return (value >= 0.f) ? value : -value;
 };
 
+
+/************************************************************************************
+** Define some basic logical operator, and some new data type below.               **
+** The following kernels are used for getting thread id and transforming the id to **
+** array's index.                                                                  **
+*************************************************************************************/
+
+
 inline __device__ void _thread( int *i )
 {
 	*i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -161,6 +153,201 @@ inline __host__ __device__ int ix
 
 	return i + j * tilex + k * tilex * tiley;
 };
+
+
+/************************************************************************************
+** To upgrade node size to bullet for fluid simulation computation, and degrade    **
+** the size of bullet to retrieve data back.                                       **
+** Something else, basic buffer operation kernels, such as zero, and copy the data **
+** are also defined below in this block.                                           **
+*************************************************************************************/
+
+__global__ void kernelLoadBullet
+	( int *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
+{
+	int i, j, k;
+	
+	_thread( &i, &j, &k, srcx, srcy, srcz );
+
+	int ixd = ix( i+1, j+1, k+1, dstx, dsty, dstz );
+	int ixs = ix( i, j, k, srcx, srcy, srcz );
+
+	if ( ixd < 0 or ixs < 0 ) return;
+	else dst[ixd] = src[ixs];
+};
+
+__global__ void kernelLoadBullet
+	( double *dst, cdouble *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
+{
+	int i, j, k;
+	
+	_thread( &i, &j, &k, srcx, srcy, srcz );
+
+	int ixd = ix( i+1, j+1, k+1, dstx, dsty, dstz );
+	int ixs = ix( i, j, k, srcx, srcy, srcz );
+
+	if ( ixd < 0 or ixs < 0 ) return;
+	else dst[ixd] = src[ixs];
+};
+
+__global__ void kernelExitBullet
+	( int *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
+{
+	int i, j, k;	
+	_thread( &i, &j, &k, dstx, dsty, dstz );
+
+	int ixs = ix( i+1, j+1, k+1, srcx, srcy, srcz );
+	int ixd = ix( i, j, k, dstx, dsty, dstz );
+
+	if ( ixd < 0 or ixs < 0 ) return;
+	else dst[ixd] = src[ixs];
+};
+
+__global__ void kernelExitBullet
+	( double *dst, cdouble *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz )
+{
+	int i, j, k;	
+	_thread( &i, &j, &k, dstx, dsty, dstz );
+
+	int ixs = ix( i+1, j+1, k+1, srcx, srcy, srcz );
+	int ixd = ix( i, j, k, dstx, dsty, dstz );
+
+	if ( ixd < 0 or ixs < 0 ) return;
+	else dst[ixd] = src[ixs];
+};
+
+__global__ void kernelZeroBuffers
+	( int *bullet, cint tilex, cint tiley, cint tilez )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tilex, tiley, tilez );
+	int ind = ix( i, j, k, tilex, tiley, tilez );
+	
+	if ( ind < 0 ) return;
+	else bullet[ind] = 0;
+};
+
+__global__ void kernelZeroBuffers
+	( double *bullet, cint tilex, cint tiley, cint tilez )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tilex, tiley, tilez );
+	int ind = ix( i, j, k, tilex, tiley, tilez );
+	
+	if ( ind < 0 ) return;
+	else bullet[ind] = 0.f;
+};
+
+__global__ void kernelZeroBuffers
+	( uchar *bullet, cint tilex, cint tiley, cint tilez )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tilex, tiley, tilez );
+	int ind = ix( i, j, k, tilex, tiley, tilez );
+	
+	if ( ind < 0 ) return;
+	else bullet[ind] = 0;
+};
+
+__global__ void kernelZeroBuffers
+	( int *buf, cint tiles )
+{
+	int x;
+	_thread( &x );
+	int ind = ix( x, tiles );
+	if ( ind < 0 ) return;
+	else buf[ind] = 0;
+};
+
+__global__ void kernelZeroBuffers
+	( double *buf, cint tiles )
+{
+	int x;
+	_thread( &x );
+	int ind = ix( x, tiles );
+	if ( ind < 0 ) return;
+	else buf[ind] = 0.f;
+};
+
+__global__ void kernelZeroBuffers
+	( uchar *buf, cint tiles )
+{
+	int x;
+	_thread( &x );
+	int ind = ix( x, tiles );
+	if ( ind < 0 ) return;
+	else buf[ind] = 0;
+};
+
+__global__ void kernelCopyBuffers
+	( int *dst, cint *src, cint tiles )
+{
+	int x;
+	_thread( &x );
+	int ind = ix( x, tiles );
+	if ( ind < 0 ) return;
+	else dst[ind] = src[ind];
+};
+
+__global__ void kernelCopyBuffers
+	( double *dst, cint *src, cint tiles )
+{
+	int x;
+	_thread( &x );
+	int ind = ix( x, tiles );
+	if ( ind < 0 ) return;
+	else dst[ind] = src[ind];
+};
+
+__global__ void kernelCopyBuffers
+	( uchar *dst, cint *src, cint tiles )
+{
+	int x;
+	_thread( &x );
+	int ind = ix( x, tiles );
+	if ( ind < 0 ) return;
+	else dst[ind] = src[ind];
+};
+
+__global__ void kernelCopyBuffers
+	( int *dst, cint *src, cint tilex, cint tiley, cint tilez )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tilex, tiley, tilez );
+	int ind = ix( i, j, k, tilex, tiley, tilez );
+	
+	if ( ind < 0 ) return;
+	else dst[ind] = src[ind];
+};
+
+__global__ void kernelCopyBuffers
+	( double *dst, cdouble *src, cint tilex, cint tiley, cint tilez )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tilex, tiley, tilez );
+	int ind = ix( i, j, k, tilex, tiley, tilez );
+	
+	if ( ind < 0 ) return;
+	else dst[ind] = src[ind];
+};
+
+__global__ void kernelCopyBuffers
+	( uchar *dst, uchar *src, cint tilex, cint tiley, cint tilez )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tilex, tiley, tilez );
+	int ind = ix( i, j, k, tilex, tiley, tilez );
+	
+	if ( ind < 0 ) return;
+	else dst[ind] = src[ind];
+};
+
+
+/************************************************************************************
+** Picking the value from a grid with given position, trilinear interpolation and  **
+** wether the index of element is in halo, those kernels are defined during this   **
+** block.                                                                          **
+*************************************************************************************/
 
 inline __device__ bool atomicIXNotHalo
 	( cint i, cint j, cint k, cint tx, cint ty, cint tz )
@@ -219,6 +406,9 @@ __device__ double atomicTrilinear
 };
 
 
+/************************************************************************************
+** Basic kernels for solving Navier-Stokes equation.                               **
+*************************************************************************************/
 
 #define IX(i,j,k) ix(i,j,k,GRIDS_X,GRIDS_X,GRIDS_X)
 #define thread() _thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
@@ -299,17 +489,6 @@ __global__ void kernelSubtract( double *u, double *v, double *w, double *prs )
 	}
 };
 
-#undef IX(i,j,k)
-#undef thread()
-#undef isbound(i,j,k)
-
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <device_launch_parameters.h>
-#include "MacroDefinition.h"
-#include "FluidSimProc.h"
-
-#define IX(i,j,k) ix(i,j,k,GRIDS_X,GRIDS_X,GRIDS_X)
 __global__ void kernelZeroGrids( double *grid )
 {
 	int i, j, k;
@@ -621,3 +800,7 @@ __global__ void kernelSumDensity( double *share, cdouble *src, cint no )
 
 	share[no] += src[IX(i,j,k)];
 };
+
+#undef IX(i,j,k)
+#undef thread()
+#undef isbound(i,j,k)

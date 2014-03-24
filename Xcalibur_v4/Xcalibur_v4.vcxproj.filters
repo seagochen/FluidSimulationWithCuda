@@ -1,17 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{0c1e58fd-6349-46b0-ba46-0117040b3aff}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{d3e08206-bd02-4c9d-a140-258f34bcce68}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files\Icon Files">
-      <UniqueIdentifier>{b856ad0b-4e94-435a-a27b-2169d18ad558}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files\Shader Files">
-      <UniqueIdentifier>{4c873638-ee43-4d38-8712-875e98cb2b57}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files">
       <UniqueIdentifier>{3598c2c3-4973-4da3-9b49-82e6729b59f9}</UniqueIdentifier>
@@ -21,6 +12,15 @@
     </Filter>
     <Filter Include="Header Files\Kernels">
       <UniqueIdentifier>{8792752b-39c5-4672-bad2-36ab4c883097}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{0c1e58fd-6349-46b0-ba46-0117040b3aff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Icon Files">
+      <UniqueIdentifier>{b856ad0b-4e94-435a-a27b-2169d18ad558}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shader Files">
+      <UniqueIdentifier>{4c873638-ee43-4d38-8712-875e98cb2b57}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -41,6 +41,9 @@
     </ClInclude>
     <ClInclude Include="Kernels.h">
       <Filter>Header Files\Kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="ISO646.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -77,15 +80,18 @@
     <ClCompile Include="MainDynamic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FluidSimProc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProcKernels.cu">
-      <Filter>Source Files\Kernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="Kernels.cu">
       <Filter>Source Files\Kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="NavierStokesSolver.cu">
+      <Filter>Source Files\Kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="FluidSimProc.cu">
       <Filter>Source Files\Kernels</Filter>
     </CudaCompile>
   </ItemGroup>

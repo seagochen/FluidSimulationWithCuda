@@ -2,84 +2,21 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 04, 2014
-* <File Name>     FluidSimProcKernels.cu
+* <Last Time>     Mar 24, 2014
+* <File Name>     FluidSimProc.cu
 */
 
 #include <time.h>
 #include <iostream>
 #include <utility>
-#include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include "MacroDefinition.h"
 #include "FluidSimProc.h"
 #include "MacroDefinition.h"
-#include "FrameworkDynamic.h"
 #include "Kernels.h"
 
 using namespace sge;
-
-
-
-FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
-{
-	/* initialize FPS */
-	InitParams( fluid );
-
-	/* choose which GPU to run on, change this on a multi-GPU system. */
-	if ( cudaSetDevice ( 0 ) != cudaSuccess )
-	{
-		printf( "cudaSetDevice failed!\n" );
-		exit(1);
-	}
-
-	/* allocate resources */
-	if ( !AllocateResource() ) 
-	{
-		FreeResource();
-		exit(1);
-	}
-
-	/* build order */
-	CreateTopology();
-	
-	/* clear buffer */
-	ZeroBuffers();
-
-	/* set boundary */
-	InitBoundary();
-
-	/* upload host to device */
-	HostToDevice();
-
-	/* finally, print message */
-	printf( "fluid simulation ready...\n" );
-};
-
-sstr FluidSimProc::GetTitleBar( void )
-{
-	return &m_sz_title; 
-};
-
-void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
-{
-	fluid->fps.dwCurrentTime = 0;
-	fluid->fps.dwElapsedTime = 0;
-	fluid->fps.dwFrames = 0;
-	fluid->fps.dwLastUpdateTime = 0;
-	fluid->fps.uFPS = 0;
-
-	m_node_size = GRIDS_X * GRIDS_X * GRIDS_X * sizeof(double);
-	m_volm_size = VOLUME_X * VOLUME_X * VOLUME_X * sizeof(SGUCHAR);
-
-	increase_times = decrease_times = 0;
-
-	ptr = nullptr;
-	m_cursor.x = m_cursor.y = m_cursor.z = 0;
-
-	m_sz_title = "Excalibur OTL 2.10.00, large-scale. ------------ FPS: %d ";
-};
 
 void FluidSimProc::CreateTopology( void )
 {
@@ -144,188 +81,6 @@ void FluidSimProc::CreateTopology( void )
 	}
 };
 
-void FluidSimProc::PrintMSG( void )
-{
-	using namespace std;
-
-	int totoal = 0;
-	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )	if ( host_node[i]->updated ) totoal++;
-
-	cout 
-		<< "**************** operation to confirm *******************" << endl
-		<< "mouse wheel ------------ to rotate the observation matrix" << endl
-		<< "keyboard: Q ------------ to quit the program" << endl
-		<< "keyboard: Esc ---------- to quit the program" << endl
-		<< "keyboard: C ------------ to clear the data of stage" << endl
-		<< "keyboard: P ------------ to print message " << endl
-		<< "keyboard: U ------------ to restore to previous" << endl
-		<< "keyboard: D ------------ to keep current status in mem" << endl
-		<< "**************** fluid simulation info ******************" << endl
-		<< "no. of nodes for fluid simulation: " << gpu_node.size() << endl
-		<< "no. of nodes for keeping the state of density : " << dev_density.size() << endl
-		<< "no. of nodes for keeping the state of vel u : " << dev_velocity_u.size() << endl
-		<< "no. of nodes for keeping the state of vel v : " << dev_velocity_v.size() << endl
-		<< "no. of nodes for keeping the state of vel w : " << dev_velocity_w.size() << endl
-		<< "no. of nodes for keeping pre state of density : " << host_density.size() << endl
-		<< "no. of nodes for keeping pre state of vel u : " << host_velocity_u.size() << endl
-		<< "no. of nodes for keeping pre state of vel v : " << host_velocity_v.size() << endl
-		<< "no. of nodes for keeping pre state of vel w : " << host_velocity_w.size() << endl
-		<< "grid dim per node : 64 x 64 x 64" << endl
-		<< "updated nodes :" << totoal << endl;
-};
-
-bool FluidSimProc::allocHostRes( void )
-{
-	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
-	{
-		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
-
-		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrDens ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrObs ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrU ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrV ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateHostBuffers( m_node_size, 1, &ptrW ) not_eq SG_RUNTIME_OK ) return false;
-
-		host_density.push_back( ptrDens );
-		host_velocity_u.push_back( ptrU );
-		host_velocity_v.push_back( ptrV );
-		host_velocity_w.push_back( ptrW );
-		host_obstacle.push_back( ptrObs );
-	}
-
-	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
-	{
-		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
-
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrDens ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrObs ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrU ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrV ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrW ) not_eq SG_RUNTIME_OK ) return false;
-
-		dev_density.push_back( ptrDens );
-		dev_velocity_u.push_back( ptrU );
-		dev_velocity_v.push_back( ptrV );
-		dev_velocity_w.push_back( ptrW );
-		dev_obstacle.push_back( ptrObs );
-	}
-
-	return true;
-};
-
-bool FluidSimProc::allocDeviceRes( void )
-{
-	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X; i++ )
-	{
-		double *ptrDens, *ptrU, *ptrV, *ptrW, *ptrObs;
-
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrDens ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrObs ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrU ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrV ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptrW ) not_eq SG_RUNTIME_OK ) return false;
-
-		node_density.push_back( ptrDens );
-		node_velocity_u.push_back( ptrU );
-		node_velocity_v.push_back( ptrV );
-		node_velocity_w.push_back( ptrW );
-		node_obstacle.push_back( ptrObs );
-	}
-
-	for ( int i = 0; i < dev_buffers_num; i++ )
-	{
-		double *ptr;
-		if ( helper.CreateDeviceBuffers( m_node_size, 1, &ptr ) not_eq SG_RUNTIME_OK ) return false;
-
-		dev_buffers.push_back(ptr);
-	}
-
-	if ( helper.CreateDeviceBuffers( m_node_size, 1, &gd_density ) not_eq SG_RUNTIME_OK ) return false;
-	if ( helper.CreateDeviceBuffers( m_node_size, 1, &gd_obstacle ) not_eq SG_RUNTIME_OK ) return false;
-	if ( helper.CreateDeviceBuffers( m_node_size, 1, &gd_velocity_u ) not_eq SG_RUNTIME_OK ) return false;
-	if ( helper.CreateDeviceBuffers( m_node_size, 1, &gd_velocity_v ) not_eq SG_RUNTIME_OK ) return false;
-	if ( helper.CreateDeviceBuffers( m_node_size, 1, &gd_velocity_w ) not_eq SG_RUNTIME_OK ) return false;
-	
-	return true;
-};
-
-bool FluidSimProc::allocShareBuffers( void )
-{
-	if ( helper.CreateDeviceBuffers( TPBUFFER_X*sizeof(double), 1, &dev_dtpbuf ) not_eq SG_RUNTIME_OK ) return false;
-	if ( helper.CreateDeviceBuffers( TPBUFFER_X*sizeof(int), 1, &dev_ntpbuf ) not_eq SG_RUNTIME_OK ) return false;
-	if ( helper.CreateHostBuffers( TPBUFFER_X*sizeof(double), 1, &host_dtpbuf ) not_eq SG_RUNTIME_OK ) return false;
-	if ( helper.CreateHostBuffers( TPBUFFER_X*sizeof(int), 1, &host_ntpbuf ) not_eq SG_RUNTIME_OK ) return false;
-
-	return true;
-};
-
-bool FluidSimProc::allocVisualBuffers( void )
-{
-	if ( helper.CreateDeviceBuffers( m_volm_size, 1, &dev_visual ) not_eq SG_RUNTIME_OK ) return false;
-	if ( helper.CreateHostBuffers( m_volm_size, 1, &host_visual ) not_eq SG_RUNTIME_OK )  return false;
-
-	return true;
-};
-
-void FluidSimProc::allocTopologyNodes( void )
-{
-	for ( int i = 0; i < GNODES_X * GNODES_X * GNODES_X; i++ )
-	{		
-		SimNode *node  = (SimNode*)malloc(sizeof(SimNode));
-		node->ptrFront = node->ptrBack = nullptr;
-		node->ptrLeft  = node->ptrRight = nullptr;
-		node->ptrDown  = node->ptrUp = nullptr;
-		node->updated  = false;
-		node->active   = false;
-		gpu_node.push_back( node );
-	}
-
-	for ( int i = 0; i < HNODES_X * HNODES_X * HNODES_X; i++ )
-	{		
-		SimNode *node  = (SimNode*)malloc(sizeof(SimNode));
-		node->ptrFront = node->ptrBack = nullptr;
-		node->ptrLeft  = node->ptrRight = nullptr;
-		node->ptrDown  = node->ptrUp = nullptr;
-		node->updated  = false;
-		node->active   = false;
-		host_node.push_back( node );
-	}
-};
-
-bool FluidSimProc::AllocateResource( void )
-{
-	if ( !allocHostRes() )
-	{
-		printf( "allocate resource for host nodes failed!\n" );
-		return false;
-	}
-
-	if ( !allocDeviceRes() ) 
-	{
-		printf( "allocate resource for device nodes failed\n" );
-		return false;
-	}
-
-	if ( !allocShareBuffers() )
-	{
-		printf( "allocate resource for sharing memories failed!\n" );
-		return false;
-	}
-
-	if ( !allocVisualBuffers() )
-	{
-		printf( "allocate resource for visual buffers failed!\n" );
-		return false;
-	}
-	
-	allocTopologyNodes();
-
-	if ( helper.GetCUDALastError( "memory allocation failed, check the code", __FILE__, __LINE__ ) )
-		return false;
-	
-	return true;
-}
-
 void FluidSimProc::freeHostRes( void )
 {
 	/* free node resource */
@@ -380,6 +135,9 @@ void FluidSimProc::FreeResource ( void )
 	freeShareBuffers();
 	freeVisualBuffers();
 }
+
+
+
 
 void FluidSimProc::zeroTempoBuffers( void )
 {
@@ -471,6 +229,10 @@ void FluidSimProc::ZeroBuffers( void )
 		exit( 1 );
 	}
 };
+
+
+
+
 
 void FluidSimProc::HostToDevice( void )
 {

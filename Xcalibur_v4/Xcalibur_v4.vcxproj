@@ -22,6 +22,7 @@
     <ClInclude Include="FluidSimProc.h" />
     <ClInclude Include="FrameworkDynamic.h" />
     <ClInclude Include="FunctionHelper.h" />
+    <ClInclude Include="ISO646.h" />
     <ClInclude Include="Kernels.h" />
     <ClInclude Include="MacroDefinition.h" />
     <ClInclude Include="resource.h" />
@@ -39,17 +40,18 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProcKernels.cu">
-      <FileType>CppCode</FileType>
+    <CudaCompile Include="FluidSimProc.cu">
+      <FileType>Document</FileType>
     </CudaCompile>
     <CudaCompile Include="NavierStokesSolver.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FluidSimProc.cpp" />
     <ClCompile Include="FrameworkDynamic.cpp" />
     <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
     <CudaCompile Include="Kernels.cu">
-      <FileType>CppCode</FileType>
+      <FileType>Document</FileType>
     </CudaCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">

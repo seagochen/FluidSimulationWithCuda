@@ -16,27 +16,43 @@
 #include <vector>
 #include "FunctionHelper.h"
 #include "FrameworkDynamic.h"
+#include "ISO646.h"
 
 using std::vector;
 using std::string;
 
 namespace sge
 {
+	struct SimNode
+	{
+		SGBOOLEAN updated;
+		SGBOOLEAN active;
+		int x, y, z;
+		SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
+	};
+
+#define host_density    m_vectHostDens
+#define host_velocity_u m_vectHostVelU
+#define host_velocity_v m_vectHostVelV
+#define host_velocity_w m_vectHostVelW
+#define host_obstacle   m_vectHostObst
+
+#define dev_density     m_vectGPUDens
+#define dev_velocity_u  m_vectGPUVelU
+#define dev_velocity_v  m_vectGPUVelV
+#define dev_velocity_w  m_vectGPUVelW
+#define dev_obstacle    m_vectGPUObst
+
+#define node_density    m_vectNewDens
+#define node_velocity_u m_vectNewVelU
+#define node_velocity_v m_vectNewVelV
+#define node_velocity_w m_vectNewVelW
+#define node_obstacle   m_vectNewObst
+
+#define dev_buffers     m_vectCompBufs
+	
 	class FluidSimProc
 	{
-
-#pragma region inner structures
-	private:
-		struct SimNode
-		{
-			SGBOOLEAN updated;
-			SGBOOLEAN active;
-			int x, y, z;
-			SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
-		};
-#pragma endregion
-
-#pragma region private variables
 	private:
 		/* temporary buffers for fluid simulation */
 		vector <double*> dev_buffers;
@@ -77,7 +93,7 @@ namespace sge
 		size_t m_node_size, m_volm_size;
 
 		/* title bar */
-		string m_sz_title;
+		string m_szTitle;
 
 		/* etc. */
 		int increase_times, decrease_times;
@@ -87,18 +103,24 @@ namespace sge
 		FunctionHelper helper;
 		FunctionHelper m_scHelper;
 
-#pragma endregion
 
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
 
 	public:
+		void ClearBuffers( void );
+
 		void ZeroBuffers( void );
-		sstr GetTitleBar( void );
-		void PrintMSG( void );
+
+		sstr GetTitleBar( void ) { return &m_szTitle; };
+
 		void HostToDevice( void );
+
 		void DeviceToHost( void );
+
 		void FreeResource( void );
+
+		void AllocateResource( void );
 
 	private:
 		void zeroDeivceRes( void );
@@ -113,14 +135,6 @@ namespace sge
 		void freeDeviceRes( void );
 		void freeShareBuffers( void );
 		void freeVisualBuffers( void );
-		
-	private:
-		bool AllocateResource( void );
-		bool allocHostRes( void );
-		bool allocDeviceRes( void );
-		bool allocShareBuffers( void );
-		bool allocVisualBuffers( void );
-		void allocTopologyNodes( void );
 
 	private:
 		void LoadBullet( int i, int j, int k );

@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Oct 16, 2013
-* <Last Time>     Mar 05, 2014
+* <Last Time>     Mar 24, 2014
 * <File Name>     FrameworkDynamic.cpp
 */
 
@@ -99,7 +99,7 @@ void Framework_v1_0::CreateShaderProg ( FLUIDSPARAM *fluid )
 GLubyte* Framework_v1_0::DefaultTransFunc ()
 {
 	/* Hardcode the transfer function */
-	GLubyte *tff = (GLubyte *) calloc ( TPBUFFER_X, sizeof(GLubyte) );
+	GLubyte *tff = (GLubyte *) calloc ( 256 * 4, sizeof(GLubyte) );
 	for ( int i = 0; i < 256; i++ )
 	{
 		if ( i > 0 )
@@ -535,9 +535,6 @@ void Framework_v1_0::onCreate()
 	m_fluid.textures.hTexture3D   = Create3DVolumetric ();
 	m_fluid.ray.hCluster          = CreateVerticesBufferObj ();
 	m_fluid.textures.hFramebuffer = Create2DFrameBuffer ( &m_fluid );
-
-	/* 打印操作信息 */
-	m_simproc->PrintMSG();
 };
 
 void Framework_v1_0::CountFPS()
@@ -614,13 +611,17 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 		case SG_KEY_D:
 			m_simproc->DeviceToHost();
 			break;
-
-		case SG_KEY_P:
-			m_simproc->PrintMSG();
-			break;
 	
 		case SG_KEY_C:
 			m_simproc->ZeroBuffers();
+			break;
+
+		case SG_KEY_P:
+			system("cls");
+			cout << "Use mouse to control rotation of observation" << endl 
+				<< "Use Key Q or ESC to quit system" << endl 
+				<< "Use Key S to save current fluid simulation status" << endl
+				<< "Use Key L to load previous fluid simulation status" << endl;
 			break;
 
 		default:

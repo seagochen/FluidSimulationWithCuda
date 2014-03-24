@@ -10,12 +10,6 @@
 #define __macro_definition_h_
 
 #include <device_launch_parameters.h>
-#include <string>
-
-typedef double const  cdouble;
-typedef int const     cint;
-typedef unsigned char uchar;
-typedef std::string*  sstr;
 
 /*********************************************************************************************************/
 /*********************************************************************************************************/

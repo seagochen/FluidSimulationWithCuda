@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Mar 20, 2014
+* <Last Time>     Mar 24, 2014
 * <File Name>     FunctionHelper.cpp
 */
 
@@ -116,7 +116,10 @@ SGBOOLEAN FunctionHelper::GetCUDALastError( const char* msg, const char *file, c
 	
 	if ( __err != cudaSuccess)
 	{
-		printf( "%s -------- %s @ line: %d, file: %s \n", cudaGetErrorString( __err ), msg, line, file );	
+		cout << "Error: " << msg << endl
+			<< "error message: " << cudaGetErrorString( __err ) << endl
+			<< "at file: " << file << endl
+			<< "at line: " << line << endl;
 		return true;
 	}
 
