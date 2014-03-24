@@ -603,14 +603,6 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 		case SG_KEY_ESCAPE:
 			onDestroy();
 			break;
-
-		case SG_KEY_U:
-			m_simproc->HostToDevice();
-			break;
-
-		case SG_KEY_D:
-			m_simproc->DeviceToHost();
-			break;
 	
 		case SG_KEY_C:
 			m_simproc->ClearBuffers();
@@ -630,11 +622,24 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 	}
 };
 
-
 void Framework_v1_0::onMouse( SGMOUSE mouse, unsigned x, unsigned y, int degree )
 {
 	if ( mouse eqt SGMOUSE::SG_MOUSE_WHEEL_FORWARD or mouse eqt SGMOUSE::SG_MOUSE_WHEEL_BACKWARD )
 	{
 		m_fluid.ray.nAngle = (m_fluid.ray.nAngle + degree) % 360;
 	}
+};
+
+void FluidSimProc::FreeResource( void )
+{
+	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
+	{
+		m_scHelper.FreeDeviceBuffers( 5, &m_vectGPUDens[i], &m_vectGPUVelU[i], &m_vectGPUVelV[i], &m_vectGPUVelW[i], &m_vectGPUObst[i] );
+		m_scHelper.FreeDeviceBuffers( 5, &m_vectNewDens[i], &m_vectNewVelU[i], &m_vectNewVelV[i], &m_vectNewVelW[i], &m_vectNewObst[i] );
+		m_scHelper.FreeHostBuffers( 5, &m_vectHostDens[i], &m_vectHostVelU[i], &m_vectHostVelV[i], &m_vectHostVelW[i], &m_vectHostObst[i] );
+	}
+
+	m_scHelper.FreeDeviceBuffers( 5, &gd_density, &gd_velocity_u, &gd_velocity_v, &gd_velocity_w, &gd_obstacle );
+	m_scHelper.FreeDeviceBuffers( 3, &dev_visual, &dev_dtpbuf, &dev_ntpbuf );
+	m_scHelper.FreeHostBuffers(3, &host_visual, &host_dtpbuf, &host_ntpbuf );
 };

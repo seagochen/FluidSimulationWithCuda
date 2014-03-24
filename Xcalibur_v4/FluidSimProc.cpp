@@ -38,15 +38,10 @@ FluidSimProc::FluidSimProc ( FLUIDSPARAM *fluid )
 	CreateTopology();
 	
 	/* clear buffer */
-	//ClearBuffers();
-//	ZeroBuffers();
 	ClearBuffers();
 
 	/* set boundary */
 	InitBoundary();
-
-	/* upload host to device */
-	HostToDevice();
 
 	/* finally, print message */
 	printf( "fluid simulation ready...\n" );

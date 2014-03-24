@@ -114,38 +114,17 @@ namespace sge
 		/* get the title of windows's bar */
 		sstr GetTitleBar( void ) { return &m_szTitle; };
 
-		void HostToDevice( void );
-
-		void DeviceToHost( void );
-
 		void FreeResource( void );
 
 		void AllocateResource( void );
 
-	private:
-		void freeHostRes( void );
-		void freeDeviceRes( void );
-		void freeShareBuffers( void );
-		void freeVisualBuffers( void );
-
-	private:
-		void LoadBullet( int i, int j, int k );
-		void ExitBullet( int i, int j, int k );
-		void clearBullet( void );
-		void pickNodeToBullet( int i, int j, int k );
-		void pickNeighborsToBullet( int i, int j, int k );
-		void pickBulletToNode( int i, int j, int k );
-		void pickImgFromNode( int i, int j, int k );
-
-	private:
 		void InitParams( FLUIDSPARAM *fluid );
+
 		void CreateTopology( void );
+
 		void RefreshStatus( FLUIDSPARAM *fluid );
 
-	public:
 		void FluidSimSolver( FLUIDSPARAM *fluid );
-		void SolveRootNode( void );
-		void SolveLeafNode( void );
 
 	private:
 		void SolveNavierStokesEquation( cdouble timestep, bool add );
@@ -153,8 +132,6 @@ namespace sge
 		void VelocitySolver( cdouble timestep );
 		void SourceSolver( void );
 		void InitBoundary( void );
-		void ReadBuffers( void );
-		void WriteBuffers( void );
 		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
 		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
 		void Diffusion( double *out, cdouble *in, cdouble diff );

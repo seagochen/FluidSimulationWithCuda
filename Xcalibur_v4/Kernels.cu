@@ -414,9 +414,7 @@ __device__ double atomicTrilinear
 #define thread() _thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
 #define isbound(i,j,k) atomicIXNotHalo(i,j,k,GRIDS_X,GRIDS_X,GRIDS_X)
 
-
-__global__ void kernelJacobi
-	( double *out, cdouble *in, cdouble diffusion, cdouble divisor )
+__global__ void kernelJacobi( double *out, cdouble *in, cdouble diffusion, cdouble divisor )
 {
 	int i, j, k;
 	thread();
@@ -433,10 +431,7 @@ __global__ void kernelJacobi
 	}
 };
 
-
-__global__ void kernelAdvection
-	( double *out, cdouble *in, cdouble delta,
-	cdouble *u, cdouble *v, cdouble *w )
+__global__ void kernelAdvection( double *out, cdouble *in, cdouble delta, cdouble *u, cdouble *v, cdouble *w )
 {
 	int i, j, k;
 	thread();
@@ -452,8 +447,7 @@ __global__ void kernelAdvection
 	}
 };
 
-__global__ void kernelGradient( double *div, double *prs,
-							   cdouble *u, cdouble *v, cdouble *w )
+__global__ void kernelGradient( double *div, double *prs, cdouble *u, cdouble *v, cdouble *w )
 {
 	int i, j, k;
 	thread();
@@ -710,8 +704,7 @@ __global__ void kernelClearHalo( double *grids )
 	grids[IX(i,j,gst_tailer)] = 0.f;
 };
 
-__global__ void kernelHandleHalo
-	( double *center, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back )
+__global__ void kernelHandleHalo( double *center, cdouble *left, cdouble *right, cdouble *up, cdouble *down, cdouble *front, cdouble *back )
 {
 	int i, j, k;
 	_thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
