@@ -28,6 +28,10 @@ namespace sge
 		SGVOID FreeHostBuffers( SGINT nPtrs, ... );
 		SGVOID FreeDeviceBuffers( SGINT nPtrs, ... );
 
+		SGVOID DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thread, SGINT tile );
+		SGVOID DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thread, SGINT tilex, SGINT tiley, SGINT gridx, SGINT gridy );
+		SGVOID DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thread, SGINT tilex, SGINT tiley, SGINT gridx, SGINT gridy, SGINT gridz );
+
 		SGVOID DeviceDim1D( dim3 *blockDim, dim3 *gridDim, SGINT thread, SGINT gridx );
 		SGVOID DeviceDim2D( dim3 *blockDim, dim3 *gridDim, SGINT thread, SGINT tile, SGINT gridx, SGINT gridy );
 		SGVOID DeviceDim3D( dim3 *blockDim, dim3 *gridDim, SGINT thread, SGINT tile, SGINT gridx, SGINT gridy, SGINT gridz );

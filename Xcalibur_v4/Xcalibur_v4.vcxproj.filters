@@ -1,24 +1,50 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{20ab4c05-aff6-4c17-8a55-62c17fe988fd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{c1df6c3c-ae7c-4f55-b129-b9c6ff67ab11}</UniqueIdentifier>
+      <UniqueIdentifier>{d3e08206-bd02-4c9d-a140-258f34bcce68}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{3598c2c3-4973-4da3-9b49-82e6729b59f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Kernels">
+      <UniqueIdentifier>{06b81e11-183d-45e7-94cb-293c93333963}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource Files">
-      <UniqueIdentifier>{b9442bf1-743f-400e-9dc5-9ad285589a63}</UniqueIdentifier>
+      <UniqueIdentifier>{0c1e58fd-6349-46b0-ba46-0117040b3aff}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource Files\Icon Files">
-      <UniqueIdentifier>{4c1a1092-0ed7-4783-9931-a767b515954b}</UniqueIdentifier>
+      <UniqueIdentifier>{b856ad0b-4e94-435a-a27b-2169d18ad558}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource Files\Shader Files">
-      <UniqueIdentifier>{70659a9b-edd7-4140-8500-88691d125fef}</UniqueIdentifier>
+      <UniqueIdentifier>{4c873638-ee43-4d38-8712-875e98cb2b57}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="AMRNODES.rc">
+    <ClInclude Include="resource.h">
+      <Filter>Resource Files\Icon Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FluidSimProc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MacroDefinition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FunctionHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameworkDynamic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ISO646.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Kernels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Xcalibur_v4.rc">
       <Filter>Resource Files\Icon Files</Filter>
     </ResourceCompile>
   </ItemGroup>
@@ -26,29 +52,6 @@
     <Image Include="icons\main.ico">
       <Filter>Resource Files\Icon Files</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="resource.h">
-      <Filter>Resource Files\Icon Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CUDACustomeMath.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FluidSimProc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FrameworkDynamic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FunctionHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MacroDefinition.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Kernels.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\backface.frag">
@@ -76,8 +79,14 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProcKernels.cu">
-      <Filter>Source Files</Filter>
+    <CudaCompile Include="Kernels.cu">
+      <Filter>Source Files\Kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="NavierStokesSolver.cu">
+      <Filter>Source Files\Kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="FluidSimProc.cu">
+      <Filter>Source Files\Kernels</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>
