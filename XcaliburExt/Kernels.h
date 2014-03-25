@@ -25,7 +25,7 @@ extern __global__ void kernelGradient( double *div, double *prs, cdouble *u, cdo
 
 extern __global__ void kernelSubtract( double *u, double *v, double *w, double *prs );
 
-extern __global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w );
+extern __global__ void kernelAddSource( double *dens, double *v, cdouble *obst, cdouble dtime, cdouble rate );
 
 
 

@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <utility>
+#include <ctime>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 
@@ -53,23 +54,10 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	fluid->fps.dwLastUpdateTime = 0;
 	fluid->fps.uFPS = 0;
 
+	srand(time(NULL));
+
 	m_szTitle = APP_TITLE;
 };
-
-void FluidSimProc::InitBound( void )
-{
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 22, 22, BULLET_X, BULLET_Y, BULLET_Z );
-	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
-	{
-		kernelZeroBuffers __device_func__ ( m_vectCompBufs[i], BULLET_X, BULLET_Y, BULLET_Z );
-	}
-
-	if ( m_scHelper.GetCUDALastError( "call member function InitBound failed", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit(1);
-	}
-}
 
 void FluidSimProc::AllocateResource( void )
 {
@@ -201,12 +189,84 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 	}
 };
 
+void FluidSimProc::ClearBuffers( void )
+{
+	Dim3ParamDim();
+	
+	for ( int i = 0; i < m_vectCompBufs.size(); i++ ) _zero( m_vectCompBufs[i] );
+		 	 
+
+	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
+	{
+		_zero( m_vectGPUDens[i] ); _zero( m_vectNewDens[i] );
+		_zero( m_vectGPUVelU[i] ); _zero( m_vectNewDens[i] );
+		_zero( m_vectGPUVelV[i] ); _zero( m_vectNewDens[i] );
+		_zero( m_vectGPUVelW[i] ); _zero( m_vectNewDens[i] );
+		_zero( m_vectGPUObst[i] ); _zero( m_vectNewDens[i] );
+	}
+
+	if ( m_scHelper.GetCUDALastError( "host function failed: ZeroBuffers", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit( 1 );
+	}
+};
+
+void FluidSimProc::InitBound( void )
+{
+	cint halfx = GRIDS_X / 2;
+	cint halfz = GRIDS_Z / 2;
+
+	for ( int k = 0; k < GRIDS_Z; k++ )
+	{
+		for ( int j = 0; j < GRIDS_Y; j++ )
+		{
+			for ( int i = 0; i < GRIDS_X; i++ )
+			{
+				for ( int n = 0; n < NODES_X * NODES_Y * NODES_Z; n++ )
+					m_vectHostObst[n][ix(i,j,k,GRIDS_X,GRIDS_Y)] = MACRO_BOUNDARY_BLANK;
+			}
+		}
+	}
+
+	for ( int k = 0; k < GRIDS_Z; k++ )
+	{
+		for ( int j = 0; j < GRIDS_Y; j++ )
+		{
+			for ( int i = 0; i < GRIDS_X; i++ )
+			{
+				if ( j < 3 and 
+					i >= halfx - 2 and i < halfx + 2 and 
+					k >= halfz - 2 and k < halfz + 2 )
+					m_vectHostObst[0][ix(i,j,k,GRIDS_X,GRIDS_Y)] = MACRO_BOUNDARY_SOURCE;
+			}
+		}
+	}
+
+	for ( int n = 0; n < NODES_X * NODES_Y * NODES_Z; n++ )
+	{
+		cudaMemcpy( m_vectGPUObst[n], m_vectHostObst[n], 
+			sizeof(double) * GRIDS_X * GRIDS_Y * GRIDS_Z, cudaMemcpyHostToDevice );
+	}
+
+	if ( m_scHelper.GetCUDALastError( "call member function InitBound failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+}
+
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( !fluid->run ) return;
-	
-	Dim3ParamDim();
 
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 22, 22, BULLET_X, BULLET_Y, BULLET_Z );
+	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
+	{
+		kernelZeroBuffers __device_func__ ( m_vectCompBufs[i], BULLET_X, BULLET_Y, BULLET_Z );
+	}
+	
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	kernelLoadBullet __device_func__ ( dev_den, m_vectGPUDens[0], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	kernelLoadBullet __device_func__ ( dev_u, m_vectGPUVelU[0], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	kernelLoadBullet __device_func__ ( dev_v, m_vectGPUVelV[0], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
@@ -229,27 +289,4 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 	}
 
 	RefreshStatus( fluid );
-};
-
-void FluidSimProc::ClearBuffers( void )
-{
-	Dim3ParamDim();
-	
-	for ( int i = 0; i < m_vectCompBufs.size(); i++ ) _zero( m_vectCompBufs[i] );
-		 	 
-
-	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
-	{
-		_zero( m_vectGPUDens[i] ); _zero( m_vectNewDens[i] );
-		_zero( m_vectGPUVelU[i] ); _zero( m_vectNewDens[i] );
-		_zero( m_vectGPUVelV[i] ); _zero( m_vectNewDens[i] );
-		_zero( m_vectGPUVelW[i] ); _zero( m_vectNewDens[i] );
-		_zero( m_vectGPUObst[i] ); _zero( m_vectNewDens[i] );
-	}
-
-	if ( m_scHelper.GetCUDALastError( "host function failed: ZeroBuffers", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit( 1 );
-	}
 };

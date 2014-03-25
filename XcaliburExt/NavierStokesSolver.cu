@@ -6,6 +6,7 @@
 * <File Name>     NavierStokesSolver.cu
 */
 
+#include <ctime>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include "MacroDefinition.h"
@@ -14,19 +15,22 @@
 #include "Kernels.h"
 
 using namespace sge;
+using namespace std;
 
 void FluidSimProc::SolveNavierStokesEquation( cdouble timestep, bool add )
 {
-	if ( add ) SourceSolver();
+	if ( add ) SourceSolver( timestep );
 	VelocitySolver( timestep );
 	DensitySolver( timestep );
 };
 
-void FluidSimProc::SourceSolver( void )
+void FluidSimProc::SourceSolver( cdouble timestep )
 {
 	Dim3ParamDim();
 
-	kernelAddSource __device_func__ ( dev_den, dev_u, dev_v, dev_w );
+	double rate = (double)(rand() % 300 + 1) / 100.f;
+
+	kernelAddSource __device_func__ ( dev_den, dev_v, dev_obs, timestep, rate );
 };
 
 

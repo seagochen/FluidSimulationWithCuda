@@ -482,33 +482,19 @@ __global__ void kernelSubtract( double *u, double *v, double *w, double *prs )
 	}
 };
 
-__global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w )
+__global__ void kernelAddSource( double *dens, double *v, cdouble *obst, cdouble dtime, cdouble rate )
 {
 	int i, j, k;
 	thread();
 
-	if ( isbound(i,j,k) )
+	if ( obst[IX(i,j,k)] < 0 )
 	{
-		cint half = BULLET_X / 2;
+		double pop = -obst[IX(i,j,k)] / 100.f;
 
-		if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
-		{
-			/* add source to grids */
-			density[IX(i,j,k)] = DENSITY;
+		/* add source to grids */
+		dens[IX(i,j,k)] = DENSITY * rate * dtime * pop;
 
-			/* add velocity to grids */
-			if ( i < half )
-				vel_u[IX(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
-			elif( i >= half )
-				vel_u[IX(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
-
-			vel_v[IX(i,j,k)] = VELOCITY;
-
-			if ( k < half )
-				vel_w[IX(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
-			elif ( k >= half )
-				vel_w[IX(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
-		}
+		v[IX(i,j,k)] = VELOCITY * rate * dtime * pop;
 	}
 };
 

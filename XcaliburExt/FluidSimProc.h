@@ -60,6 +60,11 @@ namespace sge
 		FluidSimProc( FLUIDSPARAM *fluid );
 
 	public:
+		inline int ix(cint i, cint j, cint k, cint tiles ) { return k * tiles * tiles + j * tiles + i; }; 
+		inline int ix(cint i, cint j, cint k, cint tilex, cint tiley)
+		{ return k * tilex * tiley + j * tilex + i; };
+
+	public:
 		void ClearBuffers( void );
 
 		sstr GetTitleBar( void ) { return &m_szTitle; };
@@ -83,7 +88,7 @@ namespace sge
 
 		void VelocitySolver( cdouble timestep );
 
-		void SourceSolver( void );
+		void SourceSolver( cdouble timestep );
 
 		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
 
