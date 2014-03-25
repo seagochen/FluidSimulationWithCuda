@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 23, 2014
-* <Last Time>     Mar 12, 2014
+* <Last Time>     Mar 25, 2014
 * <File Name>     MacroDefiniton.h
 */
 
@@ -54,6 +54,8 @@
 /* etc */
 #define TPBUFFER_S            1024
 
+#define APP_TITLE   "ExcaliburExt OTL 1.00.00. FPS: %d "
+
 /* macro definition of grid types */
 #define MACRO_DENSITY            0
 #define MACRO_VELOCITY_U         1
@@ -74,6 +76,5 @@
 #define MACRO_DOWN                4
 #define MACRO_FRONT               5
 #define MACRO_BACK                6
-
 
 #endif

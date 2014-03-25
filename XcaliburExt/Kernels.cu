@@ -410,9 +410,9 @@ __device__ double atomicTrilinear
 ** Basic kernels for solving Navier-Stokes equation.                               **
 *************************************************************************************/
 
-#define IX(i,j,k) ix(i,j,k,GRIDS_X,GRIDS_X,GRIDS_X)
-#define thread() _thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
-#define isbound(i,j,k) atomicIXNotHalo(i,j,k,GRIDS_X,GRIDS_X,GRIDS_X)
+#define IX(i,j,k) ix(i, j, k, BULLET_X, BULLET_Y, BULLET_Z )
+#define thread() _thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X); i++; j++; k++;
+#define isbound(i,j,k) atomicIXNotHalo(i, j, k, BULLET_X, BULLET_Y, BULLET_Z )
 
 __global__ void kernelJacobi( double *out, cdouble *in, cdouble diffusion, cdouble divisor )
 {
@@ -442,8 +442,7 @@ __global__ void kernelAdvection( double *out, cdouble *in, cdouble delta, cdoubl
 		double velv = j - v[ IX(i,j,k) ] * delta;
 		double velw = k - w[ IX(i,j,k) ] * delta;
 
-		out[ IX(i,j,k) ] = atomicTrilinear( in, velu, velv, velw, 
-			GRIDS_X,GRIDS_X,GRIDS_X );
+		out[ IX(i,j,k) ] = atomicTrilinear( in, velu, velv, velw, BULLET_X, BULLET_Y, BULLET_Z );
 	}
 };
 
@@ -454,9 +453,9 @@ __global__ void kernelGradient( double *div, double *prs, cdouble *u, cdouble *v
 
 	if ( isbound( i, j, k ) )
 	{
-		cdouble hx = 1.f / (double)GRIDS_X;
-		cdouble hy = 1.f / (double)GRIDS_X;
-		cdouble hz = 1.f / (double)GRIDS_X;
+		cdouble hx = 1.f / (double)BULLET_X;
+		cdouble hy = 1.f / (double)BULLET_Y;
+		cdouble hz = 1.f / (double)BULLET_Z;
 
 		// previous instantaneous magnitude of velocity gradient 
 		//		= (sum of velocity gradients per axis)/2N:
@@ -477,79 +476,75 @@ __global__ void kernelSubtract( double *u, double *v, double *w, double *prs )
 
 	if ( isbound( i, j, k ) )
 	{
-		u[ IX(i,j,k) ] -= 0.5f * GRIDS_X * ( prs[ IX(i+1,j,k) ] - prs[ IX(i-1,j,k) ] );
-		v[ IX(i,j,k) ] -= 0.5f * GRIDS_X * ( prs[ IX(i,j+1,k) ] - prs[ IX(i,j-1,k) ] );
-		w[ IX(i,j,k) ] -= 0.5f * GRIDS_X * ( prs[ IX(i,j,k+1) ] - prs[ IX(i,j,k-1) ] );
+		u[ IX(i,j,k) ] -= 0.5f * BULLET_X * ( prs[ IX(i+1,j,k) ] - prs[ IX(i-1,j,k) ] );
+		v[ IX(i,j,k) ] -= 0.5f * BULLET_Y * ( prs[ IX(i,j+1,k) ] - prs[ IX(i,j-1,k) ] );
+		w[ IX(i,j,k) ] -= 0.5f * BULLET_Z * ( prs[ IX(i,j,k+1) ] - prs[ IX(i,j,k-1) ] );
 	}
-};
-
-__global__ void kernelCopyGrids( double *src, cdouble *dst )
-{
-	int i, j, k; 
-	_thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
-
-	src[IX(i,j,k)] = dst[IX(i,j,k)];
 };
 
 __global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w )
 {
 	int i, j, k;
-	_thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
+	thread();
 
-	if ( atomicIXNotHalo(i,j,k,GRIDS_X,GRIDS_X,GRIDS_X) ) {
-	
-	cint half = GRIDS_X / 2;
-
-	if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
+	if ( isbound(i,j,k) )
 	{
-		/* add source to grids */
-		density[IX(i,j,k)] = DENSITY;
+		cint half = BULLET_X / 2;
 
-		/* add velocity to grids */
-		if ( i < half )
-			vel_u[IX(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
-		elif( i >= half )
-			vel_u[IX(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
+		if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
+		{
+			/* add source to grids */
+			density[IX(i,j,k)] = DENSITY;
 
-		vel_v[IX(i,j,k)] = VELOCITY;
+			/* add velocity to grids */
+			if ( i < half )
+				vel_u[IX(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
+			elif( i >= half )
+				vel_u[IX(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
 
-		if ( k < half )
-			vel_w[IX(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
-		elif ( k >= half )
-			vel_w[IX(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
-	}
+			vel_v[IX(i,j,k)] = VELOCITY;
+
+			if ( k < half )
+				vel_w[IX(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
+			elif ( k >= half )
+				vel_w[IX(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
+		}
 	}
 };
 
 #undef thread()
 #undef isbound(i,j,k)
+#undef IX(i,j,k)
+
 
 
 /************************************************************************************
 ** etc.                                                                            **
 *************************************************************************************/
 
+#define IX(i,j,k) ix(i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z)
+#define thread() _thread(&i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z)
 
 __global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
 {
 	int i, j, k;
-	_thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
+	thread();
 
 	double x = ( pi * GRIDS_X + i ) * rate;
-	double y = ( pj * GRIDS_X + j ) * rate;
-	double z = ( pk * GRIDS_X + k ) * rate;
+	double y = ( pj * GRIDS_Y + j ) * rate;
+	double z = ( pk * GRIDS_Z + k ) * rate;
 
-	dst[IX(i,j,k)] = atomicTrilinear( src, x, y, z, GRIDS_X, GRIDS_X, GRIDS_X );
+	dst[IX(i,j,k)] = atomicTrilinear( src, x, y, z, GRIDS_X, GRIDS_Y, GRIDS_Z );
 };
 
 __global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
 {
 	int i, j, k;
-	_thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
+	thread();
 
 	int x = _round( ( pi * GRIDS_X + i ) * rate );
-	int y = _round( ( pj * GRIDS_X + j ) * rate );
-	int z = _round( ( pk * GRIDS_X + k ) * rate );
+	int y = _round( ( pj * GRIDS_Y + j ) * rate );
+	int z = _round( ( pk * GRIDS_Z + k ) * rate );
 
 	dst[IX(x,y,z)] = src[IX(i,j,k)];
 };

@@ -54,6 +54,8 @@
 /* etc */
 #define TPBUFFER_S            1024
 
+#define APP_TITLE   "Prototype v2.00.00. FPS: %d "
+
 /* macro definition of grid types */
 #define MACRO_DENSITY            0
 #define MACRO_VELOCITY_U         1

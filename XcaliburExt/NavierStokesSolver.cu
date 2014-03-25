@@ -24,7 +24,7 @@ void FluidSimProc::SolveNavierStokesEquation( cdouble timestep, bool add )
 
 void FluidSimProc::SourceSolver( void )
 {
-	DeviceParamDim();
+	Dim3ParamDim();
 
 	kernelAddSource __device_func__ ( dev_den, dev_u, dev_v, dev_w );
 };
@@ -90,7 +90,7 @@ void FluidSimProc::DensitySolver( cdouble timestep )
 
 void FluidSimProc::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor )
 {
-	DeviceParamDim();
+	Dim3ParamDim();
 
 	for ( int k=0; k<20; k++)
 	{
@@ -100,7 +100,7 @@ void FluidSimProc::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divis
 
 void FluidSimProc::Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w )
 {
-	DeviceParamDim();
+	Dim3ParamDim();
 	kernelAdvection __device_func__ ( out, in, timestep, u, v, w );
 };
 
@@ -112,7 +112,7 @@ void FluidSimProc::Diffusion( double *out, cdouble *in, cdouble diff )
 
 void FluidSimProc::Projection( double *u, double *v, double *w, double *div, double *p )
 {
-	DeviceParamDim();
+	Dim3ParamDim();
 
 	// the velocity gradient
 	kernelGradient __device_func__ ( div, p, u, v, w );

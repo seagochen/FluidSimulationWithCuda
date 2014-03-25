@@ -6,89 +6,19 @@
 * <File Name>     FluidSimProc.cu
 */
 
-#include <time.h>
 #include <iostream>
 #include <utility>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
-#include "MacroDefinition.h"
+
 #include "FluidSimProc.h"
 #include "MacroDefinition.h"
+#include "ExtFunctions.h"
 #include "Kernels.h"
 
 using namespace sge;
 using std::cout;
 using std::endl;
-
-bool CreateCompNodesForDevice
-	( vector<double*> *vectDens, vector<double*> *vectVelU, vector<double*> *vectVelV, 
-	vector<double*> *vectVelW, vector<double*> *vectObst, 
-	FunctionHelper *helper, size_t size, size_t nodes )
-{
-	for ( int i = 0; i < nodes; i++ )
-	{
-		double *ptrD, *ptrU, *ptrV, *ptrW, *ptrO;
-
-		if ( helper->CreateDeviceBuffers( size, 1, &ptrD ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateDeviceBuffers( size, 1, &ptrO ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateDeviceBuffers( size, 1, &ptrU ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateDeviceBuffers( size, 1, &ptrV ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateDeviceBuffers( size, 1, &ptrW ) not_eq SG_RUNTIME_OK ) return false;
-
-		vectDens->push_back( ptrD );
-		vectVelU->push_back( ptrU );
-		vectVelV->push_back( ptrV );
-		vectVelW->push_back( ptrW );
-		vectObst->push_back( ptrO );
-	}
-
-	return true;
-};
-
-bool CreateCompNodesForDevice( vector<double*> *vectBuf, FunctionHelper *helper, size_t size, size_t nodes )
-{
-	for ( int i = 0; i < nodes; i++ )
-	{
-		double *ptrD, *ptrU, *ptrV, *ptrW, *ptrO;
-
-		if ( helper->CreateDeviceBuffers( size, 1, &ptrD ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateDeviceBuffers( size, 1, &ptrO ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateDeviceBuffers( size, 1, &ptrU ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateDeviceBuffers( size, 1, &ptrV ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateDeviceBuffers( size, 1, &ptrW ) not_eq SG_RUNTIME_OK ) return false;
-
-		vectBuf->push_back( ptrD );
-	}
-
-	return true;
-};
-
-bool CreateCompNodesForHost
-	( vector<double*> *vectDens, vector<double*> *vectVelU, vector<double*> *vectVelV, vector<double*> *vectVelW,
-	vector<double*> *vectObst, FunctionHelper *helper, size_t size, size_t nodes )
-{
-	for ( int i = 0; i < nodes; i++ )
-	{
-		double *ptrD, *ptrU, *ptrV, *ptrW, *ptrO;
-
-		if ( helper->CreateHostBuffers( size, 1, &ptrD ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateHostBuffers( size, 1, &ptrO ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateHostBuffers( size, 1, &ptrU ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateHostBuffers( size, 1, &ptrV ) not_eq SG_RUNTIME_OK ) return false;
-		if ( helper->CreateHostBuffers( size, 1, &ptrW ) not_eq SG_RUNTIME_OK ) return false;
-
-		vectDens->push_back( ptrD );
-		vectVelU->push_back( ptrU );
-		vectVelV->push_back( ptrV );
-		vectVelW->push_back( ptrW );
-		vectObst->push_back( ptrO );
-	}
-
-	return true;
-};
-
-
-
 
 FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 {
@@ -108,6 +38,9 @@ FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 	/* clear buffer */
 	ClearBuffers();
 
+	/* initialize boundary */
+	InitBound();
+
 	/* finally, print message */
 	printf( "fluid simulation ready...\n" );
 };
@@ -120,8 +53,23 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	fluid->fps.dwLastUpdateTime = 0;
 	fluid->fps.uFPS = 0;
 
-	m_szTitle = "Excalibur OTL 4.00.00. FPS: %d ";
+	m_szTitle = APP_TITLE;
 };
+
+void FluidSimProc::InitBound( void )
+{
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 22, 22, BULLET_X, BULLET_Y, BULLET_Z );
+	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
+	{
+		kernelZeroBuffers __device_func__ ( m_vectCompBufs[i], BULLET_X, BULLET_Y, BULLET_Z );
+	}
+
+	if ( m_scHelper.GetCUDALastError( "call member function InitBound failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+}
 
 void FluidSimProc::AllocateResource( void )
 {
@@ -170,7 +118,9 @@ void FluidSimProc::AllocateResource( void )
 		exit(1);
 	}
 
-	if ( not CreateCompNodesForDevice( &m_vectCompBufs, &m_scHelper, GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), 40 ) )
+	if ( not CreateCompNodesForDevice( &m_vectCompBufs, &m_scHelper, 
+		BULLET_X * BULLET_Y * BULLET_Z * sizeof(double),
+		BULLET_S ) )
 	{
 		cout << "create computation buffers for device failed" << endl;
 		FreeResource();
@@ -179,19 +129,36 @@ void FluidSimProc::AllocateResource( void )
 
 	m_scHelper.CreateDeviceBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR), 1, &m_ptrDeviceVisual );
 	m_scHelper.CreateHostBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR), 1, &m_ptrHostVisual );
+
+	if ( m_scHelper.GetCUDALastError( "call member function AllocateResource failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
 };
 
 void FluidSimProc::FreeResource( void )
 {
 	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
 	{
-		m_scHelper.FreeDeviceBuffers( 5, &m_vectGPUDens[i], &m_vectGPUVelU[i], &m_vectGPUVelV[i], &m_vectGPUVelW[i], &m_vectGPUObst[i] );
-		m_scHelper.FreeDeviceBuffers( 5, &m_vectNewDens[i], &m_vectNewVelU[i], &m_vectNewVelV[i], &m_vectNewVelW[i], &m_vectNewObst[i] );
-		m_scHelper.FreeHostBuffers( 5, &m_vectHostDens[i], &m_vectHostVelU[i], &m_vectHostVelV[i], &m_vectHostVelW[i], &m_vectHostObst[i] );
+		m_scHelper.FreeDeviceBuffers
+			( 5, &m_vectGPUDens[i], &m_vectGPUVelU[i], &m_vectGPUVelV[i], &m_vectGPUVelW[i], &m_vectGPUObst[i] );
+		m_scHelper.FreeDeviceBuffers
+			( 5, &m_vectNewDens[i], &m_vectNewVelU[i], &m_vectNewVelV[i], &m_vectNewVelW[i], &m_vectNewObst[i] );
+		m_scHelper.FreeHostBuffers
+			( 5, &m_vectHostDens[i], &m_vectHostVelU[i], &m_vectHostVelV[i], &m_vectHostVelW[i], &m_vectHostObst[i] );
+	}
+
+	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
+	{
+		m_scHelper.FreeDeviceBuffers( 1, &m_vectCompBufs[i] );
 	}
 
 	m_scHelper.FreeDeviceBuffers( 1, &m_ptrDeviceVisual );
 	m_scHelper.FreeHostBuffers( 1, &m_ptrHostVisual );
+
+	if ( m_scHelper.GetCUDALastError( "call member function FreeResource failed",
+		__FILE__, __LINE__ ) ) exit(1);
 };
 
 void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
@@ -226,26 +193,47 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 		exit( 1 );
 	}
 	fluid->volume.ptrData = m_ptrHostVisual;
+
+	if ( m_scHelper.GetCUDALastError( "call member function RefreshStatus failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
 };
 
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( !fluid->run ) return;
 	
-	DeviceParamDim();
+	Dim3ParamDim();
 
-	kernelZeroBuffers __device_func__ ( dev_obs, GRIDS_X * GRIDS_Y * GRIDS_Z );
+	kernelLoadBullet __device_func__ ( dev_den, m_vectGPUDens[0], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__ ( dev_u, m_vectGPUVelU[0], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__ ( dev_v, m_vectGPUVelV[0], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__ ( dev_w, m_vectGPUVelW[0], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__ ( dev_obs, m_vectGPUObst[0], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	SolveNavierStokesEquation( DELTATIME, true );
 
-	kernelPickData __device_func__ ( m_ptrDeviceVisual, dev_den, 0, 0, 0, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelExitBullet __device_func__ ( m_vectGPUDens[0], dev_den, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( m_vectGPUVelU[0], dev_u, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( m_vectGPUVelV[0], dev_v, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( m_vectGPUVelW[0], dev_w, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+
+	kernelPickData __device_func__ ( m_ptrDeviceVisual, m_vectGPUDens[0], 0, 0, 0, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+	if ( m_scHelper.GetCUDALastError( "call member function FluidSimSolver failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
 
 	RefreshStatus( fluid );
 };
 
 void FluidSimProc::ClearBuffers( void )
 {
-	DeviceParamDim();
+	Dim3ParamDim();
 	
 	for ( int i = 0; i < m_vectCompBufs.size(); i++ ) _zero( m_vectCompBufs[i] );
 		 	 

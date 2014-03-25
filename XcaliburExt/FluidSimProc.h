@@ -60,10 +60,8 @@ namespace sge
 		FluidSimProc( FLUIDSPARAM *fluid );
 
 	public:
-		/* clear device buffers */
 		void ClearBuffers( void );
 
-		/* get the title of windows's bar */
 		sstr GetTitleBar( void ) { return &m_szTitle; };
 
 		void FreeResource( void );
@@ -72,27 +70,38 @@ namespace sge
 
 		void InitParams( FLUIDSPARAM *fluid );
 
+		void InitBound( void );
+
 		void RefreshStatus( FLUIDSPARAM *fluid );
 
 		void FluidSimSolver( FLUIDSPARAM *fluid );
 
 	private:
 		void SolveNavierStokesEquation( cdouble timestep, bool add );
+
 		void DensitySolver( cdouble timestep );
+
 		void VelocitySolver( cdouble timestep );
+
 		void SourceSolver( void );
+
 		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
+
 		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
+
 		void Diffusion( double *out, cdouble *in, cdouble diff );
+
 		void Projection( double *u, double *v, double *w, double *div, double *p );
 	};
 };
 
+
 #define __device_func__ <<<gridDim,blockDim>>>
-#define DeviceParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z )
+
+#define Dim3ParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z )
+
 #define _zero(vect) kernelZeroBuffers __device_func__ ( vect, GRIDS_X, GRIDS_Y, GRIDS_Z )
 
-#define m_vectCompBufs_num                   35
 #define dev_den              m_vectCompBufs[ 0 ]
 #define dev_den0             m_vectCompBufs[ 1 ]
 #define dev_u                m_vectCompBufs[ 2 ]
