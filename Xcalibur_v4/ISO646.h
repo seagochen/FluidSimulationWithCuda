@@ -19,51 +19,28 @@
 
 /**
 * <Author>      Orlando Chen
-* <First>       Dec 21, 2013
-* <Last>		Dec 21, 2013
-* <File>        volumeHelper.h
+* <First>       Jan 23, 2014
+* <Last>		Mar 24, 2014
+* <File>        ISO646.h
 */
 
-#ifndef __volume_helper_h_
-#define __volume_helper_h_
-
-#include <GL\glew.h>
-#include <GL\freeglut.h>
-#include <SGE\SGUtils.h>
+#define and    &&
+#define and_eq &=
+#define bitand &
+#define bitor  |
+#define compl  ~
+#define not    !
+#define not_eq !=
+#define or     ||
+#define or_eq  |=
+#define xor    ^
+#define xor_eq ^=
+#define eqt    ==
+#define elif  else if
 
 #include <string>
 
-#include "fluidsim.h"
-
-namespace sge
-{
-	class VolumeHelper
-	{
-	public:
-		GLubyte *DefaultTransFunc ( void );
-
-		GLuint Create1DTransFunc ( GLubyte *transfer );
-
-		GLuint Create2DCanvas ( fluidsim *fluid );
-
-		GLuint Create2DFrameBuffer ( fluidsim *fluid );
-
-		GLuint Create3DVolumetric ( void );
-
-	public:
-		GLuint InitVerticesBufferObj ( void );
-
-		void SetVolumeInfoUinforms ( fluidsim *fluid );
-
-		void RenderingFace ( GLenum cullFace, fluidsim *fluid );
-
-		void CreateShaderProg ( fluidsim *fluid );
-
-		void LoadVolumeSource ( const char *szRawFile, fluidsim *fluid );
-
-	private:
-		bool CheckHandleError ( int nShaderObjs, ... );
-	};
-};
-
-#endif
+typedef double const  cdouble;
+typedef int const     cint;
+typedef unsigned char uchar;
+typedef std::string*  sstr;
