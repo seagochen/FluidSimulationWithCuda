@@ -10,9 +10,6 @@
     <Filter Include="Source Files\Kernels">
       <UniqueIdentifier>{06b81e11-183d-45e7-94cb-293c93333963}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Kernels">
-      <UniqueIdentifier>{8792752b-39c5-4672-bad2-36ab4c883097}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{0c1e58fd-6349-46b0-ba46-0117040b3aff}</UniqueIdentifier>
     </Filter>
@@ -39,10 +36,10 @@
     <ClInclude Include="FrameworkDynamic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Kernels.h">
-      <Filter>Header Files\Kernels</Filter>
-    </ClInclude>
     <ClInclude Include="ISO646.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Kernels.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -80,9 +77,6 @@
     <ClCompile Include="MainDynamic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FluidSimProc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Kernels.cu">
@@ -92,9 +86,6 @@
       <Filter>Source Files\Kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="FluidSimProc.cu">
-      <Filter>Source Files\Kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="BasicFunction.cu">
       <Filter>Source Files\Kernels</Filter>
     </CudaCompile>
   </ItemGroup>

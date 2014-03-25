@@ -26,28 +26,7 @@ void FluidSimProc::SourceSolver( void )
 {
 	DeviceParamDim();
 
-	if ( decrease_times eqt 0 )
-	{
-		kernelAddSource __device_func__ ( dev_den, dev_u, dev_v, dev_w );
-
-		if ( helper.GetCUDALastError( "device kernel: kernelPickData failed", __FILE__, __LINE__ ) )
-		{
-			FreeResource();
-			exit( 1 );
-		}
-
-		increase_times++;
-
-		if ( increase_times eqt 200 )
-		{
-			decrease_times = increase_times;
-			increase_times = 0;
-		}
-	}
-	else
-	{
-		decrease_times--;
-	}
+	kernelAddSource __device_func__ ( dev_den, dev_u, dev_v, dev_w );
 };
 
 

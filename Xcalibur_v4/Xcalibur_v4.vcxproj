@@ -40,14 +40,12 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="BasicFunction.cu" />
     <CudaCompile Include="FluidSimProc.cu">
       <FileType>Document</FileType>
     </CudaCompile>
     <CudaCompile Include="NavierStokesSolver.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FluidSimProc.cpp" />
     <ClCompile Include="FrameworkDynamic.cpp" />
     <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="MainDynamic.cpp" />
@@ -58,6 +56,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}</ProjectGuid>
     <RootNamespace>Xcalibur_v4</RootNamespace>
+    <ProjectName>Original</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
