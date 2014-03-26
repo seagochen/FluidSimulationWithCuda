@@ -120,7 +120,7 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	fluid->fps.dwLastUpdateTime = 0;
 	fluid->fps.uFPS = 0;
 
-	m_szTitle = "Excalibur OTL 4.00.00. FPS: %d ";
+	m_szTitle = APP_TITLE;
 };
 
 void FluidSimProc::AllocateResource( void )

@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LGNODES", "fluidsim_large\f
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Original", "Xcalibur_v4\Xcalibur_v4.vcxproj", "{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "XcaliburExt", "XcaliburExt\XcaliburExt.vcxproj", "{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -29,6 +31,14 @@ Global
 		{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}.Release|Win32.Build.0 = Release|Win32
 		{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}.Release|x64.ActiveCfg = Release|x64
 		{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}.Release|x64.Build.0 = Release|x64
+		{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}.Debug|Win32.Build.0 = Debug|Win32
+		{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}.Debug|x64.ActiveCfg = Debug|x64
+		{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}.Debug|x64.Build.0 = Debug|x64
+		{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}.Release|Win32.ActiveCfg = Release|Win32
+		{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}.Release|Win32.Build.0 = Release|Win32
+		{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}.Release|x64.ActiveCfg = Release|x64
+		{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
