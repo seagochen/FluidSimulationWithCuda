@@ -32,9 +32,9 @@
 /* parameters for volume rendering */
 #define STEPSIZE             0.001f
 
-#define VOLUME_X                64
-#define VOLUME_Y                64
-#define VOLUME_Z                64
+#define VOLUME_X               128
+#define VOLUME_Y               128
+#define VOLUME_Z               128
 
 /* CUDA device's configuration info */
 #define THREADS_S             1024
@@ -75,8 +75,10 @@
 #define MACRO_FRONT               5
 #define MACRO_BACK                6
 
+#define MACRO_TRUE                0
+#define MACRO_FALSE               1
 
-#define BULLET_S             40
+#define BULLET_S             11
 
 #define dev_den              m_vectCompBufs[ 0 ]
 #define dev_den0             m_vectCompBufs[ 1 ]
@@ -89,38 +91,6 @@
 #define dev_div              m_vectCompBufs[ 8 ]
 #define dev_p                m_vectCompBufs[ 9 ]
 #define dev_obs              m_vectCompBufs[ 10 ]
-
-#define dens_C               m_vectCompBufs[ 0 ]
-#define dens_L               m_vectCompBufs[ 11 ]
-#define dens_R               m_vectCompBufs[ 12 ]
-#define dens_U               m_vectCompBufs[ 13 ]
-#define dens_D               m_vectCompBufs[ 14 ]
-#define dens_F               m_vectCompBufs[ 15 ]
-#define dens_B               m_vectCompBufs[ 16 ]
-
-#define velu_C               m_vectCompBufs[ 2 ]
-#define velu_L               m_vectCompBufs[ 17 ] 
-#define velu_R               m_vectCompBufs[ 18 ]
-#define velu_U               m_vectCompBufs[ 19 ]
-#define velu_D               m_vectCompBufs[ 20 ]
-#define velu_F               m_vectCompBufs[ 21 ]
-#define velu_B               m_vectCompBufs[ 22 ]
-
-#define velv_C               m_vectCompBufs[ 4 ]
-#define velv_L               m_vectCompBufs[ 23 ]
-#define velv_R               m_vectCompBufs[ 24 ]
-#define velv_U               m_vectCompBufs[ 25 ]
-#define velv_D               m_vectCompBufs[ 26 ]
-#define velv_F               m_vectCompBufs[ 27 ]
-#define velv_B               m_vectCompBufs[ 28 ]
-
-#define velw_C               m_vectCompBufs[ 6 ]
-#define velw_L               m_vectCompBufs[ 29 ]
-#define velw_R               m_vectCompBufs[ 30 ]
-#define velw_U               m_vectCompBufs[ 31 ]
-#define velw_D               m_vectCompBufs[ 32 ]
-#define velw_F               m_vectCompBufs[ 33 ]
-#define velw_B               m_vectCompBufs[ 34 ]
 
 
 #define TEMPND_S             10

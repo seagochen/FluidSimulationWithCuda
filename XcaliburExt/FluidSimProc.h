@@ -25,8 +25,7 @@ namespace sge
 {
 	struct SimNode
 	{
-		SGBOOLEAN updated;
-		SGBOOLEAN active;
+		int updated, active;
 		int x, y, z;
 		SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 	};
@@ -47,16 +46,15 @@ namespace sge
 		vector<double*> m_vectHostVelV, m_vectGPUVelV, m_vectNewVelV;
 		vector<double*> m_vectHostVelW, m_vectGPUVelW, m_vectNewVelW;
 		vector<double*> m_vectHostObst, m_vectGPUObst;
+		vector<SimNode*> m_link;
 
 		SGUCHAR *m_ptrDeviceVisual, *m_ptrHostVisual;
-		
-		dim3 gridDim, blockDim;
-
-		string m_szTitle;
 
 	private:
 		FunctionHelper m_scHelper;
 		SGHIERARCHY m_enHierarchy;
+		string m_szTitle;
+		dim3 gridDim, blockDim;
 
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
@@ -90,8 +88,12 @@ namespace sge
 
 		void SaveCurStage( void );
 
+		void SetCurrentNode( int i, int j, int k );
+
+		void GetCurrentNode( int i, int j, int k );
+
 	private:
-		void SolveNavierStokesEquation( cdouble timestep, bool add );
+		void SolveNavierStokesEquation( cdouble dt, bool add, bool dens, bool vel );
 
 		void DensitySolver( cdouble timestep );
 

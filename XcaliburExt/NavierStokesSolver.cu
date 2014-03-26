@@ -17,11 +17,11 @@
 using namespace sge;
 using namespace std;
 
-void FluidSimProc::SolveNavierStokesEquation( cdouble timestep, bool add )
+void FluidSimProc::SolveNavierStokesEquation( cdouble timestep, bool add, bool dens, bool vel )
 {
 	if ( add ) SourceSolver( timestep );
-	VelocitySolver( timestep );
-	DensitySolver( timestep );
+	if ( vel ) VelocitySolver( timestep );
+	if ( dens ) DensitySolver( timestep );
 };
 
 void FluidSimProc::SourceSolver( cdouble timestep )

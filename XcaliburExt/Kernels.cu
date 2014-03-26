@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Mar 24, 2014
+* <Last Time>     Mar 26, 2014
 * <File Name>     Kernel.cu
 */
 
@@ -552,3 +552,135 @@ __global__ void kernelPickData
 	volume[ ix( offi, offj, offk, VOLUME_X, VOLUME_Y, VOLUME_Z ) ] = 
 		( dens < 250 and dens >= 0 ) ? (uchar)dens : 0;
 };
+
+
+
+#define thread() \
+	int i,j,k; \
+	_thread(&i,&j,&k,srcx,srcy,srcz);
+#define _ix(i,j,k) ix(i,j,k,srcx,srcy,srcz)
+#define _IX(i,j,k) ix(i,j,k,dstx,dsty,dstz)
+
+#define headerx 0
+#define headery 0
+#define headerz 0
+#define tailerx srcx-1
+#define tailery srcy-1
+#define tailerz srcz-1
+
+__global__ void kernelLoadLeftFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz )
+{
+	thread();
+
+	bullet[_IX(0,j+1,k+1)] = face[_ix(tailerx,j,k)];
+};
+
+__global__ void kernelLoadRightFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz )
+{
+	thread();
+
+	bullet[_IX(dstx-1,j+1,k+1)] = face[_ix(headerx,j,k)];
+};
+
+__global__ void kernelLoadUpFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz )
+{
+	thread();
+
+	bullet[_IX(i+1,dsty-1,k+1)] = face[_ix(i,headery,k)];
+};
+
+__global__ void kernelLoadDownFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz )
+{
+	thread();
+
+	bullet[_IX(i+1,0,k+1)] = face[_ix(i,tailery,k)];
+};
+
+__global__ void kernelLoadFrontFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz )
+{
+	thread();
+
+	bullet[_IX(i+1,j+1,dstz-1)] = face[_ix(i,j,headerz)];
+};
+
+__global__ void kernelLoadBackFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz )
+{
+	thread();
+
+	bullet[_IX(i+1,j+1,0)] = face[_ix(i,j,tailerz)];
+};
+
+#undef headerx
+#undef headery
+#undef headerz
+#undef tailerx
+#undef tailery
+#undef tailerz
+#undef thread()
+#undef _ix(i,j,k)
+#undef _IX(i,j,k)
+
+#define thread() \
+	int i, j, k; \
+	_thread( &i, &j, &k, gx, gy, gz );
+#define _ix(i,j,k) ix( i, j, k, bx, by, bz )
+
+#define headerx 0
+#define headery 0
+#define headerz 0
+
+#define tailerx bx-1
+#define tailery by-1
+#define tailerz bz-1
+
+__global__ void kernelSmoothBullet( double *bullet, cint bx, cint by, cint bz, cint gx, cint gy, cint gz )
+{
+	thread();
+
+	bullet[_ix(headerx,headery,k)] = ( bullet[_ix(headerx+1,headery,k)] + bullet[_ix(headerx,headery+1,k)] ) / 2.f;
+	bullet[_ix(headerx,tailery,k)] = ( bullet[_ix(headerx+1,tailery,k)] + bullet[_ix(headerx,tailery-1,k)] ) / 2.f;
+	bullet[_ix(tailerx,headery,k)] = ( bullet[_ix(tailerx-1,headery,k)] + bullet[_ix(tailerx,headery+1,k)] ) / 2.f;
+	bullet[_ix(tailerx,tailery,k)] = ( bullet[_ix(tailerx-1,tailery,k)] + bullet[_ix(tailerx,tailery-1,k)] ) / 2.f;
+
+	bullet[_ix(i,headery,headerz)] = ( bullet[_ix(i,headery+1,headerz)] + bullet[_ix(i,headery,headerz+1)] ) / 2.f;
+	bullet[_ix(i,headery,tailerz)] = ( bullet[_ix(i,headery+1,tailerz)] + bullet[_ix(i,headery,tailerz-1)] ) / 2.f;
+	bullet[_ix(i,tailery,headerz)] = ( bullet[_ix(i,tailery-1,headerz)] + bullet[_ix(i,tailery,headerz+1)] ) / 2.f;
+	bullet[_ix(i,tailery,tailerz)] = ( bullet[_ix(i,tailery-1,tailerz)] + bullet[_ix(i,tailery,tailerz-1)] ) / 2.f;
+
+	bullet[_ix(headerx,j,headerz)] = ( bullet[_ix(headerx+1,j,headerz)] + bullet[_ix(headerx,j,headerz+1)] ) / 2.f;
+	bullet[_ix(headerx,j,tailerz)] = ( bullet[_ix(headerx+1,j,tailerz)] + bullet[_ix(headerx,j,tailerz-1)] ) / 2.f;
+	bullet[_ix(tailerx,j,headerz)] = ( bullet[_ix(tailerx-1,j,headerz)] + bullet[_ix(tailerx,j,headerz+1)] ) / 2.f;
+	bullet[_ix(tailerx,j,tailerz)] = ( bullet[_ix(tailerx-1,j,tailerz)] + bullet[_ix(tailerx,j,tailerz-1)] ) / 2.f;
+
+	bullet[_ix(headerx,headery,headerz)] = ( bullet[_ix(headerx+1,headery,headerz)] + bullet[_ix(headerx,headery+1,headerz)] + bullet[_ix(headerx,headery,headerz+1)] ) / 3.f;
+	bullet[_ix(headerx,headery,tailerz)] = ( bullet[_ix(headerx+1,headery,tailerz)] + bullet[_ix(headerx,headery+1,tailerz)] + bullet[_ix(headerx,headery,tailerz-1)] ) / 3.f;
+	bullet[_ix(headerx,tailery,headerz)] = ( bullet[_ix(headerx+1,tailery,headerz)] + bullet[_ix(headerx,tailery-1,headerz)] + bullet[_ix(headerx,tailery,headerz+1)] ) / 3.f;
+	bullet[_ix(headerx,tailery,tailerz)] = ( bullet[_ix(headerx+1,tailery,tailerz)] + bullet[_ix(headerx,tailery-1,tailerz)] + bullet[_ix(headerx,tailery,tailerz-1)] ) / 3.f;
+	bullet[_ix(tailerx,headery,headerz)] = ( bullet[_ix(tailerx-1,headery,headerz)] + bullet[_ix(tailerx,headery+1,headerz)] + bullet[_ix(tailerx,headery,headerz+1)] ) / 3.f;
+	bullet[_ix(tailerx,headery,tailerz)] = ( bullet[_ix(tailerx-1,headery,tailerz)] + bullet[_ix(tailerx,headery+1,tailerz)] + bullet[_ix(tailerx,headery,tailerz-1)] ) / 3.f;
+	bullet[_ix(tailerx,tailery,headerz)] = ( bullet[_ix(tailerx-1,tailery,headerz)] + bullet[_ix(tailerx,tailery-1,headerz)] + bullet[_ix(tailerx,tailery,headerz+1)] ) / 3.f;
+	bullet[_ix(tailerx,tailery,tailerz)] = ( bullet[_ix(tailerx-1,tailery,tailerz)] + bullet[_ix(tailerx,tailery-1,tailerz)] + bullet[_ix(tailerx,tailery,tailerz-1)] ) / 3.f;
+};
+
+#undef tailerz
+#undef tailery
+#undef tailerx
+
+#undef headerz
+#undef headery
+#undef headerx
+
+#undef _ix(i,j,k)
+#undef thread()

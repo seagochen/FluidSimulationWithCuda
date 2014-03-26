@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Feb 23, 2014
-* <Last Time>     Mar 04, 2014
+* <Last Time>     Mar 26, 2014
 * <File Name>     Kernels.h
 */
 
@@ -81,5 +81,34 @@ extern __global__ void kernelCopyBuffers( int *dst, cint *src, cint tilex, cint 
 extern __global__ void kernelCopyBuffers( double *dst, cdouble *src, cint tilex, cint tiley, cint tilez );
 
 extern __global__ void kernelCopyBuffers( uchar *dst, uchar *src, cint tilex, cint tiley, cint tilez );
+
+
+
+extern __global__ void kernelLoadLeftFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz );
+
+extern __global__ void kernelLoadRightFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz );
+
+extern __global__ void kernelLoadUpFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz );
+
+extern __global__ void kernelLoadDownFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz );
+
+extern __global__ void kernelLoadFrontFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz );
+
+extern __global__ void kernelLoadBackFace( double *bullet, cdouble *face,
+										  cint dstx, cint dsty, cint dstz, 
+										  cint srcx, cint srcy, cint srcz );
+
+extern __global__ void kernelSmoothBullet
+	( double *bullet, cint bx, cint by, cint bz, cint gx, cint gy, cint gz );
 
 #endif
