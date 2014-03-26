@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Oct 16, 2013
-* <Last Time>     Mar 24, 2014
+* <Last Time>     Mar 26, 2014
 * <File Name>     FrameworkDynamic.cpp
 */
 
@@ -604,17 +604,17 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 			onDestroy();
 			break;
 
-		case SG_KEY_Z:
-			m_simproc->SetHierarchy( SG_LARGE_SCALE );
-			m_simproc->ClearBuffers();
-			m_simproc->InitBound();
-			break;
-
-		case SG_KEY_X:
-			m_simproc->SetHierarchy( SG_HIGH_PRECISION );
-			m_simproc->ClearBuffers();
-			m_simproc->InitBound();
-			break;
+//		case SG_KEY_Z:
+//			m_simproc->SetHierarchy( SG_LARGE_SCALE );
+//			m_simproc->ClearBuffers();
+//			m_simproc->InitBound();
+//			break;
+//
+//		case SG_KEY_X:
+//			m_simproc->SetHierarchy( SG_HIGH_PRECISION );
+//			m_simproc->ClearBuffers();
+//			m_simproc->InitBound();
+//			break;
 	
 		case SG_KEY_C:
 			m_simproc->ClearBuffers();
@@ -634,9 +634,9 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 				<< "Use Key Q or ESC to quit system" << endl 
 				<< "Use Key C to clear stage" << endl
 				<< "Use Key S to save current fluid simulation status" << endl
-				<< "Use Key L to load previous fluid simulation status" << endl
-				<< "Use Key Z to shift current model to large scale" << endl
-				<< "Use Key X to shift current model to high precision" << endl;
+				<< "Use Key L to load previous fluid simulation status" << endl;
+//				<< "Use Key Z to shift current model to large scale" << endl
+//				<< "Use Key X to shift current model to high precision" << endl;
 			break;
 
 		default:

@@ -71,27 +71,4 @@
 #define MACRO_TRUE                0
 #define MACRO_FALSE               1
 
-#define BULLET_S             11
-
-#define dev_den              m_vectCompBufs[ 0 ]
-#define dev_den0             m_vectCompBufs[ 1 ]
-#define dev_u                m_vectCompBufs[ 2 ]
-#define dev_u0               m_vectCompBufs[ 3 ]
-#define dev_v                m_vectCompBufs[ 4 ]
-#define dev_v0               m_vectCompBufs[ 5 ]
-#define dev_w                m_vectCompBufs[ 6 ]
-#define dev_w0               m_vectCompBufs[ 7 ]
-#define dev_div              m_vectCompBufs[ 8 ]
-#define dev_p                m_vectCompBufs[ 9 ]
-#define dev_obs              m_vectCompBufs[ 10 ]
-
-
-#define TEMPND_S             10
-
-#define temp_dens            m_vectGlobalBufs[ 0 ]
-#define temp_velu            m_vectGlobalBufs[ 1 ]
-#define temp_velv            m_vectGlobalBufs[ 2 ]
-#define temp_velw            m_vectGlobalBufs[ 4 ]
-#define temp_obst            m_vectGlobalBufs[ 5 ]
-
 #endif

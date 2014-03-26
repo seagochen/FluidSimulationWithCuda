@@ -47,13 +47,30 @@ namespace sge
 		SG_PRESSURE,
 	};
 	
+
+#define GLOBAL_BUFS    4
+#define global_dens    m_vectDevGlobal[0]
+#define global_velu    m_vectDevGlobal[1]
+#define global_velv    m_vectDevGlobal[2]
+#define global_velw    m_vectDevGlobal[3]
+
+#define TEMP_BUFS      4
+#define temp_u         m_vectGPUTempBufs[0]
+#define temp_v         m_vectGPUTempBufs[1]
+#define temp_w         m_vectGPUTempBufs[2]
+#define temp_d         m_vectGPUTempBufs[3]
+
 	class FluidSimProc
 	{
 	private:
-		vector<double*> m_vectCompBufs, m_vectGlobalBufs;
+		vector<double*> m_vectHostDens, m_vectHostObst,
+			m_vectHostVelU, m_vectHostVelV, m_vectHostVelW;
 
-		vector<double*> m_vectHostDens, m_vectHostVelU, m_vectHostVelV, m_vectHostVelW, m_vectHostObst;
-		vector<double*> m_vectGPUDens, m_vectGPUVelU, m_vectGPUVelV, m_vectGPUVelW, m_vectGPUObst;
+		vector<double*> m_vectDevDens, m_vectDevObst, m_vectDevGlobal,
+			m_vectDevVelU, m_vectDevVelV, m_vectDevVelW;
+
+		vector<double*> m_vectGPUDens, m_vectGPUDiv, m_vectGPUPress, m_vectGPUTempBufs,
+			m_vectGPUVelU, m_vectGPUVelV, m_vectGPUVelW, m_vectGPUObst;
 
 		vector<SimNode*> m_link;
 
@@ -97,10 +114,6 @@ namespace sge
 
 		void SaveCurStage( void );
 
-		void SetCurrentNode( int i, int j, int k, SGFILEDTYPE type );
-
-		void GetCurrentNode( int i, int j, int k, SGFILEDTYPE type );
-
 	private:
 		void SolveNavierStokesEquation( cdouble dt, bool add, bool vel, bool dens );
 
@@ -109,14 +122,6 @@ namespace sge
 		void VelocitySolver( cdouble dt );
 
 		void SourceSolver( cdouble dt );
-
-		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
-
-		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
-
-		void Diffusion( double *out, cdouble *in, cdouble diff );
-
-		void Projection( double *u, double *v, double *w, double *div, double *p );
 	};
 };
 
