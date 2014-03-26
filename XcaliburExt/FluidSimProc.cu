@@ -56,6 +56,7 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	srand(time(NULL));
 
 	m_szTitle = APP_TITLE;
+	m_enHierarchy = SG_LARGE_SCALE;
 };
 
 void FluidSimProc::AllocateResource( void )
@@ -143,6 +144,15 @@ void FluidSimProc::FreeResource( void )
 
 void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 {
+	/* swap new & old buffers */
+	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
+	{
+		std::swap( m_vectGPUDens[i], m_vectNewDens[i] );
+		std::swap( m_vectGPUVelU[i], m_vectNewVelU[i] );
+		std::swap( m_vectGPUVelV[i], m_vectNewVelV[i] );
+		std::swap( m_vectGPUVelW[i], m_vectNewVelW[i] );
+	}
+
 	/* waiting for all kernels end */
 	if ( cudaThreadSynchronize() not_eq cudaSuccess )
 	{
@@ -183,7 +193,7 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 
 void FluidSimProc::ClearBuffers( void )
 {
-	Dim3ParamDim();
+	GridsParamDim();
 	
 	for ( int i = 0; i < m_vectCompBufs.size(); i++ ) _zero( m_vectCompBufs[i] );
 		 	 
@@ -191,16 +201,57 @@ void FluidSimProc::ClearBuffers( void )
 	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
 	{
 		_zero( m_vectGPUDens[i] ); _zero( m_vectNewDens[i] );
-		_zero( m_vectGPUVelU[i] ); _zero( m_vectNewDens[i] );
-		_zero( m_vectGPUVelV[i] ); _zero( m_vectNewDens[i] );
-		_zero( m_vectGPUVelW[i] ); _zero( m_vectNewDens[i] );
-		_zero( m_vectGPUObst[i] ); _zero( m_vectNewDens[i] );
+		_zero( m_vectGPUVelU[i] ); _zero( m_vectNewVelU[i] );
+		_zero( m_vectGPUVelV[i] ); _zero( m_vectNewVelV[i] );
+		_zero( m_vectGPUVelW[i] ); _zero( m_vectNewVelW[i] );
 	}
+
+	for ( int i = 0; i < m_vectGlobalBufs.size(); i++ )
+		_zero( m_vectGlobalBufs[i] );
 
 	if ( m_scHelper.GetCUDALastError( "host function failed: ZeroBuffers", __FILE__, __LINE__ ) )
 	{
 		FreeResource();
 		exit( 1 );
+	}
+};
+
+void FluidSimProc::LoadPreStage( void )
+{
+	/* clear bullet buffers */
+	BulletParamDim();
+	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
+		kernelZeroBuffers __device_func__ ( m_vectCompBufs[i], BULLET_X, BULLET_Y, BULLET_Z );
+
+	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
+	{
+		cudaMemcpy( m_vectGPUDens[i], m_vectHostDens[i], GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), cudaMemcpyHostToDevice );
+		cudaMemcpy( m_vectGPUVelU[i], m_vectHostVelU[i], GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), cudaMemcpyHostToDevice );
+		cudaMemcpy( m_vectGPUVelV[i], m_vectHostVelV[i], GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), cudaMemcpyHostToDevice );
+		cudaMemcpy( m_vectGPUVelW[i], m_vectHostVelW[i], GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), cudaMemcpyHostToDevice );
+	}
+
+	if ( m_scHelper.GetCUDALastError( "call member function LoadPreStage failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+};
+
+void FluidSimProc::SaveCurStage( void )
+{
+	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
+	{
+		cudaMemcpy( m_vectHostDens[i], m_vectNewDens[i], GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelU[i], m_vectNewVelU[i], GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelV[i], m_vectNewVelV[i], GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelW[i], m_vectNewVelW[i], GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), cudaMemcpyDeviceToHost );
+	}
+
+	if ( m_scHelper.GetCUDALastError( "call member function SaveCurStage failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
 	}
 };
 
@@ -217,16 +268,7 @@ void FluidSimProc::InitBound( void )
 			{
 				for ( int n = 0; n < NODES_X * NODES_Y * NODES_Z; n++ )
 					m_vectHostObst[n][ix(i,j,k,GRIDS_X,GRIDS_Y)] = MACRO_BOUNDARY_BLANK;
-			}
-		}
-	}
-
-	for ( int k = 0; k < GRIDS_Z; k++ )
-	{
-		for ( int j = 0; j < GRIDS_Y; j++ )
-		{
-			for ( int i = 0; i < GRIDS_X; i++ )
-			{
+					
 				if ( j < 3 and 
 					i >= halfx - 2 and i < halfx + 2 and 
 					k >= halfz - 2 and k < halfz + 2 )
@@ -235,9 +277,17 @@ void FluidSimProc::InitBound( void )
 		}
 	}
 
-	for ( int n = 0; n < NODES_X * NODES_Y * NODES_Z; n++ )
+	if ( m_enHierarchy eqt SG_LARGE_SCALE )
 	{
-		cudaMemcpy( m_vectGPUObst[n], m_vectHostObst[n], 
+		for ( int n = 0; n < NODES_X * NODES_Y * NODES_Z; n++ )
+		{
+			cudaMemcpy( m_vectGPUObst[n], m_vectHostObst[n], 
+				sizeof(double) * GRIDS_X * GRIDS_Y * GRIDS_Z, cudaMemcpyHostToDevice );
+		}
+	}
+	elif ( m_enHierarchy eqt SG_HIGH_PRECISION )
+	{
+		cudaMemcpy( temp_obst, m_vectHostObst[0], 
 			sizeof(double) * GRIDS_X * GRIDS_Y * GRIDS_Z, cudaMemcpyHostToDevice );
 	}
 
@@ -248,17 +298,18 @@ void FluidSimProc::InitBound( void )
 	}
 }
 
+
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( !fluid->run ) return;
-
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 22, 22, BULLET_X, BULLET_Y, BULLET_Z );
-	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
-	{
-		kernelZeroBuffers __device_func__ ( m_vectCompBufs[i], BULLET_X, BULLET_Y, BULLET_Z );
-	}
 	
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	/* clear bullet buffers */
+	BulletParamDim();
+	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
+		kernelZeroBuffers __device_func__ ( m_vectCompBufs[i], BULLET_X, BULLET_Y, BULLET_Z );
+
+	/* load node to bullet */
+	GridsParamDim();
 	kernelLoadBullet __device_func__ ( dev_den, m_vectGPUDens[0], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	kernelLoadBullet __device_func__ ( dev_u, m_vectGPUVelU[0], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	kernelLoadBullet __device_func__ ( dev_v, m_vectGPUVelV[0], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
@@ -267,12 +318,12 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 
 	SolveNavierStokesEquation( DELTATIME, true );
 
-	kernelExitBullet __device_func__ ( m_vectGPUDens[0], dev_den, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-	kernelExitBullet __device_func__ ( m_vectGPUVelU[0], dev_u, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-	kernelExitBullet __device_func__ ( m_vectGPUVelV[0], dev_v, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-	kernelExitBullet __device_func__ ( m_vectGPUVelW[0], dev_w, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( m_vectNewDens[0], dev_den, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( m_vectNewVelU[0], dev_u, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( m_vectNewVelV[0], dev_v, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( m_vectNewVelW[0], dev_w, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
 
-	kernelPickData __device_func__ ( m_ptrDeviceVisual, m_vectGPUDens[0], 0, 0, 0, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelPickData __device_func__ ( m_ptrDeviceVisual, m_vectNewDens[0], 0, 0, 0, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	if ( m_scHelper.GetCUDALastError( "call member function FluidSimSolver failed", __FILE__, __LINE__ ) )
 	{

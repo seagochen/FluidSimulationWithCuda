@@ -26,7 +26,7 @@ void FluidSimProc::SolveNavierStokesEquation( cdouble timestep, bool add )
 
 void FluidSimProc::SourceSolver( cdouble timestep )
 {
-	Dim3ParamDim();
+	GridsParamDim();
 
 	double rate = (double)(rand() % 300 + 1) / 100.f;
 
@@ -94,7 +94,7 @@ void FluidSimProc::DensitySolver( cdouble timestep )
 
 void FluidSimProc::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor )
 {
-	Dim3ParamDim();
+	GridsParamDim();
 
 	for ( int k=0; k<20; k++)
 	{
@@ -104,7 +104,7 @@ void FluidSimProc::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divis
 
 void FluidSimProc::Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w )
 {
-	Dim3ParamDim();
+	GridsParamDim();
 	kernelAdvection __device_func__ ( out, in, timestep, u, v, w );
 };
 
@@ -116,7 +116,7 @@ void FluidSimProc::Diffusion( double *out, cdouble *in, cdouble diff )
 
 void FluidSimProc::Projection( double *u, double *v, double *w, double *div, double *p )
 {
-	Dim3ParamDim();
+	GridsParamDim();
 
 	// the velocity gradient
 	kernelGradient __device_func__ ( div, p, u, v, w );
