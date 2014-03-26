@@ -144,6 +144,10 @@ Success:
 				/* front */
 				if ( k <= NODES_Z - 2 )
 					m_link[ix(i, j, k, NODES_X, NODES_Y)]->ptrFront = m_link[ix( i, j, k+1, NODES_X, NODES_Y)];
+
+				m_link[ix(i, j, k, NODES_X, NODES_Y)]->x = i;
+				m_link[ix(i, j, k, NODES_X, NODES_Y)]->y = j;
+				m_link[ix(i, j, k, NODES_X, NODES_Y)]->z = k;
 			}
 		}
 	}
@@ -189,13 +193,13 @@ void FluidSimProc::FreeResource( void )
 void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 {
 	/* swap new & old buffers */
-	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
-	{
-		std::swap( m_vectGPUDens[i], m_vectNewDens[i] );
-		std::swap( m_vectGPUVelU[i], m_vectNewVelU[i] );
-		std::swap( m_vectGPUVelV[i], m_vectNewVelV[i] );
-		std::swap( m_vectGPUVelW[i], m_vectNewVelW[i] );
-	}
+//	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
+//	{
+//		std::swap( m_vectGPUDens[i], m_vectNewDens[i] );
+//		std::swap( m_vectGPUVelU[i], m_vectNewVelU[i] );
+//		std::swap( m_vectGPUVelV[i], m_vectNewVelV[i] );
+//		std::swap( m_vectGPUVelW[i], m_vectNewVelW[i] );
+//	}
 
 	/* waiting for all kernels end */
 	if ( cudaThreadSynchronize() not_eq cudaSuccess )
@@ -345,37 +349,15 @@ void FluidSimProc::InitBound( void )
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( !fluid->run ) return;
-	
-	/* clear bullet buffers */
-	BulletParamDim();
-	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
-		kernelZeroBuffers __device_func__ ( m_vectCompBufs[i], BULLET_X, BULLET_Y, BULLET_Z );
 
 	/* solve node */
-	if ( m_enHierarchy eqt SG_LARGE_SCALE )
-	{
-		for ( int k = 0; k < NODES_Z; k++ )
-		{
-			for ( int j = 0; j < NODES_Y; j++ )
-			{
-				for ( int i = 0; i < NODES_X; i++ )
-				{
-					SetCurrentNode( i, j, k );
-					SolveNavierStokesEquation( DELTATIME, true, true, true );
-					GetCurrentNode( i, j, k );
-				}
-			}
-		}
-	}
-	elif ( m_enHierarchy eqt SG_HIGH_PRECISION )
-	{
-
-	}
+	SolveNavierStokesEquation( DELTATIME, true, true, true );
 
 	/* swap buffers and output image */
 	RefreshStatus( fluid );
 };
 
+#if 0
 void FluidSimProc::SetCurrentNode( int i, int j, int k )
 {
 	GridsParamDim();
@@ -388,6 +370,75 @@ void FluidSimProc::SetCurrentNode( int i, int j, int k )
 	kernelLoadBullet __device_func__ ( dev_v, m_vectGPUVelV[ind], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	kernelLoadBullet __device_func__ ( dev_w, m_vectGPUVelW[ind], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
 	kernelLoadBullet __device_func__ ( dev_obs, m_vectGPUObst[ind], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+	if ( m_scHelper.GetCUDALastError( "call member function SetCurrentNode failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+
+#define _loadLeftFace(bul,grid)  kernelLoadLeftFace __device_func__ ( bul, grid, BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z )
+#define _loadRightFace(bul,grid) kernelLoadRightFace __device_func__ ( bul, grid, BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z )
+#define _loadUpFace(bul,grid) kernelLoadUpFace __device_func__ ( bul, grid, BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z )
+#define _loadDownFace(bul,grid) kernelLoadDownFace __device_func__ ( bul, grid, BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z )
+#define _loadFrontFace(bul,grid) kernelLoadFrontFace __device_func__ ( bul, grid, BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z )
+#define _loadBackFace(bul,grid) kernelLoadBackFace __device_func__ ( bul, grid, BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z )
+
+	if ( m_link[ind]->ptrLeft not_eq nullptr )
+	{
+		_loadLeftFace( dev_den, m_vectGPUDens[ix(i-1,j,k,NODES_X,NODES_Y)] );
+		_loadLeftFace( dev_u, m_vectGPUVelU[ix(i-1,j,k,NODES_X,NODES_Y)] );
+		_loadLeftFace( dev_v, m_vectGPUVelV[ix(i-1,j,k,NODES_X,NODES_Y)] );
+		_loadLeftFace( dev_w, m_vectGPUVelW[ix(i-1,j,k,NODES_X,NODES_Y)] );
+		_loadLeftFace( dev_obs, m_vectGPUObst[ix(i-1,j,k,NODES_X,NODES_Y)] );
+	}
+	if ( m_link[ind]->ptrRight not_eq nullptr )
+	{
+		_loadRightFace( dev_den, m_vectGPUDens[ix(i+1,j,k,NODES_X,NODES_Y)] );
+		_loadRightFace( dev_u, m_vectGPUVelU[ix(i+1,j,k,NODES_X,NODES_Y)] );
+		_loadRightFace( dev_v, m_vectGPUVelV[ix(i+1,j,k,NODES_X,NODES_Y)] );
+		_loadRightFace( dev_w, m_vectGPUVelW[ix(i+1,j,k,NODES_X,NODES_Y)] );
+		_loadRightFace( dev_obs, m_vectGPUObst[ix(i+1,j,k,NODES_X,NODES_Y)] );
+	}
+	if ( m_link[ind]->ptrUp not_eq nullptr )
+	{
+		_loadUpFace( dev_den, m_vectGPUDens[ix(i,j+1,k,NODES_X,NODES_Y)] );
+		_loadUpFace( dev_u, m_vectGPUVelU[ix(i,j+1,k,NODES_X,NODES_Y)] );
+		_loadUpFace( dev_v, m_vectGPUVelV[ix(i,j+1,k,NODES_X,NODES_Y)] );
+		_loadUpFace( dev_w, m_vectGPUVelW[ix(i,j+1,k,NODES_X,NODES_Y)] );
+		_loadUpFace( dev_obs, m_vectGPUObst[ix(i,j+1,k,NODES_X,NODES_Y)] );
+	}
+	if ( m_link[ind]->ptrDown not_eq nullptr )
+	{
+		_loadDownFace( dev_den, m_vectGPUDens[ix(i,j-1,k,NODES_X,NODES_Y)] );
+		_loadDownFace( dev_u, m_vectGPUVelU[ix(i,j-1,k,NODES_X,NODES_Y)] );
+		_loadDownFace( dev_v, m_vectGPUVelV[ix(i,j-1,k,NODES_X,NODES_Y)] );
+		_loadDownFace( dev_w, m_vectGPUVelW[ix(i,j-1,k,NODES_X,NODES_Y)] );
+		_loadDownFace( dev_obs, m_vectGPUObst[ix(i,j-1,k,NODES_X,NODES_Y)] );
+	}
+	if ( m_link[ind]->ptrFront not_eq nullptr )
+	{
+		_loadFrontFace( dev_den, m_vectGPUDens[ix(i,j,k+1,NODES_X,NODES_Y)] );
+		_loadFrontFace( dev_u, m_vectGPUVelU[ix(i,j,k+1,NODES_X,NODES_Y)] );
+		_loadFrontFace( dev_v, m_vectGPUVelV[ix(i,j,k+1,NODES_X,NODES_Y)] );
+		_loadFrontFace( dev_w, m_vectGPUVelW[ix(i,j,k+1,NODES_X,NODES_Y)] );
+		_loadFrontFace( dev_obs, m_vectGPUObst[ix(i,j,k+1,NODES_X,NODES_Y)] );
+	}
+	if ( m_link[ind]->ptrBack not_eq nullptr )
+	{
+		_loadBackFace( dev_den, m_vectGPUDens[ix(i,j,k-1,NODES_X,NODES_Y)] );
+		_loadBackFace( dev_u, m_vectGPUVelU[ix(i,j,k-1,NODES_X,NODES_Y)] );
+		_loadBackFace( dev_v, m_vectGPUVelV[ix(i,j,k-1,NODES_X,NODES_Y)] );
+		_loadBackFace( dev_w, m_vectGPUVelW[ix(i,j,k-1,NODES_X,NODES_Y)] );
+		_loadBackFace( dev_obs, m_vectGPUObst[ix(i,j,k-1,NODES_X,NODES_Y)] );
+	}
+
+#undef _loadLeftFace(bul,grid)
+#undef _loadRightFace(bul,grid)
+#undef _loadUpFace(bul,grid)
+#undef _loadDownFace(bul,grid)
+#undef _loadFrontFace(bul,grid)
+#undef _loadBackFace(bul,grid)
 
 	if ( m_scHelper.GetCUDALastError( "call member function SetCurrentNode failed", __FILE__, __LINE__ ) )
 	{
@@ -416,3 +467,4 @@ void FluidSimProc::GetCurrentNode( int i, int j, int k )
 		exit(1);
 	}
 };
+#endif

@@ -35,17 +35,26 @@ namespace sge
 		SG_LARGE_SCALE,
 		SG_HIGH_PRECISION,
 	};
+
+	enum SGFILEDTYPE
+	{
+		SG_DENSITY,
+		SG_VELOCITY_U,
+		SG_VELOCITY_V,
+		SG_VELOCITY_W,
+		SG_OBSTACLE,
+		SG_DIV,
+		SG_PRESSURE,
+	};
 	
 	class FluidSimProc
 	{
 	private:
-		vector <double*> m_vectCompBufs, m_vectGlobalBufs;
+		vector<double*> m_vectCompBufs, m_vectGlobalBufs;
 
-		vector<double*> m_vectHostDens, m_vectGPUDens, m_vectNewDens;
-		vector<double*> m_vectHostVelU, m_vectGPUVelU, m_vectNewVelU;
-		vector<double*> m_vectHostVelV, m_vectGPUVelV, m_vectNewVelV;
-		vector<double*> m_vectHostVelW, m_vectGPUVelW, m_vectNewVelW;
-		vector<double*> m_vectHostObst, m_vectGPUObst;
+		vector<double*> m_vectHostDens, m_vectHostVelU, m_vectHostVelV, m_vectHostVelW, m_vectHostObst;
+		vector<double*> m_vectGPUDens, m_vectGPUVelU, m_vectGPUVelV, m_vectGPUVelW, m_vectGPUObst;
+
 		vector<SimNode*> m_link;
 
 		SGUCHAR *m_ptrDeviceVisual, *m_ptrHostVisual;
@@ -88,18 +97,18 @@ namespace sge
 
 		void SaveCurStage( void );
 
-		void SetCurrentNode( int i, int j, int k );
+		void SetCurrentNode( int i, int j, int k, SGFILEDTYPE type );
 
-		void GetCurrentNode( int i, int j, int k );
+		void GetCurrentNode( int i, int j, int k, SGFILEDTYPE type );
 
 	private:
-		void SolveNavierStokesEquation( cdouble dt, bool add, bool dens, bool vel );
+		void SolveNavierStokesEquation( cdouble dt, bool add, bool vel, bool dens );
 
-		void DensitySolver( cdouble timestep );
+		void DensitySolver( cdouble dt );
 
-		void VelocitySolver( cdouble timestep );
+		void VelocitySolver( cdouble dt );
 
-		void SourceSolver( cdouble timestep );
+		void SourceSolver( cdouble dt );
 
 		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
 

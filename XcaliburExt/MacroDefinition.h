@@ -54,13 +54,6 @@
 
 #define APP_TITLE   "ExcaliburExt OTL 1.00.00. FPS: %d "
 
-/* macro definition of grid types */
-#define MACRO_DENSITY            0
-#define MACRO_VELOCITY_U         1
-#define MACRO_VELOCITY_V         2
-#define MACRO_VELOCITY_W         3
-#define MACRO_SIMPLE             4
-
 /* macro definition of boundary condition */
 #define MACRO_BOUNDARY_BLANK      0
 #define MACRO_BOUNDARY_OBSTACLE 100

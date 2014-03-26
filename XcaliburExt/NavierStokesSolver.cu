@@ -17,22 +17,18 @@
 using namespace sge;
 using namespace std;
 
-void FluidSimProc::SolveNavierStokesEquation( cdouble timestep, bool add, bool dens, bool vel )
+void FluidSimProc::SolveNavierStokesEquation( cdouble dt, bool add, bool vel, bool dens )
 {
-	if ( add ) SourceSolver( timestep );
-	if ( vel ) VelocitySolver( timestep );
-	if ( dens ) DensitySolver( timestep );
+	if ( add ) SourceSolver( dt );
+	if ( vel ) VelocitySolver( dt );
+	if ( dens ) DensitySolver( dt );
 };
 
-void FluidSimProc::SourceSolver( cdouble timestep )
+void FluidSimProc::SourceSolver( cdouble dt )
 {
 	GridsParamDim();
-
-	double rate = (double)(rand() % 300 + 1) / 100.f;
-
-	kernelAddSource __device_func__ ( dev_den, dev_v, dev_obs, timestep, rate );
+	kernelAddSource __device_func__ ( dev_den, dev_v, dev_obs, timestep, (double)(rand() % 300 + 1) / 100.f );
 };
-
 
 void FluidSimProc::VelocitySolver( cdouble timestep )
 {
