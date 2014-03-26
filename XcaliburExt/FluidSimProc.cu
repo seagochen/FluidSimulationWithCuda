@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 25, 2014
+* <Last Time>     Mar 26, 2014
 * <File Name>     FluidSimProc.cu
 */
 
@@ -14,7 +14,6 @@
 
 #include "FluidSimProc.h"
 #include "MacroDefinition.h"
-#include "ExtFunctions.h"
 #include "Kernels.h"
 
 using namespace sge;
@@ -61,60 +60,45 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 
 void FluidSimProc::AllocateResource( void )
 {
-	if ( not CreateCompNodesForHost(
-		&m_vectHostDens, 
-		&m_vectHostVelU,
-		&m_vectHostVelV,
-		&m_vectHostVelW, 
-		&m_vectHostObst,
-		&m_scHelper, 
-		GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double),
-		NODES_X * NODES_Y * NODES_Z ))
-	{
-		cout << "create computation nodes for host failed" << endl;
+	size_t size = GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double);
+	size_t node = NODES_X * NODES_Y * NODES_Z;
+	
+	if ( not m_scHelper.CreateCompNodesForHost( &m_vectHostDens, size, node ) ) goto Error;
+	if ( not m_scHelper.CreateCompNodesForHost( &m_vectHostVelU, size, node ) ) goto Error;
+	if ( not m_scHelper.CreateCompNodesForHost( &m_vectHostVelV, size, node ) ) goto Error;
+	if ( not m_scHelper.CreateCompNodesForHost( &m_vectHostVelW, size, node ) ) goto Error;
+	if ( not m_scHelper.CreateCompNodesForHost( &m_vectHostObst, size, node ) ) goto Error;
+
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUDens, size, node ) ) goto Error;
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUVelU, size, node ) ) goto Error;
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUVelV, size, node ) ) goto Error;
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUVelW, size, node ) ) goto Error;
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUObst, size, node ) ) goto Error;
+
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectNewDens, size, node ) ) goto Error;
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectNewVelU, size, node ) ) goto Error;
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectNewVelV, size, node ) ) goto Error;
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectNewVelW, size, node ) ) goto Error;
+
+	size = GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double);
+	node = TEMPND_S;
+
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGlobalBufs, size, node ) ) goto Error;
+
+	size = BULLET_X * BULLET_Y * BULLET_Z * sizeof(double);
+	node = BULLET_S;
+
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectCompBufs, size, node ) ) goto Error;
+
+	goto Success;
+
+Error:
+	cout << "create computation nodes failed" << endl;
 		FreeResource();
 		exit(1);
-	}
 
-	if ( not CreateCompNodesForDevice(
-		&m_vectGPUDens, 
-		&m_vectGPUVelU,
-		&m_vectGPUVelV,
-		&m_vectGPUVelW,
-		&m_vectGPUObst,
-		&m_scHelper,
-		GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double),
-		NODES_X * NODES_Y * NODES_Z ))
-	{
-		cout << "create computation nodes layer 0 for device failed" << endl;
-		FreeResource();
-		exit(1);
-	}
-
-	if ( not CreateCompNodesForDevice(
-		&m_vectNewDens, 
-		&m_vectNewVelU,
-		&m_vectNewVelV,
-		&m_vectNewVelW,
-		&m_vectNewObst,
-		&m_scHelper,
-		GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double),
-		NODES_X * NODES_Y * NODES_Z ))
-	{
-		cout << "create computation nodes layer 1 for device failed" << endl;
-		FreeResource();
-		exit(1);
-	}
-
-	if ( not CreateCompNodesForDevice( &m_vectCompBufs, &m_scHelper, 
-		BULLET_X * BULLET_Y * BULLET_Z * sizeof(double),
-		BULLET_S ) )
-	{
-		cout << "create computation buffers for device failed" << endl;
-		FreeResource();
-		exit(1);
-	}
-
+Success:
+	
 	m_scHelper.CreateDeviceBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR), 1, &m_ptrDeviceVisual );
 	m_scHelper.CreateHostBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR), 1, &m_ptrHostVisual );
 
@@ -129,21 +113,29 @@ void FluidSimProc::FreeResource( void )
 {
 	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
 	{
-		m_scHelper.FreeDeviceBuffers
-			( 5, &m_vectGPUDens[i], &m_vectGPUVelU[i], &m_vectGPUVelV[i], &m_vectGPUVelW[i], &m_vectGPUObst[i] );
-		m_scHelper.FreeDeviceBuffers
-			( 5, &m_vectNewDens[i], &m_vectNewVelU[i], &m_vectNewVelV[i], &m_vectNewVelW[i], &m_vectNewObst[i] );
-		m_scHelper.FreeHostBuffers
-			( 5, &m_vectHostDens[i], &m_vectHostVelU[i], &m_vectHostVelV[i], &m_vectHostVelW[i], &m_vectHostObst[i] );
+		m_scHelper.FreeDeviceBuffers( 9,
+			&m_vectGPUDens[i], &m_vectNewDens[i],
+			&m_vectGPUVelU[i], &m_vectNewVelU[i],
+			&m_vectGPUVelV[i], &m_vectNewVelV[i],
+			&m_vectGPUVelW[i], &m_vectNewVelW[i],
+			&m_vectGPUObst[i] );
+
+		m_scHelper.FreeHostBuffers( 5,
+			&m_vectHostDens[i], &m_vectHostVelU[i],
+			&m_vectHostVelV[i], &m_vectHostVelW[i], &m_vectHostObst[i] );
 	}
 
+
 	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
-	{
 		m_scHelper.FreeDeviceBuffers( 1, &m_vectCompBufs[i] );
-	}
+
+	for ( int i = 0; i < m_vectGlobalBufs.size(); i++ )
+		m_scHelper.FreeDeviceBuffers( 1, &m_vectGlobalBufs[i] );
+
 
 	m_scHelper.FreeDeviceBuffers( 1, &m_ptrDeviceVisual );
 	m_scHelper.FreeHostBuffers( 1, &m_ptrHostVisual );
+
 
 	if ( m_scHelper.GetCUDALastError( "call member function FreeResource failed",
 		__FILE__, __LINE__ ) ) exit(1);

@@ -21,6 +21,7 @@
 #define GRIDS_Z                 64
 
 #define BULLET_S                40
+#define TEMPND_S                10
 
 #define BULLET_X                66
 #define BULLET_Y                66

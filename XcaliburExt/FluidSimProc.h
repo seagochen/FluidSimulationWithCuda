@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 24, 2014
+* <Last Time>     Mar 26, 2014
 * <File Name>     FluidSimProc.h
 */
 
@@ -34,22 +34,20 @@ namespace sge
 	class FluidSimProc
 	{
 	private:
-		/* temporary buffers for fluid simulation */
 		vector <double*> m_vectCompBufs;
 
 		vector<double*> m_vectHostDens, m_vectGPUDens, m_vectNewDens;
 		vector<double*> m_vectHostVelU, m_vectGPUVelU, m_vectNewVelU;
 		vector<double*> m_vectHostVelV, m_vectGPUVelV, m_vectNewVelV;
 		vector<double*> m_vectHostVelW, m_vectGPUVelW, m_vectNewVelW;
-		vector<double*> m_vectHostObst, m_vectGPUObst, m_vectNewObst;
+		vector<double*> m_vectHostObst, m_vectGPUObst;
 
-		/* visualization */
+		vector<double*> m_vectGlobalBufs;
+
 		SGUCHAR *m_ptrDeviceVisual, *m_ptrHostVisual;
 		
-		/* CUDA */
 		dim3 gridDim, blockDim;
 
-		/* title bar */
 		string m_szTitle;
 
 	private:
@@ -60,7 +58,8 @@ namespace sge
 		FluidSimProc( FLUIDSPARAM *fluid );
 
 	public:
-		inline int ix(cint i, cint j, cint k, cint tiles ) { return k * tiles * tiles + j * tiles + i; }; 
+		inline int ix(cint i, cint j, cint k, cint tiles ) { return k * tiles * tiles + j * tiles + i; };
+
 		inline int ix(cint i, cint j, cint k, cint tilex, cint tiley)
 		{ return k * tilex * tiley + j * tilex + i; };
 
@@ -150,5 +149,9 @@ namespace sge
 #define velw_D               m_vectCompBufs[ 32 ]
 #define velw_F               m_vectCompBufs[ 33 ]
 #define velw_B               m_vectCompBufs[ 34 ]
+
+#define temp_u               m_vectNewTemp[0]
+#define temp_v               m_vectNewTemp[1]
+#define temp_w               m_vectNewTemp[2]
 
 #endif

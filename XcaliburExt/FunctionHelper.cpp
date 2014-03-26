@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Mar 24, 2014
+* <Last Time>     Mar 26, 2014
 * <File Name>     FunctionHelper.cpp
 */
 
@@ -15,6 +15,91 @@ using namespace sge;
 using std::cout;
 using std::endl;
 
+
+
+SGBOOLEAN FunctionHelper::CreateCompNodesForDevice( std::vector<double*> *vectBuf, size_t size, size_t nodes )
+{
+	for ( int i = 0; i < nodes; i++ )
+	{
+		double *ptr;
+
+		if ( CreateDeviceBuffers( size, 1, &ptr ) not_eq SG_RUNTIME_OK ) return false;
+
+		vectBuf->push_back( ptr );
+	}
+
+	return true;
+};
+
+SGBOOLEAN FunctionHelper::CreateCompNodesForHost( std::vector<double*> *vectBuf, size_t size, size_t nodes )
+{
+	for ( int i = 0; i < nodes; i++ )
+	{
+		double *ptr;
+
+		if ( CreateHostBuffers( size, 1, &ptr ) not_eq SG_RUNTIME_OK ) return false;
+
+		vectBuf->push_back( ptr );
+	}
+
+	return true;
+};
+
+SGBOOLEAN FunctionHelper::CreateCompNodesForDevice( std::vector<int*> *vectBuf, size_t size, size_t nodes )
+{
+	for ( int i = 0; i < nodes; i++ )
+	{
+		int *ptr;
+
+		if ( CreateDeviceBuffers( size, 1, &ptr ) not_eq SG_RUNTIME_OK ) return false;
+
+		vectBuf->push_back( ptr );
+	}
+
+	return true;
+};
+
+SGBOOLEAN FunctionHelper::CreateCompNodesForHost( std::vector<int*> *vectBuf, size_t size, size_t nodes )
+{
+	for ( int i = 0; i < nodes; i++ )
+	{
+		int *ptr;
+
+		if ( CreateHostBuffers( size, 1, &ptr ) not_eq SG_RUNTIME_OK ) return false;
+
+		vectBuf->push_back( ptr );
+	}
+
+	return true;
+};
+
+SGBOOLEAN FunctionHelper::CreateCompNodesForDevice( std::vector<unsigned char*> *vectBuf, size_t size, size_t nodes )
+{
+	for ( int i = 0; i < nodes; i++ )
+	{
+		unsigned char *ptr;
+
+		if ( CreateDeviceBuffers( size, 1, &ptr ) not_eq SG_RUNTIME_OK ) return false;
+
+		vectBuf->push_back( ptr );
+	}
+
+	return true;
+};
+
+SGBOOLEAN FunctionHelper::CreateCompNodesForHost( std::vector<unsigned char*> *vectBuf, size_t size, size_t nodes )
+{
+	for ( int i = 0; i < nodes; i++ )
+	{
+		unsigned char *ptr;
+
+		if ( CreateHostBuffers( size, 1, &ptr ) not_eq SG_RUNTIME_OK ) return false;
+
+		vectBuf->push_back( ptr );
+	}
+
+	return true;
+};
 
 SGVOID FunctionHelper::DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thread, SGINT tile )
 {
