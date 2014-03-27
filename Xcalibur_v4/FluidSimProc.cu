@@ -170,7 +170,8 @@ void FluidSimProc::AllocateResource( void )
 		exit(1);
 	}
 
-	if ( not CreateCompNodesForDevice( &m_vectCompBufs, &m_scHelper, GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), 40 ) )
+	if ( not CreateCompNodesForDevice( &m_vectCompBufs, &m_scHelper, 
+		GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), COMP_BUFS ) )
 	{
 		cout << "create computation buffers for device failed" << endl;
 		FreeResource();

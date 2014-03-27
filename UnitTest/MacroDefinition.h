@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 23, 2014
-* <Last Time>     Mar 12, 2014
+* <Last Time>     Mar 25, 2014
 * <File Name>     MacroDefiniton.h
 */
 
@@ -16,20 +16,22 @@
 #define DENSITY               12.5f
 #define VELOCITY              15.7f
 
-#define GRIDS_X                128
-#define GRIDS_Y                128
-#define GRIDS_Z                128
+#define GRIDS_X                 64
+#define GRIDS_Y                 64
+#define GRIDS_Z                 64
 
-#define BULLET_S                40
+#define COMPS_X                128
+#define COMPS_Y                128
+#define COMPS_Z                128
 
 #define BULLET_X               130
 #define BULLET_Y               130
 #define BULLET_Z               130
 
 /* dimension of simulation nodes */
-#define NODES_X                 1
-#define NODES_Y                 1
-#define NODES_Z                 1
+#define NODES_X                  2
+#define NODES_Y                  2
+#define NODES_Z                  2
 
 /* parameters for volume rendering */
 #define STEPSIZE             0.001f
@@ -54,14 +56,7 @@
 /* etc */
 #define TPBUFFER_S            1024
 
-#define APP_TITLE   "Prototype v2.00.00. FPS: %d "
-
-/* macro definition of grid types */
-#define MACRO_DENSITY            0
-#define MACRO_VELOCITY_U         1
-#define MACRO_VELOCITY_V         2
-#define MACRO_VELOCITY_W         3
-#define MACRO_SIMPLE             4
+#define APP_TITLE   "ExcaliburExt OTL 1.00.00. FPS: %d "
 
 /* macro definition of boundary condition */
 #define MACRO_BOUNDARY_BLANK      0
@@ -77,5 +72,7 @@
 #define MACRO_FRONT               5
 #define MACRO_BACK                6
 
+#define MACRO_TRUE                0
+#define MACRO_FALSE               1
 
 #endif

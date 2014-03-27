@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LGNODES", "fluidsim_large\fluidsim_large.vcxproj", "{88EE4A6E-2AFC-47DF-A049-444B8E013174}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Original", "Xcalibur_v4\Xcalibur_v4.vcxproj", "{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Prototypev2", "Xcalibur_v4\Xcalibur_v4.vcxproj", "{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "XcaliburExt", "XcaliburExt\XcaliburExt.vcxproj", "{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTest", "UnitTest\UnitTest.vcxproj", "{7D54FBEE-F892-4066-9C8E-801BE8C77CFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,14 @@ Global
 		{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}.Release|Win32.Build.0 = Release|Win32
 		{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}.Release|x64.ActiveCfg = Release|x64
 		{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}.Release|x64.Build.0 = Release|x64
+		{7D54FBEE-F892-4066-9C8E-801BE8C77CFB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7D54FBEE-F892-4066-9C8E-801BE8C77CFB}.Debug|Win32.Build.0 = Debug|Win32
+		{7D54FBEE-F892-4066-9C8E-801BE8C77CFB}.Debug|x64.ActiveCfg = Debug|x64
+		{7D54FBEE-F892-4066-9C8E-801BE8C77CFB}.Debug|x64.Build.0 = Debug|x64
+		{7D54FBEE-F892-4066-9C8E-801BE8C77CFB}.Release|Win32.ActiveCfg = Release|Win32
+		{7D54FBEE-F892-4066-9C8E-801BE8C77CFB}.Release|Win32.Build.0 = Release|Win32
+		{7D54FBEE-F892-4066-9C8E-801BE8C77CFB}.Release|x64.ActiveCfg = Release|x64
+		{7D54FBEE-F892-4066-9C8E-801BE8C77CFB}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
