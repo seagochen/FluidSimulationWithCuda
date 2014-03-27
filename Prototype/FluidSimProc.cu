@@ -222,7 +222,7 @@ void FluidSimProc::ClearBuffers( void )
 	}
 
 
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 22, 33, BULLET_X, BULLET_Y, BULLET_Z );
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 33, 22, BULLET_X, BULLET_Y, BULLET_Z );
 	for ( int i = 0; i < m_vectBulletBufs.size(); i++ )
 		kernelZeroBuffers __device_func__ ( m_vectBulletBufs[i], BULLET_X, BULLET_Y, BULLET_Z );
 
@@ -381,6 +381,50 @@ void FluidSimProc::DeassembleBuffers( void )
 			comp_w, GRIDS_X, GRIDS_Y, GRIDS_Z,
 			i, j, k, 
 			1.f, 1.f, 1.f );
+	}
+};
+
+void FluidSimProc::SaveCurStage( void )
+{
+	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
+	{
+		cudaMemcpy( m_vectHostDens[i], m_vectToyDens[i], 
+			sizeof(double) * TOY_X * TOY_Y * TOY_Z, cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelU[i], m_vectToyVelU[i],
+			sizeof(double) * TOY_X * TOY_Y * TOY_Z, cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelV[i], m_vectToyVelV[i],
+			sizeof(double) * TOY_X * TOY_Y * TOY_Z, cudaMemcpyDeviceToHost );
+		cudaMemcpy( m_vectHostVelW[i], m_vectToyVelW[i],
+            sizeof(double) * TOY_X * TOY_Y * TOY_Z, cudaMemcpyDeviceToHost );
+	}
+
+	if ( m_scHelper.GetCUDALastError
+		( "call member function SaveCurStage failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+        exit(1);
+	}
+};
+
+void FluidSimProc::LoadPreStage( void )
+{
+	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
+	{
+		cudaMemcpy( m_vectToyDens[i], m_vectHostDens[i],
+			sizeof(double) * TOY_X * TOY_Y * TOY_Z, cudaMemcpyHostToDevice );
+		cudaMemcpy( m_vectToyVelU[i], m_vectHostVelU[i],
+            sizeof(double) * TOY_X * TOY_Y * TOY_Z, cudaMemcpyHostToDevice );
+		cudaMemcpy( m_vectToyVelV[i], m_vectHostVelV[i],
+            sizeof(double) * TOY_X * TOY_Y * TOY_Z, cudaMemcpyHostToDevice );
+		cudaMemcpy( m_vectToyVelW[i], m_vectHostVelW[i],
+            sizeof(double) * TOY_X * TOY_Y * TOY_Z, cudaMemcpyHostToDevice );
+	}
+
+	if ( m_scHelper.GetCUDALastError
+		( "call member function LoadPreStage failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+        exit(1);
 	}
 };
 

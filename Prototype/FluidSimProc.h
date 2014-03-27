@@ -74,6 +74,10 @@ namespace sge
 
 		void InitBoundary( void );
 
+        void SaveCurStage( void );
+
+        void LoadPreStage( void );
+
 	private:
 		int ix(cint i, cint j, cint k, cint tiles ) { return k * tiles * tiles + j * tiles + i; };
 

@@ -608,12 +608,21 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 			m_simproc->ClearBuffers();
 			break;
 
+		case SG_KEY_S:
+			m_simproc->SaveCurStage();
+            break;
+
+		case SG_KEY_L:
+			m_simproc->LoadPreStage();
+            break;
+
 		case SG_KEY_P:
 			system("cls");
 			cout << "Use mouse to control rotation of observation" << endl 
 				<< "Use Key Q or ESC to quit system" << endl 
-				<< "Use Key S to save current fluid simulation status" << endl
-				<< "Use Key L to load previous fluid simulation status" << endl;
+                << "Use Key C to clear stage" << endl
+				<< "Use Key S to save current stage" << endl
+				<< "Use Key L to load previous stage" << endl;
 			break;
 
 		default:
