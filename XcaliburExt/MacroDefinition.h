@@ -20,9 +20,13 @@
 #define GRIDS_Y                 64
 #define GRIDS_Z                 64
 
-#define BULLET_X                66
-#define BULLET_Y                66
-#define BULLET_Z                66
+#define COMPS_X                128
+#define COMPS_Y                128
+#define COMPS_Z                128
+
+#define BULLET_X               130
+#define BULLET_Y               130
+#define BULLET_Z               130
 
 /* dimension of simulation nodes */
 #define NODES_X                  2

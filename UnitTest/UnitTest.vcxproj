@@ -19,39 +19,21 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProc.cu" />
     <CudaCompile Include="Kernels.cu" />
-    <CudaCompile Include="NavierStokesSolver.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FluidSimProc.h" />
-    <ClInclude Include="FrameworkDynamic.h" />
     <ClInclude Include="FunctionHelper.h" />
     <ClInclude Include="ISO646.h" />
     <ClInclude Include="Kernels.h" />
     <ClInclude Include="MacroDefinition.h" />
-    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FrameworkDynamic.cpp" />
     <ClCompile Include="FunctionHelper.cpp" />
-    <ClCompile Include="MainDynamic.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="XcaliburExt.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="icons\main.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="shader\backface.frag" />
-    <None Include="shader\backface.vert" />
-    <None Include="shader\raycasting.frag" />
-    <None Include="shader\raycasting.vert" />
+    <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C22C0FF5-8C75-4B48-B71C-C2A7E6F4AEB9}</ProjectGuid>
-    <RootNamespace>XcaliburExt</RootNamespace>
+    <ProjectGuid>{7D54FBEE-F892-4066-9C8E-801BE8C77CFB}</ProjectGuid>
+    <RootNamespace>UnitTest</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

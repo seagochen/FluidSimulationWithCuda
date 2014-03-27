@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Mar 26, 2014
+* <Last Time>     Mar 24, 2014
 * <File Name>     Kernel.cu
 */
 
@@ -409,11 +409,12 @@ __device__ double atomicTrilinear
 /************************************************************************************
 ** Basic kernels for solving Navier-Stokes equation.                               **
 *************************************************************************************/
+
 #if 0
 
-#define IX(i,j,k) ix(i, j, k, BULLET_X, BULLET_Y, BULLET_Z )
-#define thread() _thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X); i++; j++; k++;
-#define isbound(i,j,k) atomicIXNotHalo(i, j, k, BULLET_X, BULLET_Y, BULLET_Z )
+#define IX(i,j,k) ix(i,j,k,GRIDS_X,GRIDS_X,GRIDS_X)
+#define thread() _thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
+#define isbound(i,j,k) atomicIXNotHalo(i,j,k,GRIDS_X,GRIDS_X,GRIDS_X)
 
 __global__ void kernelJacobi( double *out, cdouble *in, cdouble diffusion, cdouble divisor )
 {
@@ -443,7 +444,8 @@ __global__ void kernelAdvection( double *out, cdouble *in, cdouble delta, cdoubl
 		double velv = j - v[ IX(i,j,k) ] * delta;
 		double velw = k - w[ IX(i,j,k) ] * delta;
 
-		out[ IX(i,j,k) ] = atomicTrilinear( in, velu, velv, velw, BULLET_X, BULLET_Y, BULLET_Z );
+		out[ IX(i,j,k) ] = atomicTrilinear( in, velu, velv, velw, 
+			GRIDS_X,GRIDS_X,GRIDS_X );
 	}
 };
 
@@ -454,9 +456,9 @@ __global__ void kernelGradient( double *div, double *prs, cdouble *u, cdouble *v
 
 	if ( isbound( i, j, k ) )
 	{
-		cdouble hx = 1.f / (double)BULLET_X;
-		cdouble hy = 1.f / (double)BULLET_Y;
-		cdouble hz = 1.f / (double)BULLET_Z;
+		cdouble hx = 1.f / (double)GRIDS_X;
+		cdouble hy = 1.f / (double)GRIDS_X;
+		cdouble hz = 1.f / (double)GRIDS_X;
 
 		// previous instantaneous magnitude of velocity gradient 
 		//		= (sum of velocity gradients per axis)/2N:
@@ -477,11 +479,190 @@ __global__ void kernelSubtract( double *u, double *v, double *w, double *prs )
 
 	if ( isbound( i, j, k ) )
 	{
-		u[ IX(i,j,k) ] -= 0.5f * BULLET_X * ( prs[ IX(i+1,j,k) ] - prs[ IX(i-1,j,k) ] );
-		v[ IX(i,j,k) ] -= 0.5f * BULLET_Y * ( prs[ IX(i,j+1,k) ] - prs[ IX(i,j-1,k) ] );
-		w[ IX(i,j,k) ] -= 0.5f * BULLET_Z * ( prs[ IX(i,j,k+1) ] - prs[ IX(i,j,k-1) ] );
+		u[ IX(i,j,k) ] -= 0.5f * GRIDS_X * ( prs[ IX(i+1,j,k) ] - prs[ IX(i-1,j,k) ] );
+		v[ IX(i,j,k) ] -= 0.5f * GRIDS_X * ( prs[ IX(i,j+1,k) ] - prs[ IX(i,j-1,k) ] );
+		w[ IX(i,j,k) ] -= 0.5f * GRIDS_X * ( prs[ IX(i,j,k+1) ] - prs[ IX(i,j,k-1) ] );
 	}
 };
+
+__global__ void kernelCopyGrids( double *src, cdouble *dst )
+{
+	int i, j, k; 
+	_thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
+
+	src[IX(i,j,k)] = dst[IX(i,j,k)];
+};
+
+__global__ void kernelAddSource( double *density, double *vel_u, double *vel_v, double *vel_w )
+{
+	int i, j, k;
+	_thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
+
+	if ( atomicIXNotHalo(i,j,k,GRIDS_X,GRIDS_X,GRIDS_X) ) {
+	
+	cint half = GRIDS_X / 2;
+
+	if ( j < 3 and i >= half-2 and i <= half+2 and k >= half-2 and k <= half+2 )
+	{
+		/* add source to grids */
+		density[IX(i,j,k)] = DENSITY;
+
+		/* add velocity to grids */
+		if ( i < half )
+			vel_u[IX(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
+		elif( i >= half )
+			vel_u[IX(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
+
+		vel_v[IX(i,j,k)] = VELOCITY;
+
+		if ( k < half )
+			vel_w[IX(i,j,k)] = -VELOCITY * DELTATIME * DELTATIME;
+		elif ( k >= half )
+			vel_w[IX(i,j,k)] =  VELOCITY * DELTATIME * DELTATIME;
+	}
+	}
+};
+
+
+#undef thread()
+#undef isbound(i,j,k)
+
+
+/************************************************************************************
+** etc.                                                                            **
+*************************************************************************************/
+
+
+__global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
+{
+	int i, j, k;
+	_thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
+
+	double x = ( pi * GRIDS_X + i ) * rate;
+	double y = ( pj * GRIDS_X + j ) * rate;
+	double z = ( pk * GRIDS_X + k ) * rate;
+
+	dst[IX(i,j,k)] = atomicTrilinear( src, x, y, z, GRIDS_X, GRIDS_X, GRIDS_X );
+};
+
+__global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
+{
+	int i, j, k;
+	_thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X);
+
+	int x = _round( ( pi * GRIDS_X + i ) * rate );
+	int y = _round( ( pj * GRIDS_X + j ) * rate );
+	int z = _round( ( pk * GRIDS_X + k ) * rate );
+
+	dst[IX(x,y,z)] = src[IX(i,j,k)];
+};
+
+#undef IX(i,j,k)
+
+__global__ void kernelPickData
+	( uchar *volume, cdouble *rho, int offi, int offj, int offk, cint gridx, cint gridy, cint gridz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, gridx, gridy, gridz );
+
+	offi = offi * gridx + i;
+	offj = offj * gridy + j;
+	offk = offk * gridz + k;
+
+	int dens = _round( rho[ ix(i, j, k, gridx, gridy, gridz) ] );
+
+	volume[ ix( offi, offj, offk, VOLUME_X, VOLUME_Y, VOLUME_Z ) ] = 
+		( dens < 250 and dens >= 0 ) ? (uchar)dens : 0;
+};
+
+#endif
+
+/************************************************************************************
+** Interpolation kernels                                                           **
+*************************************************************************************/
+
+// updated: 2014/3/27
+__global__ void kernelAssembleCompBufs( double *dst, cint dstx, cint dsty, cint dstz, 
+									  cdouble *src, cint srcx, cint srcy, cint srcz,
+									  cint offi, cint offj, cint offk, 
+									  cdouble zoomx, cdouble zoomy, cdouble zoomz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, srcx, srcy, srcz );
+
+	int dsti, dstj, dstk;
+
+#if 1
+		dsti = offi * srcx + i;
+		dstj = offj * srcy + j;
+		dstk = offk * srcz + k;
+#else
+		dsti = _round( (offi * srcx + i) * zoomx );
+		dstj = _round( (offj * srcy + j) * zoomy );
+		dstk = _round( (offk * srcz + k) * zoomz );
+#endif
+
+		if ( dsti < 0 ) dsti = 0;
+		if ( dstj < 0 ) dstj = 0;
+		if ( dstk < 0 ) dstk = 0;
+		if ( dsti >= dstx ) dsti = dstx - 1;
+		if ( dstj >= dsty ) dstj = dsty - 1;
+		if ( dstk >= dstz ) dstk = dstz - 1;
+
+		dst[ix(dsti, dstj, dstk, dstx, dsty, dstz)] = src[ix(i, j, k, srcx, srcy, srcz)];
+}
+
+
+// updated: 2014/3/27
+__global__ void kernelDeassembleCompBufs( double *dst, cint dstx, cint dsty, cint dstz, 
+										 cdouble *src, cint srcx, cint srcy, cint srcz,
+										 cint offi, cint offj, cint offk, 
+										 cdouble zoomx, cdouble zoomy, cdouble zoomz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, dstx, dsty, dstz );
+
+#if 0
+	double srci, srcj, srck;
+
+	srci = ( i + offi * dstx ) * zoomx;
+	srcj = ( j + offj * dsty ) * zoomy;
+	srck = ( k + offk * dstz ) * zoomz;
+
+	if ( srci < 0 ) srci = 0.f;
+	if ( srcj < 0 ) srcj = 0.f;
+	if ( srck < 0 ) srck = 0.f;
+	if ( srci >= srcx ) srci = srcx - 1.f;
+	if ( srcj >= srcy ) srcj = srcy - 1.f;
+	if ( srck >= srcz ) srck = srcz - 1.f;
+
+	dst[ix(i, j, k, dstx, dsty, dstz)] = atomicTrilinear( src, srci, srcj, srck, srcx, srcy, srcz );
+
+#else
+
+	int srci, srcj, srck;
+
+	srci = i + offi * dstx;
+	srcj = j + offj * dsty;
+	srck = k + offk * dstz;
+
+	if ( srci < 0 ) srci = 0;
+	if ( srcj < 0 ) srcj = 0;
+	if ( srck < 0 ) srck = 0;
+	if ( srci >= srcx ) srci = srcx - 1;
+	if ( srcj >= srcy ) srcj = srcy - 1;
+	if ( srck >= srcz ) srck = dstz - 1;
+
+	dst[ix(i, j, k, dstx, dsty, dstz)] = src[ix(srci, srcj, srck, srcx, srcy, srcz)];
+
+#endif
+};
+
+#if 0
+
+#define IX(i,j,k) ix(i, j, k, BULLET_X, BULLET_Y, BULLET_Z )
+#define thread() _thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X); i++; j++; k++;
+#define isbound(i,j,k) atomicIXNotHalo(i, j, k, BULLET_X, BULLET_Y, BULLET_Z )
 
 __global__ void kernelAddSource( double *dens, double *v, cdouble *obst, cdouble dtime, cdouble rate )
 {
@@ -499,11 +680,38 @@ __global__ void kernelAddSource( double *dens, double *v, cdouble *obst, cdouble
 	}
 };
 
+#undef IX(i,j,k)
 #undef thread()
 #undef isbound(i,j,k)
-#undef IX(i,j,k)
 
 #endif
+
+// updated: 2014/3/27
+__global__ void kernelPickData( uchar *volume, cint dstx, cint dsty, cint dstz,
+							   cdouble *src, cint srcx, cint srcy, cint srcz,
+							   cint offi, cint offj, cint offk, 
+							   cdouble zoomx, cdouble zoomy, cdouble zoomz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, srcx, srcy, srcz );
+
+	int srci, srcj, srck;
+
+	srci = _round(offi * srcx + i * zoomx);
+	srcj = _round(offj * srcy + j * zoomy);
+	srck = _round(offk * srcz + k * zoomz);
+
+	if ( srci < 0 ) srci = 0;
+	if ( srcj < 0 ) srcj = 0;
+	if ( srck < 0 ) srck = 0;
+	if ( srci >= dstx ) srci = dstx - 1;
+	if ( srcj >= dsty ) srcj = dsty - 1;
+	if ( srck >= dstz ) srck = dstz - 1;
+
+	volume[ix(srci, srcj, srck, dstx, dsty, dstz)] = ( src[ix(i, j, k, srcx, srcy, srcz)] > 0.f and 
+		src[ix(i, j, k, srcx, srcy, srcz)] < 250.f ) ? (uchar) src[ix(i, j, k, srcx, srcy, srcz)] : 0;
+};
+
 
 #define thread() \
 	int i, j, k; \
@@ -511,10 +719,10 @@ __global__ void kernelAddSource( double *dens, double *v, cdouble *obst, cdouble
 	i++; j++; k++;
 
 #define isbound() \
-	atomicIXNotHalo( i, j, k, tx, ty, tz )
+	atomicIXNotHalo( i, j, k, BULLET_X, BULLET_Y, BULLET_Z )
 
 #define IX(i,j,k) \
-	ix(i, j, k, tx, ty, tz )
+	ix(i, j, k, BULLET_X, BULLET_Y, BULLET_Z )
 
 // updated: 2014/3/27
 __global__ void kernelJacobi( double *out, cdouble *in, 
@@ -612,282 +820,3 @@ __global__ void kernelAddSource( double *dens, double *v,
 #undef IX(i,j,k)
 #undef isbound()
 #undef thread()
-
-
-
-/************************************************************************************
-** Interpolation kernels                                                           **
-*************************************************************************************/
-
-// updated: 2014/3/27
-__global__ void kernelAssembleCompBufs( double *dst, cint dstx, cint dsty, cint dstz, 
-									  cdouble *src, cint srcx, cint srcy, cint srcz,
-									  cint offi, cint offj, cint offk, 
-									  cdouble zoomx, cdouble zoomy, cdouble zoomz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, srcx, srcy, srcz );
-
-	int dsti, dstj, dstk;
-
-	dsti = _round( i * zoomx ) + offi;
-	dstj = _round( j * zoomy ) + offj;
-	dstk = _round( k * zoomz ) + offk;
-
-	if ( dsti < 0 ) dsti = 0;
-	if ( dstj < 0 ) dstj = 0;
-	if ( dstk < 0 ) dstk = 0;
-	if ( dsti >= dstx ) dsti = dstx - 1;
-	if ( dstj >= dsty ) dstj = dsty - 1;
-	if ( dstk >= dstz ) dstk = dstz - 1;
-
-	dst[ix(dsti, dstj, dstk, dstx, dsty, dstz)] = src[ix(i, j, k, srcx, srcy, srcz)];
-}
-
-
-// updated: 2014/3/27
-__global__ void kernelDeassembleCompBufs( double *dst, cint dstx, cint dsty, cint dstz, 
-										 cdouble *src, cint srcx, cint srcy, cint srcz,
-										 cint offi, cint offj, cint offk, 
-										 cdouble zoomx, cdouble zoomy, cdouble zoomz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, dstx, dsty, dstz );
-
-	double srci, srcj, srck;
-
-	srci = i * zoomx + offi;
-	srcj = j * zoomy + offj;
-	srck = k * zoomz + offk;
-
-	if ( srci < 0 ) srci = 0.f;
-	if ( srcj < 0 ) srcj = 0.f;
-	if ( srck < 0 ) srck = 0.f;
-	if ( srci >= srcx ) srci = srcx - 1.f;
-	if ( srcj >= srcy ) srcj = srcy - 1.f;
-	if ( srck >= srcz ) srck = srcz - 1.f;
-
-	dst[ix(i, j, k, dstx, dsty, dstz)] = atomicTrilinear( src, srci, srcj, srck, srcx, srcy, srcz );
-};
-
-
-// updated: 2014/3/27
-__global__ void kernelPickData( uchar *volume, cint dstx, cint dsty, cint dstz,
-							   cdouble *src, cint srcx, cint srcy, cint srcz,
-							   cint offi, cint offj, cint offk, 
-							   cdouble zoomx, cdouble zoomy, cdouble zoomz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, srcx, srcy, srcz );
-
-	int srci, srcj, srck;
-
-	srci = _round(offi * srcx + i * zoomx);
-	srcj = _round(offj * srcy + j * zoomy);
-	srck = _round(offk * srcz + k * zoomz);
-
-	if ( srci < 0 ) srci = 0;
-	if ( srcj < 0 ) srcj = 0;
-	if ( srck < 0 ) srck = 0;
-	if ( srci >= dstx ) srci = dstx - 1;
-	if ( srcj >= dsty ) srcj = dsty - 1;
-	if ( srck >= dstz ) srck = dstz - 1;
-
-	volume[ix(srci, srcj, srck, dstx, dsty, dstz)] = ( src[ix(i, j, k, srcx, srcy, srcz)] > 0.f and 
-		src[ix(i, j, k, srcx, srcy, srcz)] < 250.f ) ? (uchar) src[ix(i, j, k, srcx, srcy, srcz)] : 0;
-};
-
-// updated: 2014/3/27
-__global__ void kernelPickData( uchar *volume, cdouble *src, cint tx, cint ty, cint tz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, tx, ty, tz );
-
-	volume[ix(i, j, k, tx, ty, tz)] = ( src[ix(i, j, k, tx, ty, tz)] > 0.f and 
-		src[ix(i, j, k, tx, ty, tz)] ) ? (uchar) src[ix(i, j, k, tx, ty, tz)] : 0;
-};
-
-
-
-
-
-
-#define thread() \
-	int i,j,k; \
-	_thread(&i,&j,&k,srcx,srcy,srcz);
-#define _ix(i,j,k) ix(i,j,k,srcx,srcy,srcz)
-#define _IX(i,j,k) ix(i,j,k,dstx,dsty,dstz)
-
-#define headerx 0
-#define headery 0
-#define headerz 0
-#define tailerx srcx-1
-#define tailery srcy-1
-#define tailerz srcz-1
-
-__global__ void kernelLoadLeftFace( double *bullet, cdouble *face,
-										  cint dstx, cint dsty, cint dstz, 
-										  cint srcx, cint srcy, cint srcz )
-{
-	thread();
-
-	bullet[_IX(0,j+1,k+1)] = face[_ix(tailerx,j,k)];
-};
-
-__global__ void kernelLoadRightFace( double *bullet, cdouble *face,
-										  cint dstx, cint dsty, cint dstz, 
-										  cint srcx, cint srcy, cint srcz )
-{
-	thread();
-
-	bullet[_IX(dstx-1,j+1,k+1)] = face[_ix(headerx,j,k)];
-};
-
-__global__ void kernelLoadUpFace( double *bullet, cdouble *face,
-										  cint dstx, cint dsty, cint dstz, 
-										  cint srcx, cint srcy, cint srcz )
-{
-	thread();
-
-	bullet[_IX(i+1,dsty-1,k+1)] = face[_ix(i,headery,k)];
-};
-
-__global__ void kernelLoadDownFace( double *bullet, cdouble *face,
-										  cint dstx, cint dsty, cint dstz, 
-										  cint srcx, cint srcy, cint srcz )
-{
-	thread();
-
-	bullet[_IX(i+1,0,k+1)] = face[_ix(i,tailery,k)];
-};
-
-__global__ void kernelLoadFrontFace( double *bullet, cdouble *face,
-										  cint dstx, cint dsty, cint dstz, 
-										  cint srcx, cint srcy, cint srcz )
-{
-	thread();
-
-	bullet[_IX(i+1,j+1,dstz-1)] = face[_ix(i,j,headerz)];
-};
-
-__global__ void kernelLoadBackFace( double *bullet, cdouble *face,
-										  cint dstx, cint dsty, cint dstz, 
-										  cint srcx, cint srcy, cint srcz )
-{
-	thread();
-
-	bullet[_IX(i+1,j+1,0)] = face[_ix(i,j,tailerz)];
-};
-
-#undef headerx
-#undef headery
-#undef headerz
-#undef tailerx
-#undef tailery
-#undef tailerz
-#undef thread()
-#undef _ix(i,j,k)
-#undef _IX(i,j,k)
-
-#define thread() \
-	int i, j, k; \
-	_thread( &i, &j, &k, gx, gy, gz );
-#define _ix(i,j,k) ix( i, j, k, bx, by, bz )
-
-#define headerx 0
-#define headery 0
-#define headerz 0
-
-#define tailerx bx-1
-#define tailery by-1
-#define tailerz bz-1
-
-__global__ void kernelSmoothBullet( double *bullet, cint bx, cint by, cint bz, cint gx, cint gy, cint gz )
-{
-	thread();
-
-	bullet[_ix(headerx,headery,k)] = ( bullet[_ix(headerx+1,headery,k)] + bullet[_ix(headerx,headery+1,k)] ) / 2.f;
-	bullet[_ix(headerx,tailery,k)] = ( bullet[_ix(headerx+1,tailery,k)] + bullet[_ix(headerx,tailery-1,k)] ) / 2.f;
-	bullet[_ix(tailerx,headery,k)] = ( bullet[_ix(tailerx-1,headery,k)] + bullet[_ix(tailerx,headery+1,k)] ) / 2.f;
-	bullet[_ix(tailerx,tailery,k)] = ( bullet[_ix(tailerx-1,tailery,k)] + bullet[_ix(tailerx,tailery-1,k)] ) / 2.f;
-
-	bullet[_ix(i,headery,headerz)] = ( bullet[_ix(i,headery+1,headerz)] + bullet[_ix(i,headery,headerz+1)] ) / 2.f;
-	bullet[_ix(i,headery,tailerz)] = ( bullet[_ix(i,headery+1,tailerz)] + bullet[_ix(i,headery,tailerz-1)] ) / 2.f;
-	bullet[_ix(i,tailery,headerz)] = ( bullet[_ix(i,tailery-1,headerz)] + bullet[_ix(i,tailery,headerz+1)] ) / 2.f;
-	bullet[_ix(i,tailery,tailerz)] = ( bullet[_ix(i,tailery-1,tailerz)] + bullet[_ix(i,tailery,tailerz-1)] ) / 2.f;
-
-	bullet[_ix(headerx,j,headerz)] = ( bullet[_ix(headerx+1,j,headerz)] + bullet[_ix(headerx,j,headerz+1)] ) / 2.f;
-	bullet[_ix(headerx,j,tailerz)] = ( bullet[_ix(headerx+1,j,tailerz)] + bullet[_ix(headerx,j,tailerz-1)] ) / 2.f;
-	bullet[_ix(tailerx,j,headerz)] = ( bullet[_ix(tailerx-1,j,headerz)] + bullet[_ix(tailerx,j,headerz+1)] ) / 2.f;
-	bullet[_ix(tailerx,j,tailerz)] = ( bullet[_ix(tailerx-1,j,tailerz)] + bullet[_ix(tailerx,j,tailerz-1)] ) / 2.f;
-
-	bullet[_ix(headerx,headery,headerz)] = ( bullet[_ix(headerx+1,headery,headerz)] + bullet[_ix(headerx,headery+1,headerz)] + bullet[_ix(headerx,headery,headerz+1)] ) / 3.f;
-	bullet[_ix(headerx,headery,tailerz)] = ( bullet[_ix(headerx+1,headery,tailerz)] + bullet[_ix(headerx,headery+1,tailerz)] + bullet[_ix(headerx,headery,tailerz-1)] ) / 3.f;
-	bullet[_ix(headerx,tailery,headerz)] = ( bullet[_ix(headerx+1,tailery,headerz)] + bullet[_ix(headerx,tailery-1,headerz)] + bullet[_ix(headerx,tailery,headerz+1)] ) / 3.f;
-	bullet[_ix(headerx,tailery,tailerz)] = ( bullet[_ix(headerx+1,tailery,tailerz)] + bullet[_ix(headerx,tailery-1,tailerz)] + bullet[_ix(headerx,tailery,tailerz-1)] ) / 3.f;
-	bullet[_ix(tailerx,headery,headerz)] = ( bullet[_ix(tailerx-1,headery,headerz)] + bullet[_ix(tailerx,headery+1,headerz)] + bullet[_ix(tailerx,headery,headerz+1)] ) / 3.f;
-	bullet[_ix(tailerx,headery,tailerz)] = ( bullet[_ix(tailerx-1,headery,tailerz)] + bullet[_ix(tailerx,headery+1,tailerz)] + bullet[_ix(tailerx,headery,tailerz-1)] ) / 3.f;
-	bullet[_ix(tailerx,tailery,headerz)] = ( bullet[_ix(tailerx-1,tailery,headerz)] + bullet[_ix(tailerx,tailery-1,headerz)] + bullet[_ix(tailerx,tailery,headerz+1)] ) / 3.f;
-	bullet[_ix(tailerx,tailery,tailerz)] = ( bullet[_ix(tailerx-1,tailery,tailerz)] + bullet[_ix(tailerx,tailery-1,tailerz)] + bullet[_ix(tailerx,tailery,tailerz-1)] ) / 3.f;
-};
-
-#undef tailerz
-#undef tailery
-#undef tailerx
-
-#undef headerz
-#undef headery
-#undef headerx
-
-#undef _ix(i,j,k)
-#undef thread()
-
-
-
-#if 0
-
-#define IX(i,j,k) ix(i, j, k, COMPS_X, COMPS_Y, COMPS_Z)
-#define thread() _thread(&i, &j, &k, COMPS_X, COMPS_Y, COMPS_Z)
-
-__global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
-{
-	int i, j, k;
-	thread();
-
-	double x = ( pi * GRIDS_X + i ) * rate;
-	double y = ( pj * GRIDS_Y + j ) * rate;
-	double z = ( pk * GRIDS_Z + k ) * rate;
-
-	dst[IX(i,j,k)] = atomicTrilinear( src, x, y, z, GRIDS_X, GRIDS_Y, GRIDS_Z );
-};
-
-__global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
-{
-	int i, j, k;
-	thread();
-
-	int x = _round( ( pi * GRIDS_X + i ) * rate );
-	int y = _round( ( pj * GRIDS_Y + j ) * rate );
-	int z = _round( ( pk * GRIDS_Z + k ) * rate );
-
-	dst[IX(x,y,z)] = src[ix(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
-};
-#undef IX(i,j,k)
-
-__global__ void kernelPickData
-	( uchar *volume, cdouble *rho, int offi, int offj, int offk, cint gridx, cint gridy, cint gridz )
-{
-	int i, j, k;
-	_thread( &i, &j, &k, gridx, gridy, gridz );
-
-	offi = offi * gridx + i;
-	offj = offj * gridy + j;
-	offk = offk * gridz + k;
-
-	int dens = _round( rho[ ix(i, j, k, gridx, gridy, gridz) ] );
-
-	volume[ ix( offi, offj, offk, VOLUME_X, VOLUME_Y, VOLUME_Z ) ] = 
-		( dens < 250 and dens >= 0 ) ? (uchar)dens : 0;
-};
-
-#endif

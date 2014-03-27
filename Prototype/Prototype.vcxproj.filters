@@ -1,14 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{f5d514c7-25ae-44bb-b893-c5e8bd89c56f}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{cd40a389-c008-4405-b03f-b100168f03e2}</UniqueIdentifier>
+      <UniqueIdentifier>{8054eb38-2485-4a67-8e0f-ffd5a688cb9a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{a876c7e7-06f6-47ab-8494-88eeea03a3ab}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{02421db2-20d2-4dee-9b97-bd0fc39d82da}</UniqueIdentifier>
+      <UniqueIdentifier>{44687b3f-0850-412c-96de-ad29bcb2fa0a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -21,6 +21,17 @@
     <CudaCompile Include="NavierStokesSolver.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FrameworkDynamic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FunctionHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MainDynamic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FluidSimProc.h">
@@ -46,38 +57,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FrameworkDynamic.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FunctionHelper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MainDynamic.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="XcaliburExt.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="icons\main.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader\backface.frag">
+    <ResourceCompile Include="Prototype.rc">
       <Filter>Resource Files</Filter>
-    </None>
-    <None Include="shader\backface.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="shader\raycasting.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="shader\raycasting.vert">
-      <Filter>Resource Files</Filter>
-    </None>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

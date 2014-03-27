@@ -48,17 +48,25 @@ namespace sge
 	};
 	
 
-#define GLOBAL_BUFS    4
-#define global_dens    m_vectDevGlobal[0]
-#define global_velu    m_vectDevGlobal[1]
-#define global_velv    m_vectDevGlobal[2]
-#define global_velw    m_vectDevGlobal[3]
+#define COMP_BUFS      5
+#define comp_dens      m_vectCompBufs[0]
+#define comp_velu      m_vectCompBufs[1]
+#define comp_velv      m_vectCompBufs[2]
+#define comp_velw      m_vectCompBufs[3]
+#define comp_obst      m_vectCompBufs[4]
 
-#define TEMP_BUFS      4
-#define temp_u         m_vectGPUTempBufs[0]
-#define temp_v         m_vectGPUTempBufs[1]
-#define temp_w         m_vectGPUTempBufs[2]
-#define temp_d         m_vectGPUTempBufs[3]
+#define BULLET_BUFS    11
+#define dev_u          m_vectBulletBufs[0]
+#define dev_v          m_vectBulletBufs[1]
+#define dev_w          m_vectBulletBufs[2]
+#define dev_obs        m_vectBulletBufs[3]
+#define dev_den        m_vectBulletBufs[4]
+#define dev_div        m_vectBulletBufs[5]
+#define dev_prs        m_vectBulletBufs[6]
+#define dev_u0         m_vectBulletBufs[7]
+#define dev_v0         m_vectBulletBufs[8]
+#define dev_w0         m_vectBulletBufs[9]
+#define dev_den0       m_vectBulletBufs[10]
 
 	class FluidSimProc
 	{
@@ -66,11 +74,12 @@ namespace sge
 		vector<double*> m_vectHostDens, m_vectHostObst,
 			m_vectHostVelU, m_vectHostVelV, m_vectHostVelW;
 
-		vector<double*> m_vectDevDens, m_vectDevObst, m_vectDevGlobal,
+		vector<double*> m_vectDevDens, m_vectDevObst, 
 			m_vectDevVelU, m_vectDevVelV, m_vectDevVelW;
 
-		vector<double*> m_vectGPUDens, m_vectGPUDiv, m_vectGPUPress, m_vectGPUTempBufs,
-			m_vectGPUVelU, m_vectGPUVelV, m_vectGPUVelW, m_vectGPUObst;
+		vector<double*> m_vectCompBufs;
+
+		vector<double*> m_vectBulletBufs;
 
 		vector<SimNode*> m_link;
 
@@ -130,9 +139,10 @@ namespace sge
 
 #define GridsParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z )
 
-#define BulletParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 22, 22, BULLET_X, BULLET_Y, BULLET_Z )
+#define CompParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, COMPS_X, COMPS_Y, COMPS_Z )
 
-#define _zero(vect) kernelZeroBuffers __device_func__ ( vect, GRIDS_X, GRIDS_Y, GRIDS_Z )
+#define BulletParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 26, 26, COMPS_X, COMPS_Y, COMPS_Z )
 
+#define VisualParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 128, 8, COMPS_X, COMPS_Y, COMPS_Z )
 
 #endif

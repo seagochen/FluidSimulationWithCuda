@@ -13,7 +13,7 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include "MacroDefinition.h"
-#include "FluidSimProc.h"
+#include "ISO646.h"
 
 // updated: 2014/3/27
 extern __global__ void kernelJacobi( double *out, cdouble *in, 

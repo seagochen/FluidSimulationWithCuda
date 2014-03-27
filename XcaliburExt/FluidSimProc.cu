@@ -75,19 +75,16 @@ void FluidSimProc::AllocateResource( void )
 	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectDevVelV, size, node ) ) goto Error;
 	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectDevVelW, size, node ) ) goto Error;
 	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectDevObst, size, node ) ) goto Error;
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectDevGlobal, size, GLOBAL_BUFS ) ) goto Error;
 
 	/* set computational buffers */
+	size = COMPS_X * COMPS_Y * COMPS_Z * sizeof(double);
+	node = COMP_BUFS;
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectCompBufs, size, node ) ) goto Error;
+
+	/* set bullet buffers */
 	size = BULLET_X * BULLET_Y * BULLET_Z * sizeof(double);
-	node = NODES_X * NODES_Y * NODES_Z;
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUDens, size, node ) ) goto Error;
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUVelU, size, node ) ) goto Error;
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUVelV, size, node ) ) goto Error;
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUVelW, size, node ) ) goto Error;
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUObst, size, node ) ) goto Error;
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUPress, size, node ) ) goto Error;
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUDiv, size, node ) ) goto Error;
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectGPUTempBufs, size, TEMP_BUFS ) ) goto Error;
+	node = BULLET_BUFS;
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectBulletBufs, size, node ) ) goto Error;
 
 	goto Success;
 
@@ -154,28 +151,22 @@ void FluidSimProc::FreeResource( void )
 {
 	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
 	{
-		m_scHelper.FreeDeviceBuffers( 12,
-			&m_vectGPUDens[i], &m_vectDevDens[i],
-			&m_vectGPUVelU[i], &m_vectDevVelU[i],
-			&m_vectGPUVelV[i], &m_vectDevVelV[i],
-			&m_vectGPUVelW[i], &m_vectDevVelW[i],
-			&m_vectGPUObst[i], &m_vectDevObst[i],
-			&m_vectGPUDiv[i],  &m_vectGPUPress[i] );
+		m_scHelper.FreeDeviceBuffers( 5, 
+			&m_vectDevDens[i], &m_vectDevVelU[i], &m_vectDevVelV[i], &m_vectDevVelW[i], &m_vectDevObst[i] );
 
 		m_scHelper.FreeHostBuffers( 5,
-			&m_vectHostDens[i], &m_vectHostVelU[i],
-			&m_vectHostVelV[i], &m_vectHostVelW[i], &m_vectHostObst[i] );
+			&m_vectHostDens[i], &m_vectHostVelU[i], &m_vectHostVelV[i], &m_vectHostVelW[i], &m_vectHostObst[i] );
 	}
 
 
 	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
 		SAFE_DELT_PTR( m_link[i] );
 
-	for ( int i = 0; i < m_vectDevGlobal.size(); i++ )
-		m_scHelper.FreeDeviceBuffers( 1, &m_vectDevGlobal[i] );
+	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
+		m_scHelper.FreeDeviceBuffers( 1, &m_vectCompBufs[i] );
 
-	for ( int i = 0; i < m_vectGPUTempBufs.size(); i++ )
-		m_scHelper.FreeDeviceBuffers( 1, &m_vectGPUTempBufs[i] );
+	for ( int i = 0; i < m_vectBulletBufs.size(); i++ )
+		m_scHelper.FreeDeviceBuffers( 1, &m_vectBulletBufs[i] );
 
 	m_scHelper.FreeDeviceBuffers( 1, &m_ptrDeviceVisual );
 	m_scHelper.FreeHostBuffers( 1, &m_ptrHostVisual );
@@ -236,23 +227,16 @@ void FluidSimProc::ClearBuffers( void )
 		kernelZeroBuffers __device_func__ ( m_vectDevVelW[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
 	}
 
-	for ( int i = 0; i < m_vectDevGlobal.size(); i++ )
-		kernelZeroBuffers __device_func__ ( m_vectDevGlobal[i], GRIDS_X, GRIDS_Y, GRIDS_Z );
+	CompParamDim();
+	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
+		kernelZeroBuffers __device_func__ ( m_vectCompBufs[i], COMPS_X, COMPS_Y, COMPS_Z );
 
 	BulletParamDim();
-	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
-	{
-		kernelZeroBuffers __device_func__ ( m_vectGPUDens[i], BULLET_X, BULLET_Y, BULLET_Z );
-		kernelZeroBuffers __device_func__ ( m_vectGPUVelU[i], BULLET_X, BULLET_Y, BULLET_Z );
-		kernelZeroBuffers __device_func__ ( m_vectGPUVelV[i], BULLET_X, BULLET_Y, BULLET_Z );
-		kernelZeroBuffers __device_func__ ( m_vectGPUVelW[i], BULLET_X, BULLET_Y, BULLET_Z );
-		kernelZeroBuffers __device_func__ ( m_vectGPUObst[i], BULLET_X, BULLET_Y, BULLET_Z );
-		kernelZeroBuffers __device_func__ ( m_vectGPUDiv[i], BULLET_X, BULLET_Y, BULLET_Z );
-		kernelZeroBuffers __device_func__ ( m_vectGPUPress[i], BULLET_X, BULLET_Y, BULLET_Z );
-	}
-	
-	for ( int i = 0; i < m_vectGPUTempBufs.size(); i++ )
-		kernelZeroBuffers __device_func__ ( m_vectGPUTempBufs[i], BULLET_X, BULLET_Y, BULLET_Z );
+	for ( int i = 0; i < m_vectBulletBufs.size(); i++ )
+		kernelZeroBuffers __device_func__ ( m_vectBulletBufs[i], BULLET_X, BULLET_Y, BULLET_Z );
+
+	VisualParamDim();
+	kernelZeroBuffers __device_func__ ( m_ptrDeviceVisual, VOLUME_X, VOLUME_Y, VOLUME_Z );
 
 	if ( m_scHelper.GetCUDALastError( "call member function ZeroBuffers failed", __FILE__, __LINE__ ) )
 	{
@@ -336,31 +320,88 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 	if ( !fluid->run ) return;
 
 	GridsParamDim();
-	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
+	for ( int k = 0; k < NODES_Z; k++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int i = 0; i < NODES_X; i++ )
 	{
-		kernelLoadBullet __device_func__ ( m_vectGPUDens[i], m_vectDevDens[i], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelLoadBullet __device_func__ ( m_vectGPUVelU[i], m_vectDevVelU[i], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelLoadBullet __device_func__ ( m_vectGPUVelV[i], m_vectDevVelV[i], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelLoadBullet __device_func__ ( m_vectGPUVelW[i], m_vectDevVelW[i], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelLoadBullet __device_func__ ( m_vectGPUObst[i], m_vectDevObst[i], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+		kernelAssembleCompBufs __device_func__ ( comp_dens, COMPS_X, COMPS_Y, COMPS_Z,
+			m_vectDevDens[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelAssembleCompBufs __device_func__ ( comp_velu, COMPS_X, COMPS_Y, COMPS_Z,
+			m_vectDevVelU[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelAssembleCompBufs __device_func__ ( comp_velv, COMPS_X, COMPS_Y, COMPS_Z,
+			m_vectDevVelV[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelAssembleCompBufs __device_func__ ( comp_velw, COMPS_X, COMPS_Y, COMPS_Z,
+			m_vectDevVelW[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelAssembleCompBufs __device_func__ ( comp_obst, COMPS_X, COMPS_Y, COMPS_Z,
+			m_vectDevObst[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
 	}
 
+
+	CompParamDim();
+	kernelLoadBullet __device_func__ ( dev_u, comp_velu, BULLET_X, BULLET_Y, BULLET_Z, COMPS_X, COMPS_Y, COMPS_Z );
+	kernelLoadBullet __device_func__ ( dev_v, comp_velv, BULLET_X, BULLET_Y, BULLET_Z, COMPS_X, COMPS_Y, COMPS_Z );
+	kernelLoadBullet __device_func__ ( dev_w, comp_velw, BULLET_X, BULLET_Y, BULLET_Z, COMPS_X, COMPS_Y, COMPS_Z );
+	kernelLoadBullet __device_func__ ( dev_den, comp_dens, BULLET_X, BULLET_Y, BULLET_Z, COMPS_X, COMPS_Y, COMPS_Z );
+	kernelLoadBullet __device_func__ ( dev_obs, comp_obst, BULLET_X, BULLET_Y, BULLET_Z, COMPS_X, COMPS_Y, COMPS_Z );
+
+
+	CompParamDim();
 	SolveNavierStokesEquation( DELTATIME, true, true, true );
 
+
+	CompParamDim();
+	kernelExitBullet __device_func__ ( comp_velu, dev_u, COMPS_X, COMPS_Y, COMPS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( comp_velv, dev_v, COMPS_X, COMPS_Y, COMPS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( comp_velw, dev_w, COMPS_X, COMPS_Y, COMPS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( comp_dens, dev_den, COMPS_X, COMPS_Y, COMPS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+
+
 	GridsParamDim();
-	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
+	for ( int k = 0; k < NODES_Z; k++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int i = 0; i < NODES_X; i++ )
 	{
-		kernelExitBullet __device_func__ ( m_vectDevDens[i], m_vectGPUDens[i], GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-		kernelExitBullet __device_func__ ( m_vectDevVelU[i], m_vectGPUVelU[i], GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-		kernelExitBullet __device_func__ ( m_vectDevVelV[i], m_vectGPUVelV[i], GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-		kernelExitBullet __device_func__ ( m_vectDevVelW[i], m_vectGPUVelW[i], GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );	
+		kernelDeassembleCompBufs __device_func__ ( m_vectDevDens[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_dens, COMPS_X, COMPS_Y, COMPS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelDeassembleCompBufs __device_func__ ( m_vectDevVelU[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_velu, COMPS_X, COMPS_Y, COMPS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelDeassembleCompBufs __device_func__ ( m_vectDevVelV[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_velv, COMPS_X, COMPS_Y, COMPS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelDeassembleCompBufs __device_func__ ( m_vectDevVelW[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_velw, COMPS_X, COMPS_Y, COMPS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
 	}
 
 #if 1
+	GridsParamDim();
 	for ( int k = 0; k < NODES_Z; k++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int i = 0; i < NODES_X; i++ )
 	{
-		kernelPickData __device_func__
-			( m_ptrDeviceVisual, m_vectDevDens[ix(i,j,k,NODES_X,NODES_Y)], i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//		kernelPickData __device_func__
+//			( m_ptrDeviceVisual, m_vectDevDens[ix(i,j,k,NODES_X,NODES_Y)], i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+		kernelPickData __device_func__ ( m_ptrDeviceVisual, VOLUME_X, VOLUME_Y, VOLUME_Z,
+			m_vectDevDens[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i, j, k, 1.f, 1.f, 1.f );
 	}
 
 #else
