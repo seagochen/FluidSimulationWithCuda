@@ -32,7 +32,7 @@ void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor )
 	}
 };
 
-void LocalAdvection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w )
+void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w )
 {
 	m_helper.DeviceParamDim( &grid, &block, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
@@ -59,7 +59,7 @@ void Projection( double *u, double *v, double *w, double *div, double *p )
 	kernelSubtract __device_func__ ( u, v, w, p );
 };
 
-#if 0
+#if 1
 
 #define dev_u m_vectGPUVelU[0]
 #define dev_v m_vectGPUVelV[0]
@@ -104,9 +104,9 @@ void FluidSimProc::VelocitySolver( cdouble timestep )
 	}
 	
 	// advect the velocity field (per axis):
-	LocalAdvection( dev_u0, dev_u, timestep, dev_u, dev_v, dev_w );
-	LocalAdvection( dev_v0, dev_v, timestep, dev_u, dev_v, dev_w );
-	LocalAdvection( dev_w0, dev_w, timestep, dev_u, dev_v, dev_w );
+	Advection( dev_u0, dev_u, timestep, dev_u, dev_v, dev_w );
+	Advection( dev_v0, dev_v, timestep, dev_u, dev_v, dev_w );
+	Advection( dev_w0, dev_w, timestep, dev_u, dev_v, dev_w );
 
 	if ( m_scHelper.GetCUDALastError( "host function failed: Advection", __FILE__, __LINE__ ) )
 	{
@@ -126,7 +126,7 @@ void FluidSimProc::DensitySolver( cdouble timestep )
 {
 	Diffusion( dev_den0, dev_den, DIFFUSION );
 	std::swap( dev_den0, dev_den );
-	LocalAdvection ( dev_den, dev_den0, timestep, dev_u, dev_v, dev_w );
+	Advection ( dev_den, dev_den0, timestep, dev_u, dev_v, dev_w );
 
 	if ( m_scHelper.GetCUDALastError( "host function failed: DensitySolver", __FILE__, __LINE__ ) )
 	{

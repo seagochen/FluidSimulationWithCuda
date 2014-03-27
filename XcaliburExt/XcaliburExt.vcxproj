@@ -30,7 +30,6 @@
     <ClInclude Include="ISO646.h" />
     <ClInclude Include="Kernels.h" />
     <ClInclude Include="MacroDefinition.h" />
-    <ClInclude Include="NSGlobalKernel.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

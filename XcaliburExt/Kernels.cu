@@ -508,8 +508,8 @@ __global__ void kernelAddSource( double *dens, double *v, cdouble *obst, cdouble
 ** etc.                                                                            **
 *************************************************************************************/
 
-#define IX(i,j,k) ix(i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z)
-#define thread() _thread(&i, &j, &k, GRIDS_X, GRIDS_Y, GRIDS_Z)
+#define IX(i,j,k) ix(i, j, k, COMPS_X, COMPS_Y, COMPS_Z)
+#define thread() _thread(&i, &j, &k, COMPS_X, COMPS_Y, COMPS_Z)
 
 __global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
 {
@@ -532,7 +532,7 @@ __global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint p
 	int y = _round( ( pj * GRIDS_Y + j ) * rate );
 	int z = _round( ( pk * GRIDS_Z + k ) * rate );
 
-	dst[IX(x,y,z)] = src[IX(i,j,k)];
+	dst[IX(x,y,z)] = src[ix(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
 };
 
 #undef IX(i,j,k)

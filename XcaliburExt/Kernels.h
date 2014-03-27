@@ -33,9 +33,9 @@ extern __global__ void kernelAddSource( double *dens, double *v, cdouble *obst, 
 extern __global__ void kernelPickData
 	( uchar *volume, cdouble *rho, int offi, int offj, int offk, cint gridx, cint gridy, cint gridz );
 
-extern __global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate );
+extern __global__ void kernelInterRootGrids( double *dst, cdouble *src, cint i, cint j, cint k, cdouble rate );
 
-extern __global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate );
+extern __global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint i, cint j, cint k, cdouble rate );
 
 
 
