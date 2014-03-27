@@ -34,5 +34,8 @@
     <ClCompile Include="FunctionHelper.cpp">
       <Filter>Source FIles</Filter>
     </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source FIles</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

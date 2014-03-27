@@ -29,6 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FunctionHelper.cpp" />
+    <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7D54FBEE-F892-4066-9C8E-801BE8C77CFB}</ProjectGuid>

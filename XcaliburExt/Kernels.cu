@@ -682,9 +682,9 @@ __global__ void kernelPickData( uchar *volume, cint dstx, cint dsty, cint dstz,
 
 	int srci, srcj, srck;
 
-	srci = _round(offi + i * zoomx);
-	srcj = _round(offj + j * zoomy);
-	srck = _round(offk + k * zoomz);
+	srci = _round(offi * srcx + i * zoomx);
+	srcj = _round(offj * srcy + j * zoomy);
+	srck = _round(offk * srcz + k * zoomz);
 
 	if ( srci < 0 ) srci = 0;
 	if ( srcj < 0 ) srcj = 0;

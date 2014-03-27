@@ -15,22 +15,24 @@
 
 using namespace sge;
 
-void FluidSimProc::SolveNavierStokesEquation( cdouble timestep, bool add )
+void FluidSimProc::SolveNavierStokesEquation( cdouble dt, bool add )
 {
-	if ( add ) SourceSolver();
-	VelocitySolver( timestep );
-	DensitySolver( timestep );
+	if ( add ) SourceSolver( dt );
+	VelocitySolver( dt );
+	DensitySolver( dt );
 };
 
-void FluidSimProc::SourceSolver( void )
+void FluidSimProc::SourceSolver( cdouble dt )
 {
-	DeviceParamDim();
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
-	kernelAddSource __device_func__ ( dev_den, dev_u, dev_v, dev_w );
+//	kernelAddSource __device_func__ ( dev_den, dev_u, dev_v, dev_w );
+	kernelAddSource __device_func__
+			( dev_den, dev_v, dev_obs, dt, (double)(rand() % 300 + 1) / 100.f );
 };
 
 
-void FluidSimProc::VelocitySolver( cdouble timestep )
+void FluidSimProc::VelocitySolver( cdouble dt )
 {
 	// diffuse the velocity field (per axis):
 	Diffusion( dev_u0, dev_u, VISOCITY );
@@ -57,9 +59,9 @@ void FluidSimProc::VelocitySolver( cdouble timestep )
 	}
 	
 	// advect the velocity field (per axis):
-	Advection( dev_u0, dev_u, timestep, dev_u, dev_v, dev_w );
-	Advection( dev_v0, dev_v, timestep, dev_u, dev_v, dev_w );
-	Advection( dev_w0, dev_w, timestep, dev_u, dev_v, dev_w );
+	Advection( dev_u0, dev_u, dt, dev_u, dev_v, dev_w );
+	Advection( dev_v0, dev_v, dt, dev_u, dev_v, dev_w );
+	Advection( dev_w0, dev_w, dt, dev_u, dev_v, dev_w );
 
 	if ( m_scHelper.GetCUDALastError( "host function failed: Advection", __FILE__, __LINE__ ) )
 	{
@@ -75,11 +77,11 @@ void FluidSimProc::VelocitySolver( cdouble timestep )
 	Projection( dev_u, dev_v, dev_w, dev_div, dev_p );
 };
 
-void FluidSimProc::DensitySolver( cdouble timestep )
+void FluidSimProc::DensitySolver( cdouble dt )
 {
 	Diffusion( dev_den0, dev_den, DIFFUSION );
 	std::swap( dev_den0, dev_den );
-	Advection ( dev_den, dev_den0, timestep, dev_u, dev_v, dev_w );
+	Advection ( dev_den, dev_den0, dt, dev_u, dev_v, dev_w );
 
 	if ( m_scHelper.GetCUDALastError( "host function failed: DensitySolver", __FILE__, __LINE__ ) )
 	{
@@ -90,7 +92,7 @@ void FluidSimProc::DensitySolver( cdouble timestep )
 
 void FluidSimProc::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor )
 {
-	DeviceParamDim();
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	for ( int k=0; k<20; k++)
 	{
@@ -98,10 +100,10 @@ void FluidSimProc::Jacobi( double *out, cdouble *in, cdouble diff, cdouble divis
 	}
 };
 
-void FluidSimProc::Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w )
+void FluidSimProc::Advection( double *out, cdouble *in, cdouble dt, cdouble *u, cdouble *v, cdouble *w )
 {
-	DeviceParamDim();
-	kernelAdvection __device_func__ ( out, in, timestep, u, v, w );
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelAdvection __device_func__ ( out, in, dt, u, v, w );
 };
 
 void FluidSimProc::Diffusion( double *out, cdouble *in, cdouble diff )
@@ -112,7 +114,7 @@ void FluidSimProc::Diffusion( double *out, cdouble *in, cdouble diff )
 
 void FluidSimProc::Projection( double *u, double *v, double *w, double *div, double *p )
 {
-	DeviceParamDim();
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	// the velocity gradient
 	kernelGradient __device_func__ ( div, p, u, v, w );
