@@ -86,17 +86,22 @@ void FluidSimProc::AllocateResource( void )
 
 
 	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectCompBufs, 
-		GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), 5 ) ) goto Error;
+		GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), COMP_BUFS ) ) goto Error;
 
 	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectBulletBufs, 
-		BULLET_X * BULLET_Y * BULLET_Z * sizeof(double), COMP_BUFS ) ) goto Error;
+		BULLET_X * BULLET_Y * BULLET_Z * sizeof(double), BUL_BUFS ) ) goto Error;
 
-	m_scHelper.CreateDeviceBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR), 1, &m_ptrDeviceVisual );
-	m_scHelper.CreateHostBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR), 1, &m_ptrHostVisual );
+	m_scHelper.CreateDeviceBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR),
+		1, &m_ptrDeviceVisual );
+	m_scHelper.CreateHostBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR),
+		1, &m_ptrHostVisual );
 
-	m_scHelper.CreateHostBuffers( TOY_X * TOY_Y * TOY_Z * sizeof(double), 1, &m_ptrHostToy );
-	m_scHelper.CreateHostBuffers( GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), 1, &m_ptrHostComp );
-	m_scHelper.CreateHostBuffers( BULLET_X * BULLET_Y * BULLET_Z * sizeof(double), 1, &m_ptrHostBullet );
+	m_scHelper.CreateHostBuffers( TOY_X * TOY_Y * TOY_Z * sizeof(double),
+		1, &m_ptrHostToy );
+	m_scHelper.CreateHostBuffers( GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), 
+		1, &m_ptrHostComp );
+	m_scHelper.CreateHostBuffers( BULLET_X * BULLET_Y * BULLET_Z * sizeof(double), 
+		1, &m_ptrHostBullet );
 
 	goto Success;
 
@@ -129,11 +134,11 @@ void FluidSimProc::FreeResource( void )
 	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
 		m_scHelper.FreeDeviceBuffers( 1, &m_vectCompBufs[i] );
 
-	m_scHelper.FreeHostBuffers( 5, &m_vectHostDens[0], &m_vectHostVelU[0],
-		&m_vectHostVelV[0], &m_vectHostVelW[0], &m_vectHostObst[0] );
-
 	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
 	{
+		m_scHelper.FreeHostBuffers( 5, &m_vectHostDens[i], &m_vectHostVelU[i],
+			&m_vectHostVelV[i], &m_vectHostVelW[i], &m_vectHostObst[i] );
+
 		m_scHelper.FreeDeviceBuffers( 5, &m_vectToyDens[i], &m_vectToyVelU[i],
 			&m_vectToyVelV[i], &m_vectToyVelW[i], &m_vectToyObst[i] );
 	}
@@ -180,11 +185,11 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
-	if ( !fluid->run ) return;
+	if ( not fluid->run ) return;
 	
 	AssembleBuffers();
 
-	SolveNavierStokesEquation( DELTATIME, true );
+	SolveNavierStokesEquation( DELTATIME, true, true, true );
 
 	DeassembleBuffers();
 
@@ -196,7 +201,8 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 void FluidSimProc::GenerVolumeImg( void )
 {
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, TOY_X, TOY_Y, TOY_Z );
-	for ( int i = 0; i < NODES_X; i++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int k = 0; k < NODES_Z; k++ )
+	for ( int i = 0; i < NODES_X; i++ ) for ( int j = 0; j < NODES_Y; j++ ) 
+		for ( int k = 0; k < NODES_Z; k++ )
 	{
 		kernelPickData __device_func__ ( m_ptrDeviceVisual, VOLUME_X, VOLUME_Y, VOLUME_Z,
 			m_vectToyDens[ix(i,j,k,NODES_X,NODES_Y)], TOY_X, TOY_Y, TOY_Z,
@@ -231,24 +237,13 @@ void FluidSimProc::ClearBuffers( void )
 void FluidSimProc::InitBoundary( void )
 {
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, TOY_X, TOY_Y, TOY_Z );
+
 	for ( int i = 0; i < m_vectToyObst.size(); i++ )
 		kernelZeroBuffers __device_func__ ( m_vectToyObst[i], TOY_X, TOY_Y, TOY_Z );
-
-	if ( m_scHelper.GetCUDALastError( "call member function InitBoundary failed", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit(1);
-	}
 
 	for ( int i = 0; i < m_vectHostObst.size(); i++ )
 		cudaMemcpy( m_vectHostObst[i], m_vectToyObst[i], 
 		sizeof(double) * TOY_X * TOY_Y * TOY_Z, cudaMemcpyDeviceToHost );
-
-	if ( m_scHelper.GetCUDALastError( "call member function InitBoundary failed", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit(1);
-	}
 
 	cint halfx = TOY_X / 2;
 	cint halfz = TOY_Z / 2;
@@ -288,37 +283,53 @@ void FluidSimProc::AssembleBuffers( void )
 	for ( int k = 0; k < NODES_Z; k++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int i = 0; i < NODES_X; i++ )
 	{
 		kernelAssembleCompBufs __device_func__ (
-			dev_den, GRIDS_X, GRIDS_Y, GRIDS_Z, 
+			comp_den, GRIDS_X, GRIDS_Y, GRIDS_Z, 
 			m_vectToyDens[ix(i,j,k,NODES_X,NODES_Y)], TOY_X, TOY_Y, TOY_Z, 
 			i, j, k,
 			1.f, 1.f, 1.f );
 
 		kernelAssembleCompBufs __device_func__ (
-			dev_u, GRIDS_X, GRIDS_Y, GRIDS_Z, 
+			comp_u, GRIDS_X, GRIDS_Y, GRIDS_Z, 
 			m_vectToyVelU[ix(i,j,k,NODES_X,NODES_Y)], TOY_X, TOY_Y, TOY_Z, 
 			i, j, k,
 			1.f, 1.f, 1.f );
 
 		kernelAssembleCompBufs __device_func__ (
-			dev_v, GRIDS_X, GRIDS_Y, GRIDS_Z, 
+			comp_v, GRIDS_X, GRIDS_Y, GRIDS_Z, 
 			m_vectToyVelV[ix(i,j,k,NODES_X,NODES_Y)], TOY_X, TOY_Y, TOY_Z, 
 			i, j, k,
 			1.f, 1.f, 1.f );
 
 		kernelAssembleCompBufs __device_func__ (
-			dev_w, GRIDS_X, GRIDS_Y, GRIDS_Z, 
+			comp_w, GRIDS_X, GRIDS_Y, GRIDS_Z, 
 			m_vectToyVelW[ix(i,j,k,NODES_X,NODES_Y)], TOY_X, TOY_Y, TOY_Z, 
 			i, j, k,
 			1.f, 1.f, 1.f );
 
 		kernelAssembleCompBufs __device_func__ (
-			dev_obs, GRIDS_X, GRIDS_Y, GRIDS_Z, 
+			comp_obst, GRIDS_X, GRIDS_Y, GRIDS_Z, 
 			m_vectToyObst[ix(i,j,k,NODES_X,NODES_Y)], TOY_X, TOY_Y, TOY_Z, 
 			i, j, k,
 			1.f, 1.f, 1.f );
 	}
 
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+
+	m_scHelper.DeviceParamDim
+		( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+	kernelLoadBullet __device_func__
+		( dev_den, comp_den, BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__
+		( dev_u, comp_u, BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__
+		( dev_v, comp_v, BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__
+		( dev_w, comp_w, BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelLoadBullet __device_func__
+		( dev_obs, comp_obst, BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+
 
 	if ( m_scHelper.GetCUDALastError( "call member function InitBound failed", __FILE__, __LINE__ ) )
 	{
@@ -329,32 +340,58 @@ void FluidSimProc::AssembleBuffers( void )
 
 void FluidSimProc::DeassembleBuffers( void )
 {
+	m_scHelper.DeviceParamDim
+		( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+	kernelExitBullet __device_func__
+		( comp_den, dev_den, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__
+		( comp_u, dev_u, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__
+		( comp_v, dev_v, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__
+		( comp_w, dev_w, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+
+
+
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, TOY_X, TOY_Y, TOY_Z );
 
 	for ( int k = 0; k < NODES_Z; k++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int i = 0; i < NODES_X; i++ )
 	{
 		kernelDeassembleCompBufs __device_func__ (
 			m_vectToyDens[ix(i,j,k,NODES_X,NODES_Y)], TOY_X, TOY_Y, TOY_Z,
-			dev_den, GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_den, GRIDS_X, GRIDS_Y, GRIDS_Z,
 			i, j, k, 
 			1.f, 1.f, 1.f );
 
 		kernelDeassembleCompBufs __device_func__ (
 			m_vectToyVelU[ix(i,j,k,NODES_X,NODES_Y)], TOY_X, TOY_Y, TOY_Z,
-			dev_u, GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_u, GRIDS_X, GRIDS_Y, GRIDS_Z,
 			i, j, k, 
 			1.f, 1.f, 1.f );
 
 		kernelDeassembleCompBufs __device_func__ (
 			m_vectToyVelV[ix(i,j,k,NODES_X,NODES_Y)], TOY_X, TOY_Y, TOY_Z,
-			dev_v, GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_v, GRIDS_X, GRIDS_Y, GRIDS_Z,
 			i, j, k, 
 			1.f, 1.f, 1.f );
 
 		kernelDeassembleCompBufs __device_func__ (
 			m_vectToyVelW[ix(i,j,k,NODES_X,NODES_Y)], TOY_X, TOY_Y, TOY_Z,
-			dev_w, GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_w, GRIDS_X, GRIDS_Y, GRIDS_Z,
 			i, j, k, 
 			1.f, 1.f, 1.f );
 	}
+};
+
+void FluidSimProc::SolveNavierStokesEquation( cdouble dt, bool add, bool vel, bool dens )
+{
+	SolveGlobal( dt, add, vel, dens );
+};
+
+void FluidSimProc::SolveGlobal( cdouble dt, bool add, bool vel, bool dens )
+{
+	if ( add ) SourceSolverGlobal( dt );
+	if ( vel ) VelocitySolverGlobal( dt );
+	if ( dens ) DensitySolverGlobal( dt );
 };

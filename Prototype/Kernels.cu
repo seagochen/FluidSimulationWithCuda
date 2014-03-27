@@ -719,10 +719,10 @@ __global__ void kernelPickData( uchar *volume, cint dstx, cint dsty, cint dstz,
 	i++; j++; k++;
 
 #define isbound() \
-	atomicIXNotHalo( i, j, k, tx, ty, tz )
+	atomicIXNotHalo( i, j, k, BULLET_X, BULLET_Y, BULLET_Z )
 
 #define IX(i,j,k) \
-	ix(i, j, k, tx, ty, tz )
+	ix(i, j, k, BULLET_X, BULLET_Y, BULLET_Z )
 
 // updated: 2014/3/27
 __global__ void kernelJacobi( double *out, cdouble *in, 

@@ -86,21 +86,23 @@ namespace sge
 		void GenerVolumeImg( void );
 
 	private:
-		void SolveNavierStokesEquation( cdouble timestep, bool add );
+		void SolveNavierStokesEquation( cdouble dt, bool add, bool vel, bool dens );
 
-		void DensitySolver( cdouble dt );
+		void SolveGlobal( cdouble dt, bool add, bool vel, bool dens );
 
-		void VelocitySolver( cdouble dt );
+		void DensitySolverGlobal( cdouble dt );
 
-		void SourceSolver( cdouble dt );
+		void VelocitySolverGlobal( cdouble dt );
 
-		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
+		void SourceSolverGlobal( cdouble dt );
 
-		void Advection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
+		void JacobiGlobal( double *out, cdouble *in, cdouble diff, cdouble divisor );
 
-		void Diffusion( double *out, cdouble *in, cdouble diff );
+		void AdvectionGlobal( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
 
-		void Projection( double *u, double *v, double *w, double *div, double *p );
+		void DiffusionGlobal( double *out, cdouble *in, cdouble diff );
+
+		void ProjectionGlobal( double *u, double *v, double *w, double *div, double *p );
 	};
 };
 
@@ -119,10 +121,11 @@ namespace sge
 #define dev_p                m_vectBulletBufs[ 9 ]
 #define dev_obs              m_vectBulletBufs[ 10 ]
 
-#define COMP_BUFS            4
+#define COMP_BUFS            5
 #define comp_den             m_vectCompBufs[0]
 #define comp_u               m_vectCompBufs[1]
 #define comp_v               m_vectCompBufs[2]
 #define comp_w               m_vectCompBufs[3]
+#define comp_obst            m_vectCompBufs[4]
 
 #endif
