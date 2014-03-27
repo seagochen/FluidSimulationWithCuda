@@ -409,6 +409,7 @@ __device__ double atomicTrilinear
 /************************************************************************************
 ** Basic kernels for solving Navier-Stokes equation.                               **
 *************************************************************************************/
+#if 0
 
 #define IX(i,j,k) ix(i, j, k, BULLET_X, BULLET_Y, BULLET_Z )
 #define thread() _thread(&i,&j,&k,GRIDS_X,GRIDS_X,GRIDS_X); i++; j++; k++;
@@ -502,56 +503,212 @@ __global__ void kernelAddSource( double *dens, double *v, cdouble *obst, cdouble
 #undef isbound(i,j,k)
 #undef IX(i,j,k)
 
+#endif
 
+#define thread() \
+	int i, j, k; \
+	_thread( &i, &j, &k, tx, ty, tz); \
+	i++; j++; k++;
 
-/************************************************************************************
-** etc.                                                                            **
-*************************************************************************************/
+#define isbound() \
+	atomicIXNotHalo( i, j, k, tx, ty, tz )
 
-#define IX(i,j,k) ix(i, j, k, COMPS_X, COMPS_Y, COMPS_Z)
-#define thread() _thread(&i, &j, &k, COMPS_X, COMPS_Y, COMPS_Z)
+#define IX(i,j,k) \
+	ix(i, j, k, tx, ty, tz )
 
-__global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
+// updated: 2014/3/27
+__global__ void kernelJacobi( double *out, cdouble *in, 
+							 cint tx, cint ty, cint tz,
+							 cdouble diffusion, cdouble divisor )
 {
-	int i, j, k;
 	thread();
 
-	double x = ( pi * GRIDS_X + i ) * rate;
-	double y = ( pj * GRIDS_Y + j ) * rate;
-	double z = ( pk * GRIDS_Z + k ) * rate;
+	if ( isbound() )
+	{
+		double dix = ( divisor > 0 ) ? divisor : 1.f;
 
-	dst[IX(i,j,k)] = atomicTrilinear( src, x, y, z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+		out[ IX(i,j,k) ] = ( in[ IX(i,j,k) ] + diffusion * (
+			out[ IX(i-1,j,k) ] + out[ IX(i+1,j,k) ] +
+			out[ IX(i,j-1,k) ] + out[ IX(i,j+1,k) ] +
+			out[ IX(i,j,k-1) ] + out[ IX(i,j,k+1) ]
+			) ) / dix;
+	}
 };
 
-__global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
+// updated: 2014/3/27
+__global__ void kernelAdvection( double *out, cdouble *in, 
+								cint tx, cint ty, cint tz,
+								cdouble delta, cdouble *u, cdouble *v, cdouble *w )
 {
-	int i, j, k;
 	thread();
 
-	int x = _round( ( pi * GRIDS_X + i ) * rate );
-	int y = _round( ( pj * GRIDS_Y + j ) * rate );
-	int z = _round( ( pk * GRIDS_Z + k ) * rate );
+	if ( isbound( i, j, k ) )
+	{
+		double velu = i - u[ IX(i,j,k) ] * delta;
+		double velv = j - v[ IX(i,j,k) ] * delta;
+		double velw = k - w[ IX(i,j,k) ] * delta;
 
-	dst[IX(x,y,z)] = src[ix(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
+		out[ IX(i,j,k) ] = atomicTrilinear( in, velu, velv, velw, BULLET_X, BULLET_Y, BULLET_Z );
+	}
+};
+
+// updated: 2014/3/27
+__global__ void kernelGradient( double *div, double *prs,
+							   cint tx, cint ty, cint tz,
+							   cdouble *u, cdouble *v, cdouble *w )
+{
+	thread();
+
+	if ( isbound( i, j, k ) )
+	{
+		cdouble hx = 1.f / (double)BULLET_X;
+		cdouble hy = 1.f / (double)BULLET_Y;
+		cdouble hz = 1.f / (double)BULLET_Z;
+
+		// previous instantaneous magnitude of velocity gradient 
+		//		= (sum of velocity gradients per axis)/2N:
+		div[ IX(i,j,k) ] = -0.5f * (
+			hx * ( u[ IX(i+1,j,k) ] - u[ IX(i-1,j,k) ] ) +
+			hy * ( v[ IX(i,j+1,k) ] - v[ IX(i,j-1,k) ] ) +
+			hz * ( w[ IX(i,j,k+1) ] - w[ IX(i,j,k-1) ] ) );
+
+		// zero out the present velocity gradient
+		prs[ IX(i,j,k) ] = 0.f;
+	}
+};
+
+// updated: 2014/3/27
+__global__ void kernelSubtract( double *u, double *v, double *w, double *prs,
+							   cint tx, cint ty, cint tz )
+{
+	thread();
+
+	if ( isbound( i, j, k ) )
+	{
+		u[ IX(i,j,k) ] -= 0.5f * BULLET_X * ( prs[ IX(i+1,j,k) ] - prs[ IX(i-1,j,k) ] );
+		v[ IX(i,j,k) ] -= 0.5f * BULLET_Y * ( prs[ IX(i,j+1,k) ] - prs[ IX(i,j-1,k) ] );
+		w[ IX(i,j,k) ] -= 0.5f * BULLET_Z * ( prs[ IX(i,j,k+1) ] - prs[ IX(i,j,k-1) ] );
+	}
+};
+
+// updated: 2014/3/27
+__global__ void kernelAddSource( double *dens, double *v,
+								cint tx, cint ty, cint tz,
+								cdouble *obst, cdouble dtime, cdouble rate )
+{
+	thread();
+
+	if ( obst[IX(i,j,k)] < 0 )
+	{
+		double pop = -obst[IX(i,j,k)] / 100.f;
+
+		/* add source to grids */
+		dens[IX(i,j,k)] = DENSITY * rate * dtime * pop;
+
+		v[IX(i,j,k)] = VELOCITY * rate * dtime * pop;
+	}
 };
 
 #undef IX(i,j,k)
+#undef isbound()
+#undef thread()
 
-__global__ void kernelPickData
-	( uchar *volume, cdouble *rho, int offi, int offj, int offk, cint gridx, cint gridy, cint gridz )
+
+
+/************************************************************************************
+** Interpolation kernels                                                           **
+*************************************************************************************/
+
+// updated: 2014/3/27
+__global__ void kernelAssembleCompBufs( double *dst, cint dstx, cint dsty, cint dstz, 
+									  cdouble *src, cint srcx, cint srcy, cint srcz,
+									  cint offi, cint offj, cint offk, 
+									  cdouble zoomx, cdouble zoomy, cdouble zoomz )
 {
 	int i, j, k;
-	_thread( &i, &j, &k, gridx, gridy, gridz );
+	_thread( &i, &j, &k, srcx, srcy, srcz );
 
-	offi = offi * gridx + i;
-	offj = offj * gridy + j;
-	offk = offk * gridz + k;
+	int dsti, dstj, dstk;
 
-	int dens = _round( rho[ ix(i, j, k, gridx, gridy, gridz) ] );
+	dsti = _round( i * zoomx ) + offi;
+	dstj = _round( j * zoomy ) + offj;
+	dstk = _round( k * zoomz ) + offk;
 
-	volume[ ix( offi, offj, offk, VOLUME_X, VOLUME_Y, VOLUME_Z ) ] = 
-		( dens < 250 and dens >= 0 ) ? (uchar)dens : 0;
+	if ( dsti < 0 ) dsti = 0;
+	if ( dstj < 0 ) dstj = 0;
+	if ( dstk < 0 ) dstk = 0;
+	if ( dsti >= dstx ) dsti = dstx - 1;
+	if ( dstj >= dsty ) dstj = dsty - 1;
+	if ( dstk >= dstz ) dstk = dstz - 1;
+
+	dst[ix(dsti, dstj, dstk, dstx, dsty, dstz)] = src[ix(i, j, k, srcx, srcy, srcz)];
+}
+
+
+// updated: 2014/3/27
+__global__ void kernelDeassembleCompBufs( double *dst, cint dstx, cint dsty, cint dstz, 
+										 cdouble *src, cint srcx, cint srcy, cint srcz,
+										 cint offi, cint offj, cint offk, 
+										 cdouble zoomx, cdouble zoomy, cdouble zoomz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, dstx, dsty, dstz );
+
+	double srci, srcj, srck;
+
+	srci = i * zoomx + offi;
+	srcj = j * zoomy + offj;
+	srck = k * zoomz + offk;
+
+	if ( srci < 0 ) srci = 0.f;
+	if ( srcj < 0 ) srcj = 0.f;
+	if ( srck < 0 ) srck = 0.f;
+	if ( srci >= srcx ) srci = srcx - 1.f;
+	if ( srcj >= srcy ) srcj = srcy - 1.f;
+	if ( srck >= srcz ) srck = srcz - 1.f;
+
+	dst[ix(i, j, k, dstx, dsty, dstz)] = atomicTrilinear( src, srci, srcj, srck, srcx, srcy, srcz );
 };
+
+
+// updated: 2014/3/27
+__global__ void kernelPickData( uchar *volume, cint dstx, cint dsty, cint dstz,
+							   cdouble *src, cint srcx, cint srcy, cint srcz,
+							   cint offi, cint offj, cint offk, 
+							   cdouble zoomx, cdouble zoomy, cdouble zoomz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, srcx, srcy, srcz );
+
+	int srci, srcj, srck;
+
+	srci = _round(offi + i * zoomx);
+	srcj = _round(offj + j * zoomy);
+	srck = _round(offk + k * zoomz);
+
+	if ( srci < 0 ) srci = 0;
+	if ( srcj < 0 ) srcj = 0;
+	if ( srck < 0 ) srck = 0;
+	if ( srci >= dstx ) srci = dstx - 1;
+	if ( srcj >= dsty ) srcj = dsty - 1;
+	if ( srck >= dstz ) srck = dstz - 1;
+
+	volume[ix(srci, srcj, srck, dstx, dsty, dstz)] = ( src[ix(i, j, k, srcx, srcy, srcz)] > 0.f and 
+		src[ix(i, j, k, srcx, srcy, srcz)] < 250.f ) ? (uchar) src[ix(i, j, k, srcx, srcy, srcz)] : 0;
+};
+
+// updated: 2014/3/27
+__global__ void kernelPickData( uchar *volume, cdouble *src, cint tx, cint ty, cint tz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tx, ty, tz );
+
+	volume[ix(i, j, k, tx, ty, tz)] = ( src[ix(i, j, k, tx, ty, tz)] > 0.f and 
+		src[ix(i, j, k, tx, ty, tz)] ) ? (uchar) src[ix(i, j, k, tx, ty, tz)] : 0;
+};
+
+
+
 
 
 
@@ -684,3 +841,53 @@ __global__ void kernelSmoothBullet( double *bullet, cint bx, cint by, cint bz, c
 
 #undef _ix(i,j,k)
 #undef thread()
+
+
+
+#if 0
+
+#define IX(i,j,k) ix(i, j, k, COMPS_X, COMPS_Y, COMPS_Z)
+#define thread() _thread(&i, &j, &k, COMPS_X, COMPS_Y, COMPS_Z)
+
+__global__ void kernelInterRootGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
+{
+	int i, j, k;
+	thread();
+
+	double x = ( pi * GRIDS_X + i ) * rate;
+	double y = ( pj * GRIDS_Y + j ) * rate;
+	double z = ( pk * GRIDS_Z + k ) * rate;
+
+	dst[IX(i,j,k)] = atomicTrilinear( src, x, y, z, GRIDS_X, GRIDS_Y, GRIDS_Z );
+};
+
+__global__ void kernelInterLeafGrids( double *dst, cdouble *src, cint pi, cint pj, cint pk, cdouble rate )
+{
+	int i, j, k;
+	thread();
+
+	int x = _round( ( pi * GRIDS_X + i ) * rate );
+	int y = _round( ( pj * GRIDS_Y + j ) * rate );
+	int z = _round( ( pk * GRIDS_Z + k ) * rate );
+
+	dst[IX(x,y,z)] = src[ix(i,j,k,GRIDS_X,GRIDS_Y,GRIDS_Z)];
+};
+#undef IX(i,j,k)
+
+__global__ void kernelPickData
+	( uchar *volume, cdouble *rho, int offi, int offj, int offk, cint gridx, cint gridy, cint gridz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, gridx, gridy, gridz );
+
+	offi = offi * gridx + i;
+	offj = offj * gridy + j;
+	offk = offk * gridz + k;
+
+	int dens = _round( rho[ ix(i, j, k, gridx, gridy, gridz) ] );
+
+	volume[ ix( offi, offj, offk, VOLUME_X, VOLUME_Y, VOLUME_Z ) ] = 
+		( dens < 250 and dens >= 0 ) ? (uchar)dens : 0;
+};
+
+#endif

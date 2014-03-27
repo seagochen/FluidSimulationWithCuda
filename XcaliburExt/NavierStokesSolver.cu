@@ -22,6 +22,8 @@ static dim3 grid, block;
 
 #define __device_func__ <<<grid,block>>>
 
+#if 0
+
 void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor )
 {
 	m_helper.DeviceParamDim( &grid, &block, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
@@ -59,30 +61,86 @@ void Projection( double *u, double *v, double *w, double *div, double *p )
 	kernelSubtract __device_func__ ( u, v, w, p );
 };
 
+#endif
+
+void LargeJacobi( double *out, cdouble *in, cdouble diff, cdouble divisor )
+{
+	m_helper.DeviceParamDim( &grid, &block, THREADS_S, TILE_X, TILE_Y, COMPS_X, COMPS_Y, COMPS_Z );
+
+	for ( int k = 0; k < 20; k++)
+		kernelJacobi __device_func__ ( out, in, COMPS_X, COMPS_Y, COMPS_Z, diff, divisor );
+};
+
+void HighJacobi( double *out, cdouble *in, cdouble diff, cdouble divisor )
+{
+	m_helper.DeviceParamDim( &grid, &block, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+	for ( int k = 0; k < 5; k++)
+		kernelJacobi __device_func__ ( out, in, GRIDS_X, GRIDS_Y, GRIDS_Z, diff, divisor );
+};
+
+void LargeAdvection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w )
+{
+	m_helper.DeviceParamDim( &grid, &block, THREADS_S, TILE_X, TILE_Y, COMPS_X, COMPS_Y, COMPS_Z );
+
+	kernelAdvection __device_func__ ( out, in, COMPS_X, COMPS_Y, COMPS_Z, timestep, u, v, w );
+};
+
+void HighAdvection( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w )
+{
+	m_helper.DeviceParamDim( &grid, &block, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+	kernelAdvection __device_func__ ( out, in, GRIDS_X, GRIDS_Y, GRIDS_Z, timestep, u, v, w );
+};
+
+void LargeDiffusion( double *out, cdouble *in, cdouble diff )
+{
+	double rate = diff * COMPS_X * COMPS_Y * COMPS_Z;
+	LargeJacobi( out, in, rate, 1+6*rate );
+};
+
+void HighDiffusion( double *out, cdouble *in, cdouble diff )
+{
+	double rate = diff * GRIDS_X * GRIDS_Y * GRIDS_Z;
+	LargeJacobi( out, in, rate, 1+6*rate );
+};
+
+void LargeProjection( double *u, double *v, double *w, double *div, double *p )
+{
+	// the velocity gradient
+	m_helper.DeviceParamDim( &grid, &block, THREADS_S, TILE_X, TILE_Y, COMPS_X, COMPS_Y, COMPS_Z );
+	kernelGradient __device_func__ ( div, p, COMPS_X, COMPS_Y, COMPS_Z, u, v, w );
+
+	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
+	LargeJacobi(p, div, 1.f, 6.f);
+
+	// now subtract this gradient from our current velocity field
+	m_helper.DeviceParamDim( &grid, &block, THREADS_S, TILE_X, TILE_Y, COMPS_X, COMPS_Y, COMPS_Z );
+	kernelSubtract __device_func__ ( u, v, w, p, COMPS_X, COMPS_Y, COMPS_Z );
+};
+
+void HighProjection( double *u, double *v, double *w, double *div, double *p )
+{
+	// the velocity gradient
+	m_helper.DeviceParamDim( &grid, &block, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelGradient __device_func__ ( div, p, GRIDS_X, GRIDS_Y, GRIDS_Z, u, v, w );
+
+	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
+	LargeJacobi(p, div, 1.f, 6.f);
+
+	// now subtract this gradient from our current velocity field
+	m_helper.DeviceParamDim( &grid, &block, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	kernelSubtract __device_func__ ( u, v, w, p, GRIDS_X, GRIDS_Y, GRIDS_Z );
+};
+
 #if 1
-
-#define dev_u m_vectGPUVelU[0]
-#define dev_v m_vectGPUVelV[0]
-#define dev_w m_vectGPUVelW[0]
-#define dev_den m_vectGPUDens[0]
-
-#define dev_div m_vectGPUDiv[0]
-
-#define dev_p m_vectGPUPress[0]
-
-#define dev_u0 m_vectGPUVelU[1]
-#define dev_v0 m_vectGPUVelV[1]
-#define dev_w0 m_vectGPUVelW[1]
-#define dev_den0 m_vectGPUDens[1]
-
-
 
 void FluidSimProc::VelocitySolver( cdouble timestep )
 {
 	// diffuse the velocity field (per axis):
-	Diffusion( dev_u0, dev_u, VISOCITY );
-	Diffusion( dev_v0, dev_v, VISOCITY );
-	Diffusion( dev_w0, dev_w, VISOCITY );
+	LargeDiffusion( dev_u0, dev_u, VISOCITY );
+	LargeDiffusion( dev_v0, dev_v, VISOCITY );
+	LargeDiffusion( dev_w0, dev_w, VISOCITY );
 	
 	if ( m_scHelper.GetCUDALastError( "host function failed: Diffusion", __FILE__, __LINE__ ) )
 	{
@@ -95,7 +153,7 @@ void FluidSimProc::VelocitySolver( cdouble timestep )
 	std::swap( dev_w0, dev_w );
 
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	Projection( dev_u, dev_v, dev_w, dev_div, dev_p );
+	LargeProjection( dev_u, dev_v, dev_w, dev_div, dev_prs );
 
 	if ( m_scHelper.GetCUDALastError( "host function failed: Projection", __FILE__, __LINE__ ) )
 	{
@@ -104,9 +162,9 @@ void FluidSimProc::VelocitySolver( cdouble timestep )
 	}
 	
 	// advect the velocity field (per axis):
-	Advection( dev_u0, dev_u, timestep, dev_u, dev_v, dev_w );
-	Advection( dev_v0, dev_v, timestep, dev_u, dev_v, dev_w );
-	Advection( dev_w0, dev_w, timestep, dev_u, dev_v, dev_w );
+	LargeAdvection( dev_u0, dev_u, timestep, dev_u, dev_v, dev_w );
+	LargeAdvection( dev_v0, dev_v, timestep, dev_u, dev_v, dev_w );
+	LargeAdvection( dev_w0, dev_w, timestep, dev_u, dev_v, dev_w );
 
 	if ( m_scHelper.GetCUDALastError( "host function failed: Advection", __FILE__, __LINE__ ) )
 	{
@@ -119,14 +177,14 @@ void FluidSimProc::VelocitySolver( cdouble timestep )
 	std::swap( dev_w0, dev_w );
 	
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	Projection( dev_u, dev_v, dev_w, dev_div, dev_p );
+	LargeProjection( dev_u, dev_v, dev_w, dev_div, dev_prs );
 };
 
 void FluidSimProc::DensitySolver( cdouble timestep )
 {
-	Diffusion( dev_den0, dev_den, DIFFUSION );
+	LargeDiffusion( dev_den0, dev_den, DIFFUSION );
 	std::swap( dev_den0, dev_den );
-	Advection ( dev_den, dev_den0, timestep, dev_u, dev_v, dev_w );
+	LargeAdvection ( dev_den, dev_den0, timestep, dev_u, dev_v, dev_w );
 
 	if ( m_scHelper.GetCUDALastError( "host function failed: DensitySolver", __FILE__, __LINE__ ) )
 	{
@@ -139,7 +197,7 @@ void FluidSimProc::SourceSolver( cdouble dt )
 {
 	GridsParamDim();
 	kernelAddSource __device_func__
-			( dev_den, dev_v, m_vectGPUObst[0], dt, (double)(rand() % 300 + 1) / 100.f );
+			( dev_den, dev_v, COMPS_X, COMPS_Y, COMPS_Z, dev_obs, dt, (double)(rand() % 300 + 1) / 100.f );
 }
 
 #else

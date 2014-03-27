@@ -322,34 +322,86 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 	GridsParamDim();
 	for ( int k = 0; k < NODES_Z; k++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int i = 0; i < NODES_X; i++ )
 	{
-		kernelInterLeafGrids __device_func__ ( comp_dens, m_vectDevDens[i], i, j, k, 1.f );
+		kernelAssembleCompBufs __device_func__ ( comp_dens, COMPS_X, COMPS_Y, COMPS_Z,
+			m_vectDevDens[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelAssembleCompBufs __device_func__ ( comp_velu, COMPS_X, COMPS_Y, COMPS_Z,
+			m_vectDevVelU[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelAssembleCompBufs __device_func__ ( comp_velv, COMPS_X, COMPS_Y, COMPS_Z,
+			m_vectDevVelV[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelAssembleCompBufs __device_func__ ( comp_velw, COMPS_X, COMPS_Y, COMPS_Z,
+			m_vectDevVelW[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelAssembleCompBufs __device_func__ ( comp_obst, COMPS_X, COMPS_Y, COMPS_Z,
+			m_vectDevObst[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
 	}
 
-	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
-	{
-		kernelLoadBullet __device_func__ ( m_vectGPUDens[i], m_vectDevDens[i], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelLoadBullet __device_func__ ( m_vectGPUVelU[i], m_vectDevVelU[i], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelLoadBullet __device_func__ ( m_vectGPUVelV[i], m_vectDevVelV[i], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelLoadBullet __device_func__ ( m_vectGPUVelW[i], m_vectDevVelW[i], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
-		kernelLoadBullet __device_func__ ( m_vectGPUObst[i], m_vectDevObst[i], BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
-	}
 
+	CompParamDim();
+	kernelLoadBullet __device_func__ ( dev_u, comp_velu, BULLET_X, BULLET_Y, BULLET_Z, COMPS_X, COMPS_Y, COMPS_Z );
+	kernelLoadBullet __device_func__ ( dev_v, comp_velv, BULLET_X, BULLET_Y, BULLET_Z, COMPS_X, COMPS_Y, COMPS_Z );
+	kernelLoadBullet __device_func__ ( dev_w, comp_velw, BULLET_X, BULLET_Y, BULLET_Z, COMPS_X, COMPS_Y, COMPS_Z );
+	kernelLoadBullet __device_func__ ( dev_den, comp_dens, BULLET_X, BULLET_Y, BULLET_Z, COMPS_X, COMPS_Y, COMPS_Z );
+	kernelLoadBullet __device_func__ ( dev_obs, comp_obst, BULLET_X, BULLET_Y, BULLET_Z, COMPS_X, COMPS_Y, COMPS_Z );
+
+
+	CompParamDim();
 	SolveNavierStokesEquation( DELTATIME, true, true, true );
 
+
+	CompParamDim();
+	kernelExitBullet __device_func__ ( comp_velu, dev_u, COMPS_X, COMPS_Y, COMPS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( comp_velv, dev_v, COMPS_X, COMPS_Y, COMPS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( comp_velw, dev_w, COMPS_X, COMPS_Y, COMPS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+	kernelExitBullet __device_func__ ( comp_dens, dev_den, COMPS_X, COMPS_Y, COMPS_Z, BULLET_X, BULLET_Y, BULLET_Z );
+
+
 	GridsParamDim();
-	for ( int i = 0; i < NODES_X * NODES_Y * NODES_Z; i++ )
+	for ( int k = 0; k < NODES_Z; k++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int i = 0; i < NODES_X; i++ )
 	{
-		kernelExitBullet __device_func__ ( m_vectDevDens[i], m_vectGPUDens[i], GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-		kernelExitBullet __device_func__ ( m_vectDevVelU[i], m_vectGPUVelU[i], GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-		kernelExitBullet __device_func__ ( m_vectDevVelV[i], m_vectGPUVelV[i], GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-		kernelExitBullet __device_func__ ( m_vectDevVelW[i], m_vectGPUVelW[i], GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );	
+		kernelDeassembleCompBufs __device_func__ ( m_vectDevDens[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_dens, COMPS_X, COMPS_Y, COMPS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelDeassembleCompBufs __device_func__ ( m_vectDevVelU[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_velu, COMPS_X, COMPS_Y, COMPS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelDeassembleCompBufs __device_func__ ( m_vectDevVelV[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_velv, COMPS_X, COMPS_Y, COMPS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
+
+		kernelDeassembleCompBufs __device_func__ ( m_vectDevVelW[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			comp_velw, COMPS_X, COMPS_Y, COMPS_Z,
+			i * GRIDS_X, j * GRIDS_Y, k * GRIDS_Z,
+			1.f, 1.f, 1.f );
 	}
 
 #if 1
+	GridsParamDim();
 	for ( int k = 0; k < NODES_Z; k++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int i = 0; i < NODES_X; i++ )
 	{
-		kernelPickData __device_func__
-			( m_ptrDeviceVisual, m_vectDevDens[ix(i,j,k,NODES_X,NODES_Y)], i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+//		kernelPickData __device_func__
+//			( m_ptrDeviceVisual, m_vectDevDens[ix(i,j,k,NODES_X,NODES_Y)], i, j, k, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+		kernelPickData __device_func__ ( m_ptrDeviceVisual, VOLUME_X, VOLUME_Y, VOLUME_Z,
+			m_vectDevDens[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i, j, k, 1.f, 1.f, 1.f );
 	}
 
 #else
