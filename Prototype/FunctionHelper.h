@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 08, 2014
-* <Last Time>     Mar 12, 2014
+* <Last Time>     Mar 26, 2014
 * <File Name>     FunctionHelper.h
 */
 
@@ -13,6 +13,7 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <SGE\SGUtils.h>
+#include <vector>
 #include "MacroDefinition.h"
 
 namespace sge
@@ -35,6 +36,13 @@ namespace sge
 		SGVOID DeviceDim1D( dim3 *blockDim, dim3 *gridDim, SGINT thread, SGINT gridx );
 		SGVOID DeviceDim2D( dim3 *blockDim, dim3 *gridDim, SGINT thread, SGINT tile, SGINT gridx, SGINT gridy );
 		SGVOID DeviceDim3D( dim3 *blockDim, dim3 *gridDim, SGINT thread, SGINT tile, SGINT gridx, SGINT gridy, SGINT gridz );
+
+		SGBOOLEAN CreateCompNodesForDevice( std::vector<double*> *vectBuf, size_t size, size_t nodes );
+		SGBOOLEAN CreateCompNodesForHost( std::vector<double*> *vectBuf, size_t size, size_t nodes );
+		SGBOOLEAN CreateCompNodesForDevice( std::vector<int*> *vectBuf, size_t size, size_t nodes );
+		SGBOOLEAN CreateCompNodesForHost( std::vector<int*> *vectBuf, size_t size, size_t nodes );
+		SGBOOLEAN CreateCompNodesForDevice( std::vector<unsigned char*> *vectBuf, size_t size, size_t nodes );
+		SGBOOLEAN CreateCompNodesForHost( std::vector<unsigned char*> *vectBuf, size_t size, size_t nodes );
 	};
 };
 

@@ -19,6 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="FluidSimProc.cu" />
+    <CudaCompile Include="Kernels.cu" />
+    <CudaCompile Include="NavierStokesSolver.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FrameworkDynamic.cpp" />
+    <ClCompile Include="FunctionHelper.cpp" />
+    <ClCompile Include="MainDynamic.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="FluidSimProc.h" />
     <ClInclude Include="FrameworkDynamic.h" />
     <ClInclude Include="FunctionHelper.h" />
@@ -28,35 +38,14 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Xcalibur_v4.rc" />
+    <ResourceCompile Include="Prototype.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icons\main.ico" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="shader\backface.frag" />
-    <None Include="shader\backface.vert" />
-    <None Include="shader\raycasting.frag" />
-    <None Include="shader\raycasting.vert" />
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="FluidSimProc.cu">
-      <FileType>Document</FileType>
-    </CudaCompile>
-    <CudaCompile Include="NavierStokesSolver.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="FrameworkDynamic.cpp" />
-    <ClCompile Include="FunctionHelper.cpp" />
-    <ClCompile Include="MainDynamic.cpp" />
-    <CudaCompile Include="Kernels.cu">
-      <FileType>Document</FileType>
-    </CudaCompile>
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C0C0F3A6-0F6F-4C19-8FC7-29CE4D2DCD9D}</ProjectGuid>
-    <RootNamespace>Xcalibur_v4</RootNamespace>
-    <ProjectName>Prototypev2</ProjectName>
+    <ProjectGuid>{4B999D48-DF02-483C-90D6-D6F93B5000F7}</ProjectGuid>
+    <RootNamespace>Prototype</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -105,7 +94,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
-    <LibraryPath>(SolutionDir)lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
