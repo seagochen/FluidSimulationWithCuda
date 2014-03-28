@@ -67,7 +67,6 @@ namespace sge
 	private:
 		FunctionHelper m_scHelper;
 
-
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
 

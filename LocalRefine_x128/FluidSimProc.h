@@ -45,11 +45,19 @@ namespace sge
 #define comp_w               m_vectCompBufs[3]
 #define comp_obst            m_vectCompBufs[4]
 
+#define BIG_BUFS             4
+#define big_den              m_vectBigBufs[0]
+#define big_u                m_vectBigBufs[1]
+#define big_v                m_vectBigBufs[2]
+#define big_w                m_vectBigBufs[3]
+
 	class FluidSimProc
 	{
 	private:
 		vector <double*> m_vectBulletBufs;
 		vector <double*> m_vectCompBufs;
+		vector <double*> m_vectBigBufs;
+		vector <double*> m_vectSmallDens, m_vectSmallVelU, m_vectSmallVelV, m_vectSmallVelW;
 
 		SGUCHAR *m_ptrDeviceVisual, *m_ptrHostVisual;
 				
@@ -80,9 +88,9 @@ namespace sge
 
 		void InitBoundary( void );
 
-        void SaveCurStage( void );
+		void SaveCurStage( void ){};
 
-        void LoadPreStage( void );
+		void LoadPreStage( void ){};
 
 	private:
 		int ix(cint i, cint j, cint k, cint tiles ) { return k * tiles * tiles + j * tiles + i; };
@@ -92,8 +100,6 @@ namespace sge
 		void GenerVolumeImg( void );
 
 	private:
-		void SolveNavierStokesEquation( cdouble dt, bool add, bool vel, bool dens );
-
 		void SolveGlobal( cdouble dt, bool add, bool vel, bool dens );
 
 		void DensitySolverGlobal( cdouble dt );
@@ -109,6 +115,21 @@ namespace sge
 		void DiffusionGlobal( double *out, cdouble *in, cdouble diff );
 
 		void ProjectionGlobal( double *u, double *v, double *w, double *div, double *p );
+
+	private:
+		void SolveLocal( cdouble dt, bool vel, bool dens );
+
+		void DensitySolverLocal( cdouble dt );
+
+		void VelocitySolverLocal( cdouble dt );
+
+		void JacobiLocal( double *out, cdouble *in, cdouble diff, cdouble divisor );
+
+		void AdvectionLocal( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
+
+		void DiffusionLocal( double *out, cdouble *in, cdouble diff );
+
+		void ProjectionLocal( double *u, double *v, double *w, double *div, double *p );
 	};
 };
 

@@ -19,15 +19,19 @@
 #define GRIDS_Y               64
 #define GRIDS_Z               64
 
+#define NODES_X                2
+#define NODES_Y                2
+#define NODES_Z                2
+
 #define BULLET_X              66
 #define BULLET_Y              66
 #define BULLET_Z              66
 
 #define STEPSIZE           0.001f
 
-#define VOLUME_X              64
-#define VOLUME_Y              64
-#define VOLUME_Z              64
+#define VOLUME_X             128
+#define VOLUME_Y             128
+#define VOLUME_Z             128
 
 #define THREADS_S           1024
 
@@ -42,12 +46,12 @@
 
 #define TPBUFFER_S          1024
 
-#define APP_TITLE   "Original x64 FPS: %d "
+#define APP_TITLE   "Loacal Refinement x128 FPS: %d "
 
 #define MACRO_BOUNDARY_BLANK      0
 #define MACRO_BOUNDARY_OBSTACLE 100
 #define MACRO_BOUNDARY_SOURCE  -100
 
-#define TIMES              80
+#define TIMES                80
 
 #endif
