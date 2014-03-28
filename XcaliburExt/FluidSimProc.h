@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 26, 2014
+* <Last Time>     Mar 24, 2014
 * <File Name>     FluidSimProc.h
 */
 
@@ -25,80 +25,38 @@ namespace sge
 {
 	struct SimNode
 	{
-		int updated, active;
+		SGBOOLEAN updated;
+		SGBOOLEAN active;
 		int x, y, z;
 		SimNode *ptrLeft, *ptrRight, *ptrUp, *ptrDown, *ptrFront, *ptrBack;
 	};
-
-	enum SGHIERARCHY
-	{
-		SG_LARGE_SCALE,
-		SG_HIGH_PRECISION,
-	};
-
-	enum SGFILEDTYPE
-	{
-		SG_DENSITY,
-		SG_VELOCITY_U,
-		SG_VELOCITY_V,
-		SG_VELOCITY_W,
-		SG_OBSTACLE,
-		SG_DIV,
-		SG_PRESSURE,
-	};
 	
-
-#define COMP_BUFS      5
-#define comp_dens      m_vectCompBufs[0]
-#define comp_velu      m_vectCompBufs[1]
-#define comp_velv      m_vectCompBufs[2]
-#define comp_velw      m_vectCompBufs[3]
-#define comp_obst      m_vectCompBufs[4]
-
-#define BULLET_BUFS    11
-#define dev_u          m_vectBulletBufs[0]
-#define dev_v          m_vectBulletBufs[1]
-#define dev_w          m_vectBulletBufs[2]
-#define dev_obs        m_vectBulletBufs[3]
-#define dev_den        m_vectBulletBufs[4]
-#define dev_div        m_vectBulletBufs[5]
-#define dev_prs        m_vectBulletBufs[6]
-#define dev_u0         m_vectBulletBufs[7]
-#define dev_v0         m_vectBulletBufs[8]
-#define dev_w0         m_vectBulletBufs[9]
-#define dev_den0       m_vectBulletBufs[10]
-
 	class FluidSimProc
 	{
 	private:
-		vector<double*> m_vectHostDens, m_vectHostObst,
-			m_vectHostVelU, m_vectHostVelV, m_vectHostVelW;
+		vector <double*> m_vectBulletBufs;
+		vector <double*> m_vectMidBufs;
+		vector <double*> m_vectCompBufs;
 
-		vector<double*> m_vectDevDens, m_vectDevObst, 
-			m_vectDevVelU, m_vectDevVelV, m_vectDevVelW;
-
-		vector<double*> m_vectCompBufs;
-
-		vector<double*> m_vectBulletBufs;
-
-		vector<SimNode*> m_link;
+		vector<double*> m_vectToyDens, m_vectHostDens;
+		vector<double*> m_vectToyVelU, m_vectHostVelU;
+		vector<double*> m_vectToyVelV, m_vectHostVelV;
+		vector<double*> m_vectToyVelW, m_vectHostVelW;
+		vector<double*> m_vectToyObst, m_vectHostObst;
 
 		SGUCHAR *m_ptrDeviceVisual, *m_ptrHostVisual;
+		double *m_ptrHostToy, *m_ptrHostComp, *m_ptrHostBullet;
+		
+		dim3 gridDim, blockDim;
+
+		string m_szTitle;
 
 	private:
 		FunctionHelper m_scHelper;
-		SGHIERARCHY m_enHierarchy;
-		string m_szTitle;
-		dim3 gridDim, blockDim;
+
 
 	public:
 		FluidSimProc( FLUIDSPARAM *fluid );
-
-	public:
-		inline int ix(cint i, cint j, cint k, cint tiles ) { return k * tiles * tiles + j * tiles + i; };
-
-		inline int ix(cint i, cint j, cint k, cint tilex, cint tiley)
-		{ return k * tilex * tiley + j * tilex + i; };
 
 	public:
 		void ClearBuffers( void );
@@ -111,38 +69,86 @@ namespace sge
 
 		void InitParams( FLUIDSPARAM *fluid );
 
-		void InitBound( void );
-
 		void RefreshStatus( FLUIDSPARAM *fluid );
 
 		void FluidSimSolver( FLUIDSPARAM *fluid );
 
-		void SetHierarchy( SGHIERARCHY hierarchy ) { m_enHierarchy = hierarchy; };
+		void InitBoundary( void );
 
-		void LoadPreStage( void );
+        void SaveCurStage( void );
 
-		void SaveCurStage( void );
+        void LoadPreStage( void );
+
+	private:
+		int ix(cint i, cint j, cint k, cint tiles ) { return k * tiles * tiles + j * tiles + i; };
+
+		int ix(cint i, cint j, cint k, cint tilex, cint tiley) { return k * tilex * tiley + j * tilex + i; };
+
+		void AssembleBuffers( void );
+
+		void DeassembleBuffers( void );
+
+		void GenerVolumeImg( void );
 
 	private:
 		void SolveNavierStokesEquation( cdouble dt, bool add, bool vel, bool dens );
 
-		void DensitySolver( cdouble dt );
+		void SolveGlobal( cdouble dt, bool add, bool vel, bool dens );
 
-		void VelocitySolver( cdouble dt );
+		void DensitySolverGlobal( cdouble dt );
 
-		void SourceSolver( cdouble dt );
+		void VelocitySolverGlobal( cdouble dt );
+
+		void SourceSolverGlobal( cdouble dt );
+
+		void JacobiGlobal( double *out, cdouble *in, cdouble diff, cdouble divisor );
+
+		void AdvectionGlobal( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
+
+		void DiffusionGlobal( double *out, cdouble *in, cdouble diff );
+
+		void ProjectionGlobal( double *u, double *v, double *w, double *div, double *p );
 	};
 };
 
-
 #define __device_func__ <<<gridDim,blockDim>>>
 
-#define GridsParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z )
+#define BUL_BUFS             22
+#define dev_den              m_vectBulletBufs[ 0 ]
+#define dev_den0             m_vectBulletBufs[ 1 ]
+#define dev_u                m_vectBulletBufs[ 2 ]
+#define dev_u0               m_vectBulletBufs[ 3 ]
+#define dev_v                m_vectBulletBufs[ 4 ]
+#define dev_v0               m_vectBulletBufs[ 5 ]
+#define dev_w                m_vectBulletBufs[ 6 ]
+#define dev_w0               m_vectBulletBufs[ 7 ]
+#define dev_div              m_vectBulletBufs[ 8 ]
+#define dev_p                m_vectBulletBufs[ 9 ]
+#define dev_obs              m_vectBulletBufs[ 10 ]
+#define local_den            m_vectBulletBufs[ 11 ]
+#define local_den0           m_vectBulletBufs[ 12 ]
+#define local_u              m_vectBulletBufs[ 13 ]
+#define local_u0             m_vectBulletBufs[ 14 ]
+#define local_v              m_vectBulletBufs[ 15 ]
+#define local_v0             m_vectBulletBufs[ 16 ]
+#define local_w              m_vectBulletBufs[ 17 ]
+#define local_w0             m_vectBulletBufs[ 18 ]
+#define local_div            m_vectBulletBufs[ 19 ]
+#define local_p              m_vectBulletBufs[ 20 ]
+#define local_obs            m_vectBulletBufs[ 21 ]
 
-#define CompParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, COMPS_X, COMPS_Y, COMPS_Z )
+#define COMP_BUFS            5
+#define comp_den             m_vectCompBufs[ 0 ]
+#define comp_u               m_vectCompBufs[ 1 ]
+#define comp_v               m_vectCompBufs[ 2 ]
+#define comp_w               m_vectCompBufs[ 3 ]
+#define comp_obst            m_vectCompBufs[ 4 ]
 
-#define BulletParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 26, 26, COMPS_X, COMPS_Y, COMPS_Z )
-
-#define VisualParamDim() m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 128, 8, COMPS_X, COMPS_Y, COMPS_Z )
+#define MID_BUFS             5
+#define mid_den              m_vectMidBufs[ 0 ]
+#define mid_u                m_vectMidBufs[ 1 ]
+#define mid_v                m_vectMidBufs[ 2 ]
+#define mid_w                m_vectMidBufs[ 3 ]
+#define mid_obst             m_vectMidBufs[ 4 ]
 
 #endif

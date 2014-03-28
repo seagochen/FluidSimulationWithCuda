@@ -95,6 +95,7 @@ void kernelDeassembleCompBufs( int *dst, cint dstx, cint dsty, cint dstz,
 	}
 };
 
+#if 0
 
 void main()
 {
@@ -184,4 +185,88 @@ void main()
 		printf( "\n" );
 	}
 
+};
+
+#endif
+
+#if 0
+
+//void kernelCompressGrid( double *dst, cdouble *src, )
+//{};
+
+void Shell3( cint *cell, cint length )
+{
+	for ( int i = 0; i < length; i++ )
+		printf( "%d ", cell[i] );
+}
+
+void Shell2( cint *cell, cint length )
+{
+	Shell3( cell, length );
+}
+
+void Shell1( cint *cell, cint length )
+{
+	Shell2( cell, length );
+}
+
+void main()
+{
+	int *ptr = (int*)calloc( 10, sizeof(int) );
+
+	for ( int i = 0; i < 10; i++ )
+		ptr[i] = i;
+
+	Shell1( ptr, 10 );
+
+	system( "pause" );
+}
+
+#endif
+
+void kernelCompressGrids( double *dst, cdouble *src, 
+						 cint srcx, cint srcy, cint srcz,
+						 cint dstx, cint dsty, cint dstz,
+						 cint zoomx, cint zoomy, cint zoomz )
+{
+	if ( dstx * zoomx > srcx ) { cout << "skip x" << endl; return; }
+	if ( dsty * zoomy > srcy ) { cout << "skip y" << endl; return; }
+	if ( dstz * zoomz > srcz ) { cout << "skip z" << endl; return; }
+
+	for ( int k = 0; k < dstz; k++ ) for ( int j = 0; j < dsty; j++ ) for ( int i = 0; i < dstx; i++ )
+	{
+		double sum = 0.f;
+
+		for ( int zk = 0; zk < zoomz; zk++ ) for ( int zj = 0; zj < zoomy; zj++ ) for ( int zi = 0; zi < zoomx; zi++ )
+		{
+			sum += src[ix(i*zoomx+zi, j*zoomy+zj, k*zoomz+zk, srcx, srcy, srcz)];
+		}
+		dst[ix(i,j,k,dstx,dsty,dstz)] = sum / ( zoomx * zoomy * zoomz );
+	}
+};
+
+void main()
+{
+	double *src = (double*)malloc( sizeof(double) * 20 * 20 * 20 );
+	double *dst = (double*)malloc( sizeof(double) * 10 * 10 * 10 );
+
+	for ( int i = 0; i < 20 * 20 * 20; i++ ) src[i] = i;
+
+	kernelCompressGrids( dst, src, 
+		20, 20, 20,
+		10, 10, 10,
+		2, 2, 2 );
+
+	for ( int k = 0; k < 10; k++ )
+	{
+		for ( int j = 0; j < 10; j++ )
+		{
+			for ( int i = 0; i < 10; i++ )
+			{
+				printf( "%d ", (int)dst[ix(i,j,k,10,10,10)] );
+			}
+			printf( "\n" );
+		}
+		printf( "\n" );
+	}
 };
