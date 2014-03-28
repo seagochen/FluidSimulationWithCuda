@@ -45,11 +45,18 @@ namespace sge
 #define comp_w               m_vectCompBufs[3]
 #define comp_obst            m_vectCompBufs[4]
 
+#define BIG_BUFS             4
+#define big_den              m_vectBigBufs[0]
+#define big_u                m_vectBigBufs[1]
+#define big_v                m_vectBigBufs[2]
+#define big_w                m_vectBigBufs[3]
+
 	class FluidSimProc
 	{
 	private:
 		vector <double*> m_vectBulletBufs;
 		vector <double*> m_vectCompBufs;
+		vector <double*> m_vectBigBufs;
 
 		SGUCHAR *m_ptrDeviceVisual, *m_ptrHostVisual;
 				

@@ -42,7 +42,7 @@
 
 #define TPBUFFER_S          1024
 
-#define APP_TITLE   "Original x64 FPS: %d "
+#define APP_TITLE   "Original x128 FPS: %d "
 
 #define MACRO_BOUNDARY_BLANK      0
 #define MACRO_BOUNDARY_OBSTACLE 100

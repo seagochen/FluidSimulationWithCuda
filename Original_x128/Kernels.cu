@@ -820,3 +820,27 @@ __global__ void kernelAddSource( double *dens, double *v,
 #undef IX(i,j,k)
 #undef isbound()
 #undef thread()
+
+__global__ void kernelUpScalingInterpolation( double *dst, cdouble *src, 
+						   cint srcx, cint srcy, cint srcz,
+						   cint dstx, cint dsty, cint dstz,
+						   cint zoomx, cint zoomy, cint zoomz )
+{
+	int i, j, k;
+	_thread(&i, &j, &k, dstx, dsty, dstz);
+	
+	dst[ix(i,j,k,dstx,dsty,dstz)] = atomicTrilinear( src, 
+		(double)i/(double)zoomx,
+		(double)j/(double)zoomy,
+		(double)k/(double)zoomz,
+		srcx, srcy, srcz );
+};
+
+__global__ void kernelPickData( uchar *volume, cdouble *src, cint tx, cint ty, cint tz )
+{
+	int i, j, k;
+	_thread(&i, &j, &k, tx, ty, tz);
+
+	volume[ix(i, j, k, tx, ty, tz)] = ( src[ix(i, j, k, tx, ty, tz)] > 0.f and 
+		src[ix(i, j, k, tx, ty, tz)] < 250.f ) ? (uchar) src[ix(i, j, k, tx, ty, tz)] : 0;
+};

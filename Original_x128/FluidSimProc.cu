@@ -72,6 +72,9 @@ void FluidSimProc::AllocateResource( void )
 	m_scHelper.CreateHostBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR),
 		1, &m_ptrHostVisual );
 
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectBigBufs,
+		VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(double), BIG_BUFS ) ) goto Error;
+
 	goto Success;
 
 Error:
@@ -91,6 +94,9 @@ void FluidSimProc::FreeResource( void )
 
 	for ( int i = 0; i < m_vectCompBufs.size(); i++ )
 		m_scHelper.FreeDeviceBuffers( 1, &m_vectCompBufs[i] );
+
+	for ( int i = 0; i < m_vectBigBufs.size(); i++ )
+		m_scHelper.FreeDeviceBuffers( 1, &m_vectBigBufs[i] );
 
 	m_scHelper.FreeDeviceBuffers( 1, &m_ptrDeviceVisual );
 	m_scHelper.FreeHostBuffers( 1, &m_ptrHostVisual );
@@ -144,12 +150,18 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 void FluidSimProc::GenerVolumeImg( void )
 {
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_X, GRIDS_X );
-
 	kernelExitBullet __device_func__
 		( comp_den, dev_den, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
 
-	kernelPickData __device_func__ ( m_ptrDeviceVisual, VOLUME_X, VOLUME_Y, VOLUME_Z,
-		comp_den, GRIDS_X, GRIDS_Y, GRIDS_Z, 0, 0, 0, 1.f, 1.f, 1.f );
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, VOLUME_X, VOLUME_Y, VOLUME_Z );
+	kernelUpScalingInterpolation __device_func__ ( big_den, comp_den, 
+		GRIDS_X, GRIDS_Y, GRIDS_Z, 
+		VOLUME_X, VOLUME_Y, VOLUME_Z,
+		2, 2, 2 );
+
+//	kernelPickData __device_func__ ( m_ptrDeviceVisual, VOLUME_X, VOLUME_Y, VOLUME_Z,
+//		big_den, VOLUME_X, VOLUME_Y, VOLUME_Z, 0, 0, 0, 1.f, 1.f, 1.f );
+	kernelPickData __device_func__ ( m_ptrDeviceVisual, big_den, VOLUME_X, VOLUME_Y, VOLUME_Z );
 };
 
 void FluidSimProc::ClearBuffers( void )

@@ -31,6 +31,12 @@ extern __global__ void kernelAddSource( double *dens, double *v, cdouble *obst, 
 
 #endif
 
+// updated: 2014/3/28
+extern __global__ void kernelUpScalingInterpolation( double *dst, cdouble *src, 
+						   cint srcx, cint srcy, cint srcz,
+						   cint dstx, cint dsty, cint dstz,
+						   cint zoomx, cint zoomy, cint zoomz );
+
 // updated: 2014/3/27
 extern __global__ void kernelJacobi( double *out, cdouble *in, 
 							 cint tx, cint ty, cint tz,
@@ -61,6 +67,9 @@ extern __global__ void kernelPickData( uchar *volume, cint dstx, cint dsty, cint
 							   cdouble *src, cint srcx, cint srcy, cint srcz,
 							   cint offi, cint offj, cint offk, 
 							   cdouble zoomx, cdouble zoomy, cdouble zoomz );
+
+// updated: 2014/3/28
+extern __global__ void kernelPickData( uchar *volume, cdouble *src, cint tx, cint ty, cint tz );
 
 // updated: 2014/3/27
 extern __global__ void kernelAssembleCompBufs( double *dst,  cint dstx, cint dsty, cint dstz, 
