@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Feb 23, 2014
-* <Last Time>     Mar 27, 2014
+* <Last Time>     Mar 28, 2014
 * <File Name>     Kernels.h
 */
 
@@ -67,6 +67,10 @@ extern __global__ void kernelPickData( uchar *volume, cint dstx, cint dsty, cint
 							   cdouble *src, cint srcx, cint srcy, cint srcz,
 							   cint offi, cint offj, cint offk, 
 							   cdouble zoomx, cdouble zoomy, cdouble zoomz );
+
+// updated: 2014/3/28
+extern __global__ void kernelPickData( uchar *volume, cdouble *src, cint dstx, cint dsty, cint dstz,
+									  cint srcx, cint srcy, cint srcz, cint offi, cint offj, cint offk );
 
 // updated: 2014/3/28
 extern __global__ void kernelPickData( uchar *volume, cdouble *src, cint tx, cint ty, cint tz );

@@ -367,9 +367,10 @@ __device__ double atomicGetValue
 	if ( y < 0 or y >= ty ) return 0.f;
 	if ( z < 0 or z >= tz ) return 0.f;
 
-	int ind = ix( x, y, z, tx, ty, tz );
-	if ( ind < 0 ) return 0.f;
-	else return grid[ind];
+//	int ind = ix( x, y, z, tx, ty, tz );
+//	if ( ind < 0 ) return 0.f;
+//	else return grid[ind];
+	return grid[ ix( x, y, z, tx, ty, tz ) ];
 };
 
 __device__ double atomicTrilinear
@@ -843,4 +844,70 @@ __global__ void kernelPickData( uchar *volume, cdouble *src, cint tx, cint ty, c
 
 	volume[ix(i, j, k, tx, ty, tz)] = ( src[ix(i, j, k, tx, ty, tz)] > 0.f and 
 		src[ix(i, j, k, tx, ty, tz)] < 250.f ) ? (uchar) src[ix(i, j, k, tx, ty, tz)] : 0;
+};
+
+
+// updated: 2014/3/28
+__global__ void kernelPickData( uchar *volume, cdouble *src,
+							   cint dstx, cint dsty, cint dstz,
+							   cint srcx, cint srcy, cint srcz, 
+							   cint offi, cint offj, cint offk )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, srcx, srcy, srcz );
+
+	volume[ix(i + srcx * offi, j + srcy * offj, k + srcz * offk, dstx, dsty, dstz)] = 
+		( src[ix(i, j, k, srcx, srcy, srcz)] > 0.f and 
+		src[ix(i, j, k, srcx, srcy, srcz)] < 250.f ) ? (uchar) src[ix(i, j, k, srcx, srcy, srcz)] : 0;
+};
+
+// updated: 2014/3/28
+__global__ void kernelSetBound( double *dst, cint tilex, cint tiley, cint tilez )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, tilex, tiley, tilez );
+
+	cint halfx = tilex / 2;
+	cint halfz = tilez / 2;
+
+	if ( j < 3 and 
+		i >= halfx - 2 and i < halfx + 2 and 
+		k >= halfz - 2 and k < halfz + 2 )
+	{
+		dst[ix(i,j,k,tilex,tiley,tilez)] = MACRO_BOUNDARY_SOURCE;
+	}
+	else
+	{
+		dst[ix(i,j,k,tilex,tiley,tilez)] = MACRO_BOUNDARY_BLANK;
+	}
+};
+
+// updated: 2014/3/28
+__global__ void kernelDeassemble( double *dst, cdouble *src, 
+								 cint srcx, cint srcy, cint srcz, 
+								 cint dstx, cint dsty, cint dstz, 
+								 cint offi, cint offj, cint offk )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, dstx, dsty, dstz );
+
+	dst[ix(i, j, k, dstx, dsty, dstz)] =
+		src[ix(i + offi * dstx, j + offj * dsty, k + offk * dstz, srcx, srcy, srcz)];
+};
+
+// updated: 2014/3/28
+__global__ void kernelGlobalToBullet( double *dst, cdouble *src,
+									 cint srcx, cint srcy, cint srcz, 
+									 cint dstx, cint dsty, cint dstz, 
+									 cint grdx, cint grdy, cint grdz,
+									 cint offi, cint offj, cint offk )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, dstx, dsty, dstz );
+
+	dst[ix(i, j, k, dstx, dsty, dstz)] = atomicGetValue( src,
+		offi * grdx + i - 1,
+		offj * grdy + j - 1,
+		offk * grdz + k - 1,
+		srcx, srcy, srcz );
 };

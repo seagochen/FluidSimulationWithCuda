@@ -25,7 +25,7 @@ namespace sge
 {	
 #define __device_func__ <<<gridDim,blockDim>>>
 
-#define BUL_BUFS             11
+#define BUL_BUFS             21
 #define dev_den              m_vectBulletBufs[ 0 ]
 #define dev_den0             m_vectBulletBufs[ 1 ]
 #define dev_u                m_vectBulletBufs[ 2 ]
@@ -37,6 +37,17 @@ namespace sge
 #define dev_div              m_vectBulletBufs[ 8 ]
 #define dev_p                m_vectBulletBufs[ 9 ]
 #define dev_obs              m_vectBulletBufs[ 10 ]
+
+#define loc_den              m_vectBulletBufs[ 11 ]
+#define loc_den0             m_vectBulletBufs[ 12 ]
+#define loc_u                m_vectBulletBufs[ 13 ]
+#define loc_v                m_vectBulletBufs[ 14 ]
+#define loc_w                m_vectBulletBufs[ 15 ]
+#define loc_u0               m_vectBulletBufs[ 16 ]
+#define loc_v0               m_vectBulletBufs[ 17 ]
+#define loc_w0               m_vectBulletBufs[ 18 ]
+#define loc_div              m_vectBulletBufs[ 19 ]
+#define loc_p                m_vectBulletBufs[ 20 ]
 
 #define COMP_BUFS            5
 #define comp_den             m_vectCompBufs[0]

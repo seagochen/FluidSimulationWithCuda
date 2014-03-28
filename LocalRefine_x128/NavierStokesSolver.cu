@@ -131,9 +131,9 @@ void FluidSimProc::ProjectionGlobal( double *u, double *v, double *w, double *di
 void FluidSimProc::VelocitySolverLocal( cdouble dt )
 {
 	// diffuse the velocity field (per axis):
-	DiffusionLocal( dev_u0, dev_u, VISOCITY );
-	DiffusionLocal( dev_v0, dev_v, VISOCITY );
-	DiffusionLocal( dev_w0, dev_w, VISOCITY );
+	DiffusionLocal( loc_u0, loc_u, VISOCITY );
+	DiffusionLocal( loc_v0, loc_v, VISOCITY );
+	DiffusionLocal( loc_w0, loc_w, VISOCITY );
 	
 	if ( m_scHelper.GetCUDALastError( "host function failed: Diffusion", __FILE__, __LINE__ ) )
 	{
@@ -141,12 +141,12 @@ void FluidSimProc::VelocitySolverLocal( cdouble dt )
 		exit( 1 );
 	}
 
-	std::swap( dev_u0, dev_u );
-	std::swap( dev_v0, dev_v );
-	std::swap( dev_w0, dev_w );
+	std::swap( loc_u0, loc_u );
+	std::swap( loc_v0, loc_v );
+	std::swap( loc_w0, loc_w );
 
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	ProjectionLocal( dev_u, dev_v, dev_w, dev_div, dev_p );
+	ProjectionLocal( loc_u, loc_v, loc_w, loc_div, loc_p );
 
 	if ( m_scHelper.GetCUDALastError( "host function failed: Projection", __FILE__, __LINE__ ) )
 	{
@@ -155,9 +155,9 @@ void FluidSimProc::VelocitySolverLocal( cdouble dt )
 	}
 	
 	// advect the velocity field (per axis):
-	AdvectionLocal( dev_u0, dev_u, dt, dev_u, dev_v, dev_w );
-	AdvectionLocal( dev_v0, dev_v, dt, dev_u, dev_v, dev_w );
-	AdvectionLocal( dev_w0, dev_w, dt, dev_u, dev_v, dev_w );
+	AdvectionLocal( loc_u0, loc_u, dt, loc_u, loc_v, loc_w );
+	AdvectionLocal( loc_v0, loc_v, dt, loc_u, loc_v, loc_w );
+	AdvectionLocal( loc_w0, loc_w, dt, loc_u, loc_v, loc_w );
 
 	if ( m_scHelper.GetCUDALastError( "host function failed: Advection", __FILE__, __LINE__ ) )
 	{
@@ -165,19 +165,19 @@ void FluidSimProc::VelocitySolverLocal( cdouble dt )
 		exit( 1 );
 	}
 
-	std::swap( dev_u0, dev_u );
-	std::swap( dev_v0, dev_v );
-	std::swap( dev_w0, dev_w );
+	std::swap( loc_u0, loc_u );
+	std::swap( loc_v0, loc_v );
+	std::swap( loc_w0, loc_w );
 	
 	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	ProjectionGlobal( dev_u, dev_v, dev_w, dev_div, dev_p );
+	ProjectionGlobal( loc_u, loc_v, loc_w, loc_div, loc_p );
 };
 
 void FluidSimProc::DensitySolverLocal( cdouble dt )
 {
-	DiffusionLocal( dev_den0, dev_den, DIFFUSION );
-	std::swap( dev_den0, dev_den );
-	AdvectionLocal( dev_den, dev_den0, dt, dev_u, dev_v, dev_w );
+	DiffusionLocal( loc_den0, loc_den, DIFFUSION );
+	std::swap( loc_den0, loc_den );
+	AdvectionLocal( loc_den, loc_den0, dt, loc_u, loc_v, loc_w );
 
 	if ( m_scHelper.GetCUDALastError( "host function failed: DensitySolver", __FILE__, __LINE__ ) )
 	{
@@ -191,7 +191,7 @@ void FluidSimProc::JacobiLocal( double *out, cdouble *in, cdouble diff, cdouble 
 	m_scHelper.DeviceParamDim
 		( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
-	for ( int k = 0; k < 5; k++)
+	for ( int k = 0; k < 20; k++)
 		kernelJacobi __device_func__ ( out, in, GRIDS_X, GRIDS_Y, GRIDS_Z, diff, divisor );
 };
 

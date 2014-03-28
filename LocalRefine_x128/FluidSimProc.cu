@@ -20,7 +20,49 @@ using namespace sge;
 using std::cout;
 using std::endl;
 
-#include "TempHeader.h"
+inline __device__ __host__ int ix( cint x, cint tilex)
+{
+	if ( x >= tilex or x < 0 ) return -1;
+	return x;
+};
+
+inline __device__ __host__ int ix( cint i, cint j, cint tilex, cint tiley )
+{
+	if ( i < 0 or j < 0 ) return -1;
+
+	int x; if ( i >= tilex ) x = tilex - 1;
+	int y; if ( j >= tiley ) y = tiley - 1;
+
+	x = i; y = j;
+	return x + y * tilex;
+};
+
+inline __host__ __device__ int ix
+	( cint i, cint j, cint k, cint tilex, cint tiley, cint tilez )
+{
+	if ( i < 0 or i >= tilex ) return -1;
+	if ( j < 0 or j >= tiley ) return -1;
+	if ( k < 0 or k >= tilez ) return -1;
+
+	return i + j * tilex + k * tilex * tiley;
+};
+
+extern // updated: 2014/3/28
+__global__ void kernelSetBound( double *dst, cint tilex, cint tiley, cint tilez );
+
+extern // updated: 2014/3/28
+__global__ void kernelDeassemble( double *dst, cdouble *src, 
+								 cint srcx, cint srcy, cint srcz, 
+								 cint dstx, cint dsty, cint dstz, 
+								 cint offi, cint offj, cint offk );
+
+extern // updated: 2014/3/28
+__global__ void kernelGlobalToBullet( double *dst, cdouble *src,
+									 cint srcx, cint srcy, cint srcz, 
+									 cint dstx, cint dsty, cint dstz, 
+									 cint grdx, cint grdy, cint grdz,
+									 cint offi, cint offj, cint offk );
+
 
 FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 {
@@ -62,11 +104,17 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 
 void FluidSimProc::AllocateResource( void )
 {
+
 	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectCompBufs, 
 		GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), COMP_BUFS ) ) goto Error;
 
 	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectBulletBufs, 
 		BULLET_X * BULLET_Y * BULLET_Z * sizeof(double), BUL_BUFS ) ) goto Error;
+
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectBigBufs,
+		VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(double), BIG_BUFS ) ) goto Error;
+
+
 
 	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectSmallDens, 
 		GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), NODES_X * NODES_Y * NODES_Z ) ) goto Error;
@@ -80,13 +128,12 @@ void FluidSimProc::AllocateResource( void )
 	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectSmallVelW, 
 		GRIDS_X * GRIDS_Y * GRIDS_Z * sizeof(double), NODES_X * NODES_Y * NODES_Z ) ) goto Error;
 
+
+
 	m_scHelper.CreateDeviceBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR),
 		1, &m_ptrDeviceVisual );
 	m_scHelper.CreateHostBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR),
 		1, &m_ptrHostVisual );
-
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectBigBufs,
-		VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(double), BIG_BUFS ) ) goto Error;
 
 	goto Success;
 
@@ -175,12 +222,14 @@ void FluidSimProc::ClearBuffers( void )
 	}
 };
 
-
 void FluidSimProc::InitBoundary( void )
 {
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	kernelSetBound __device_func__ ( comp_obst, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+	kernelLoadBullet __device_func__
+		( dev_obs, comp_obst,  BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	if ( m_scHelper.GetCUDALastError( "call member function InitBound failed", __FILE__, __LINE__ ) )
 	{
@@ -188,7 +237,6 @@ void FluidSimProc::InitBoundary( void )
 		exit(1);
 	}
 };
-
 
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
@@ -205,24 +253,41 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 
 void FluidSimProc::GenerVolumeImg( void )
 {
+#if 0
+
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+	for ( int i = 0; i < NODES_X; i++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int k = 0; k < NODES_Z; k++ )
+	{
+		kernelPickData __device_func__ ( m_ptrDeviceVisual, m_vectSmallDens[ix(i,j,k,NODES_X,NODES_Y)], 
+			VOLUME_X, VOLUME_Y, VOLUME_Z,
+			GRIDS_X, GRIDS_Y, GRIDS_Z, 
+			i, j, k );
+	}
+
+#else
+
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, VOLUME_X, VOLUME_Y, VOLUME_Z );
-	
 	kernelPickData __device_func__ ( m_ptrDeviceVisual, big_den, VOLUME_X, VOLUME_Y, VOLUME_Z );
+	
+	for ( int i = 0; i < NODES_X; i++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int k = 0; k < NODES_Z; k++ )
+	{
+		if ( j > 0 )
+		{
+			m_scHelper.DeviceParamDim
+				( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+			kernelPickData __device_func__
+				( m_ptrDeviceVisual, m_vectSmallDens[ix(i, j, k, NODES_X, NODES_Y)], 
+				VOLUME_X, VOLUME_Y, VOLUME_Z,
+				GRIDS_X, GRIDS_Y, GRIDS_Z, 
+				i, j, k );
+		}
+	}
 
-/*	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
-
-	kernelPickData __device_func__ ( m_ptrHostVisual, VOLUME_X, VOLUME_Y, VOLUME_Z,
-		m_vectSmallDens[ix(1,1,1,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z, 1, 1, 1, 1.f, 1.f, 1.f );
-*/
+#endif
 };
-
 
 void FluidSimProc::SolveGlobal( cdouble dt, bool add, bool vel, bool dens )
 {
-	kernelLoadBullet __device_func__
-		( dev_obs, comp_obst,  BULLET_X, BULLET_Y, BULLET_Z, GRIDS_X, GRIDS_Y, GRIDS_Z );
-
-
 	if ( add ) SourceSolverGlobal( dt );
 	if ( vel ) VelocitySolverGlobal( dt );
 	if ( dens ) DensitySolverGlobal( dt );
@@ -266,55 +331,89 @@ void FluidSimProc::SolveLocal( cdouble dt, bool vel, bool dens )
 		VOLUME_X, VOLUME_Y, VOLUME_Z,
 		2, 2, 2 );
 
+#if 0
 
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
 
 	for ( int k = 0; k < NODES_Z; k++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int i = 0; i < NODES_X; i++ )
 	{
-		kernelDeassembleCompBufs __device_func__ (
-			m_vectSmallDens[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
-			comp_den, VOLUME_X, VOLUME_Y, VOLUME_Z,
-			i, j, k, 
-			1.f, 1.f, 1.f );
-
-		kernelDeassembleCompBufs __device_func__ (
-			m_vectSmallVelU[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
-			comp_u, VOLUME_X, VOLUME_Y, VOLUME_Z,
-			i, j, k, 
-			1.f, 1.f, 1.f );
-
-		kernelDeassembleCompBufs __device_func__ (
-			m_vectSmallVelV[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
-			comp_v, VOLUME_X, VOLUME_Y, VOLUME_Z,
-			i, j, k, 
-			1.f, 1.f, 1.f );
-
-		kernelDeassembleCompBufs __device_func__ (
-			m_vectSmallVelW[ix(i,j,k,NODES_X,NODES_Y)], GRIDS_X, GRIDS_Y, GRIDS_Z,
-			comp_w, VOLUME_X, VOLUME_Y, VOLUME_Z,
-			i, j, k, 
-			1.f, 1.f, 1.f );
+		kernelDeassemble __device_func__ ( m_vectSmallDens[ix(i,j,k,NODES_X,NODES_Y)], big_den, 
+			VOLUME_X, VOLUME_Y, VOLUME_Z,
+			GRIDS_X, GRIDS_Y, GRIDS_Z,
+			i, j, k );
 	}
-/*
-	kernelLoadBullet __device_func__ ( dev_u, m_vectSmallVelU[ix(1,1,1,NODES_X,NODES_Y)], BULLET_X, BULLET_Y, BULLET_Z,
-		GRIDS_X, GRIDS_Y, GRIDS_Z );
-	kernelLoadBullet __device_func__ ( dev_v, m_vectSmallVelV[ix(1,1,1,NODES_X,NODES_Y)], BULLET_X, BULLET_Y, BULLET_Z,
-		GRIDS_X, GRIDS_Y, GRIDS_Z );
-	kernelLoadBullet __device_func__ ( dev_w, m_vectSmallVelW[ix(1,1,1,NODES_X,NODES_Y)], BULLET_X, BULLET_Y, BULLET_Z,
-		GRIDS_X, GRIDS_Y, GRIDS_Z );
-	kernelLoadBullet __device_func__ ( dev_den, m_vectSmallDens[ix(1,1,1,NODES_X,NODES_Y)], BULLET_X, BULLET_Y, BULLET_Z,
-		GRIDS_X, GRIDS_Y, GRIDS_Z );
 
-	if ( vel ) VelocitySolverLocal( dt );
-	if ( dens ) DensitySolverLocal( dt );
+//#else
 
-	kernelExitBullet __device_func__ ( m_vectSmallVelU[ix(1,1,1,NODES_X,NODES_Y)], dev_u,
-		GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-	kernelExitBullet __device_func__ ( m_vectSmallVelV[ix(1,1,1,NODES_X,NODES_Y)], dev_v,
-		GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-	kernelExitBullet __device_func__ ( m_vectSmallVelW[ix(1,1,1,NODES_X,NODES_Y)], dev_w,
-		GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-	kernelExitBullet __device_func__ ( m_vectSmallDens[ix(1,1,1,NODES_X,NODES_Y)], dev_den,
-		GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
-		*/
+	for ( int i = 0; i < NODES_X; i++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int k = 0; k < NODES_Z; k++ )
+	{
+		if ( j > 0 )
+		{
+			m_scHelper.DeviceParamDim
+				( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+			
+			kernelDeassemble __device_func__ ( m_vectSmallDens[ix(i, j, k, NODES_X, NODES_Y)], big_den, 
+				VOLUME_X, VOLUME_Y, VOLUME_Z,
+				GRIDS_X, GRIDS_Y, GRIDS_Z,
+				i, j, k );
+			
+			kernelDeassemble __device_func__ ( m_vectSmallVelU[ix(i, j, k, NODES_X, NODES_Y)], big_u, 
+				VOLUME_X, VOLUME_Y, VOLUME_Z,
+				GRIDS_X, GRIDS_Y, GRIDS_Z,
+				i, j, k );
+
+			kernelDeassemble __device_func__ ( m_vectSmallVelV[ix(i, j, k, NODES_X, NODES_Y)], big_v, 
+				VOLUME_X, VOLUME_Y, VOLUME_Z,
+				GRIDS_X, GRIDS_Y, GRIDS_Z,
+				i, j, k );
+
+			kernelDeassemble __device_func__ ( m_vectSmallVelW[ix(i, j, k, NODES_X, NODES_Y)], big_w, 
+				VOLUME_X, VOLUME_Y, VOLUME_Z,
+				GRIDS_X, GRIDS_Y, GRIDS_Z,
+				i, j, k );
+		}
+	}
+#endif
+
+	for ( int i = 0; i < NODES_X; i++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int k = 0; k < NODES_Z; k++ )
+	{
+		if ( j > 0 )
+		{
+			m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 33, 22, BULLET_X, BULLET_Y, BULLET_Z );
+
+			kernelGlobalToBullet __device_func__ ( loc_den, dev_den, 
+				VOLUME_X, VOLUME_Y, VOLUME_Z,
+				BULLET_X, BULLET_Y, BULLET_Z,
+				GRIDS_X, GRIDS_Y, GRIDS_Z,
+				i, j, k );
+
+			kernelGlobalToBullet __device_func__ ( loc_u, dev_u, 
+				VOLUME_X, VOLUME_Y, VOLUME_Z,
+				BULLET_X, BULLET_Y, BULLET_Z,
+				GRIDS_X, GRIDS_Y, GRIDS_Z,
+				i, j, k );
+
+			kernelGlobalToBullet __device_func__ ( loc_v, dev_v, 
+				VOLUME_X, VOLUME_Y, VOLUME_Z,
+				BULLET_X, BULLET_Y, BULLET_Z,
+				GRIDS_X, GRIDS_Y, GRIDS_Z,
+				i, j, k );
+
+			kernelGlobalToBullet __device_func__ ( loc_w, dev_w, 
+				VOLUME_X, VOLUME_Y, VOLUME_Z,
+				BULLET_X, BULLET_Y, BULLET_Z,
+				GRIDS_X, GRIDS_Y, GRIDS_Z,
+				i, j, k );
+
+			m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, GRIDS_X, GRIDS_Y, GRIDS_Z );
+
+			if ( vel ) VelocitySolverLocal( dt );
+			if ( dens ) DensitySolverLocal( dt );
+
+			kernelExitBullet __device_func__ 
+				( m_vectSmallDens[ix(i, j, k, NODES_X, NODES_Y)], loc_den,
+				GRIDS_X, GRIDS_Y, GRIDS_Z, 
+				BULLET_X, BULLET_Y, BULLET_Z );
+		}
+	}
 };
