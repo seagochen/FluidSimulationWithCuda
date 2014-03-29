@@ -381,25 +381,25 @@ void FluidSimProc::SolveLocal( cdouble dt, bool vel, bool dens )
 		{
 			m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 33, 22, BULLET_X, BULLET_Y, BULLET_Z );
 
-			kernelGlobalToBullet __device_func__ ( loc_den, dev_den, 
+			kernelGlobalToBullet __device_func__ ( loc_den, big_den, 
 				VOLUME_X, VOLUME_Y, VOLUME_Z,
 				BULLET_X, BULLET_Y, BULLET_Z,
 				GRIDS_X, GRIDS_Y, GRIDS_Z,
 				i, j, k );
 
-			kernelGlobalToBullet __device_func__ ( loc_u, dev_u, 
+			kernelGlobalToBullet __device_func__ ( loc_u, big_u, 
 				VOLUME_X, VOLUME_Y, VOLUME_Z,
 				BULLET_X, BULLET_Y, BULLET_Z,
 				GRIDS_X, GRIDS_Y, GRIDS_Z,
 				i, j, k );
 
-			kernelGlobalToBullet __device_func__ ( loc_v, dev_v, 
+			kernelGlobalToBullet __device_func__ ( loc_v, big_v, 
 				VOLUME_X, VOLUME_Y, VOLUME_Z,
 				BULLET_X, BULLET_Y, BULLET_Z,
 				GRIDS_X, GRIDS_Y, GRIDS_Z,
 				i, j, k );
 
-			kernelGlobalToBullet __device_func__ ( loc_w, dev_w, 
+			kernelGlobalToBullet __device_func__ ( loc_w, big_w, 
 				VOLUME_X, VOLUME_Y, VOLUME_Z,
 				BULLET_X, BULLET_Y, BULLET_Z,
 				GRIDS_X, GRIDS_Y, GRIDS_Z,
