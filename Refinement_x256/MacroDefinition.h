@@ -16,6 +16,8 @@
 #define VELOCITY            15.7f
 #define STEPSIZE           0.001f
 
+#define TIMES                 80
+
 #define gGRIDS_X              64
 #define gGRIDS_Y              64
 #define gGRIDS_Z              64
@@ -24,6 +26,10 @@
 #define gBULLET_Y             66
 #define gBULLET_Z             66
 
+#define sNODE_X                2
+#define sNODE_Y                2
+#define sNODE_Z                2
+
 #define sGRIDS_X             128
 #define sGRIDS_Y             128
 #define sGRIDS_Z             128
@@ -31,6 +37,10 @@
 #define sBULLET_X            130
 #define sBULLET_Y            130
 #define sBULLET_Z            130
+
+#define BIG_X                256
+#define BIG_Y                256
+#define BIG_Z                256
 
 #define VOLUME_X             256
 #define VOLUME_Y             256
@@ -54,7 +64,5 @@
 #define MACRO_BOUNDARY_BLANK      0
 #define MACRO_BOUNDARY_OBSTACLE 100
 #define MACRO_BOUNDARY_SOURCE  -100
-
-#define TIMES                80
 
 #endif

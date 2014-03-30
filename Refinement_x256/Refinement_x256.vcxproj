@@ -19,7 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AtomicFunctions.h" />
+    <ClInclude Include="FluidSimProc.h" />
+    <ClInclude Include="Framework.h" />
     <ClInclude Include="FunctionHelper.h" />
+    <ClInclude Include="ISO646.h" />
+    <ClInclude Include="Kernels.h" />
     <ClInclude Include="MacroDefinition.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
@@ -36,7 +41,13 @@
     <None Include="..\shader\raycasting.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Framework.cpp" />
     <ClCompile Include="FunctionHelper.cpp" />
+    <ClCompile Include="Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="FluidSimProc.cu" />
+    <CudaCompile Include="Kernels.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{79953CE3-F7B5-4284-B0B8-E2A369EDE537}</ProjectGuid>

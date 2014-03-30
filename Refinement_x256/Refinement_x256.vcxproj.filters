@@ -31,6 +31,21 @@
     <ClInclude Include="FunctionHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Framework.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FluidSimProc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ISO646.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Kernels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AtomicFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\shader\backface.frag">
@@ -50,5 +65,19 @@
     <ClCompile Include="FunctionHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Framework.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="Kernels.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="FluidSimProc.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
