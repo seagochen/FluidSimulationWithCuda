@@ -157,10 +157,7 @@ void FluidSimProc::GenerVolumeImg( void )
 	kernelUpScalingInterpolation __device_func__ ( big_den, comp_den, 
 		GRIDS_X, GRIDS_Y, GRIDS_Z, 
 		VOLUME_X, VOLUME_Y, VOLUME_Z,
-		2, 2, 2 );
-
-//	kernelPickData __device_func__ ( m_ptrDeviceVisual, VOLUME_X, VOLUME_Y, VOLUME_Z,
-//		big_den, VOLUME_X, VOLUME_Y, VOLUME_Z, 0, 0, 0, 1.f, 1.f, 1.f );
+		4, 4, 4 );
 	kernelPickData __device_func__ ( m_ptrDeviceVisual, big_den, VOLUME_X, VOLUME_Y, VOLUME_Z );
 };
 
