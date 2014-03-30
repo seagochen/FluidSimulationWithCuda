@@ -29,18 +29,6 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Refinement_x256.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\icons\main.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\shader\backface.frag" />
-    <None Include="..\shader\backface.vert" />
-    <None Include="..\shader\raycasting.frag" />
-    <None Include="..\shader\raycasting.vert" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="Framework.cpp" />
     <ClCompile Include="FunctionHelper.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -48,6 +36,12 @@
   <ItemGroup>
     <CudaCompile Include="FluidSimProc.cu" />
     <CudaCompile Include="Kernels.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Refinement_x256.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icons\main.ico" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{79953CE3-F7B5-4284-B0B8-E2A369EDE537}</ProjectGuid>
