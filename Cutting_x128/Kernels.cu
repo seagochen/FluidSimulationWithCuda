@@ -502,3 +502,14 @@ __global__ void kernelFillBullet( double *dst, cdouble *src,
 		offk * grdz + k - 1,
 		srcx, srcy, srcz );
 };
+
+
+// updated: 2014/3/31
+__global__ void kernelSumDensity
+	( double *bufs, cdouble *src, cint no, cint srcx, cint srcy, cint srcz )
+{
+	int i, j, k;
+	_thread( &i, &j, &k, srcx, srcy, srcz );
+
+	bufs[no] += src[ix(i,j,k,srcx,srcy,srcz)]; 
+};

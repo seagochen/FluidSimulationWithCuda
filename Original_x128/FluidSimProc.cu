@@ -153,20 +153,20 @@ void FluidSimProc::GenerVolumeImg( void )
 	kernelExitBullet __device_func__
 		( comp_den, dev_den, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
 
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, VOLUME_X, VOLUME_Y, VOLUME_Z );
-	kernelUpScalingInterpolation __device_func__ ( big_den, comp_den, 
-		GRIDS_X, GRIDS_Y, GRIDS_Z, 
-		VOLUME_X, VOLUME_Y, VOLUME_Z,
-		2, 2, 2 );
-
+//	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, VOLUME_X, VOLUME_Y, VOLUME_Z );
+//	kernelUpScalingInterpolation __device_func__ ( big_den, comp_den, 
+//		GRIDS_X, GRIDS_Y, GRIDS_Z, 
+//		VOLUME_X, VOLUME_Y, VOLUME_Z,
+//		2, 2, 2 );
+//
 //	kernelPickData __device_func__ ( m_ptrDeviceVisual, VOLUME_X, VOLUME_Y, VOLUME_Z,
 //		big_den, VOLUME_X, VOLUME_Y, VOLUME_Z, 0, 0, 0, 1.f, 1.f, 1.f );
-	kernelPickData __device_func__ ( m_ptrDeviceVisual, big_den, VOLUME_X, VOLUME_Y, VOLUME_Z );
+	kernelPickData __device_func__ ( m_ptrDeviceVisual, comp_den, VOLUME_X, VOLUME_Y, VOLUME_Z );
 };
 
 void FluidSimProc::ClearBuffers( void )
 {
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 33, 22, BULLET_X, BULLET_Y, BULLET_Z );
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 26, 26, BULLET_X, BULLET_Y, BULLET_Z );
 	for ( int i = 0; i < m_vectBulletBufs.size(); i++ )
 		kernelZeroBuffers __device_func__ ( m_vectBulletBufs[i], BULLET_X, BULLET_Y, BULLET_Z );
 
@@ -234,9 +234,9 @@ __global__ void kernelSetBound( double *dst, cint tilex, cint tiley, cint tilez 
 	cint halfx = tilex / 2;
 	cint halfz = tilez / 2;
 
-	if ( j < 3 and 
-		i >= halfx - 2 and i < halfx + 2 and 
-		k >= halfz - 2 and k < halfz + 2 )
+	if ( j < 6 and 
+		i >= halfx - 4 and i < halfx + 4 and 
+		k >= halfz - 4 and k < halfz + 4 )
 	{
 		dst[ix(i,j,k,tilex,tiley,tilez)] = MACRO_BOUNDARY_SOURCE;
 	}

@@ -89,6 +89,11 @@ __global__ void kernelFillBullet( double *dst, cdouble *src,
 		cint offi, cint offj, cint offk );
 
 
+extern // updated: 2014/3/31
+__global__ void kernelSumDensity
+( double *bufs, cdouble *src, cint no, cint srcx, cint srcy, cint srcz );
+
+
 extern __global__ void kernelLoadBullet
 	( int *dst, cint *src, cint dstx, cint dsty, cint dstz, cint srcx, cint srcy, cint srcz );
 

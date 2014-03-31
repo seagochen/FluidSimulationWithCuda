@@ -16,7 +16,6 @@ using std::cout;
 using std::endl;
 
 
-
 SGBOOLEAN FunctionHelper::CreateCompNodesForDevice( std::vector<double*> *vectBuf, size_t size, size_t nodes )
 {
 	for ( int i = 0; i < nodes; i++ )
@@ -153,6 +152,7 @@ SGVOID FunctionHelper::DeviceParamDim( dim3 *gridDim, dim3 *blockDim, SGINT thre
 	}
 };
 
+#if 0
 SGVOID FunctionHelper::DeviceDim1D( dim3 *blockDim, dim3 *gridDim, SGINT thread, SGINT gridx )
 {
 	if ( gridx <= thread )
@@ -194,6 +194,7 @@ SGVOID FunctionHelper::DeviceDim3D( dim3 *blockDim, dim3 *gridDim, SGINT thread,
 	gridDim->x  = gridx / blockDim->x;
 	gridDim->y  = gridx * gridy * gridz / ( blockDim->x * blockDim->y * gridDim->x );
 };
+#endif
 
 SGBOOLEAN FunctionHelper::GetCUDALastError( const char* msg, const char *file, const int line )
 {

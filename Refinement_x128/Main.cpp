@@ -14,7 +14,7 @@
 #include <GL\glew.h>
 #include <SGE\SGUtils.h>
 #include "resource.h"
-#include "FrameworkDynamic.h"
+#include "Framework.h"
 
 using namespace sge;
 

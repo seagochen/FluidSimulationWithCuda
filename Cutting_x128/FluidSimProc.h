@@ -43,6 +43,8 @@ namespace sge
 		double **dev_den, **dev_u, **dev_v, **dev_w, **dev_p, **dev_div, **dev_obs,
 			**dev_den0, **dev_u0, **dev_v0, **dev_w0;
 
+		double *m_ptrDevSum, *m_ptrHostSum;
+
 		vector<double*> m_vectgGrids, m_vectgBullets;
 		vector<double*> m_vectsGrids, m_vectsBullets;
 		vector<double*> m_vectBigBuffers;
@@ -86,6 +88,8 @@ namespace sge
 		void SolveGlobalFlux( void );
 
 		void RefinementFlux( void );
+
+		void UpScalingFlux( void );
 
 	private:
 		void SolveNavierStokesEquation

@@ -19,8 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AtomicFunctions.h" />
     <ClInclude Include="FluidSimProc.h" />
-    <ClInclude Include="FrameworkDynamic.h" />
+    <ClInclude Include="Framework.h" />
     <ClInclude Include="FunctionHelper.h" />
     <ClInclude Include="ISO646.h" />
     <ClInclude Include="Kernels.h" />
@@ -28,24 +29,29 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="LocalRefine_x128.rc" />
+    <ClCompile Include="Framework.cpp" />
+    <ClCompile Include="FunctionHelper.cpp" />
+    <ClCompile Include="Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="FluidSimProc.cu" />
+    <CudaCompile Include="Kernels.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Cutting_x128.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icons\main.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FrameworkDynamic.cpp" />
-    <ClCompile Include="FunctionHelper.cpp" />
-    <ClCompile Include="MainDynamic.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="FluidSimProc.cu" />
-    <CudaCompile Include="Kernels.cu" />
-    <CudaCompile Include="NavierStokesSolver.cu" />
+    <None Include="shader\backface.frag" />
+    <None Include="shader\backface.vert" />
+    <None Include="shader\raycasting.frag" />
+    <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{FE188744-1866-456F-AD76-522635D36BFE}</ProjectGuid>
-    <RootNamespace>LocalRefine_x128</RootNamespace>
+    <ProjectGuid>{390D0022-6DE7-424E-A919-970E37F9A32D}</ProjectGuid>
+    <RootNamespace>Cutting_x128</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

@@ -44,3 +44,6 @@ typedef double const  cdouble;
 typedef int const     cint;
 typedef unsigned char uchar;
 typedef std::string*  sstr;
+typedef double * pdouble;
+typedef int *    pint;
+typedef uchar *  puchar;

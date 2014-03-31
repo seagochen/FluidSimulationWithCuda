@@ -19,6 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="FluidSimProc.cu" />
+    <CudaCompile Include="Kernels.cu" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="AtomicFunctions.h" />
     <ClInclude Include="FluidSimProc.h" />
     <ClInclude Include="Framework.h" />
@@ -34,18 +38,20 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FluidSimProc.cu" />
-    <CudaCompile Include="Kernels.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Refinement_x256.rc" />
+    <ResourceCompile Include="Refinement_x128.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icons\main.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\backface.frag" />
+    <None Include="shader\backface.vert" />
+    <None Include="shader\raycasting.frag" />
+    <None Include="shader\raycasting.vert" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{79953CE3-F7B5-4284-B0B8-E2A369EDE537}</ProjectGuid>
-    <RootNamespace>Refinement_x256</RootNamespace>
+    <ProjectGuid>{AE63F6DF-0C92-418D-BB01-D455675130BB}</ProjectGuid>
+    <RootNamespace>Refinement_x128</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

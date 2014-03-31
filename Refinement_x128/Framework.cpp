@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Oct 16, 2013
-* <Last Time>     Mar 24, 2014
+* <Last Time>     Mar 30, 2014
 * <File Name>     FrameworkDynamic.cpp
 */
 
@@ -13,7 +13,7 @@
 #include <GLM\gtx\transform2.hpp>
 #include <GLM\gtc\type_ptr.hpp>
 #include <iostream>
-#include "FrameworkDynamic.h"
+#include "Framework.h"
 #include "FluidSimProc.h"
 
 using namespace sge;
@@ -618,21 +618,21 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 			m_simproc->ClearBuffers();
 			break;
 
-		case SG_KEY_S:
-			m_simproc->SaveCurStage();
-            break;
-
-		case SG_KEY_L:
-			m_simproc->LoadPreStage();
-            break;
+//		case SG_KEY_S:
+//			m_simproc->SaveCurStage();
+//          break;
+//
+//		case SG_KEY_L:
+//			m_simproc->LoadPreStage();
+//          break;
 
 		case SG_KEY_P:
 			system("cls");
 			cout << "Use mouse to control rotation of observation" << endl 
 				<< "Use Key Q or ESC to quit system" << endl 
-                << "Use Key C to clear stage" << endl
-				<< "Use Key S to save current stage" << endl
-				<< "Use Key L to load previous stage" << endl;
+                << "Use Key C to clear stage" << endl;
+//				<< "Use Key S to save current stage" << endl
+//				<< "Use Key L to load previous stage" << endl;
 			break;
 
 		default:

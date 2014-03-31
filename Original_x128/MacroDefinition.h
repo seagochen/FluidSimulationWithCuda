@@ -12,16 +12,16 @@
 #define DELTATIME            0.5f
 #define DIFFUSION            0.1f
 #define VISOCITY             0.0f
-#define DENSITY             12.5f
-#define VELOCITY            15.7f
+#define DENSITY             33.7f
+#define VELOCITY            40.5f
 
-#define GRIDS_X               64
-#define GRIDS_Y               64
-#define GRIDS_Z               64
+#define GRIDS_X              128
+#define GRIDS_Y              128
+#define GRIDS_Z              128
 
-#define BULLET_X              66
-#define BULLET_Y              66
-#define BULLET_Z              66
+#define BULLET_X             130
+#define BULLET_Y             130
+#define BULLET_Z             130
 
 #define STEPSIZE           0.001f
 
