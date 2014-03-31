@@ -85,6 +85,8 @@ namespace sge
 
 		void SolveGlobalFlux( void );
 
+		void RefinementFlux( void );
+
 	private:
 		void SolveNavierStokesEquation
 			( cdouble dt, bool add, bool vel, bool dens,

@@ -213,24 +213,21 @@ void FluidSimProc::InitBoundary( void )
 
 void FluidSimProc::GenerVolumeImg( void )
 {
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 32, 32, 64, 64, 64 );
-
-	kernelExitBullet __device_func__ ( m_vectgGrids[DEV_DENSITY], m_vectgBullets[DEV_DENSITY], 
-		64, 64, 64,  66, 66, 66 );
-
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 32, 32, 256, 256, 256 );
 
-	kernelUpScalingInterpolation __device_func__
-		( m_vectBigBuffers[DEV_DENSITY], m_vectgGrids[DEV_DENSITY],
-		64, 64, 64, 256, 256, 256, 4, 4, 4 );
+//	kernelPickData __device_func__ ( m_ptrDeviceVisual, m_vectBigBuffers[DEV_DENSITY],
+//		VOLUME_X, VOLUME_Y, VOLUME_Z );
 
-	kernelPickData __device_func__ ( m_ptrDeviceVisual, m_vectBigBuffers[DEV_DENSITY],
-		VOLUME_X, VOLUME_Y, VOLUME_Z );
 
-//	kernelPickData __device_func__ ( m_ptrDeviceVisual, m_vectgGrids[DEV_DENSITY], 
-//		VOLUME_X, VOLUME_Y, VOLUME_Z,
-//		64, 64, 64,
-//		0, 0, 0 );
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 32, 32, 128, 128, 128 );
+
+	kernelExitBullet __device_func__ ( m_vectsGrids[DEV_DENSITY], m_vectsBullets[DEV_DENSITY],
+		128, 128, 128, 130, 130, 130 );
+
+	kernelPickData __device_func__ ( m_ptrDeviceVisual, m_vectsGrids[DEV_DENSITY], 
+		VOLUME_X, VOLUME_Y, VOLUME_Z,
+		128, 128, 128,
+		1, 1, 1 );
 
 	if ( m_scHelper.GetCUDALastError( "call member function GenerVolumeImg failed", __FILE__, __LINE__ ) )
 	{
@@ -253,7 +250,7 @@ void FluidSimProc::GenerVolumeImg( void )
 #define	dev_w0   m_vectgBullets[DEV_VELOCITY_W0]
 #endif
 
-void FluidSimProc::SolveGlobalFlux()
+void FluidSimProc::SolveGlobalFlux( void )
 {
 #if 1
 	dev_den  = &m_vectgBullets[DEV_DENSITY];
@@ -278,6 +275,114 @@ void FluidSimProc::SolveGlobalFlux()
 };
 
 
+void FluidSimProc::RefinementFlux( void )
+{
+
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 32, 32, 64, 64, 64 );
+
+	kernelExitBullet __device_func__ ( m_vectgGrids[DEV_DENSITY], m_vectgBullets[DEV_DENSITY], 
+		64, 64, 64,  66, 66, 66 );
+
+	kernelExitBullet __device_func__ ( m_vectgGrids[DEV_VELOCITY_U], m_vectgBullets[DEV_VELOCITY_U], 
+		64, 64, 64,  66, 66, 66 );
+	
+	kernelExitBullet __device_func__ ( m_vectgGrids[DEV_VELOCITY_V], m_vectgBullets[DEV_VELOCITY_V], 
+		64, 64, 64,  66, 66, 66 );
+
+	kernelExitBullet __device_func__ ( m_vectgGrids[DEV_VELOCITY_W], m_vectgBullets[DEV_VELOCITY_W], 
+		64, 64, 64,  66, 66, 66 );
+
+
+	if ( m_scHelper.GetCUDALastError( "call member function GenerVolumeImg failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+
+	
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 32, 32, BIG_X, BIG_Y, BIG_Z );
+
+	kernelUpScalingInterpolation __device_func__
+		( m_vectBigBuffers[DEV_DENSITY], m_vectgGrids[DEV_DENSITY],
+		64, 64, 64, 256, 256, 256, 4, 4, 4 );
+
+	kernelUpScalingInterpolation __device_func__
+		( m_vectBigBuffers[DEV_VELOCITY_U], m_vectgGrids[DEV_VELOCITY_U],
+		64, 64, 64, 256, 256, 256, 4, 4, 4 );
+
+	kernelUpScalingInterpolation __device_func__
+		( m_vectBigBuffers[DEV_VELOCITY_V], m_vectgGrids[DEV_VELOCITY_V],
+		64, 64, 64, 256, 256, 256, 4, 4, 4 );
+
+	kernelUpScalingInterpolation __device_func__
+		( m_vectBigBuffers[DEV_VELOCITY_W], m_vectgGrids[DEV_VELOCITY_W],
+		64, 64, 64, 256, 256, 256, 4, 4, 4 );
+
+	kernelUpScalingInterpolation __device_func__
+		( m_vectBigBuffers[DEV_OBSTACLE], m_vectgGrids[DEV_OBSTACLE],
+		64, 64, 64, 256, 256, 256, 4, 4, 4 );
+
+	if ( m_scHelper.GetCUDALastError( "call member function GenerVolumeImg failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+
+
+	m_scHelper.DeviceParamDim 
+		( &gridDim, &blockDim, THREADS_S, 26, 26, sBULLET_X, sBULLET_Y, sBULLET_Z );
+
+	kernelFillBullet __device_func__ ( m_vectsBullets[DEV_DENSITY], m_vectBigBuffers[DEV_DENSITY],
+		256, 256, 256, 
+		130, 130, 130,
+		128, 128, 128,
+		1, 1, 1 );
+
+	kernelFillBullet __device_func__ ( m_vectsBullets[DEV_VELOCITY_U], m_vectBigBuffers[DEV_VELOCITY_U],
+		256, 256, 256, 
+		130, 130, 130,
+		128, 128, 128,
+		1, 1, 1 );
+
+	kernelFillBullet __device_func__ ( m_vectsBullets[DEV_VELOCITY_V], m_vectBigBuffers[DEV_VELOCITY_V],
+		256, 256, 256, 
+		130, 130, 130,
+		128, 128, 128,
+		1, 1, 1 );
+
+	kernelFillBullet __device_func__ ( m_vectsBullets[DEV_VELOCITY_W], m_vectBigBuffers[DEV_VELOCITY_W],
+		256, 256, 256, 
+		130, 130, 130,
+		128, 128, 128,
+		1, 1, 1 );
+
+	kernelFillBullet __device_func__ ( m_vectsBullets[DEV_OBSTACLE], m_vectBigBuffers[DEV_OBSTACLE],
+		256, 256, 256, 
+		130, 130, 130,
+		128, 128, 128,
+		1, 1, 1 );
+
+	if ( m_scHelper.GetCUDALastError( "call member function GenerVolumeImg failed", __FILE__, __LINE__ ) )
+	{
+		FreeResource();
+		exit(1);
+	}
+
+	dev_den  = &m_vectsBullets[DEV_DENSITY];
+	dev_u    = &m_vectsBullets[DEV_VELOCITY_U];
+	dev_v    = &m_vectsBullets[DEV_VELOCITY_V];
+	dev_w    = &m_vectsBullets[DEV_VELOCITY_W];
+	dev_p    = &m_vectsBullets[DEV_PRESSURE];
+	dev_div  = &m_vectsBullets[DEV_DIVERGENCE];
+	dev_obs  = &m_vectsBullets[DEV_OBSTACLE];
+	dev_den0 = &m_vectsBullets[DEV_DENSITY0];
+	dev_u0   = &m_vectsBullets[DEV_VELOCITY_U0];
+	dev_v0   = &m_vectsBullets[DEV_VELOCITY_V0];
+	dev_w0   = &m_vectsBullets[DEV_VELOCITY_W0];
+
+};
+
+
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( not fluid->run ) return;
@@ -286,7 +391,12 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 
 	SolveNavierStokesEquation( DELTATIME, true, true, true,
 		32, 32, gGRIDS_X, gGRIDS_Y, gGRIDS_Z, gBULLET_X, gBULLET_Y, gBULLET_Z );
+
+	RefinementFlux();
 	
+	SolveNavierStokesEquation( DELTATIME, false, true, true,
+		32, 32, sGRIDS_X, sGRIDS_Y, sGRIDS_Z, sBULLET_X, sBULLET_Y, sBULLET_Z );
+
 	GenerVolumeImg();
 
 	RefreshStatus( fluid );
