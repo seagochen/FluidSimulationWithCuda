@@ -20,6 +20,7 @@ using namespace sge;
 using std::cout;
 using std::endl;
 
+static int times = 60;
 
 FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 {
@@ -123,6 +124,19 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 		fluid->fps.uFPS     = fluid->fps.dwFrames * 1000 / fluid->fps.dwElapsedTime;
 		fluid->fps.dwFrames = 0;
 		fluid->fps.dwLastUpdateTime = fluid->fps.dwCurrentTime;
+
+#if 1
+		if ( times > 0 )
+		{
+			printf( "%d \n", fluid->fps.uFPS );
+			times--;
+		}
+		else
+		{
+			FreeResource();
+			exit(1);
+		}
+#endif
 	}
 
 	/* updating image */

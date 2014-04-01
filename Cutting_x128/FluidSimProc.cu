@@ -20,6 +20,8 @@ using namespace sge;
 using std::cout;
 using std::endl;
 
+static int times = 60;
+
 FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 {
 	/* choose which GPU to run on, change this on a multi-GPU system. */
@@ -185,6 +187,19 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 		fluid->fps.uFPS     = fluid->fps.dwFrames * 1000 / fluid->fps.dwElapsedTime;
 		fluid->fps.dwFrames = 0;
 		fluid->fps.dwLastUpdateTime = fluid->fps.dwCurrentTime;
+
+#if 1
+		if ( times > 0 )
+		{
+			printf( "%d \n", fluid->fps.uFPS );
+			times--;
+		}
+		else
+		{
+			FreeResource();
+			exit(1);
+		}
+#endif
 	}
 
 	/* updating image */
@@ -605,7 +620,7 @@ Success:
 
 	for ( int i = 0; i < 64; i++ )
 	{
-		if ( m_ptrHostSum[i] > 10.f )
+		if ( m_ptrHostSum[i] > 5.f )
 		{
 #if 0
 			printf( "%d, density: %f\n", i, m_ptrHostSum[i] );
