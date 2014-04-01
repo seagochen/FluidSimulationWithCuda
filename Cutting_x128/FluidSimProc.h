@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 24, 2014
+* <Last Time>     Apr 01, 2014
 * <File Name>     FluidSimProc.h
 */
 
@@ -37,22 +37,31 @@ namespace sge
 #define DEV_VELOCITY_V0 9
 #define DEV_VELOCITY_W0 10
 
+#define STANDARD        5
+#define EXTENDED       11
+
 	class FluidSimProc
 	{
 	private:
+		/* 指针数据 */
 		double **dev_den, **dev_u, **dev_v, **dev_w, **dev_p, **dev_div, **dev_obs,
 			**dev_den0, **dev_u0, **dev_v0, **dev_w0;
 
+		/* 各节点的 Σρ */
 		double *m_ptrDevSum, *m_ptrHostSum;
 
-		vector<double*> m_vectgGrids, m_vectgBullets;
-		vector<double*> m_vectsGrids, m_vectsBullets;
-		vector<double*> m_vectBigBuffers;
+		/* 计算网格，使用vector结构表示，以方便内存的统一管理 */
+		vector<double*> m_vectDevGlobalx, m_vectDevGlobalBx;
+		vector<double*> m_vectDevExtend;
+		vector<double*> m_vectDevSubNodex, m_vectDevSubNodeBx;
 
-		SGUCHAR *m_ptrDeviceVisual, *m_ptrHostVisual;
+		/* 体渲染的数据 */
+		SGUCHAR *m_ptrDevVisual, *m_ptrHostVisual;
 				
+		/* 调用CUDA的入口参数 */
 		dim3 gridDim, blockDim;
 
+		/* title bar */
 		string m_szTitle;
 
 	private:
@@ -83,13 +92,17 @@ namespace sge
 
 		int ix(cint i, cint j, cint k, cint tilex, cint tiley) { return k * tilex * tiley + j * tilex + i; };
 
-		void GenerVolumeImg( void );
+		void GenerateVolumeData( void );
 
+		/* 第一步，处理全局flux数据 */
 		void SolveGlobalFlux( void );
 
-		void RefinementFlux( void );
+		/* 第二步，处理局部节点的flux数据 */
+		void SolveNodeFlux( void );
 
-		void UpScalingFlux( void );
+	private:
+		/* 当第一步计算完毕后，从全局数据中采集数据并写入各节点中 */
+		void InterpolationData( void );
 
 	private:
 		void SolveNavierStokesEquation

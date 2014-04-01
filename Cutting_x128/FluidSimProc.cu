@@ -1,8 +1,8 @@
-/**
+﻿/**
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 25, 2014
+* <Last Time>     Apr 01, 2014
 * <File Name>     FluidSimProc.cu
 */
 
@@ -42,7 +42,7 @@ FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 	InitBoundary();
 
 	/* finally, print message */
-	printf( "fluid simulation ready...\n" );
+	printf( "fluid simulation ready!\n" );
 };
 
 
@@ -62,42 +62,86 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 
 void FluidSimProc::AllocateResource( void )
 {
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectgGrids,
-		GGRIDS_X * GGRIDS_Y * GGRIDS_Z * sizeof(double), STANDARD_S ) ) goto Error;
+	/* 为全局计算节点分配空间，需要创建5个： u, v, w, obstacle, density */
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectDevGlobalx, 
+		GLOBAL_X * GLOBAL_Y * GLOBAL_Z * sizeof(double), STANDARD ) ) goto VectError;
+	else
+	{
+		cout << "buffers for keeping global flux were created" << endl
+			<< "size of each is " << GLOBAL_X * GLOBAL_Y * GLOBAL_Z << " sizeof(double)" << endl
+			<< "number of vector is " << m_vectDevGlobalx.size() << endl;
+	}
 
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectgBullets,
-		GBULLET_X * GBULLET_Y * GBULLET_Z * sizeof(double), ENTIRE_S ) ) goto Error;
+	/* 为全局计算缓存分配空间，需要创建11个： u, v, w, obst, dens, u0, v0, w0, dens0, div, p */
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectDevGlobalBx,
+		GLOBAL_BX * GLOBAL_BY * GLOBAL_BZ * sizeof(double), EXTENDED ) ) goto VectError;
+	else
+	{
+		cout << "buffers for global flux computation were created" << endl
+			<< "size of each is " << GLOBAL_BX * GLOBAL_BY * GLOBAL_BZ << " sizeof(double)" << endl
+			<< "number of vector is " << m_vectDevGlobalBx.size() << endl;
+	}
 
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectBigBuffers, 
-		VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(double), STANDARD_S ) ) goto Error;
+	/* 为扩展缓存分配空间，需要创建5个： u, v, w, obstacle, density */
+	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectDevExtend,
+		EXTEND_X * EXTEND_Y * EXTEND_Z * sizeof(double), STANDARD ) ) goto VectError;
+	else
+	{
+		cout << "extended buffers for keeping global data were created" << endl
+			<< "size of each is " << EXTEND_X * EXTEND_Y * EXTEND_Z << " sizeof(doube)" << endl
+			<< "number of vector is " << m_vectDevExtend.size() << endl;
+	}
 
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectsGrids, 
-		SGRIDS_X * SGRIDS_Y * SGRIDS_Z * sizeof(double), 
-		STANDARD_S * NODES_X * NODES_Y * NODES_Z ) ) goto Error;
+	/* 为小计算节点分配空间，需要创建 5 * 4³ 个 */
+	if ( not m_scHelper.CreateCompNodesForDevice(&m_vectDevSubNodex,
+		SUBNODE_X * SUBNODE_Y * SUBNODE_Z * sizeof(double), STANDARD * 4 * 4 * 4 ) ) goto VectError;
+	else
+	{
+		cout << "buffers for sub-node were created " << endl
+			<< "size of each is " << SUBNODE_X * SUBNODE_Y * SUBNODE_Z << " sizeof(double)" << endl
+			<< "number of vector is " << m_vectDevSubNodex.size() << endl;
+	}
 
-	if ( not m_scHelper.CreateCompNodesForDevice( &m_vectsBullets, 
-		SBULLET_X * SBULLET_Y * SBULLET_Z * sizeof(double),
-		ENTIRE_S * NODES_X * NODES_Y * NODES_Z ) ) goto Error;
+	/* 为小计算缓存分配空间，需要创建 11 * 4³ */
+	if ( not m_scHelper.CreateCompNodesForDevice(&m_vectDevSubNodeBx,
+		SUBNODE_BX * SUBNODE_BY * SUBNODE_BZ * sizeof(double), EXTENDED * 4 * 4 * 4 ) ) goto VectError;
+	{
+		cout << "buffers for sub-node computation were created " << endl
+			<< "size of each is " << SUBNODE_BX * SUBNODE_BY * SUBNODE_BZ << " sizeof(double)" << endl
+			<< "number of vector is " << m_vectDevSubNodeBx.size() << endl;
+	}
 
-	m_scHelper.CreateDeviceBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR),
-		1, &m_ptrDeviceVisual );
-	
-	m_scHelper.CreateHostBuffers( VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR),
-		1, &m_ptrHostVisual );
+	goto NextStep;
 
-	m_scHelper.CreateDeviceBuffers( NODES_X * NODES_Y * NODES_Z * sizeof(double), 1, &m_ptrDevSum );
+VectError:
+		cout << "create computation buffers for device failed" << endl;
+		FreeResource();
+		exit(1);
 
-	m_scHelper.CreateHostBuffers( NODES_X * NODES_Y * NODES_Z * sizeof(double), 1, &m_ptrHostSum );
+NextStep:
 
-	goto Success;
+		/* 创建用于计算 ∑ρ 的缓存*/
+		if ( m_scHelper.CreateDeviceBuffers( sizeof(double) * 4 * 4 * 4, 1, &m_ptrDevSum ) 
+			not_eq SG_RUNTIME_OK ) goto BufsError;
+		if ( m_scHelper.CreateHostBuffers( sizeof(double) * 4 * 4 * 4, 1, &m_ptrHostSum )
+			not_eq SG_RUNTIME_OK ) goto BufsError;
 
-Error:
-		cout << "create computation buffers device failed" << endl;
+		/* 创建体渲染所需的数据 */
+		if ( m_scHelper.CreateDeviceBuffers( sizeof(uchar) * VOLUME_X * VOLUME_Y * VOLUME_Z,
+			1, &m_ptrDevVisual ) not_eq SG_RUNTIME_OK ) goto BufsError;
+		if ( m_scHelper.CreateHostBuffers( sizeof(uchar) * VOLUME_X * VOLUME_Y * VOLUME_Z,
+			1, &m_ptrHostVisual ) not_eq SG_RUNTIME_OK ) goto BufsError;
+
+		goto Success;
+
+BufsError:
+		cout << "create buffers for device or host failed" << endl;
 		FreeResource();
 		exit(1);
 
 Success:
-		;
+
+		cout << "all resource created" << endl;
 };
 
 
@@ -105,16 +149,26 @@ void FluidSimProc::FreeResource( void )
 {
 	int i;
 
-	for ( i = 0; i < m_vectgGrids.size(); i++ ) m_scHelper.FreeDeviceBuffers( 1, & m_vectgGrids[i] );
-	for ( i = 0; i < m_vectgBullets.size(); i++ ) m_scHelper.FreeDeviceBuffers( 1, &m_vectgBullets[i] );
-	for ( i = 0; i < m_vectBigBuffers.size(); i++ ) m_scHelper.FreeDeviceBuffers( 1, &m_vectBigBuffers[i] );
-	for ( i = 0; i < m_vectsGrids.size(); i++ ) m_scHelper.FreeDeviceBuffers( 1, &m_vectsGrids[i] );
-	for ( i = 0; i < m_vectsBullets.size(); i++ ) m_scHelper.FreeDeviceBuffers( 1, &m_vectsBullets[i] );
-
-	m_scHelper.FreeDeviceBuffers( 2, &m_ptrDeviceVisual,  &m_ptrDevSum );
+	/* 释放全局节点及计算缓存 */
+	for ( i = 0; i < m_vectDevGlobalx.size(); i++ ) 
+		m_scHelper.FreeDeviceBuffers( 1, &m_vectDevGlobalx[i] );
 	
-	m_scHelper.FreeHostBuffers( 2, &m_ptrHostVisual, &m_ptrHostSum );
+	for ( i = 0; i < m_vectDevGlobalBx.size(); i++ )
+		m_scHelper.FreeDeviceBuffers( 1, &m_vectDevGlobalBx[i] );
 
+	/* 释放小节点及计算缓存 */
+	for ( i = 0; i < m_vectDevSubNodex.size(); i++ )
+		m_scHelper.FreeDeviceBuffers( 1, &m_vectDevSubNodex[i] );
+	for ( i = 0; i < m_vectDevSubNodeBx.size(); i++ )
+		m_scHelper.FreeDeviceBuffers( 1, &m_vectDevSubNodeBx[i] );
+
+	/* 释放扩展缓存 */
+	for ( i = 0; i < m_vectDevExtend.size(); i++ )
+		m_scHelper.FreeDeviceBuffers( 1, &m_vectDevExtend[i] );
+
+	/* 释放其他数据 */
+	m_scHelper.FreeDeviceBuffers( 2, &m_ptrDevVisual, &m_ptrDevSum );
+	m_scHelper.FreeHostBuffers( 2, &m_ptrHostVisual, &m_ptrHostSum );
 }
 
 
@@ -142,8 +196,7 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 	}
 
 	/* updating image */
-	if ( cudaMemcpy( m_ptrHostVisual, m_ptrDeviceVisual, 
-		VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR),
+	if ( cudaMemcpy( m_ptrHostVisual, m_ptrDevVisual, VOLUME_X * VOLUME_Y * VOLUME_Z * sizeof(SGUCHAR),
 		cudaMemcpyDeviceToHost ) not_eq cudaSuccess )
 	{
 		m_scHelper.GetCUDALastError( "call member function RefreshStatus failed", __FILE__, __LINE__ );
@@ -156,200 +209,221 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 
 void FluidSimProc::ClearBuffers( void )
 {
+	/* 设定CUDA调用参数, block(32 x 32 threads), dim(128 x 128 x 128) */
+	m_scHelper.DeviceParamDim(&gridDim, &blockDim, THREADS_S, 32, 32, 128, 128, 128 );
+
+	/* 首先清理维度一样的体渲染缓存，及拓展缓存 */
+	kernelZeroBuffers __device_func__ ( m_ptrDevVisual, VOLUME_X, VOLUME_Y, VOLUME_Z );
+	
 	int i;
+	for ( i = 0; i < m_vectDevExtend.size(); i++ )
+		kernelZeroBuffers __device_func__ ( m_vectDevExtend[i], EXTEND_X, EXTEND_Y, EXTEND_Z );
 
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S,
-		NTILE_X, NTILE_Y, GGRIDS_X, GGRIDS_Y, GGRIDS_Z );
+	/* 检测这次清理是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function ClearBuffers failed",
+		__FILE__, __LINE__ ) ) goto Error;
 
-	for ( i = 0; i < m_vectgGrids.size(); i++ )
-		kernelZeroBuffers __device_func__ 
-		( m_vectgGrids[i], GGRIDS_X, GGRIDS_Y, GGRIDS_Z );
+	/* 设定CUDA调用参数, block(32 x 32 threads), dim(64 x 64 x 64) */
+	m_scHelper.DeviceParamDim(&gridDim, &blockDim, THREADS_S, 32, 32, 64, 64, 64 );
 
+	/* 然后清理一次全局计算缓存 */
+	for ( i = 0; i < m_vectDevGlobalx.size(); i++ )
+		kernelZeroBuffers __device_func__ ( m_vectDevGlobalx[i], GLOBAL_X, GLOBAL_Y, GLOBAL_Z );
 
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S,
-		GBTILE_X, GBTILE_Y, GBULLET_X, GBULLET_Y, GBULLET_Z );
+	/* 检测这次清理是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function ClearBuffers failed",
+		__FILE__, __LINE__ ) ) goto Error;
 
-	for ( i = 0; i < m_vectgBullets.size(); i++ )
-		kernelZeroBuffers __device_func__
-		( m_vectgBullets[i], GBULLET_X, GBULLET_Y, GBULLET_Z );
+	/* 设定CUDA调用参数, block(22 X 22 threads), dim(66 X 66 X 66) */
+	m_scHelper.DeviceParamDim(&gridDim, &blockDim, THREADS_S, 22, 22, 66, 66, 66 );
 
+	for ( i = 0; i < m_vectDevGlobalBx.size(); i++ )
+		kernelZeroBuffers __device_func__ ( m_vectDevGlobalBx[i], GLOBAL_BX, GLOBAL_BY, GLOBAL_BZ );
 
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 
-		NTILE_X, NTILE_Y, SGRIDS_X, SGRIDS_Y, SGRIDS_Z );
+	/* 检测这次清理是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function ClearBuffers failed",
+		__FILE__, __LINE__ ) ) goto Error;
 
-	for ( i = 0; i < m_vectsGrids.size(); i++ )
-		kernelZeroBuffers __device_func__ 
-		( m_vectsGrids[i], SGRIDS_X, SGRIDS_Y, SGRIDS_Z );
-
-
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S,
-		SBTITLE_X, SBTITLE_Y, SBULLET_X, SBULLET_Y, SBULLET_Z );
-
-	for ( i = 0; i < m_vectsBullets.size(); i++ )
-		kernelZeroBuffers __device_func__
-		( m_vectsBullets[i], SBULLET_X, SBULLET_Y, SBULLET_Z );
+	goto Success;
 
 
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S,
-		NTILE_X, NTILE_Y, VOLUME_X, VOLUME_Y, VOLUME_Z );
+Error:
+	FreeResource();
+	exit(1);
 
-	for ( i = 0; i < m_vectBigBuffers.size(); i++ )
-		kernelZeroBuffers __device_func__
-		( m_vectBigBuffers[i], VOLUME_X, VOLUME_Y, VOLUME_Z );
-
-
-	kernelZeroBuffers __device_func__
-		( m_ptrDeviceVisual, VOLUME_X, VOLUME_Y, VOLUME_Z );
-
-
-	if ( m_scHelper.GetCUDALastError( "call member function ClearBuffers failed", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit(1);
-	}
+Success:
+	cout << "call member function ClearBuffers success" << endl;
 }
 
 void FluidSimProc::InitBoundary( void )
 {
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S,
-		NTILE_X, NTILE_Y, GGRIDS_X, GGRIDS_Y, GGRIDS_Z );
+	/* 设定CUDA调用参数, block(32 x 32), dim(64 x 64 x 64) */
+	m_scHelper.DeviceParamDim(&gridDim, &blockDim, THREADS_S, 32, 32, 64, 64, 64 );
 
-	kernelSetBound __device_func__ ( m_vectgGrids[DEV_OBSTACLE], GGRIDS_X, GGRIDS_Y, GGRIDS_Z );
+	/* 调用CUDA 函数设置边界条件 */
+	kernelSetBound __device_func__ ( m_vectDevGlobalx[DEV_OBSTACLE], GLOBAL_X, GLOBAL_Y, GLOBAL_Z );
 
-	kernelLoadBullet __device_func__
-		( m_vectgBullets[DEV_OBSTACLE], m_vectgGrids[DEV_OBSTACLE], 
-		GBULLET_X, GBULLET_Y, GBULLET_Z, GGRIDS_X, GGRIDS_Y, GGRIDS_Z );
+	/* 检测调用是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function InitBoundary failed",
+		__FILE__, __LINE__ ) ) goto Error;
 
-	if ( m_scHelper.GetCUDALastError( "call member function InitBoundary failed", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit(1);
-	}
-};
+	/* 将初始条件全部压入计算缓存中，然后开始流体计算 */
+	kernelLoadBullet __device_func__ ( m_vectDevGlobalBx[DEV_DENSITY], m_vectDevGlobalx[DEV_DENSITY],
+		GLOBAL_BX, GLOBAL_BY, GLOBAL_BZ,
+		GLOBAL_X,  GLOBAL_Y,  GLOBAL_Z );
 
-void FluidSimProc::GenerVolumeImg( void )
-{
-#if 0
+	kernelLoadBullet __device_func__ ( m_vectDevGlobalBx[DEV_VELOCITY_U], m_vectDevGlobalx[DEV_VELOCITY_U],
+		GLOBAL_BX, GLOBAL_BY, GLOBAL_BZ,
+		GLOBAL_X,  GLOBAL_Y,  GLOBAL_Z );
+
+	kernelLoadBullet __device_func__ ( m_vectDevGlobalBx[DEV_VELOCITY_V], m_vectDevGlobalx[DEV_VELOCITY_V],
+		GLOBAL_BX, GLOBAL_BY, GLOBAL_BZ,
+		GLOBAL_X,  GLOBAL_Y,  GLOBAL_Z );
+
+	kernelLoadBullet __device_func__ ( m_vectDevGlobalBx[DEV_VELOCITY_W], m_vectDevGlobalx[DEV_VELOCITY_W],
+		GLOBAL_BX, GLOBAL_BY, GLOBAL_BZ,
+		GLOBAL_X,  GLOBAL_Y,  GLOBAL_Z );
+
+	kernelLoadBullet __device_func__ ( m_vectDevGlobalBx[DEV_OBSTACLE], m_vectDevGlobalx[DEV_OBSTACLE],
+		GLOBAL_BX, GLOBAL_BY, GLOBAL_BZ,
+		GLOBAL_X,  GLOBAL_Y,  GLOBAL_Z );
+
+	/* 检测调用是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function InitBoundary failed",
+		__FILE__, __LINE__ ) ) goto Error;
+
+	/* 调整CUDA参数，设置扩展缓存的边界条件，block(32 x 32), dim(128 x 128 x 128) */
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 32, 32, 128, 128, 128 );
 
-	kernelPickData __device_func__ ( m_ptrDeviceVisual, m_vectBigBuffers[DEV_DENSITY],
-		VOLUME_X, VOLUME_Y, VOLUME_Z );
-#endif
+	kernelUpScalingInterpolation __device_func__ 
+		( m_vectDevExtend[DEV_OBSTACLE], m_vectDevGlobalx[DEV_OBSTACLE], // dst, src buffers
+		GLOBAL_X, GLOBAL_Y, GLOBAL_Z,  // src dim
+		EXTEND_X, EXTEND_Y, EXTEND_Z,  // dst dim
+		2, 2, 2 );                     // zoom-up rate
 
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S,
-		NTILE_X, NTILE_Y, SGRIDS_X, SGRIDS_Y, SGRIDS_Z );
+	/* 检测调用是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function InitBoundary failed",
+		__FILE__, __LINE__ ) ) goto Error;
 
-	for ( int i = 0; i < NODES_X; i++ )
+	/* 调整CUDA参数，设置子节点的边界条件, block(34 x 17), dim(34 x 34 x 34) */
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 34, 17, 34, 34, 34 );
+
+	int ind;
+
+	for ( int k = 0; k < 4; k++ )
 	{
-		for ( int j = 0; j < NODES_Y; j++ )
+		for ( int j = 0; j < 4; j++ )
 		{
-			for ( int k = 0; k < NODES_Z; k++ )
-			{				
-				kernelPickData __device_func__ ( m_ptrDeviceVisual,
-					m_vectsGrids[ix(i,j,k,NODES_X,NODES_Y) * STANDARD_S + DEV_DENSITY],
-					VOLUME_X, VOLUME_Y, VOLUME_Z,
-					SGRIDS_X, SGRIDS_Y, SGRIDS_Z,
+			for ( int i = 0; i < 4; i++ ) 
+			{
+				ind = ix( i, j, k, 4, 4 ) * EXTENDED + DEV_OBSTACLE;
+
+				kernelFillBullet __device_func__ 
+					( m_vectDevSubNodeBx[ind], m_vectDevExtend[DEV_OBSTACLE], // dst, src,
+					EXTEND_X, EXTEND_Y, EXTEND_Z, // src dim
+					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ, // dst dim
+					SUBNODE_X, SUBNODE_Y, SUBNODE_Z, // dst grd dim
 					i, j, k );
 			}
 		}
 	}
 
-	if ( m_scHelper.GetCUDALastError( "call member function GenerVolumeImg failed", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit(1);
-	}
+	/* 检测调用是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function InitBoundary failed",
+		__FILE__, __LINE__ ) ) goto Error;
+
+	goto Success;
+
+
+Error:
+	FreeResource();
+	exit(1);
+
+Success:
+	cout << "call member function InitBoundary success" << endl;
 };
 
 
-#if 0
-#define dev_den m_vectgBullets[DEV_DENSITY]
-#define	dev_u   m_vectgBullets[DEV_VELOCITY_U]
-#define	dev_v   m_vectgBullets[DEV_VELOCITY_V]
-#define	dev_w   m_vectgBullets[DEV_VELOCITY_W]
-#define	dev_p   m_vectgBullets[DEV_PRESSURE]
-#define	dev_div m_vectgBullets[DEV_DIVERGENCE]
-#define	dev_obs m_vectgBullets[DEV_OBSTACLE]
-#define	dev_den0 m_vectgBullets[DEV_DENSITY0]
-#define	dev_u0   m_vectgBullets[DEV_VELOCITY_U0]
-#define	dev_v0   m_vectgBullets[DEV_VELOCITY_V0]
-#define	dev_w0   m_vectgBullets[DEV_VELOCITY_W0]
-#endif
+void FluidSimProc::GenerateVolumeData( void )
+{ 
+	/* 将修正后的流体信息转换为体渲染数据, 不过首先需要先修正CUDA调用参数 */
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 32, 32, 32, 32, 32 );
+
+	/* 从计算缓存中取回密度信息 */
+	int indX, indEx;
+	for ( int k = 0; k < 4; k++ )
+	{
+		for ( int j = 0; j < 4; j++ )
+		{
+			for ( int i = 0; i < 4; i++ )
+			{
+				indX  = ix( i, j, k, 4, 4 ) * STANDARD + DEV_DENSITY;
+				indEx = ix( i, j, k, 4, 4 ) * EXTENDED + DEV_DENSITY;
+
+				kernelExitBullet __device_func__ ( m_vectDevSubNodex[indX], m_vectDevSubNodeBx[indEx], 
+					SUBNODE_X,  SUBNODE_Y,  SUBNODE_Z,
+					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ );
+			}
+		}
+	}
+
+	/* 检测调用是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function GenerateVolumeData failed",
+		__FILE__, __LINE__ ) ) goto Error;
+
+
+	/* 将子节点密度数据转换为渲染所需的体数据 */
+	for ( int k = 0; k < 4; k++ )
+	{
+		for ( int j = 0; j < 4; j++ )
+		{
+			for ( int i = 0; i < 4; i++ )
+			{
+				indX = ix( i, j, k, 4, 4 ) *  STANDARD + DEV_DENSITY;
+				kernelPickData __device_func__ ( m_ptrDevVisual, m_vectDevSubNodex[indX],
+					VOLUME_X,  VOLUME_Y,  VOLUME_Z,
+					SUBNODE_X, SUBNODE_Y, SUBNODE_Z,
+					i, j, k );
+			}
+		}
+	}
+
+	/* 检测调用是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function GenerateVolumeData failed",
+		__FILE__, __LINE__ ) ) goto Error;
+
+	goto Success;
+
+Error:
+	FreeResource();
+	exit(1);
+
+Success:
+	;
+};
 
 void FluidSimProc::SolveGlobalFlux( void )
 {
-#if 1
-	dev_den  = &m_vectgBullets[DEV_DENSITY];
-	dev_u    = &m_vectgBullets[DEV_VELOCITY_U];
-	dev_v    = &m_vectgBullets[DEV_VELOCITY_V];
-	dev_w    = &m_vectgBullets[DEV_VELOCITY_W];
-	dev_p    = &m_vectgBullets[DEV_PRESSURE];
-	dev_div  = &m_vectgBullets[DEV_DIVERGENCE];
-	dev_obs  = &m_vectgBullets[DEV_OBSTACLE];
-	dev_den0 = &m_vectgBullets[DEV_DENSITY0];
-	dev_u0   = &m_vectgBullets[DEV_VELOCITY_U0];
-	dev_v0   = &m_vectgBullets[DEV_VELOCITY_V0];
-	dev_w0   = &m_vectgBullets[DEV_VELOCITY_W0];
+	/* 链接全局计算缓存 */
+	dev_den  = &m_vectDevGlobalBx[DEV_DENSITY];
+	dev_den0 = &m_vectDevGlobalBx[DEV_DENSITY0];
+	dev_u    = &m_vectDevGlobalBx[DEV_VELOCITY_U];
+	dev_v    = &m_vectDevGlobalBx[DEV_VELOCITY_V];
+	dev_w    = &m_vectDevGlobalBx[DEV_VELOCITY_W];
+	dev_u0   = &m_vectDevGlobalBx[DEV_VELOCITY_U0];
+	dev_v0   = &m_vectDevGlobalBx[DEV_VELOCITY_V0];
+	dev_w0   = &m_vectDevGlobalBx[DEV_VELOCITY_W0];
+	dev_obs  = &m_vectDevGlobalBx[DEV_OBSTACLE];
+	dev_p    = &m_vectDevGlobalBx[DEV_PRESSURE];
+	dev_div  = &m_vectDevGlobalBx[DEV_DIVERGENCE];
 
+	/* 做一次全局计算 */
+	SolveNavierStokesEquation( DELTATIME, true, true, true, 
+		32, 32, GLOBAL_X, GLOBAL_Y, GLOBAL_Z, GLOBAL_BX, GLOBAL_BY, GLOBAL_BZ );
 
-	if ( m_scHelper.GetCUDALastError( "call member function SolveGlobalFlux failed", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit(1);
-	}
-#endif
-};
-
-
-void FluidSimProc::UpScalingFlux( void )
-{
-
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, NTILE_X, NTILE_Y, GGRIDS_X, GGRIDS_Y, GGRIDS_Z );
-
-	kernelExitBullet __device_func__ ( m_vectgGrids[DEV_DENSITY], m_vectgBullets[DEV_DENSITY], 
-		GGRIDS_X, GGRIDS_Y, GGRIDS_Z,  GBULLET_X, GBULLET_Y, GBULLET_Z );
-
-	kernelExitBullet __device_func__ ( m_vectgGrids[DEV_VELOCITY_U], m_vectgBullets[DEV_VELOCITY_U], 
-		GGRIDS_X, GGRIDS_Y, GGRIDS_Z,  GBULLET_X, GBULLET_Y, GBULLET_Z );
-	
-	kernelExitBullet __device_func__ ( m_vectgGrids[DEV_VELOCITY_V], m_vectgBullets[DEV_VELOCITY_V], 
-		GGRIDS_X, GGRIDS_Y, GGRIDS_Z,  GBULLET_X, GBULLET_Y, GBULLET_Z );
-
-	kernelExitBullet __device_func__ ( m_vectgGrids[DEV_VELOCITY_W], m_vectgBullets[DEV_VELOCITY_W], 
-		GGRIDS_X, GGRIDS_Y, GGRIDS_Z,  GBULLET_X, GBULLET_Y, GBULLET_Z );
-
-
-	if ( m_scHelper.GetCUDALastError( "call member function GenerVolumeImg failed", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit(1);
-	}
-
-	
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 
-		NTILE_X, NTILE_Y, VOLUME_X, VOLUME_Y, VOLUME_Z );
-
-	kernelUpScalingInterpolation __device_func__
-		( m_vectBigBuffers[DEV_DENSITY], m_vectgGrids[DEV_DENSITY],
-		GGRIDS_X, GGRIDS_Y, GGRIDS_Z, VOLUME_X, VOLUME_Y, VOLUME_Z, 2, 2, 2 );
-
-	kernelUpScalingInterpolation __device_func__
-		( m_vectBigBuffers[DEV_VELOCITY_U], m_vectgGrids[DEV_VELOCITY_U],
-		GGRIDS_X, GGRIDS_Y, GGRIDS_Z, VOLUME_X, VOLUME_Y, VOLUME_Z, 2, 2, 2 );
-
-	kernelUpScalingInterpolation __device_func__
-		( m_vectBigBuffers[DEV_VELOCITY_V], m_vectgGrids[DEV_VELOCITY_V],
-		GGRIDS_X, GGRIDS_Y, GGRIDS_Z, VOLUME_X, VOLUME_Y, VOLUME_Z, 2, 2, 2 );
-
-	kernelUpScalingInterpolation __device_func__
-		( m_vectBigBuffers[DEV_VELOCITY_W], m_vectgGrids[DEV_VELOCITY_W],
-		GGRIDS_X, GGRIDS_Y, GGRIDS_Z, VOLUME_X, VOLUME_Y, VOLUME_Z, 2, 2, 2 );
-
-	kernelUpScalingInterpolation __device_func__
-		( m_vectBigBuffers[DEV_OBSTACLE], m_vectgGrids[DEV_OBSTACLE],
-		GGRIDS_X, GGRIDS_Y, GGRIDS_Z, VOLUME_X, VOLUME_Y, VOLUME_Z, 2, 2, 2 );
-
-	if ( m_scHelper.GetCUDALastError( "call member function GenerVolumeImg failed", __FILE__, __LINE__ ) )
+	/* 检测计算是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function SolveGlobalFlux failed",
+		__FILE__, __LINE__ ) )
 	{
 		FreeResource();
 		exit(1);
@@ -357,118 +431,137 @@ void FluidSimProc::UpScalingFlux( void )
 };
 
 
-void FluidSimProc::RefinementFlux( void )
+/* 当第一步计算完毕后，从全局数据中采集数据并写入各节点中 */
+void FluidSimProc::InterpolationData( void )
 {
-#if 1
-	/* �ҳ��ܶ����Ĺ��c */
+	/* 从全局缓存中取出数据，需要调整参数block(32 x 32), dim(64 x 64 x 64) */
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 32, 32, 64, 64, 64 );
 
-	kernelZeroBuffers <<< 1, 64 >>> ( m_ptrDevSum, 64 );
+	/* 数据退出计算缓存 */
+	kernelExitBullet __device_func__ ( m_vectDevGlobalx[DEV_DENSITY], m_vectDevGlobalBx[DEV_DENSITY],
+		GLOBAL_X,  GLOBAL_Y,  GLOBAL_Z,
+		GLOBAL_BX, GLOBAL_BY, GLOBAL_BZ );
 
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, NTILE_X, NTILE_Y, SGRIDS_X, SGRIDS_Y, SGRIDS_Z );
+	kernelExitBullet __device_func__ ( m_vectDevGlobalx[DEV_VELOCITY_U], m_vectDevGlobalBx[DEV_VELOCITY_U],
+		GLOBAL_X,  GLOBAL_Y,  GLOBAL_Z,
+		GLOBAL_BX, GLOBAL_BY, GLOBAL_BZ );
 
-	for ( int k = 0; k < NODES_Z; k++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int i = 0; i < NODES_X; i++ )
+	kernelExitBullet __device_func__ ( m_vectDevGlobalx[DEV_VELOCITY_V], m_vectDevGlobalBx[DEV_VELOCITY_V],
+		GLOBAL_X,  GLOBAL_Y,  GLOBAL_Z,
+		GLOBAL_BX, GLOBAL_BY, GLOBAL_BZ );
+
+	kernelExitBullet __device_func__ ( m_vectDevGlobalx[DEV_VELOCITY_W], m_vectDevGlobalBx[DEV_VELOCITY_W],
+		GLOBAL_X,  GLOBAL_Y,  GLOBAL_Z,
+		GLOBAL_BX, GLOBAL_BY, GLOBAL_BZ );
+
+	/* 检测计算是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function SolveGlobalFlux failed",
+		__FILE__, __LINE__ ) ) goto Error;
+
+
+
+	/* 调整CUDA 参数，将全局数据采集至扩展缓存中, block(32 x 32), dim(128 x 128 x 128) */
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 32, 32, 128, 128, 128 );
+
+	/* 采集数据至扩展缓存 */
+	kernelUpScalingInterpolation __device_func__ 
+		( m_vectDevExtend[DEV_DENSITY], m_vectDevGlobalx[DEV_DENSITY], // dst, src buffers
+		GLOBAL_X, GLOBAL_Y, GLOBAL_Z,  // src dim
+		EXTEND_X, EXTEND_Y, EXTEND_Z,  // dst dim
+		2, 2, 2 );                     // zoom-up rate
+
+	kernelUpScalingInterpolation __device_func__ 
+		( m_vectDevExtend[DEV_VELOCITY_U], m_vectDevGlobalx[DEV_VELOCITY_U], // dst, src buffers
+		GLOBAL_X, GLOBAL_Y, GLOBAL_Z,  // src dim
+		EXTEND_X, EXTEND_Y, EXTEND_Z,  // dst dim
+		2, 2, 2 );                     // zoom-up rate
+
+	kernelUpScalingInterpolation __device_func__ 
+		( m_vectDevExtend[DEV_VELOCITY_V], m_vectDevGlobalx[DEV_VELOCITY_V], // dst, src buffers
+		GLOBAL_X, GLOBAL_Y, GLOBAL_Z,  // src dim
+		EXTEND_X, EXTEND_Y, EXTEND_Z,  // dst dim
+		2, 2, 2 );                     // zoom-up rate
+
+	kernelUpScalingInterpolation __device_func__ 
+		( m_vectDevExtend[DEV_VELOCITY_W], m_vectDevGlobalx[DEV_VELOCITY_W], // dst, src buffers
+		GLOBAL_X, GLOBAL_Y, GLOBAL_Z,  // src dim
+		EXTEND_X, EXTEND_Y, EXTEND_Z,  // dst dim
+		2, 2, 2 );                     // zoom-up rate
+
+	/* 检测计算是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function SolveGlobalFlux failed",
+		__FILE__, __LINE__ ) ) goto Error;
+
+
+
+	/* 调整CUDA参数，将拓展缓存的数据转换为节点数据，并存入子计算缓存。*/
+	/* 设置的CUDA参数为，block(34 x 17), dim(34 x 34 x 34) */
+	
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 34, 17, 34, 34, 34 );
+	
+	int indDens, indVelU, indVelV, indVelW;
+	for ( int k = 0; k < 4; k++ )
 	{
-		kernelDeassembleCompBufs __device_func__ ( 
-			m_vectsGrids[ix(i,j,k,NODES_X,NODES_Y) * STANDARD_S + DEV_DENSITY],
-			m_vectBigBuffers[DEV_DENSITY], 
-			VOLUME_X, VOLUME_Y, VOLUME_Z,
-			SGRIDS_X, SGRIDS_Y, SGRIDS_Z,
-			i, j, k );
-
-		kernelSumDensity __device_func__ ( 
-			m_ptrDevSum,
-			m_vectsGrids[ix(i,j,k,NODES_X,NODES_Y) * STANDARD_S + DEV_DENSITY], 
-			ix(i,j,k,NODES_X,NODES_Y),
-			SGRIDS_X, SGRIDS_Y, SGRIDS_Z );
-	}
-
-	cudaMemcpy( m_ptrHostSum, m_ptrDevSum, 
-		sizeof(double) * NODES_X * NODES_Y * NODES_Z, cudaMemcpyDeviceToHost );
-
-	if ( m_scHelper.GetCUDALastError( "call member function GenerVolumeImg failed", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit(1);
-	}
-
-#else
-
-	/* �ҵ����ܶ����Ĺ��c */
-//	int no = MaxDensity( m_ptrHostSum, 8 );
-
-	/* ����Ӌ���_ʼǰ��������һ��bullet */
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 22, 22, 66, 66, 66 );
-	for ( int i = 0; i < m_vectsBullets.size(); i++ )
-		kernelZeroBuffers __device_func__ ( m_vectsBullets[i], 66, 66, 66 );
-#endif
-		
-/*	for ( int k = 0; k < NODES_Z; k++ ) for ( int j = 0; j < NODES_Y; j++ ) for ( int i = 0; i < NODES_X; i++ )
-	{
-
-		if ( m_ptrHostSum[ix(i,j,k,NODES_X,NODES_Y)] > 15.f )
+		for ( int j = 0; j < 4; j++ )
 		{
-			m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 
-				SBTITLE_X, SBTITLE_Y, SBULLET_X, SBULLET_Y, SBULLET_Z );
+			for ( int i = 0; i < 4; i++ )
+			{
+				indDens = ix(i, j, k, 4, 4) * EXTENDED + DEV_DENSITY;
+				indVelU = ix(i, j, k, 4, 4) * EXTENDED + DEV_VELOCITY_U;
+				indVelV = ix(i, j, k, 4, 4) * EXTENDED + DEV_VELOCITY_V;
+				indVelW = ix(i, j, k, 4, 4) * EXTENDED + DEV_VELOCITY_W;
 
-			kernelFillBullet __device_func__ (
-				m_vectsBullets[DEV_DENSITY + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S], 
-				m_vectBigBuffers[DEV_DENSITY],
-				VOLUME_X, VOLUME_Y, VOLUME_Z, 
-				SBULLET_X, SBULLET_Y, SBULLET_Z,
-				SGRIDS_X, SGRIDS_Y, SGRIDS_Z,
-				i,   j,   k );
+				kernelFillBullet __device_func__ 
+					( m_vectDevSubNodeBx[indDens], m_vectDevExtend[DEV_DENSITY], // DST, SRC
+					EXTEND_X, EXTEND_Y, EXTEND_Z, // src dim
+					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ, // dst dim
+					SUBNODE_X, SUBNODE_Y, SUBNODE_Z, // dst grd dim
+					i, j, k ); // offset
 
-			kernelFillBullet __device_func__ (
-				m_vectsBullets[DEV_VELOCITY_U + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S],
-				m_vectBigBuffers[DEV_VELOCITY_U],
-				VOLUME_X, VOLUME_Y, VOLUME_Z, 
-				SBULLET_X, SBULLET_Y, SBULLET_Z,
-				SGRIDS_X, SGRIDS_Y, SGRIDS_Z,
-				i,   j,   k );
+				kernelFillBullet __device_func__ 
+					( m_vectDevSubNodeBx[indVelU], m_vectDevExtend[DEV_VELOCITY_U], // DST, SRC
+					EXTEND_X, EXTEND_Y, EXTEND_Z, // src dim
+					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ, // dst dim
+					SUBNODE_X, SUBNODE_Y, SUBNODE_Z, // dst grd dim
+					i, j, k ); // offset
 
+				kernelFillBullet __device_func__ 
+					( m_vectDevSubNodeBx[indVelV], m_vectDevExtend[DEV_VELOCITY_V], // DST, SRC
+					EXTEND_X, EXTEND_Y, EXTEND_Z, // src dim
+					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ, // dst dim
+					SUBNODE_X, SUBNODE_Y, SUBNODE_Z, // dst grd dim
+					i, j, k ); // offset
 
-			kernelFillBullet __device_func__ ( 
-				m_vectsBullets[DEV_VELOCITY_V + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S], 
-				m_vectBigBuffers[DEV_VELOCITY_V],
-				VOLUME_X, VOLUME_Y, VOLUME_Z, 
-				SBULLET_X, SBULLET_Y, SBULLET_Z,
-				SGRIDS_X, SGRIDS_Y, SGRIDS_Z,
-				i,   j,   k );
-
-
-			kernelFillBullet __device_func__ (
-				m_vectsBullets[DEV_VELOCITY_W + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S], 
-				m_vectBigBuffers[DEV_VELOCITY_W],
-				VOLUME_X, VOLUME_Y, VOLUME_Z, 
-				SBULLET_X, SBULLET_Y, SBULLET_Z,
-				SGRIDS_X, SGRIDS_Y, SGRIDS_Z,
-				i,   j,   k );
-
-			dev_den  = &m_vectsBullets[DEV_DENSITY     + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S];
-			dev_u    = &m_vectsBullets[DEV_VELOCITY_U  + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S];
-			dev_v    = &m_vectsBullets[DEV_VELOCITY_V  + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S];
-			dev_w    = &m_vectsBullets[DEV_VELOCITY_W  + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S];
-			dev_p    = &m_vectsBullets[DEV_PRESSURE    + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S];
-			dev_div  = &m_vectsBullets[DEV_DIVERGENCE  + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S];
-			dev_obs  = &m_vectsBullets[DEV_OBSTACLE    + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S];
-			dev_den0 = &m_vectsBullets[DEV_DENSITY0    + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S];
-			dev_u0   = &m_vectsBullets[DEV_VELOCITY_U0 + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S];
-			dev_v0   = &m_vectsBullets[DEV_VELOCITY_V0 + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S];
-			dev_w0   = &m_vectsBullets[DEV_VELOCITY_W0 + ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S];
-
-			SolveNavierStokesEquation( DELTATIME, false, true, true,
-				NTILE_X, NTILE_Y, SGRIDS_X, SGRIDS_Y, SGRIDS_Z, SBULLET_X, SBULLET_Y, SBULLET_Z );
-
-			m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, NTILE_X, NTILE_Y, SGRIDS_X, SGRIDS_Y, SGRIDS_Z );
-
-			kernelExitBullet __device_func__
-				( m_vectsGrids[ix(i,j,k,NODES_X,NODES_Y) * STANDARD_S + DEV_DENSITY],
-				m_vectsBullets[ix(i,j,k,NODES_X,NODES_Y) * ENTIRE_S],
-				SGRIDS_X, SGRIDS_Y, SGRIDS_Z,
-				SBULLET_X, SBULLET_Y, SBULLET_Z );
+				kernelFillBullet __device_func__ 
+					( m_vectDevSubNodeBx[indVelW], m_vectDevExtend[DEV_VELOCITY_W], // DST, SRC
+					EXTEND_X, EXTEND_Y, EXTEND_Z, // src dim
+					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ, // dst dim
+					SUBNODE_X, SUBNODE_Y, SUBNODE_Z, // dst grd dim
+					i, j, k ); // offset
+			}
 		}
 	}
-	*/
+
+	/* 检测计算是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function SolveGlobalFlux failed",
+		__FILE__, __LINE__ ) ) goto Error;
+
+	goto Success;
+
+Error:
+
+	FreeResource();
+	exit(1);
+
+Success:
+	;
+};
+
+
+void FluidSimProc::SolveNodeFlux( void )
+{
+	/* 采集数据，并写入各节点中 */
+	InterpolationData();
 };
 
 
@@ -477,179 +570,7 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 	if ( not fluid->run ) return;
 
 	SolveGlobalFlux();
-
-	SolveNavierStokesEquation( DELTATIME, true, true, true,
-		NTILE_X, NTILE_Y, 
-		SGRIDS_X, SGRIDS_Y, SGRIDS_Z,
-		SBULLET_X, SBULLET_Y, SBULLET_Z );
-
-	UpScalingFlux();
-
-	RefinementFlux();
-
-	GenerVolumeImg();
-
+	SolveNodeFlux();
+	GenerateVolumeData();
 	RefreshStatus( fluid );
-};
-
-
-void FluidSimProc::SolveNavierStokesEquation
-			( cdouble dt, bool add, bool vel, bool den,
-			cint tx, cint ty,
-			cint gx, cint gy, cint gz,
-			cint bx, cint by, cint bz )
-{
-	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, tx, ty, gx, gy, gz );
-
-#if 0
-	double *ptr;
-	m_scHelper.CreateHostBuffers( gBULLET_X * gBULLET_Y * gBULLET_Z * sizeof(double), 1, &ptr );
-
-//	cudaMemcpy( ptr, dev_den, gBULLET_X * gBULLET_Y * gBULLET_Z * sizeof(double), cudaMemcpyDeviceToHost );
-//
-//	for ( int j = 0; j < gBULLET_Y; j++ )
-//	{
-//		for ( int k = 0; k < gBULLET_Z; k++ )
-//		{
-//			for ( int i = 0; i < gBULLET_X; i++ )
-//			{
-//				printf( "%d ", (int)ptr[ix(i,j,k,gBULLET_X,gBULLET_Y)] );
-//			}
-//			printf("\n");
-//		}
-//		printf("\n");
-//	}
-
-	cout << "----------------------------------------------------------------------" << endl;
-
-#endif
-
-	if (add) SourceSolver( dt, bx, by, bz );
-	if (vel) VelocitySolver( dt, bx, by, bz );
-	if (den) DensitySolver( dt, bx, by, bz );
-
-
-#if 0
-
-	cudaMemcpy( ptr, dev_p, gBULLET_X * gBULLET_Y * gBULLET_Z * sizeof(double), cudaMemcpyDeviceToHost );
-
-	for ( int j = 0; j < gBULLET_Y; j++ )
-	{
-		for ( int k = 0; k < gBULLET_Z; k++ )
-		{
-			for ( int i = 0; i < gBULLET_X; i++ )
-			{
-				printf( "%f ", ptr[ix(i,j,k,gBULLET_X,gBULLET_Y)] );
-			}
-			printf("\n");
-		}
-		printf("\n");
-	}
-
-	free(ptr);
-	FreeResource();
-	exit(0);
-
-#endif
-};
-
-
-void FluidSimProc::SourceSolver( cdouble dt, cint bx, cint by, cint bz )
-{
-	kernelAddSource __device_func__
-		( *dev_den, *dev_v, bx, by, bz, 
-			*dev_obs, dt, (double)(rand() % 300 + 1) / 100.f );
-};
-
-
-void FluidSimProc::VelocitySolver( cdouble dt, cint bx, cint by, cint bz )
-{
-	// diffuse the velocity field (per axis):
-	Diffusion( *dev_u0, *dev_u, VISOCITY, bx, by, bz );
-	Diffusion( *dev_v0, *dev_v, VISOCITY, bx, by, bz );
-	Diffusion( *dev_w0, *dev_w, VISOCITY, bx, by, bz );
-	
-	if ( m_scHelper.GetCUDALastError( "host function failed: Diffusion", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit( 1 );
-	}
-
-	std::swap( *dev_u0, *dev_u );
-	std::swap( *dev_v0, *dev_v );
-	std::swap( *dev_w0, *dev_w );
-
-	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	Projection( *dev_u, *dev_v, *dev_w, *dev_div, *dev_p, bx, by, bz );
-
-	if ( m_scHelper.GetCUDALastError( "host function failed: Projection", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit( 1 );
-	}
-	
-	// advect the velocity field (per axis):
-	Advection( *dev_u0, *dev_u, *dev_u, *dev_v, *dev_w, dt, bx, by, bz );
-	Advection( *dev_v0, *dev_v, *dev_u, *dev_v, *dev_w, dt, bx, by, bz );
-	Advection( *dev_w0, *dev_w, *dev_u, *dev_v, *dev_w, dt, bx, by, bz );
-
-	if ( m_scHelper.GetCUDALastError( "host function failed: Advection", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit( 1 );
-	}
-
-	std::swap( *dev_u0, *dev_u );
-	std::swap( *dev_v0, *dev_v );
-	std::swap( *dev_w0, *dev_w );
-	
-	// stabilize it: (vx0, vy0 are whatever, being used as temporaries to store gradient field)
-	Projection( *dev_u, *dev_v, *dev_w, *dev_div, *dev_p, bx, by, bz );
-};
-
-
-void FluidSimProc::DensitySolver( cdouble dt, cint bx, cint by, cint bz )
-{
-	Diffusion( *dev_den0, *dev_den, DIFFUSION, bx, by, bz );
-	std::swap( *dev_den0, *dev_den );
-	Advection( *dev_den, *dev_den0, *dev_u, *dev_v, *dev_w, dt, bx, by, bz );
-
-	if ( m_scHelper.GetCUDALastError( "host function failed: DensitySolver", __FILE__, __LINE__ ) )
-	{
-		FreeResource();
-		exit( 1 );
-	}
-};
-
-
-void FluidSimProc::Jacobi
-	( double *out, cdouble *in, cdouble diff, cdouble divisor, cint bx, cint by, cint bz )
-{
-	for ( int k=0; k<20; k++)
-		kernelJacobi __device_func__ ( out, in, bx, by, bz, diff, divisor );
-};
-
-void FluidSimProc::Advection
-	( double *out, cdouble *in, cdouble *u, cdouble *v, cdouble *w, cdouble dt, cint bx, cint by, cint bz )
-{	
-	kernelAdvection __device_func__ ( out, in, bx, by, bz, dt, u, v, w );
-};
-
-void FluidSimProc::Diffusion( double *out, cdouble *in, cdouble diff, cint bx, cint by, cint bz )
-{
-	double rate = diff * bx * by * bz;
-	Jacobi( out, in, rate, 1+6*rate, bx, by, bz );
-};
-
-void FluidSimProc::Projection
-	( double *u, double *v, double *w, double *div, double *p, cint bx, cint by, cint bz )
-{
-	// the velocity gradient
-	kernelGradient __device_func__ ( div, p, bx, by, bz, u, v, w );
-
-	// reuse the Gauss-Seidel relaxation solver to safely diffuse the velocity gradients from p to div
-	Jacobi(p, div, 1.f, 6.f, bx, by, bz);
-
-	// now subtract this gradient from our current velocity field
-	kernelSubtract __device_func__ ( u, v, w, p, bx, by, bz );
 };

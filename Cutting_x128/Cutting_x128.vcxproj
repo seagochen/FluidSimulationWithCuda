@@ -36,6 +36,7 @@
   <ItemGroup>
     <CudaCompile Include="FluidSimProc.cu" />
     <CudaCompile Include="Kernels.cu" />
+    <CudaCompile Include="SolveNavierStokeEq.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Cutting_x128.rc" />

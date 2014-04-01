@@ -55,6 +55,9 @@
     <CudaCompile Include="Kernels.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
+    <CudaCompile Include="SolveNavierStokeEq.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Cutting_x128.rc">
