@@ -20,6 +20,7 @@ using namespace sge;
 using std::cout;
 using std::endl;
 
+static int times = 60;
 
 FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 {
@@ -123,6 +124,19 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 		fluid->fps.uFPS     = fluid->fps.dwFrames * 1000 / fluid->fps.dwElapsedTime;
 		fluid->fps.dwFrames = 0;
 		fluid->fps.dwLastUpdateTime = fluid->fps.dwCurrentTime;
+
+#if 1
+		if ( times > 0 )
+		{
+			printf( "%d \n", fluid->fps.uFPS );
+			times--;
+		}
+		else
+		{
+			FreeResource();
+			exit(1);
+		}
+#endif
 	}
 
 	/* updating image */
@@ -153,14 +167,6 @@ void FluidSimProc::GenerVolumeImg( void )
 	kernelExitBullet __device_func__
 		( comp_den, dev_den, GRIDS_X, GRIDS_Y, GRIDS_Z, BULLET_X, BULLET_Y, BULLET_Z );
 
-//	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, TILE_X, TILE_Y, VOLUME_X, VOLUME_Y, VOLUME_Z );
-//	kernelUpScalingInterpolation __device_func__ ( big_den, comp_den, 
-//		GRIDS_X, GRIDS_Y, GRIDS_Z, 
-//		VOLUME_X, VOLUME_Y, VOLUME_Z,
-//		2, 2, 2 );
-//
-//	kernelPickData __device_func__ ( m_ptrDeviceVisual, VOLUME_X, VOLUME_Y, VOLUME_Z,
-//		big_den, VOLUME_X, VOLUME_Y, VOLUME_Z, 0, 0, 0, 1.f, 1.f, 1.f );
 	kernelPickData __device_func__ ( m_ptrDeviceVisual, comp_den, VOLUME_X, VOLUME_Y, VOLUME_Z );
 };
 

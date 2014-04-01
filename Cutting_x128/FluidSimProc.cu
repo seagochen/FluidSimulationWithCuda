@@ -20,6 +20,8 @@ using namespace sge;
 using std::cout;
 using std::endl;
 
+static int times = 60;
+
 FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 {
 	/* choose which GPU to run on, change this on a multi-GPU system. */
@@ -121,10 +123,10 @@ VectError:
 NextStep:
 
 		/* 创建用于计算 ∑ρ 的缓存*/
-		if ( m_scHelper.CreateDeviceBuffers( sizeof(double) * 4 * 4 * 4, 1, &m_ptrDevSum ) 
-			not_eq SG_RUNTIME_OK ) goto BufsError;
-		if ( m_scHelper.CreateHostBuffers( sizeof(double) * 4 * 4 * 4, 1, &m_ptrHostSum )
-			not_eq SG_RUNTIME_OK ) goto BufsError;
+		if ( m_scHelper.CreateDeviceBuffers( sizeof(double) * 4 * 4 * 4,
+			1, &m_ptrDevSum ) not_eq SG_RUNTIME_OK ) goto BufsError;
+		if ( m_scHelper.CreateHostBuffers( sizeof(double) * 4 * 4 * 4, 
+			1, &m_ptrHostSum ) not_eq SG_RUNTIME_OK ) goto BufsError;
 
 		/* 创建体渲染所需的数据 */
 		if ( m_scHelper.CreateDeviceBuffers( sizeof(uchar) * VOLUME_X * VOLUME_Y * VOLUME_Z,
@@ -174,14 +176,6 @@ void FluidSimProc::FreeResource( void )
 
 void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 {
-	/* waiting for all kernels end */
-	if ( cudaThreadSynchronize() not_eq cudaSuccess )
-	{
-		printf( "cudaThreadSynchronize failed\n" );
-		FreeResource();
-		exit( 1 );
-	}
-
 	/* counting FPS */
 	fluid->fps.dwFrames ++;
 	fluid->fps.dwCurrentTime = GetTickCount();
@@ -193,6 +187,19 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 		fluid->fps.uFPS     = fluid->fps.dwFrames * 1000 / fluid->fps.dwElapsedTime;
 		fluid->fps.dwFrames = 0;
 		fluid->fps.dwLastUpdateTime = fluid->fps.dwCurrentTime;
+
+#if 1
+		if ( times > 0 )
+		{
+			printf( "%d \n", fluid->fps.uFPS );
+			times--;
+		}
+		else
+		{
+			FreeResource();
+			exit(1);
+		}
+#endif
 	}
 
 	/* updating image */
@@ -243,6 +250,13 @@ void FluidSimProc::ClearBuffers( void )
 	/* 检测这次清理是否产生了错误 */
 	if ( m_scHelper.GetCUDALastError( "call member function ClearBuffers failed",
 		__FILE__, __LINE__ ) ) goto Error;
+
+	/* 清理节点的计算缓存 */
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 34, 17, 34, 34, 34 );
+
+	for ( int i = 0; i < m_vectDevSubNodeBx.size(); i++ )
+		kernelZeroBuffers __device_func__ ( m_vectDevSubNodeBx[i], SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ );
+
 
 	goto Success;
 
@@ -323,7 +337,7 @@ void FluidSimProc::InitBoundary( void )
 					EXTEND_X, EXTEND_Y, EXTEND_Z, // src dim
 					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ, // dst dim
 					SUBNODE_X, SUBNODE_Y, SUBNODE_Z, // dst grd dim
-					i, j, k );
+					i, j, k ); // offset
 			}
 		}
 	}
@@ -346,6 +360,14 @@ Success:
 
 void FluidSimProc::GenerateVolumeData( void )
 { 
+	/* waiting for all kernels end */
+	if ( cudaThreadSynchronize() not_eq cudaSuccess )
+	{
+		printf( "cudaThreadSynchronize failed\n" );
+		FreeResource();
+		exit( 1 );
+	}
+
 	/* 将修正后的流体信息转换为体渲染数据, 不过首先需要先修正CUDA调用参数 */
 	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 32, 32, 32, 32, 32 );
 
@@ -360,9 +382,10 @@ void FluidSimProc::GenerateVolumeData( void )
 				indX  = ix( i, j, k, 4, 4 ) * STANDARD + DEV_DENSITY;
 				indEx = ix( i, j, k, 4, 4 ) * EXTENDED + DEV_DENSITY;
 
-				kernelExitBullet __device_func__ ( m_vectDevSubNodex[indX], m_vectDevSubNodeBx[indEx], 
-					SUBNODE_X,  SUBNODE_Y,  SUBNODE_Z,
-					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ );
+				kernelExitBullet __device_func__ (
+					m_vectDevSubNodex[indX], m_vectDevSubNodeBx[indEx], // dst, src
+					SUBNODE_X,  SUBNODE_Y,  SUBNODE_Z, // dst dim
+					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ ); // src dim
 			}
 		}
 	}
@@ -380,10 +403,11 @@ void FluidSimProc::GenerateVolumeData( void )
 			for ( int i = 0; i < 4; i++ )
 			{
 				indX = ix( i, j, k, 4, 4 ) *  STANDARD + DEV_DENSITY;
-				kernelPickData __device_func__ ( m_ptrDevVisual, m_vectDevSubNodex[indX],
-					VOLUME_X,  VOLUME_Y,  VOLUME_Z,
-					SUBNODE_X, SUBNODE_Y, SUBNODE_Z,
-					i, j, k );
+				kernelPickData __device_func__ ( 
+					m_ptrDevVisual, m_vectDevSubNodex[indX], // dst, src
+					VOLUME_X,  VOLUME_Y,  VOLUME_Z, // src dim
+					SUBNODE_X, SUBNODE_Y, SUBNODE_Z, // dst dim
+					i, j, k ); // offset
 			}
 		}
 	}
@@ -512,28 +536,28 @@ void FluidSimProc::InterpolationData( void )
 				indVelW = ix(i, j, k, 4, 4) * EXTENDED + DEV_VELOCITY_W;
 
 				kernelFillBullet __device_func__ 
-					( m_vectDevSubNodeBx[indDens], m_vectDevExtend[DEV_DENSITY], // DST, SRC
+					( m_vectDevSubNodeBx[indDens], m_vectDevExtend[DEV_DENSITY], // dst, src
 					EXTEND_X, EXTEND_Y, EXTEND_Z, // src dim
 					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ, // dst dim
 					SUBNODE_X, SUBNODE_Y, SUBNODE_Z, // dst grd dim
 					i, j, k ); // offset
 
 				kernelFillBullet __device_func__ 
-					( m_vectDevSubNodeBx[indVelU], m_vectDevExtend[DEV_VELOCITY_U], // DST, SRC
+					( m_vectDevSubNodeBx[indVelU], m_vectDevExtend[DEV_VELOCITY_U], // dst, src
 					EXTEND_X, EXTEND_Y, EXTEND_Z, // src dim
 					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ, // dst dim
 					SUBNODE_X, SUBNODE_Y, SUBNODE_Z, // dst grd dim
 					i, j, k ); // offset
 
 				kernelFillBullet __device_func__ 
-					( m_vectDevSubNodeBx[indVelV], m_vectDevExtend[DEV_VELOCITY_V], // DST, SRC
+					( m_vectDevSubNodeBx[indVelV], m_vectDevExtend[DEV_VELOCITY_V], // dst, src
 					EXTEND_X, EXTEND_Y, EXTEND_Z, // src dim
 					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ, // dst dim
 					SUBNODE_X, SUBNODE_Y, SUBNODE_Z, // dst grd dim
 					i, j, k ); // offset
 
 				kernelFillBullet __device_func__ 
-					( m_vectDevSubNodeBx[indVelW], m_vectDevExtend[DEV_VELOCITY_W], // DST, SRC
+					( m_vectDevSubNodeBx[indVelW], m_vectDevExtend[DEV_VELOCITY_W], // dst, src
 					EXTEND_X, EXTEND_Y, EXTEND_Z, // src dim
 					SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ, // dst dim
 					SUBNODE_X, SUBNODE_Y, SUBNODE_Z, // dst grd dim
@@ -562,6 +586,71 @@ void FluidSimProc::SolveNodeFlux( void )
 {
 	/* 采集数据，并写入各节点中 */
 	InterpolationData();
+
+	/* 清理∑缓存 */
+	kernelZeroBuffers <<< 1, 64 >>> ( m_ptrDevSum, 64 );
+
+	/* 计算各子节点缓存的∑值 */
+	m_scHelper.DeviceParamDim( &gridDim, &blockDim, THREADS_S, 34, 17, 34, 34, 34 );
+	for ( int i = 0; i < 64; i++ )
+	{
+		kernelSumDensity __device_func__ 
+			( m_ptrDevSum, m_vectDevSubNodeBx[i * EXTENDED + DEV_DENSITY], 
+			i, SUBNODE_BX, SUBNODE_BY, SUBNODE_BZ );
+	}
+
+	cudaMemcpy( m_ptrHostSum, m_ptrDevSum, sizeof(double) * 64, cudaMemcpyDeviceToHost );
+
+	/* 检测上次调用是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function SolveNodeFlux failed", 
+		__FILE__, __LINE__ ) ) goto Error;
+
+	goto Success;
+
+Error:
+	FreeResource();
+	exit(1);
+
+Success:
+
+#if 0
+	/* 测试数据 */
+	system("cls");
+#endif 
+
+	for ( int i = 0; i < 64; i++ )
+	{
+		if ( m_ptrHostSum[i] > 5.f )
+		{
+#if 0
+			printf( "%d, density: %f\n", i, m_ptrHostSum[i] );
+#endif 
+
+			dev_den = &m_vectDevSubNodeBx[i * EXTENDED + DEV_DENSITY];
+			dev_u   = &m_vectDevSubNodeBx[i * EXTENDED + DEV_VELOCITY_U];
+			dev_v   = &m_vectDevSubNodeBx[i * EXTENDED + DEV_VELOCITY_V];
+			dev_w   = &m_vectDevSubNodeBx[i * EXTENDED + DEV_VELOCITY_W];
+
+			dev_den0 = &m_vectDevSubNodeBx[i * EXTENDED + DEV_DENSITY0];
+			dev_u0   = &m_vectDevSubNodeBx[i * EXTENDED + DEV_VELOCITY_U0];
+			dev_v0   = &m_vectDevSubNodeBx[i * EXTENDED + DEV_VELOCITY_V0];
+			dev_w0   = &m_vectDevSubNodeBx[i * EXTENDED + DEV_VELOCITY_W0];
+
+			dev_p   = &m_vectDevSubNodeBx[i * EXTENDED + DEV_PRESSURE];
+			dev_div = &m_vectDevSubNodeBx[i * EXTENDED + DEV_DIVERGENCE];
+			dev_obs = &m_vectDevSubNodeBx[i * EXTENDED + DEV_OBSTACLE];
+
+			SolveNavierStokesEquation( DELTATIME, false, true, true, 32, 32, 32, 32, 32, 34, 34, 34 );
+		}
+	}
+
+	/* 检测上次调用是否产生了错误 */
+	if ( m_scHelper.GetCUDALastError( "call member function SolveNodeFlux failed", 
+		__FILE__, __LINE__ ) ) 
+	{
+		FreeResource();
+		exit(1);
+	}
 };
 
 
