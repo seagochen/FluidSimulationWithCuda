@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 23, 2014
-* <Last Time>     Mar 27, 2014
+* <Last Time>     Apr 03, 2014
 * <File Name>     MacroDefiniton.h
 */
 

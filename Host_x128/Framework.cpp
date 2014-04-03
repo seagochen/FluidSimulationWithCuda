@@ -2,9 +2,11 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Oct 16, 2013
-* <Last Time>     Mar 24, 2014
+* <Last Time>     Apr 03, 2014
 * <File Name>     FrameworkDynamic.cpp
 */
+
+#define _CRT_SECURE_NO_WARNINGS
 
 #pragma region framework basic functions
 

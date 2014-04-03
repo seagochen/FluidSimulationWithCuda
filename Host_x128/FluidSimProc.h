@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 24, 2014
+* <Last Time>     Apr 03, 2014
 * <File Name>     FluidSimProc.h
 */
 
@@ -25,10 +25,10 @@ namespace sge
 	class FluidSimProc
 	{
 	private:
-		double *dev_u, *dev_v, *dev_w, *dev_u0, *dev_v0, *dev_w0;
-		double *dev_den, *dev_den0, *dev_p, *dev_obs;
+		double *u, *v, *w, *u0, *v0, *w0;
+		double *den, *den0, *p, *obs, *div;
 
-		SGUCHAR *m_visual;			
+		SGUCHAR *visual;			
 
 		string m_szTitle;
 
@@ -53,28 +53,27 @@ namespace sge
 		void InitBoundary( void );
 
 	private:
-		int ix(cint i, cint j, cint k ) { return k * 128 * 128 + j * 128 + i; };
+		inline int ix(cint i, cint j, cint k ) { return k * 128 * 128 + j * 128 + i; };
 
 		void GenerVolumeImg( void );
 
 	private:
-		void SolveNavierStokesEquation( cdouble dt, bool add, bool vel, bool dens );
+		void SolveNavierStokesEquation
+			( cdouble dt, bool add, bool vel, bool dens );
 
-		void SolveGlobal( cdouble dt, bool add, bool vel, bool dens );
+		void DensitySolver( cdouble dt );
 
-		void DensitySolverGlobal( cdouble dt );
+		void VelocitySolver( cdouble dt );
 
-		void VelocitySolverGlobal( cdouble dt );
+		void SourceSolver( cdouble dt );
 
-		void SourceSolverGlobal( cdouble dt );
+		void Jacobi( double *out, cdouble *in, cdouble diff, cdouble divisor );
 
-		void JacobiGlobal( double *out, cdouble *in, cdouble diff, cdouble divisor );
+		void Advection( double *out, cdouble *in, cdouble *u, cdouble *v, cdouble *w, cdouble dt );
 
-		void AdvectionGlobal( double *out, cdouble *in, cdouble timestep, cdouble *u, cdouble *v, cdouble *w );
+		void Diffusion( double *out, cdouble *in, cdouble diff );
 
-		void DiffusionGlobal( double *out, cdouble *in, cdouble diff );
-
-		void ProjectionGlobal( double *u, double *v, double *w, double *div, double *p );
+		void Projection( double *u, double *v, double *w, double *div, double *p );
 	};
 };
 

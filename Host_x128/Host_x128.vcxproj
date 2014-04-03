@@ -71,8 +71,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FluidSimProc.cpp" />
     <ClCompile Include="Framework.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="NavierStokesSolver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FluidSimProc.h" />
