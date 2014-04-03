@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Original_x128", "Original_x
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cutting_x128", "Cutting_x128\Cutting_x128.vcxproj", "{390D0022-6DE7-424E-A919-970E37F9A32D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Host_x128", "Host_x128\Host_x128.vcxproj", "{AF514BD4-841A-4D7B-8DFB-205A300BD8AF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -29,6 +31,12 @@ Global
 		{390D0022-6DE7-424E-A919-970E37F9A32D}.Release|Win32.Build.0 = Release|Win32
 		{390D0022-6DE7-424E-A919-970E37F9A32D}.Release|x64.ActiveCfg = Release|x64
 		{390D0022-6DE7-424E-A919-970E37F9A32D}.Release|x64.Build.0 = Release|x64
+		{AF514BD4-841A-4D7B-8DFB-205A300BD8AF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AF514BD4-841A-4D7B-8DFB-205A300BD8AF}.Debug|Win32.Build.0 = Debug|Win32
+		{AF514BD4-841A-4D7B-8DFB-205A300BD8AF}.Debug|x64.ActiveCfg = Debug|Win32
+		{AF514BD4-841A-4D7B-8DFB-205A300BD8AF}.Release|Win32.ActiveCfg = Release|Win32
+		{AF514BD4-841A-4D7B-8DFB-205A300BD8AF}.Release|Win32.Build.0 = Release|Win32
+		{AF514BD4-841A-4D7B-8DFB-205A300BD8AF}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
