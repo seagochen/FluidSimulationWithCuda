@@ -16,7 +16,7 @@
 #define VELOCITY            40.5f
 #define STEPSIZE           0.001f
 
-#define TIMES                 80
+#define TIMES                100
 #define THREADS_S           1024
 
 #define VOLUME_X             128
@@ -47,7 +47,7 @@
 #define CANVAS_X             400
 #define CANVAS_Y             400
 
-#define APP_TITLE   "Cutting x128 FPS: %d "
+#define APP_TITLE   "Speedup x128 FPS: %d "
 
 #define MACRO_BOUNDARY_BLANK      0
 #define MACRO_BOUNDARY_OBSTACLE 100

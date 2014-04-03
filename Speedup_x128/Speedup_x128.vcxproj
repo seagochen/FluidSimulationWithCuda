@@ -29,17 +29,17 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Framework.cpp" />
-    <ClCompile Include="FunctionHelper.cpp" />
-    <ClCompile Include="Main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <CudaCompile Include="FluidSimProc.cu" />
     <CudaCompile Include="Kernels.cu" />
     <CudaCompile Include="SolveNavierStokeEq.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Cutting_x128.rc" />
+    <ClCompile Include="Framework.cpp" />
+    <ClCompile Include="FunctionHelper.cpp" />
+    <ClCompile Include="Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Speedup_x128.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icons\main.ico" />
@@ -51,8 +51,8 @@
     <None Include="shader\raycasting.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{390D0022-6DE7-424E-A919-970E37F9A32D}</ProjectGuid>
-    <RootNamespace>Cutting_x128</RootNamespace>
+    <ProjectGuid>{58546E9C-26DC-41F7-A080-2D3F10BEFE79}</ProjectGuid>
+    <RootNamespace>Speedup_x128</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

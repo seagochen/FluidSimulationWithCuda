@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Mar 25, 2014
+* <Last Time>     Apr 03, 2014
 * <File Name>     FluidSimProc.cu
 */
 
@@ -20,7 +20,13 @@ using namespace sge;
 using std::cout;
 using std::endl;
 
-static int times = 60;
+static int t_totaltimes = 0;
+
+static clock_t t_start, t_finish;
+static double t_duration;
+
+static clock_t t_estart, t_efinish;
+static double t_eduration;
 
 FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 {
@@ -58,6 +64,8 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	srand(time(NULL));
 
 	m_szTitle = APP_TITLE;
+
+	t_estart = clock();
 };
 
 void FluidSimProc::AllocateResource( void )
@@ -101,6 +109,11 @@ void FluidSimProc::FreeResource( void )
 
 	m_scHelper.FreeDeviceBuffers( 1, &m_ptrDeviceVisual );
 	m_scHelper.FreeHostBuffers( 1, &m_ptrHostVisual );
+
+	t_efinish = clock();
+	t_eduration = (double)( t_efinish - t_estart ) / CLOCKS_PER_SEC;
+
+	printf( "total duration: %f\n", t_eduration );
 };
 
 void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
@@ -124,19 +137,6 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 		fluid->fps.uFPS     = fluid->fps.dwFrames * 1000 / fluid->fps.dwElapsedTime;
 		fluid->fps.dwFrames = 0;
 		fluid->fps.dwLastUpdateTime = fluid->fps.dwCurrentTime;
-
-#if 1
-		if ( times > 0 )
-		{
-			printf( "%d \n", fluid->fps.uFPS );
-			times--;
-		}
-		else
-		{
-			FreeResource();
-			exit(1);
-		}
-#endif
 	}
 
 	/* updating image */
@@ -153,12 +153,25 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( not fluid->run ) return;
+
+	if( t_totaltimes > TIMES ) 
+	{
+		FreeResource();
+		exit(1);
+	}
 	
 	SolveNavierStokesEquation( DELTATIME, true, true, true );
 
 	GenerVolumeImg();
 
 	RefreshStatus( fluid );
+
+	/* FPS */
+	printf( "%d", fluid->fps.uFPS );
+
+	t_totaltimes++;
+
+	printf("\n");
 };
 
 void FluidSimProc::GenerVolumeImg( void )
@@ -285,7 +298,26 @@ void FluidSimProc::SolveNavierStokesEquation( cdouble dt, bool add, bool vel, bo
 
 void FluidSimProc::SolveGlobal( cdouble dt, bool add, bool vel, bool dens )
 {
+	printf( "%d   ", t_totaltimes );
+
+	/* duration of adding source */
+	t_start = clock();
 	if ( add ) SourceSolverGlobal( dt );
+	t_finish = clock();
+	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+	printf( "%f ", t_duration );
+
+	/* duration of velocity solver */
+	t_start = clock();
 	if ( vel ) VelocitySolverGlobal( dt );
+	t_finish = clock();
+	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+	printf( "%f ", t_duration );
+
+	/* duration of density solver */
+	t_start = clock();
 	if ( dens ) DensitySolverGlobal( dt );
+	t_finish = clock();
+	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+	printf( "%f ", t_duration );
 };

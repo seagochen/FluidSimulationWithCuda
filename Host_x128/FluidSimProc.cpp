@@ -17,7 +17,13 @@ using namespace sge;
 using std::cout;
 using std::endl;
 
-static int times = 60;
+static int t_totaltimes = 0;
+
+static clock_t t_start, t_finish;
+static double t_duration;
+
+static clock_t t_estart, t_efinish;
+static double t_eduration;
 
 FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 {
@@ -49,6 +55,8 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	srand(time(NULL));
 
 	m_szTitle = APP_TITLE;
+
+	t_estart = clock();
 };
 
 
@@ -100,6 +108,11 @@ void FluidSimProc::FreeResource( void )
 	SAFE_FREE_PTR( obs );
 	SAFE_FREE_PTR( div );
 	SAFE_FREE_PTR( visual );
+
+	t_efinish = clock();
+	t_eduration = (double)( t_efinish - t_estart ) / CLOCKS_PER_SEC;
+
+	printf( "total duration: %f\n", t_eduration );
 }
 
 
@@ -170,10 +183,43 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( not fluid->run ) return;
 
+	if( t_totaltimes > TIMES ) 
+	{
+		FreeResource();
+		exit(1);
+	}
+
+	printf( "%d   ", t_totaltimes );
+
+	/* duration of adding source */
+	t_start = clock();
 	SourceSolver( DELTATIME );
+	t_finish = clock();
+	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+	printf( "%f ", t_duration );
+
+	/* duration of velocity solver */
+	t_start = clock();
 	VelocitySolver( DELTATIME );
+	t_finish = clock();
+	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+	printf( "%f ", t_duration );
+
+	/* duration of density solver */
+	t_start = clock();
 	DensitySolver( DELTATIME );
+	t_finish = clock();
+	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+	printf( "%f ", t_duration );
 
 	GenerVolumeImg();
+	
 	RefreshStatus( fluid );
+
+	/* FPS */
+	printf( "%d", fluid->fps.uFPS );
+
+	t_totaltimes++;
+
+	printf("\n");
 };

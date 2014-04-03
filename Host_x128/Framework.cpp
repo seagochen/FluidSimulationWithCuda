@@ -432,7 +432,7 @@ using std::string;
 static SGMAINACTIVITY   *m_activity;
 static FLUIDSPARAM       m_fluid;
 static FluidSimProc     *m_simproc;
-//static int m_times;
+
 
 /* 基本框架所默认的构造函数，需要传入SGGUI的地址，以及创建的窗口的长和宽 */
 Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height  )
@@ -452,8 +452,6 @@ Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT 
 SGVOID Framework_v1_0::SetDefaultParam( SGVOID )
 {
 	m_fluid.run = true;
-
-//	m_times = TIMES;
 
 	m_fluid.ray.fStepsize     = STEPSIZE;
 	m_fluid.ray.nAngle        = 0;
@@ -500,14 +498,7 @@ string Framework_v1_0::string_fmt( const std::string fmt_str, ... )
 DWORD WINAPI Framework_v1_0::FluidSimulationProc( LPVOID lpParam )
 {
 	/* 只要m_fluid.run为真，则一直保持流体模拟程序的运行 */
-	while ( m_fluid.run )
-	{
-//		if( m_times < 0 ) break;
-
-		m_simproc->FluidSimSolver( &m_fluid );
-
-//		m_times--;
-	}
+	while ( m_fluid.run ) m_simproc->FluidSimSolver( &m_fluid );
 
 	/* 程序结束，返回 */
 	return 0;
@@ -525,6 +516,14 @@ void Framework_v1_0::onCreate()
 		exit (1);
 	}
 
+	/* initialize the shader program and textures */
+	CreateShaderProg ( &m_fluid );
+	m_fluid.textures.hTexture1D   = Create1DTransFunc ( DefaultTransFunc () );
+	m_fluid.textures.hTexture2D   = Create2DCanvas ( &m_fluid );
+	m_fluid.textures.hTexture3D   = Create3DVolumetric ();
+	m_fluid.ray.hCluster          = CreateVerticesBufferObj ();
+	m_fluid.textures.hFramebuffer = Create2DFrameBuffer ( &m_fluid );
+
 	/* create sub-thread function */
 	m_fluid.thread.hThread = CreateThread ( 
             NULL,                          // default security attributes
@@ -535,18 +534,14 @@ void Framework_v1_0::onCreate()
 			&m_fluid.thread.dwThreadId);   // returns the thread identifier
 
 	if ( m_fluid.thread.hThread == NULL )
-	 {
-		 cout << "create sub-thread failed" << endl;
-		 exit (1);
-	 }
-
-	/* initialize the shader program and textures */
-	CreateShaderProg ( &m_fluid );
-	m_fluid.textures.hTexture1D   = Create1DTransFunc ( DefaultTransFunc () );
-	m_fluid.textures.hTexture2D   = Create2DCanvas ( &m_fluid );
-	m_fluid.textures.hTexture3D   = Create3DVolumetric ();
-	m_fluid.ray.hCluster          = CreateVerticesBufferObj ();
-	m_fluid.textures.hFramebuffer = Create2DFrameBuffer ( &m_fluid );
+	{
+		cout << "create sub-thread failed" << endl;
+		exit (1);
+	}
+	else
+	{
+		cout << "times    add source(s)   velocity(s)   density(s)   FPS " << endl;
+	}
 };
 
 void Framework_v1_0::CountFPS()
@@ -583,7 +578,7 @@ void Framework_v1_0::onDisplay()
 	RenderingFace ( GL_BACK, &m_fluid );
 	m_fluid.shader.ptrShader->DeactiveProgram ( m_fluid.shader.hProgram );
 
-	CountFPS ();
+	CountFPS();
 };
 
 void Framework_v1_0::onDestroy()
