@@ -1,14 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{8729340b-8da0-48f3-a802-922bce2aa010}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{53bed2cb-7558-440c-8131-e06c8ed489fb}</UniqueIdentifier>
+      <UniqueIdentifier>{5b51e949-1692-4f8a-8163-2702d15581d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{92ccdddb-fc94-482f-8d32-594a52848e46}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{e53565e9-52d1-420a-b65c-94a3832b142e}</UniqueIdentifier>
+      <UniqueIdentifier>{59f1e2c1-f42e-4c45-a429-fec59b87ed13}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -24,29 +24,18 @@
     <ClInclude Include="FunctionHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ISO646.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Kernels.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MacroDefinition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ISO646.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Framework.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FunctionHelper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="FluidSimProc.cu">
@@ -60,7 +49,18 @@
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Cutting_x128.rc">
+    <ClCompile Include="Framework.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FunctionHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Speedup_x128.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

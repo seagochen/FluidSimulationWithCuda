@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 23, 2014
-* <Last Time>     Mar 27, 2014
+* <Last Time>     Apr 03, 2014
 * <File Name>     MacroDefiniton.h
 */
 
@@ -42,7 +42,7 @@
 
 #define TPBUFFER_S          1024
 
-#define APP_TITLE   "Original x128 FPS: %d "
+#define APP_TITLE   "Host x128 FPS: %d "
 
 #define MACRO_BOUNDARY_BLANK      0
 #define MACRO_BOUNDARY_OBSTACLE 100

@@ -6,6 +6,8 @@
 * <File Name>     FrameworkDynamic.cpp
 */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #pragma region framework basic functions
 
 #include <GLM\glm.hpp>
@@ -431,6 +433,7 @@ static SGMAINACTIVITY   *m_activity;
 static FLUIDSPARAM       m_fluid;
 static FluidSimProc     *m_simproc;
 
+
 /* 基本框架所默认的构造函数，需要传入SGGUI的地址，以及创建的窗口的长和宽 */
 Framework_v1_0::Framework_v1_0( SGMAINACTIVITY **activity, SGUINT width, SGUINT height  )
 {
@@ -575,7 +578,7 @@ void Framework_v1_0::onDisplay()
 	RenderingFace ( GL_BACK, &m_fluid );
 	m_fluid.shader.ptrShader->DeactiveProgram ( m_fluid.shader.hProgram );
 
-	CountFPS ();
+	CountFPS();
 };
 
 void Framework_v1_0::onDestroy()
@@ -611,14 +614,6 @@ void Framework_v1_0::onKeyboard( SGKEYS keys, SGKEYSTATUS status )
 		case SG_KEY_C:
 			m_simproc->ClearBuffers();
 			break;
-
-		case SG_KEY_S:
-			m_simproc->SaveCurStage();
-            break;
-
-		case SG_KEY_L:
-			m_simproc->LoadPreStage();
-            break;
 
 		case SG_KEY_P:
 			system("cls");
