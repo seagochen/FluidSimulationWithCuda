@@ -159,12 +159,19 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 		FreeResource();
 		exit(1);
 	}
-	
+
+	t_start = clock();
 	SolveNavierStokesEquation( DELTATIME, true, true, true );
+	t_finish = clock();
+	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+	printf( "%f ", t_duration );
 
+	t_start = clock();
 	GenerVolumeImg();
-
 	RefreshStatus( fluid );
+	t_finish = clock();
+	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+	printf( "%f ", t_duration );
 
 	/* FPS */
 	printf( "%d", fluid->fps.uFPS );
@@ -300,24 +307,25 @@ void FluidSimProc::SolveGlobal( cdouble dt, bool add, bool vel, bool dens )
 {
 	printf( "%d   ", t_totaltimes );
 
+
 	/* duration of adding source */
-	t_start = clock();
+//	t_start = clock();
 	if ( add ) SourceSolverGlobal( dt );
-	t_finish = clock();
-	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
-	printf( "%f ", t_duration );
+//	t_finish = clock();
+//	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+//	printf( "%f ", t_duration );
 
 	/* duration of velocity solver */
-	t_start = clock();
+//	t_start = clock();
 	if ( vel ) VelocitySolverGlobal( dt );
-	t_finish = clock();
-	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
-	printf( "%f ", t_duration );
+//	t_finish = clock();
+//	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+//	printf( "%f ", t_duration );
 
 	/* duration of density solver */
-	t_start = clock();
+//	t_start = clock();
 	if ( dens ) DensitySolverGlobal( dt );
-	t_finish = clock();
-	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
-	printf( "%f ", t_duration );
+//	t_finish = clock();
+//	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+//	printf( "%f ", t_duration );
 };

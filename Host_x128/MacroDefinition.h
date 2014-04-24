@@ -48,6 +48,6 @@
 #define MACRO_BOUNDARY_OBSTACLE 100
 #define MACRO_BOUNDARY_SOURCE  -100
 
-#define TIMES                100
+#define TIMES                50
 
 #endif

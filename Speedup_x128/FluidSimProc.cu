@@ -620,7 +620,7 @@ Success:
 
 	for ( int i = 0; i < 64; i++ )
 	{
-		if ( m_ptrHostSum[i] > 5.f )
+		if ( m_ptrHostSum[i] > 2.5f )
 		{
 #if 0
 			printf( "%d, density: %f\n", i, m_ptrHostSum[i] );
