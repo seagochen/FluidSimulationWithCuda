@@ -212,10 +212,13 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
 	printf( "%f ", t_duration );
 
-	GenerVolumeImg();
-	
+	t_start = clock();
+	GenerVolumeImg();	
 	RefreshStatus( fluid );
-
+	t_finish = clock();
+	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+	printf( "%f ", t_duration );
+	
 	/* FPS */
 	printf( "%d", fluid->fps.uFPS );
 
