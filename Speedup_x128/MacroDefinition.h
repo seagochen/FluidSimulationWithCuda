@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Jan 23, 2014
-* <Last Time>     Mar 27, 2014
+* <Last Time>     Apr 01, 2014
 * <File Name>     MacroDefiniton.h
 */
 
@@ -14,25 +14,32 @@
 #define VISOCITY             0.0f
 #define DENSITY             33.7f
 #define VELOCITY            40.5f
-
-#define GRIDS_X              128
-#define GRIDS_Y              128
-#define GRIDS_Z              128
-
-#define BULLET_X             130
-#define BULLET_Y             130
-#define BULLET_Z             130
-
 #define STEPSIZE           0.001f
+
+#define TIMES                100
+#define THREADS_S           1024
 
 #define VOLUME_X             128
 #define VOLUME_Y             128
 #define VOLUME_Z             128
 
-#define THREADS_S           1024
+#define GLOBAL_X              64
+#define GLOBAL_Y              64
+#define GLOBAL_Z              64
+#define GLOBAL_BX             66
+#define GLOBAL_BY             66
+#define GLOBAL_BZ             66
 
-#define TILE_X                32
-#define TILE_Y                32
+#define EXTEND_X             128
+#define EXTEND_Y             128
+#define EXTEND_Z             128
+
+#define SUBNODE_X             32
+#define SUBNODE_Y             32
+#define SUBNODE_Z             32
+#define SUBNODE_BX            34
+#define SUBNODE_BY            34
+#define SUBNODE_BZ            34
 
 #define WINDOWS_X            400
 #define WINDOWS_Y            400
@@ -40,14 +47,10 @@
 #define CANVAS_X             400
 #define CANVAS_Y             400
 
-#define TPBUFFER_S          1024
-
-#define APP_TITLE   "Original x128 FPS: %d "
+#define APP_TITLE   "Speedup x128 FPS: %d "
 
 #define MACRO_BOUNDARY_BLANK      0
 #define MACRO_BOUNDARY_OBSTACLE 100
 #define MACRO_BOUNDARY_SOURCE  -100
-
-#define TIMES                100
 
 #endif

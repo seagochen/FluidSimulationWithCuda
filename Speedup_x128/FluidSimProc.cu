@@ -2,7 +2,7 @@
 * <Author>        Orlando Chen
 * <Email>         seagochen@gmail.com
 * <First Time>    Dec 15, 2013
-* <Last Time>     Apr 01, 2014
+* <Last Time>     Apr 03, 2014
 * <File Name>     FluidSimProc.cu
 */
 
@@ -20,7 +20,13 @@ using namespace sge;
 using std::cout;
 using std::endl;
 
-static int times = 60;
+static int t_totaltimes = 0;
+
+static clock_t t_start, t_finish;
+static double t_duration;
+
+static clock_t t_estart, t_efinish;
+static double t_eduration;
 
 FluidSimProc::FluidSimProc( FLUIDSPARAM *fluid )
 {
@@ -59,6 +65,8 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 	srand(time(NULL));
 
 	m_szTitle = APP_TITLE;
+
+	t_estart = clock();
 };
 
 
@@ -171,6 +179,11 @@ void FluidSimProc::FreeResource( void )
 	/* 释放其他数据 */
 	m_scHelper.FreeDeviceBuffers( 2, &m_ptrDevVisual, &m_ptrDevSum );
 	m_scHelper.FreeHostBuffers( 2, &m_ptrHostVisual, &m_ptrHostSum );
+
+	t_efinish = clock();
+	t_eduration = (double)( t_efinish - t_estart ) / CLOCKS_PER_SEC;
+
+	printf( "total duration: %f\n", t_eduration );
 }
 
 
@@ -187,19 +200,6 @@ void FluidSimProc::RefreshStatus( FLUIDSPARAM *fluid )
 		fluid->fps.uFPS     = fluid->fps.dwFrames * 1000 / fluid->fps.dwElapsedTime;
 		fluid->fps.dwFrames = 0;
 		fluid->fps.dwLastUpdateTime = fluid->fps.dwCurrentTime;
-
-#if 1
-		if ( times > 0 )
-		{
-			printf( "%d \n", fluid->fps.uFPS );
-			times--;
-		}
-		else
-		{
-			FreeResource();
-			exit(1);
-		}
-#endif
 	}
 
 	/* updating image */
@@ -620,7 +620,7 @@ Success:
 
 	for ( int i = 0; i < 64; i++ )
 	{
-		if ( m_ptrHostSum[i] > 5.f )
+		if ( m_ptrHostSum[i] > 2.5f )
 		{
 #if 0
 			printf( "%d, density: %f\n", i, m_ptrHostSum[i] );
@@ -658,8 +658,33 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( not fluid->run ) return;
 
+	if( t_totaltimes > TIMES ) 
+	{
+		FreeResource();
+		exit(1);
+	}
+
+	printf( "%d   ", t_totaltimes );
+
+	/* solve global */
+	t_start = clock();
 	SolveGlobalFlux();
+	t_finish = clock();
+	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+	printf( "%f ", t_duration );
+
+	/* solve local */
+	t_start = clock();
 	SolveNodeFlux();
+	t_finish = clock();
+	t_duration = (double)( t_finish - t_start ) / CLOCKS_PER_SEC;
+	printf( "%f ", t_duration );
+
 	GenerateVolumeData();
 	RefreshStatus( fluid );
+
+	/* FPS */
+	printf( "%d", fluid->fps.uFPS );
+	t_totaltimes++;
+	printf("\n");
 };
