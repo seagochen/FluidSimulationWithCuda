@@ -62,19 +62,20 @@ void FluidSimProc::InitParams( FLUIDSPARAM *fluid )
 
 void FluidSimProc::AllocateResource( void )
 {
-	u = (double*) malloc ( 128 * 128 * 128 * sizeof(double) );
-	v = (double*) malloc ( 128 * 128 * 128 * sizeof(double) );
-	w = (double*) malloc ( 128 * 128 * 128 * sizeof(double) );
-	u0 = (double*) malloc ( 128 * 128 * 128 * sizeof(double) );
-	v0 = (double*) malloc ( 128 * 128 * 128 * sizeof(double) );
-	w0 = (double*) malloc ( 128 * 128 * 128 * sizeof(double) );
-	den = (double*) malloc ( 128 * 128 * 128 * sizeof(double) );
-	den0 = (double*) malloc ( 128 * 128 * 128 * sizeof(double) );
-	p = (double*) malloc ( 128 * 128 * 128 * sizeof(double) );
-	obs = (double*) malloc ( 128 * 128 * 128 * sizeof(double) );
-	div = (double*) malloc ( 128 * 128 * 128 * sizeof(double) );
+	
+	u = (double*) calloc ( 128 * 128 * 128, sizeof(double) );
+	v = (double*) calloc ( 128 * 128 * 128, sizeof(double) );
+	w = (double*) calloc ( 128 * 128 * 128, sizeof(double) );
+	u0 = (double*) calloc ( 128 * 128 * 128, sizeof(double) );
+	v0 = (double*) calloc ( 128 * 128 * 128, sizeof(double) );
+	w0 = (double*) calloc ( 128 * 128 * 128, sizeof(double) );
+	den = (double*) calloc ( 128 * 128 * 128, sizeof(double) );
+	den0 = (double*) calloc ( 128 * 128 * 128, sizeof(double) );
+	p = (double*) calloc ( 128 * 128 * 128, sizeof(double) );
+	obs = (double*) calloc ( 128 * 128 * 128, sizeof(double) );
+	div = (double*) calloc ( 128 * 128 * 128, sizeof(double) );
 
-	visual = (uchar*) malloc ( 128 * 128 * 128 * sizeof(uchar) );
+	visual = (uchar*) calloc ( 128 * 128 * 128, sizeof(uchar) );
 
 	if ( u eqt nullptr or v eqt nullptr or w eqt nullptr ) goto Error;
 	if ( u0 eqt nullptr or v0 eqt nullptr or w0 eqt nullptr ) goto Error;
@@ -183,12 +184,12 @@ void FluidSimProc::FluidSimSolver( FLUIDSPARAM *fluid )
 {
 	if ( not fluid->run ) return;
 
-	if( t_totaltimes > TIMES ) 
-	{
-		FreeResource();
-		exit(1);
-	}
-
+//	if( t_totaltimes > TIMES ) 
+//	{
+//		FreeResource();
+//		exit(1);
+//	}
+//
 	printf( "%d   ", t_totaltimes );
 
 	/* duration of adding source */
