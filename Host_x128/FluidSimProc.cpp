@@ -159,7 +159,7 @@ void FluidSimProc::InitBoundary( void )
 
 	for ( int k = 0; k < 128; k ++ ) for ( int j = 0; j < 128; j++ ) for ( int i = 0; i < 128; i++ )
 	{
-		if ( j < 3 and 
+		if ( j < 4 and j > 0 and
 			i >= halfx - 2 and i < halfx + 2 and 
 			k >= halfz - 2 and k < halfz + 2 )
 			obs[ix(i,j,k)] = MACRO_BOUNDARY_SOURCE;

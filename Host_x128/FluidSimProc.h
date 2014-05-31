@@ -40,6 +40,8 @@ namespace sge
 
 		sstr GetTitleBar( void ) { return &m_szTitle; };
 
+//		sstr GetTitleBar( void );
+
 		void FreeResource( void );
 
 		void AllocateResource( void );

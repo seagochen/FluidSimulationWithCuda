@@ -547,7 +547,9 @@ void Framework_v1_0::onCreate()
 void Framework_v1_0::CountFPS()
 {
 	/* finally, print the message on the tile bar */
-	SetWindowText( m_activity->GetHWND(), string_fmt( *m_simproc->GetTitleBar(), m_fluid.fps.uFPS ).c_str() );
+//	SetWindowText( m_activity->GetHWND(), string_fmt( *m_simproc->GetTitleBar(), m_fluid.fps.uFPS ).c_str() );
+
+	SetWindowText( m_activity->GetHWND(), string_fmt( *m_simproc->GetTitleBar() ).c_str() );
 }
 
 void Framework_v1_0::onDisplay()

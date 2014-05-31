@@ -328,8 +328,8 @@ int main ( int argc, char ** argv )
 	if ( argc == 1 ) {
 		N = 64;
 		dt = 0.1f;
-		diff = 0.0f; //(0 - 0.001)
-		visc = 0.0f; //(0 - 0.001)
+		diff = 0.0f; //(0.000 - 0.001)
+		visc = 0.0f; //(0.000 - 0.001)
 		force = 5.0f;
 		source = 100.0f;
 		fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g\n",

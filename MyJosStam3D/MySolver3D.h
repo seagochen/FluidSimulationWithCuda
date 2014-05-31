@@ -1,0 +1,2 @@
+void get_density(int N, float * x, float * x0, float * u, float * v, float * w, float diff, float dt );
+void get_velocity(int N, float * u, float * v,  float * w, float * u0, float * v0, float * w0, float visc, float dt );

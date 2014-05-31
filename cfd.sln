@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JosStam3D", "JosStam2D\JosS
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JosStam", "JosStam\JosStam.vcxproj", "{8EE63D7D-81C3-46F6-AFFD-E3D0B0D5D6A0}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MyJosStam3D", "MyJosStam3D\MyJosStam3D.vcxproj", "{EFA27BE9-7202-4E1E-A2BF-35AA77916DCB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -53,6 +55,12 @@ Global
 		{8EE63D7D-81C3-46F6-AFFD-E3D0B0D5D6A0}.Release|Win32.ActiveCfg = Release|Win32
 		{8EE63D7D-81C3-46F6-AFFD-E3D0B0D5D6A0}.Release|Win32.Build.0 = Release|Win32
 		{8EE63D7D-81C3-46F6-AFFD-E3D0B0D5D6A0}.Release|x64.ActiveCfg = Release|Win32
+		{EFA27BE9-7202-4E1E-A2BF-35AA77916DCB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EFA27BE9-7202-4E1E-A2BF-35AA77916DCB}.Debug|Win32.Build.0 = Debug|Win32
+		{EFA27BE9-7202-4E1E-A2BF-35AA77916DCB}.Debug|x64.ActiveCfg = Debug|Win32
+		{EFA27BE9-7202-4E1E-A2BF-35AA77916DCB}.Release|Win32.ActiveCfg = Release|Win32
+		{EFA27BE9-7202-4E1E-A2BF-35AA77916DCB}.Release|Win32.Build.0 = Release|Win32
+		{EFA27BE9-7202-4E1E-A2BF-35AA77916DCB}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

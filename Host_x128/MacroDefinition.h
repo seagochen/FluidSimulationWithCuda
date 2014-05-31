@@ -10,10 +10,10 @@
 #define __macro_definition_h_
 
 #define DELTATIME            0.5f
-#define DIFFUSION            0.1f
-#define VISOCITY             0.0f
-#define DENSITY             33.7f
-#define VELOCITY            40.5f
+#define DIFFUSION            0.0f
+#define VISOCITY             0.00002f
+#define DENSITY              60.f
+#define VELOCITY             90.f
 
 #define GRIDS_X              128
 #define GRIDS_Y              128
@@ -42,7 +42,7 @@
 
 #define TPBUFFER_S          1024
 
-#define APP_TITLE   "Host x128 FPS: %d "
+#define APP_TITLE   "DIFFUSION: 0.00002 VISOCITY: 0.0001"
 
 #define MACRO_BOUNDARY_BLANK      0
 #define MACRO_BOUNDARY_OBSTACLE 100
